@@ -564,35 +564,10 @@
             opacity: 1;
         }
 
-        .text-style-menu {
-            position: absolute;
-            z-index: 20;
-            background: #fff;
-            border: 1px solid #dcd0c1;
-            border-radius: 16px;
-            padding: 12px;
-            box-shadow: var(--shadow-soft);
-            display: none;
-            flex-direction: column;
-            gap: 12px;
-            width: 280px;
-            max-width: calc(100vw - 24px);
-        }
-
-        .text-style-menu.visible {
-            display: flex;
-        }
-
         .column-color-grid,
         .slide-bg-grid {
             display: grid;
             grid-template-columns: repeat(5, minmax(0, 1fr));
-            gap: 6px;
-        }
-
-        .text-style-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 6px;
         }
 
@@ -612,6 +587,12 @@
             color: var(--muted);
         }
 
+        .column-palettes {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
         .palette-block {
             display: flex;
             flex-direction: column;
@@ -624,43 +605,50 @@
             color: var(--text-main);
         }
 
-        .custom-color-control {
+        .palette-row {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            font-size: 13px;
+            gap: 6px;
         }
 
-        .custom-color-control span {
+        .palette-row .column-color-grid,
+        .palette-row .slide-bg-grid {
             flex: 1;
         }
 
-        .custom-color-control input[type="color"] {
+        .custom-color-input {
             border: none;
-            width: 36px;
-            height: 28px;
+            width: 34px;
+            height: 34px;
             padding: 0;
             background: none;
+            cursor: pointer;
         }
 
-        .text-style-menu label {
+        .ratio-wrapper {
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            font-size: 13px;
-            font-weight: 600;
+            gap: 6px;
         }
 
-        .text-style-menu select,
-        .text-style-menu input[type="number"] {
+        .ratio-grid {
+            display: flex;
+            gap: 6px;
+        }
+
+        .ratio-option {
+            flex: 1;
             border-radius: 8px;
-            border: 1px solid #dcd0c1;
-            padding: 8px;
-            font-size: 14px;
-            font-family: inherit;
+            border: 1px solid #e0d7c1;
             background: #fff;
-            width: 100%;
+            padding: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .ratio-option.active {
+            border-color: #2a7a57;
         }
 
         .font-size-control {
@@ -687,8 +675,7 @@
             text-align: center;
         }
 
-        .color-swatch,
-        .slide-bg-swatch {
+        .color-swatch {
             width: 32px;
             height: 32px;
             border-radius: 8px;
@@ -703,21 +690,7 @@
             background-size: 6px 6px;
         }
 
-        .slide-bg-swatch.transparent {
-            background-image: repeating-conic-gradient(#cfc6b8 0% 25%, #fff 0% 50%);
-            background-size: 6px 6px;
-        }
-
-        .slide-bg-swatch.custom {
-            background: #fff;
-            color: #2a7a57;
-            font-size: 11px;
-            font-weight: 600;
-            border-style: dashed;
-        }
-
-        .color-swatch:focus-visible,
-        .slide-bg-swatch:focus-visible {
+        .color-swatch:focus-visible {
             outline: 2px solid #2a7a57;
             outline-offset: 2px;
         }
@@ -893,6 +866,75 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Réglages</h3>
+                <button class="modal-close" data-close="settingsModal">×</button>
+            </div>
+            <div class="modal-tabs">
+                <button class="modal-tab active" data-tab="colors">🎨 Colors</button>
+                <button class="modal-tab" data-tab="format">🔠 Format</button>
+            </div>
+            <div class="modal-panel" data-panel="colors">
+                <div class="settings-section">
+                    <div class="section-heading">Fond de la slide</div>
+                    <div class="palette-row">
+                        <div class="slide-bg-grid" data-target="background"></div>
+                        <input type="color" class="custom-color-input" data-target="background" aria-label="Couleur personnalisée">
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="section-heading">Couleurs des colonnes</div>
+                    <div class="column-palettes">
+                        <div class="palette-block" data-stage="NOW">
+                            <div class="palette-label">Maintenant</div>
+                            <div class="palette-row">
+                                <div class="column-color-grid" data-stage="NOW"></div>
+                                <input type="color" class="custom-color-input" data-stage="NOW" aria-label="Couleur personnalisée">
+                            </div>
+                        </div>
+                        <div class="palette-block" data-stage="NEXT">
+                            <div class="palette-label">Prochain</div>
+                            <div class="palette-row">
+                                <div class="column-color-grid" data-stage="NEXT"></div>
+                                <input type="color" class="custom-color-input" data-stage="NEXT" aria-label="Couleur personnalisée">
+                            </div>
+                        </div>
+                        <div class="palette-block" data-stage="LATER">
+                            <div class="palette-label">Plus tard</div>
+                            <div class="palette-row">
+                                <div class="column-color-grid" data-stage="LATER"></div>
+                                <input type="color" class="custom-color-input" data-stage="LATER" aria-label="Couleur personnalisée">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-panel hide" data-panel="format">
+                <label>
+                    Police
+                    <select id="fontSelect"></select>
+                </label>
+                <label>
+                    Taille (px)
+                    <div class="font-size-control">
+                        <button type="button" data-font-step="-1">−</button>
+                        <input id="fontSizeInput" type="number" min="8" max="72" step="1">
+                        <button type="button" data-font-step="1">+</button>
+                    </div>
+                </label>
+                <div class="ratio-wrapper">
+                    <div class="ratio-label">Aspect ratio</div>
+                    <div class="ratio-grid" id="ratioGrid"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" data-close="settingsModal">Fermer</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
     <script>
@@ -909,8 +951,6 @@
         };
 
         const paletteColorOptions = ["transparent", "#ffffff", "#d9dce1"];
-        const columnColorOptions = paletteColorOptions;
-        const backgroundColorOptions = paletteColorOptions;
 
         const textStyles = [
             { name: "Moderne", font: "Inter, system-ui, sans-serif", size: 11 },
@@ -977,8 +1017,17 @@
         const indicatorsPromptInput = document.getElementById("indicatorsPrompt");
         const contextModal = document.getElementById("contextModal");
         const contextField = document.getElementById("contextField");
-        const modalTabs = document.querySelectorAll(".modal-tab");
-        const modalPanels = document.querySelectorAll(".modal-panel");
+        const contextModalTabs = contextModal.querySelectorAll(".modal-tab");
+        const contextModalPanels = contextModal.querySelectorAll(".modal-panel");
+        const settingsModal = document.getElementById("settingsModal");
+        const settingsModalTabs = settingsModal.querySelectorAll(".modal-tab");
+        const settingsModalPanels = settingsModal.querySelectorAll(".modal-panel");
+        const fontSelect = document.getElementById("fontSelect");
+        const fontSizeInput = document.getElementById("fontSizeInput");
+        const ratioGrid = document.getElementById("ratioGrid");
+        const slideBgGrid = settingsModal.querySelector(".slide-bg-grid[data-target='background']");
+        const backgroundCustomInput = settingsModal.querySelector(".custom-color-input[data-target='background']");
+        const columnCustomInputs = {};
         const modalPrimary = document.getElementById("modalPrimary");
         const modalCloseBtn = document.getElementById("modalClose");
 
@@ -1118,14 +1167,6 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
             });
         }
 
-        function positionMenu(trigger, menu) {
-            const rect = trigger.getBoundingClientRect();
-            const menuWidth = menu.offsetWidth;
-            const baseLeft = Math.max(rect.left + window.scrollX, window.scrollX + 8);
-            const maxLeft = window.scrollX + window.innerWidth - menuWidth - 8;
-            menu.style.left = `${Math.min(baseLeft, Math.max(maxLeft, window.scrollX + 8))}px`;
-            menu.style.top = `${rect.bottom + window.scrollY + 8}px`;
-        }
 
         function getActiveSlideElement() {
             return slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
@@ -1136,28 +1177,14 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
             if (!column) return;
             column.style.setProperty("--stage-color", color);
             schedulePersist();
+            syncPaletteColorInputs();
         }
 
         function applyBackgroundToActiveSlide(color) {
             const slide = getActiveSlideElement();
             if (!slide) return;
             applyBackgroundToSlide(slide, color);
-        }
-
-        const columnCustomInputs = {};
-        let backgroundCustomInput = null;
-
-        function createCustomColorControl(labelText, onChange, defaultColor = "#2a7a57") {
-            const control = document.createElement("div");
-            control.className = "custom-color-control";
-            const label = document.createElement("span");
-            label.textContent = labelText;
-            const input = document.createElement("input");
-            input.type = "color";
-            input.value = defaultColor;
-            input.addEventListener("input", () => onChange(input.value));
-            control.append(label, input);
-            return control;
+            syncPaletteColorInputs();
         }
 
         function syncPaletteColorInputs() {
@@ -1166,7 +1193,7 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
             Object.keys(columnCustomInputs).forEach(stage => {
                 const column = slide.querySelector(`.column[data-stage="${stage}"]`);
                 const currentColor = column?.style.getPropertyValue("--stage-color").trim() || stageColors[stage];
-                columnCustomInputs[stage].value = currentColor || "#ffffff";
+                columnCustomInputs[stage].value = currentColor ? currentColor : "#ffffff";
             });
             if (backgroundCustomInput) {
                 const bgColor = slide.dataset.bgColor || "transparent";
@@ -1181,9 +1208,6 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
             }
             return Math.max(8, Math.min(72, parsed));
         }
-
-        let fontSelect;
-        let fontSizeInput;
 
         function syncFontControls() {
             if (fontSelect) {
@@ -1203,172 +1227,103 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
             if (fontSizeInput) {
                 fontSizeInput.value = normalized;
             }
-            const activeSlide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
+            const activeSlide = getActiveSlideElement();
             if (activeSlide) {
                 applyTextStyleToSlide(activeSlide, currentTextStyleIndex, currentFontSize);
             }
         }
 
-        function createTextStyleMenu() {
-            const menu = document.createElement("div");
-            menu.className = "text-style-menu";
-            const fontLabel = document.createElement("label");
-            fontLabel.textContent = "Police";
-            fontSelect = document.createElement("select");
+        function buildSwatches(container, labelPrefix, onSelect) {
+            paletteColorOptions.forEach(color => {
+                const swatch = document.createElement("button");
+                swatch.type = "button";
+                swatch.className = "color-swatch";
+                if (color === "transparent") {
+                    swatch.classList.add("transparent");
+                } else {
+                    swatch.style.background = color;
+                }
+                swatch.dataset.color = color;
+                swatch.setAttribute("aria-label", `${labelPrefix} ${color}`);
+                container.appendChild(swatch);
+            });
+            container.addEventListener("click", event => {
+                const swatch = event.target.closest(".color-swatch");
+                if (!swatch) return;
+                onSelect(swatch.dataset.color);
+            });
+        }
+
+        function initSettingsModal() {
+            fontSelect.innerHTML = "";
             textStyles.forEach((style, index) => {
                 const option = document.createElement("option");
                 option.value = index;
                 option.textContent = style.name;
                 fontSelect.appendChild(option);
             });
-            fontLabel.appendChild(fontSelect);
-            menu.appendChild(fontLabel);
 
-            const sizeLabel = document.createElement("label");
-            sizeLabel.textContent = "Taille (px)";
-            const fontSizeControl = document.createElement("div");
-            fontSizeControl.className = "font-size-control";
-            const decreaseBtn = document.createElement("button");
-            decreaseBtn.type = "button";
-            decreaseBtn.textContent = "−";
-            const increaseBtn = document.createElement("button");
-            increaseBtn.type = "button";
-            increaseBtn.textContent = "+";
-            fontSizeInput = document.createElement("input");
-            fontSizeInput.type = "number";
-            fontSizeInput.min = "8";
-            fontSizeInput.max = "72";
-            fontSizeInput.step = "1";
-            fontSizeInput.value = currentFontSize;
-            fontSizeControl.append(decreaseBtn, fontSizeInput, increaseBtn);
-            sizeLabel.appendChild(fontSizeControl);
-            menu.appendChild(sizeLabel);
-
-            const ratioWrapper = document.createElement("div");
-            ratioWrapper.className = "ratio-wrapper";
-            const ratioLabel = document.createElement("div");
-            ratioLabel.className = "ratio-label";
-            ratioLabel.textContent = "Aspect ratio";
-            ratioWrapper.appendChild(ratioLabel);
-            const ratioGrid = document.createElement("div");
-            ratioGrid.className = "ratio-grid";
+            ratioGrid.innerHTML = "";
+            ratioButtons.length = 0;
             ratioOptions.forEach((ratio, index) => {
-                const option = document.createElement("button");
-                option.type = "button";
-                option.className = "ratio-option";
-                option.dataset.index = index;
-                option.textContent = ratio.name;
-                option.addEventListener("click", () => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "ratio-option";
+                btn.dataset.index = index;
+                btn.textContent = ratio.name;
+                btn.addEventListener("click", () => {
                     applyRatio(index);
                 });
-                ratioButtons.push(option);
-                ratioGrid.appendChild(option);
-            });
-            ratioWrapper.appendChild(ratioGrid);
-            menu.appendChild(ratioWrapper);
-
-            const backgroundSection = document.createElement("div");
-            backgroundSection.className = "settings-section";
-            const backgroundHeading = document.createElement("div");
-            backgroundHeading.className = "section-heading";
-            backgroundHeading.textContent = "Fond de la slide";
-            backgroundSection.appendChild(backgroundHeading);
-            const backgroundGrid = document.createElement("div");
-            backgroundGrid.className = "slide-bg-grid";
-            backgroundColorOptions.forEach(color => {
-                const swatch = document.createElement("button");
-                swatch.type = "button";
-                swatch.className = "slide-bg-swatch";
-                swatch.dataset.color = color;
-                swatch.setAttribute("aria-label", `Fond ${color}`);
-                if (color === "transparent") {
-                    swatch.classList.add("transparent");
-                } else {
-                    swatch.style.background = color;
-                }
-                backgroundGrid.appendChild(swatch);
-            });
-            backgroundGrid.addEventListener("click", event => {
-                const swatch = event.target.closest(".slide-bg-swatch");
-                if (!swatch) return;
-                applyBackgroundToActiveSlide(swatch.dataset.color);
-            });
-            backgroundSection.appendChild(backgroundGrid);
-            const backgroundCustomControl = createCustomColorControl("Couleur personnalisée", applyBackgroundToActiveSlide, "#ffffff");
-            backgroundCustomInput = backgroundCustomControl.querySelector("input");
-            backgroundSection.appendChild(backgroundCustomControl);
-            menu.appendChild(backgroundSection);
-
-            const columnPaletteSection = document.createElement("div");
-            columnPaletteSection.className = "settings-section";
-            const columnHeading = document.createElement("div");
-            columnHeading.className = "section-heading";
-            columnHeading.textContent = "Couleurs des colonnes";
-            columnPaletteSection.appendChild(columnHeading);
-            Object.entries(columnStageNames).forEach(([stage, label]) => {
-                const stageBlock = document.createElement("div");
-                stageBlock.className = "palette-block";
-                const stageLabel = document.createElement("div");
-                stageLabel.className = "palette-label";
-                stageLabel.textContent = label;
-                const stageGrid = document.createElement("div");
-                stageGrid.className = "column-color-grid";
-                columnColorOptions.forEach(color => {
-                    const swatch = document.createElement("button");
-                    swatch.type = "button";
-                    swatch.className = "color-swatch";
-                    if (color === "transparent") {
-                        swatch.classList.add("transparent");
-                    } else {
-                        swatch.style.background = color;
-                    }
-                    swatch.dataset.color = color;
-                    swatch.setAttribute("aria-label", `Couleur ${label} ${color}`);
-                    stageGrid.appendChild(swatch);
-                });
-                stageGrid.addEventListener("click", event => {
-                    const swatch = event.target.closest(".color-swatch");
-                    if (!swatch) return;
-                    applyColumnStageColor(stage, swatch.dataset.color);
-                });
-                const customControl = createCustomColorControl("Couleur personnalisée", color => applyColumnStageColor(stage, color), stageColors[stage]);
-                const customInput = customControl.querySelector("input");
-                columnCustomInputs[stage] = customInput;
-                stageBlock.append(stageLabel, stageGrid, customControl);
-                columnPaletteSection.appendChild(stageBlock);
-            });
-            menu.appendChild(columnPaletteSection);
-            document.body.appendChild(menu);
-
-            fontSelect.addEventListener("change", () => {
-                currentTextStyleIndex = parseInt(fontSelect.value, 10);
-                const activeSlide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
-                if (activeSlide) {
-                    applyTextStyleToSlide(activeSlide, currentTextStyleIndex, currentFontSize);
-                }
+                ratioButtons.push(btn);
+                ratioGrid.appendChild(btn);
             });
 
-            const updateSize = () => handleFontSizeChange(fontSizeInput.value);
-            fontSizeInput.addEventListener("change", updateSize);
-            decreaseBtn.addEventListener("click", () => handleFontSizeChange(currentFontSize - 1));
-            increaseBtn.addEventListener("click", () => handleFontSizeChange(currentFontSize + 1));
+            updateRatioButtons();
+            buildSwatches(slideBgGrid, "Fond", applyBackgroundToActiveSlide);
+            settingsModal.querySelectorAll(".column-color-grid").forEach(grid => {
+                const stage = grid.dataset.stage;
+                buildSwatches(grid, columnStageNames[stage] || stage, color => applyColumnStageColor(stage, color));
+            });
 
-            return menu;
-        }
+            settingsModal.querySelectorAll(".custom-color-input[data-stage]").forEach(input => {
+                const stage = input.dataset.stage;
+                columnCustomInputs[stage] = input;
+                input.addEventListener("input", () => applyColumnStageColor(stage, input.value));
+            });
 
-        const textStyleMenu = createTextStyleMenu();
+            if (backgroundCustomInput) {
+                backgroundCustomInput.addEventListener("input", () => applyBackgroundToActiveSlide(backgroundCustomInput.value));
+            }
 
-        function openTextStyleMenu(trigger) {
             syncFontControls();
             syncPaletteColorInputs();
-            updateRatioButtons();
-            textStyleMenu.classList.add("visible");
-            positionMenu(trigger, textStyleMenu);
         }
 
-        function closeTextStyleMenu() {
-            textStyleMenu.classList.remove("visible");
+        function switchSettingsTab(tabName) {
+            settingsModalTabs.forEach(tab => {
+                tab.classList.toggle("active", tab.dataset.tab === tabName);
+            });
+            settingsModalPanels.forEach(panel => {
+                panel.classList.toggle("hide", panel.dataset.panel !== tabName);
+            });
         }
+
+        function openSettingsModal() {
+            switchSettingsTab("colors");
+            syncFontControls();
+            syncPaletteColorInputs();
+            openModal(settingsModal);
+        }
+
+        function closeSettingsModal() {
+            closeModal(settingsModal);
+        }
+
+        settingsModalTabs.forEach(tab => {
+            tab.addEventListener("click", () => switchSettingsTab(tab.dataset.tab));
+        });
+
+        initSettingsModal();
 
         function updateRatioButtons() {
             ratioButtons.forEach((button, index) => {
@@ -1625,7 +1580,7 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
         }
 
         function setActiveTab(index) {
-            closeTextStyleMenu();
+            closeSettingsModal();
             activeIndex = index;
             const slides = slidesContainer.querySelectorAll(".slide");
             const tabBtns = tabsContainer.querySelectorAll(".tab-btn");
@@ -1644,6 +1599,7 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
                 currentTextStyleIndex = parseStyleIndex(activeSlide.dataset.textStyleIndex);
                 currentFontSize = normalizeFontSize(activeSlide.dataset.fontSize ?? currentFontSize);
                 syncFontControls();
+                syncPaletteColorInputs();
             }
         }
 
@@ -1714,7 +1670,7 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
 
         textStyleBtn.addEventListener("click", event => {
             event.stopPropagation();
-            openTextStyleMenu(textStyleBtn);
+            openSettingsModal();
         });
 
         importJsonBtn.addEventListener("click", () => {
@@ -1788,7 +1744,7 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
 
         function withExportMode(action) {
             return (async () => {
-                closeTextStyleMenu();
+                closeSettingsModal();
                 document.body.classList.add("exporting");
                 try {
                     return await action();
@@ -1796,6 +1752,33 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
                     document.body.classList.remove("exporting");
                 }
             })();
+        }
+
+        function prepareSlideForExport(slide) {
+            const wrapper = document.createElement("div");
+            wrapper.style.position = "fixed";
+            wrapper.style.top = "-9999px";
+            wrapper.style.left = "-9999px";
+            wrapper.style.opacity = "0";
+            wrapper.style.pointerEvents = "none";
+            wrapper.style.zIndex = "-1";
+            const clone = slide.cloneNode(true);
+            wrapper.appendChild(clone);
+            document.body.appendChild(wrapper);
+            clone.querySelectorAll("textarea").forEach(textarea => {
+                const computed = window.getComputedStyle(textarea);
+                const replacement = document.createElement("div");
+                replacement.textContent = textarea.value || textarea.placeholder || "";
+                replacement.style.cssText = computed.cssText;
+                replacement.style.whiteSpace = "pre-wrap";
+                replacement.style.wordBreak = "break-word";
+                replacement.style.overflow = "visible";
+                replacement.style.width = computed.width;
+                replacement.style.minHeight = computed.height;
+                replacement.style.boxSizing = "border-box";
+                textarea.replaceWith(replacement);
+            });
+            return { wrapper, clone };
         }
 
         exportBtn.addEventListener("click", async () => {
@@ -1806,11 +1789,16 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
             exportBtn.disabled = true;
             try {
                 await withExportMode(async () => {
-                    const canvas = await html2canvas(slide, { scale: 2, backgroundColor: null, useCORS: true });
-                    const link = document.createElement("a");
-                    link.download = `go-roadmap-page-${activeIndex + 1}.png`;
-                    link.href = canvas.toDataURL("image/png");
-                    link.click();
+                    const { wrapper, clone } = prepareSlideForExport(slide);
+                    try {
+                        const canvas = await html2canvas(clone, { scale: 2, backgroundColor: null, useCORS: true });
+                        const link = document.createElement("a");
+                        link.download = `go-roadmap-page-${activeIndex + 1}.png`;
+                        link.href = canvas.toDataURL("image/png");
+                        link.click();
+                    } finally {
+                        wrapper.remove();
+                    }
                 });
             } catch (err) {
                 alert("Export impossible. Tu peux utiliser l'impression PDF en secours.");
@@ -2082,16 +2070,16 @@ Tu dois répondre au format JSON avec les clés suivantes :
 
         function switchModalTab(tabName) {
             activeModalTab = tabName;
-            modalTabs.forEach(tab => {
+            contextModalTabs.forEach(tab => {
                 tab.classList.toggle("active", tab.dataset.tab === tabName);
             });
-            modalPanels.forEach(panel => {
+            contextModalPanels.forEach(panel => {
                 panel.classList.toggle("hide", panel.dataset.panel !== tabName);
             });
             modalPrimary.textContent = tabName === "context" ? "Envoyer" : "Enregistrer";
         }
 
-        modalTabs.forEach(tab => {
+        contextModalTabs.forEach(tab => {
             tab.addEventListener("click", () => {
                 switchModalTab(tab.dataset.tab);
             });
@@ -2145,8 +2133,8 @@ Tu dois répondre au format JSON avec les clés suivantes :
                 handleFieldAi(btn);
                 return;
             }
-            if (!event.target.closest("#textStyleBtn") && !textStyleMenu.contains(event.target)) {
-                closeTextStyleMenu();
+            if (!event.target.closest("#textStyleBtn") && !settingsModal.contains(event.target)) {
+                closeSettingsModal();
             }
         });
 
@@ -2176,6 +2164,11 @@ Tu dois répondre au format JSON avec les clés suivantes :
         contextModal.addEventListener("click", event => {
             if (event.target === contextModal) {
                 closeModal(contextModal);
+            }
+        });
+        settingsModal.addEventListener("click", event => {
+            if (event.target === settingsModal) {
+                closeSettingsModal();
             }
         });
 
