@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Habitude - Statistiques semaine</title>
+    <style>
+        body {
+            margin: 0;
+            background: #f7f3ea;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #2b2926;
+        }
+
+        .page {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 16px 16px 32px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .title {
+            font-weight: 700;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .title span {
+            font-size: 1.4rem;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: #7c7464;
+        }
+
+        .period-pill {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid #d6ccb8;
+            background: #fbf7ee;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .period-pill button {
+            border: none;
+            background: transparent;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .week-grid {
+            margin-top: 16px;
+            background: #fbf7ee;
+            border-radius: 18px;
+            border: 1px solid #e0d7c4;
+            padding: 10px 10px 14px;
+        }
+
+        .week-header {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 6px;
+            font-size: 0.7rem;
+            text-align: center;
+            color: #7c7464;
+            margin-bottom: 6px;
+        }
+
+        .week-row {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 6px;
+        }
+
+        .day-cell {
+            background: #f0e7d6;
+            border-radius: 999px;
+            padding: 6px 0;
+            text-align: center;
+            font-size: 0.8rem;
+            position: relative;
+        }
+
+        .day-cell strong {
+            display: block;
+            font-size: 0.85rem;
+        }
+
+        .day-cell span {
+            display: block;
+            font-size: 0.75rem;
+        }
+
+        .day-cell--today {
+            background: #e2f4ec;
+            color: #205b40;
+            box-shadow: 0 0 0 2px #2a7a57 inset;
+        }
+
+        .graph-card {
+            margin-top: 18px;
+            background: #fbf7ee;
+            border-radius: 18px;
+            border: 1px solid #e0d7c4;
+            padding: 10px 12px 16px;
+        }
+
+        .graph-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+
+        .graph-legend {
+            display: flex;
+            gap: 10px;
+            font-size: 0.75rem;
+            color: #7c7464;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: #2a7a57;
+            display: inline-block;
+        }
+
+        .legend-dot--secondary {
+            background: #c7bda8;
+        }
+
+        .fake-graph {
+            height: 120px;
+            border-radius: 12px;
+            background: linear-gradient(to top, #e2f4ec, #f7f3ea);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fake-graph::before,
+        .fake-graph::after {
+            content: "";
+            position: absolute;
+            inset: 16px 20px 10px;
+            border-radius: 8px;
+        }
+
+        .fake-graph::before {
+            border-left: 1px dashed #d6ccb8;
+            border-bottom: 1px dashed #d6ccb8;
+        }
+
+        .graph-line-main,
+        .graph-line-second {
+            position: absolute;
+            inset: 26px 24px 20px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+        }
+
+        .graph-line-main span,
+        .graph-line-second span {
+            width: 10px;
+            border-radius: 999px;
+            background: #2a7a57;
+        }
+
+        .graph-line-second span {
+            background: #c7bda8;
+            opacity: 0.8;
+        }
+
+        .needs-row {
+            margin-top: 18px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .needs-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            border-radius: 999px;
+            border: 1px solid #d6ccb8;
+            background: #fbf7ee;
+        }
+
+        .needs-chip span {
+            font-size: 1rem;
+        }
+
+        @media (max-width: 640px) {
+
+            .week-header,
+            .week-row {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="page">
+        <header class="header">
+            <div class="header-left">
+                <div class="title"><span>📅</span> Statistiques semaine</div>
+                <div class="subtitle">Vue des habitudes complétées de Lundi à Dimanche</div>
+            </div>
+            <div class="period-pill">
+                <button>←</button>
+                Semaine du 17 → 23 nov.
+                <button>→</button>
+            </div>
+        </header>
+
+        <section class="week-grid">
+            <div class="week-header">
+                <div>Lu</div>
+                <div>Ma</div>
+                <div>Me</div>
+                <div>Je</div>
+                <div>Ve</div>
+                <div>Sa</div>
+                <div>Di</div>
+            </div>
+            <div class="week-row">
+                <div class="day-cell"><strong>3</strong><span>🌱 4</span></div>
+                <div class="day-cell"><strong>4</strong><span>🌿 6</span></div>
+                <div class="day-cell"><strong>5</strong><span>🌿 7</span></div>
+                <div class="day-cell day-cell--today"><strong>6</strong><span>🌻 8</span></div>
+                <div class="day-cell"><strong>7</strong><span>🌱 3</span></div>
+                <div class="day-cell"><strong>8</strong><span>🌱 2</span></div>
+                <div class="day-cell"><strong>9</strong><span>🌿 5</span></div>
+            </div>
+        </section>
+
+        <section class="graph-card">
+            <div class="graph-header">
+                <div>Habitudes complétées</div>
+                <div class="graph-legend">
+                    <span><span class="legend-dot"></span> Cette semaine</span>
+                    <span><span class="legend-dot legend-dot--secondary"></span> Semaine passée</span>
+                </div>
+            </div>
+            <div class="fake-graph">
+                <div class="graph-line-second">
+                    <span style="height:45%;"></span>
+                    <span style="height:65%;"></span>
+                    <span style="height:50%;"></span>
+                    <span style="height:60%;"></span>
+                    <span style="height:40%;"></span>
+                    <span style="height:30%;"></span>
+                    <span style="height:55%;"></span>
+                </div>
+                <div class="graph-line-main">
+                    <span style="height:55%;"></span>
+                    <span style="height:75%;"></span>
+                    <span style="height:70%;"></span>
+                    <span style="height:85%;"></span>
+                    <span style="height:45%;"></span>
+                    <span style="height:35%;"></span>
+                    <span style="height:65%;"></span>
+                </div>
+            </div>
+        </section>
+
+        <section class="needs-row">
+            <div class="needs-chip"><span>🍎</span> Nutrition : 82%</div>
+            <div class="needs-chip"><span>🕊️</span> Calme : 60%</div>
+            <div class="needs-chip"><span>😄</span> Joie : 74%</div>
+            <div class="needs-chip"><span>🤝</span> Coopération : 41%</div>
+            <div class="needs-chip"><span>🌿</span> Nature : 55%</div>
+        </section>
+    </main>
+</body>
+
+</html>
