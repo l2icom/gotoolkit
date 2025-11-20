@@ -3,301 +3,2190 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Habitude - Statistiques semaine</title>
+    <title>Go-Roadmap – Tabs 3 colonnes</title>
     <style>
-        body {
-            margin: 0;
-            background: #f7f3ea;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            color: #2b2926;
+        * {
+            box-sizing: border-box;
         }
 
-        .page {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 16px 16px 32px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
             align-items: center;
+            justify-content: center;
+            padding: 24px;
+            z-index: 30;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 14px;
+            padding: 18px;
+            max-width: 480px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .modal-close {
+            border: none;
+            background: transparent;
+            font-size: 18px;
+            cursor: pointer;
+            color: var(--muted);
+        }
+
+        .modal label {
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .modal textarea,
+        .modal input[type="text"],
+        .modal input[type="password"] {
+            border-radius: 8px;
+            border: 1px solid #d0c3ad;
+            padding: 8px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .modal-footer button {
+            border-radius: 8px;
+            padding: 6px 12px;
+            border: 1px solid #dcd0c1;
+            background: #fff;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .modal-footer button.primary {
+            border: none;
+            background: #2a7a57;
+            color: #fff;
+        }
+
+        .modal-tabs {
+            display: flex;
+            gap: 8px;
             margin-bottom: 12px;
         }
 
-        .header-left {
+        .modal-tab {
+            border-radius: 8px;
+            border: 1px solid #dcd0c1;
+            background: #fff;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .modal-tab.active {
+            background: #2a7a57;
+            color: #fff;
+            border-color: #2a7a57;
+        }
+
+        .modal-panel.hide {
+            display: none;
+        }
+
+        :root {
+            --bg: #f5f2eb;
+            --card-bg: #ffffff;
+            --border-soft: #dfd5c7;
+            --text-main: #2f2922;
+            --muted: #8b8173;
+            --now-color: #e3f4ea;
+            --next-color: #fff6de;
+            --later-color: #e3f1ff;
+            --radius-large: 16px;
+            --radius: 10px;
+            --shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.05);
+            --slide-aspect-ratio: 16 / 9;
+        }
+
+        html,
+        body {
+            min-height: 100vh;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f7f7f7;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .app {
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 4px 4px 4px;
             display: flex;
             flex-direction: column;
             gap: 4px;
+            min-height: calc(100vh - 24px);
+            width: 100%;
         }
 
-        .title {
-            font-weight: 700;
-            font-size: 1.2rem;
+        .app-header {
             display: flex;
             align-items: center;
-            gap: 6px;
-        }
-
-        .title span {
-            font-size: 1.4rem;
-        }
-
-        .subtitle {
-            font-size: 0.85rem;
-            color: #7c7464;
-        }
-
-        .period-pill {
-            font-size: 0.8rem;
-            padding: 4px 10px;
-            border-radius: 999px;
-            border: 1px solid #d6ccb8;
-            background: #fbf7ee;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .period-pill button {
-            border: none;
-            background: transparent;
-            font-size: 1rem;
-            cursor: pointer;
-        }
-
-        .week-grid {
-            margin-top: 16px;
-            background: #fbf7ee;
-            border-radius: 18px;
-            border: 1px solid #e0d7c4;
-            padding: 10px 10px 14px;
-        }
-
-        .week-header {
-            display: grid;
-            grid-template-columns: repeat(7, minmax(0, 1fr));
-            gap: 6px;
-            font-size: 0.7rem;
-            text-align: center;
-            color: #7c7464;
-            margin-bottom: 6px;
-        }
-
-        .week-row {
-            display: grid;
-            grid-template-columns: repeat(7, minmax(0, 1fr));
-            gap: 6px;
-        }
-
-        .day-cell {
-            background: #f0e7d6;
-            border-radius: 999px;
-            padding: 6px 0;
-            text-align: center;
-            font-size: 0.8rem;
-            position: relative;
-        }
-
-        .day-cell strong {
-            display: block;
-            font-size: 0.85rem;
-        }
-
-        .day-cell span {
-            display: block;
-            font-size: 0.75rem;
-        }
-
-        .day-cell--today {
-            background: #e2f4ec;
-            color: #205b40;
-            box-shadow: 0 0 0 2px #2a7a57 inset;
-        }
-
-        .graph-card {
-            margin-top: 18px;
-            background: #fbf7ee;
-            border-radius: 18px;
-            border: 1px solid #e0d7c4;
-            padding: 10px 12px 16px;
-        }
-
-        .graph-header {
-            display: flex;
             justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .tabs-actions {
+            display: flex;
             align-items: center;
-            margin-bottom: 8px;
-            font-size: 0.88rem;
-            font-weight: 600;
+            gap: 8px;
+            flex: 1;
+            flex-wrap: wrap;
         }
 
-        .graph-legend {
+        .global-actions {
             display: flex;
-            gap: 10px;
-            font-size: 0.75rem;
-            color: #7c7464;
-        }
-
-        .legend-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 999px;
-            background: #2a7a57;
-            display: inline-block;
-        }
-
-        .legend-dot--secondary {
-            background: #c7bda8;
-        }
-
-        .fake-graph {
-            height: 120px;
-            border-radius: 12px;
-            background: linear-gradient(to top, #e2f4ec, #f7f3ea);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .fake-graph::before,
-        .fake-graph::after {
-            content: "";
-            position: absolute;
-            inset: 16px 20px 10px;
-            border-radius: 8px;
-        }
-
-        .fake-graph::before {
-            border-left: 1px dashed #d6ccb8;
-            border-bottom: 1px dashed #d6ccb8;
-        }
-
-        .graph-line-main,
-        .graph-line-second {
-            position: absolute;
-            inset: 26px 24px 20px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-        }
-
-        .graph-line-main span,
-        .graph-line-second span {
-            width: 10px;
-            border-radius: 999px;
-            background: #2a7a57;
-        }
-
-        .graph-line-second span {
-            background: #c7bda8;
-            opacity: 0.8;
-        }
-
-        .needs-row {
-            margin-top: 18px;
-            display: flex;
+            align-items: center;
             gap: 8px;
             flex-wrap: wrap;
         }
 
-        .needs-chip {
-            display: inline-flex;
+        .global-actions button {
+            border-radius: 999px;
+            border: 1px solid #ebe0d1;
+            background: #fff;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+        }
+
+        .global-actions button.primary {
+            border: none;
+            background: #2a7a57;
+            color: #fff;
+            box-shadow: var(--shadow-soft);
+        }
+
+        #tabs {
+            display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 0.8rem;
-            padding: 5px 10px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
             border-radius: 999px;
-            border: 1px solid #d6ccb8;
-            background: #fbf7ee;
+            border: 1px solid transparent;
+            background: transparent;
+            padding: 4px 10px;
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 12px;
         }
 
-        .needs-chip span {
-            font-size: 1rem;
+        .tab-btn.active {
+            background: #2a7a57;
+            color: #fff;
+            border-color: #2a7a57;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
         }
 
-        @media (max-width: 640px) {
+        .tab-btn-add,
+        .tab-btn-delete {
+            border-radius: 999px;
+            border: 1px solid #ebe0d1;
+            background: #fff;
+            padding: 4px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--muted);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+        }
 
-            .week-header,
-            .week-row {
-                font-size: 0.7rem;
+        .tab-btn-delete {
+            border-color: #d86f6f;
+            color: #c04040;
+        }
+
+        .slides-container {
+            position: relative;
+            flex: 1;
+            min-height: calc(100vh - 200px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .slide-wrapper {
+            margin-top: 4px;
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .slide {
+            background: var(--slide-bg, transparent);
+            border-radius: var(--radius-large);
+            padding: 8px 8px 8px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            height: calc(100vh - 45px);
+            max-height: calc(100vh - 45px);
+            aspect-ratio: var(--slide-aspect-ratio, 16 / 9);
+            width: auto;
+        }
+
+        .slide,
+        .slide-body,
+        .column-body {
+            color: var(--slide-text-color, var(--text-main));
+        }
+
+        .slide.hidden {
+            display: none;
+        }
+
+        .slide-header {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-bottom: 4px;
+        }
+
+        .slide-title-row,
+        .slide-subtitle-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: space-between;
+        }
+
+        .slide-title-row input,
+        .slide-subtitle-row input {
+            flex: 1;
+        }
+
+        .slide-title-input {
+            border: none;
+            background: transparent;
+            font-size: 20px;
+            font-weight: 650;
+            padding: 0;
+            margin: 0;
+            color: var(--slide-text-color, var(--text-main));
+            line-height: 1.2;
+        }
+
+        .slide-subtitle-input {
+            border: none;
+            background: transparent;
+            font-size: 13px;
+            color: var(--slide-text-color, var(--muted));
+            padding: 0;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .slide-header input:focus-visible {
+            outline: none;
+            box-shadow: inset 0 -2px 0 #d0c3ad;
+        }
+
+        .slide-header-main {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .slide-body {
+            display: flex;
+            gap: 18px;
+            align-items: stretch;
+            flex: 1;
+            position: relative;
+        }
+
+        .columns {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            flex: 1;
+        }
+
+        .column {
+            border-radius: 4px;
+            background: var(--slide-bg, transparent);
+            border: 1px solid #ebe0d1;
+            display: flex;
+            flex-direction: column;
+            min-height: 420px;
+            --stage-color: #f0ede7;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .column.palette-active {
+            box-shadow: none;
+            border-color: #ebe0d1;
+        }
+
+        .column-header {
+            background: var(--stage-color);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.02);
+            border-radius: 4px 4px 0 0;
+            padding: 4px 4px 4px;
+            min-height: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 11px;
+            overflow: visible;
+        }
+
+        .column-header-main {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .stage-pill {
+            font-size: calc(var(--slide-font-size, 16px) + 3px);
+            font-weight: 700;
+            font-family: var(--slide-font-family, "Segoe UI", sans-serif);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 2px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            background: rgba(255, 255, 255, 0.4);
+            cursor: text;
+            min-width: 20px;
+        }
+
+        .stage-pill:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(42, 122, 87, 0.5);
+        }
+
+        .column-title {
+            border: none;
+            background: transparent;
+            color: var(--slide-text-color, #2b2621);
+            flex: 1;
+            font-family: var(--slide-font-family, "Segoe UI", sans-serif);
+            font-size: calc(var(--slide-font-size, 16px) + 3px);
+            font-weight: 700;
+            padding: 2px 0;
+            margin: 0;
+            line-height: 1.25;
+            margin-top: 0px;
+        }
+
+        .column-title::placeholder {
+            color: #5d5650;
+        }
+
+        .column-title:focus-visible {
+            outline: none;
+            border-bottom: 1px solid rgba(93, 86, 80, 0.6);
+        }
+
+
+        .column-body {
+            padding: 10px 12px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            font-size: 12px;
+            background: var(--slide-bg, transparent);
+            border-radius: 0 0 4px 4px;
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .section-label {
+            font-size: calc(var(--slide-label-size, 12px) + 3px);
+            font-weight: 700;
+            color: var(--slide-text-color, var(--muted));
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            min-height: 22px;
+            font-family: var(--slide-font-family, "Segoe UI", sans-serif);
+        }
+
+        .section-text-row {
+            position: relative;
+        }
+
+        .textarea-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .textarea-wrapper textarea {
+            padding-top: 26px;
+        }
+
+        .field-ai-btn.inside {
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            border-radius: 999px;
+            border: 1px solid #dcd0c1;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 11px;
+            padding: 2px 6px;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-label-row,
+        .section-text-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: space-between;
+        }
+
+        .field-ai-btn {
+            border: none;
+            background: transparent;
+            font-size: 16px;
+            color: #918b7f;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .textarea-wrapper:hover .field-ai-btn,
+        .textarea-wrapper textarea:focus-visible+.field-ai-btn,
+        .field-ai-btn:focus-visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .field-ai-btn:hover {
+            color: #2a7a57;
+        }
+
+        .section textarea {
+            width: 100%;
+            border-radius: 4px;
+            font-size: var(--slide-font-size, 16px);
+            padding: 6px 8px;
+            line-height: 1.4;
+            min-height: 140px;
+            resize: vertical;
+            border: none;
+            background: var(--slide-bg, transparent);
+            color: var(--slide-text-color, #2f2922);
+            font-family: var(--slide-font-family, "Segoe UI", sans-serif);
+            overflow: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .section textarea::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+        }
+
+        .section textarea:focus-visible {
+            outline: 1px solid rgba(42, 122, 87, 0.8);
+            box-shadow: none;
+            scrollbar-width: thin;
+        }
+
+        .section textarea:focus-visible::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .section textarea::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        .section textarea::-webkit-resizer,
+        .section textarea::-moz-resizer {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .section textarea:focus-visible::-webkit-resizer,
+        .section textarea:focus-visible::-moz-resizer {
+            opacity: 1;
+        }
+
+        .text-style-menu {
+            position: absolute;
+            z-index: 20;
+            background: #fff;
+            border: 1px solid #dcd0c1;
+            border-radius: 16px;
+            padding: 12px;
+            box-shadow: var(--shadow-soft);
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            width: 280px;
+            max-width: calc(100vw - 24px);
+        }
+
+        .text-style-menu.visible {
+            display: flex;
+        }
+
+        .column-color-grid,
+        .slide-bg-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 6px;
+        }
+
+        .text-style-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+        }
+
+        .settings-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e0d7c8;
+        }
+
+        .section-heading {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+
+        .palette-block {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .palette-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .custom-color-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .custom-color-control span {
+            flex: 1;
+        }
+
+        .custom-color-control input[type="color"] {
+            border: none;
+            width: 36px;
+            height: 28px;
+            padding: 0;
+            background: none;
+        }
+
+        .text-style-menu label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .text-style-menu select,
+        .text-style-menu input[type="number"] {
+            border-radius: 8px;
+            border: 1px solid #dcd0c1;
+            padding: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #fff;
+            width: 100%;
+        }
+
+        .font-size-control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .font-size-control button {
+            border-radius: 999px;
+            border: 1px solid #dcd0c1;
+            background: #f7f5f1;
+            width: 28px;
+            height: 28px;
+            font-size: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .font-size-control input {
+            flex: 1;
+            text-align: center;
+        }
+
+        .color-swatch,
+        .slide-bg-swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid #cfc6b8;
+            cursor: pointer;
+            padding: 0;
+            background: #fff;
+        }
+
+        .color-swatch.transparent {
+            background-image: repeating-conic-gradient(#cfc6b8 0% 25%, #fff 0% 50%);
+            background-size: 6px 6px;
+        }
+
+        .slide-bg-swatch.transparent {
+            background-image: repeating-conic-gradient(#cfc6b8 0% 25%, #fff 0% 50%);
+            background-size: 6px 6px;
+        }
+
+        .slide-bg-swatch.custom {
+            background: #fff;
+            color: #2a7a57;
+            font-size: 11px;
+            font-weight: 600;
+            border-style: dashed;
+        }
+
+        .color-swatch:focus-visible,
+        .slide-bg-swatch:focus-visible {
+            outline: 2px solid #2a7a57;
+            outline-offset: 2px;
+        }
+
+        .text-style-option {
+            border-radius: 10px;
+            border: 1px solid #e0d7c8;
+            padding: 8px;
+            background: #fff;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-height: 64px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .text-style-option.active {
+            border-color: #2a7a57;
+        }
+
+        /* états d’édition : bordures seulement au survol / focus */
+        .editable {
+            border: 1px solid transparent;
+            background: transparent;
+            transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
+        }
+
+        .editable:hover {
+            border-color: #d0c3ad;
+            background: #fffdf8;
+        }
+
+        .editable:focus-visible {
+            outline: none;
+            border-color: #c0a97f;
+            background: #ffffff;
+            box-shadow: 0 0 0 1px rgba(192, 169, 127, 0.35);
+        }
+
+        /* textareas utilisent editable + fond léger */
+        .section textarea.editable {
+            background: var(--slide-bg, transparent);
+        }
+
+        body.exporting .editable {
+            border: none;
+            box-shadow: none;
+            background: var(--slide-bg, transparent);
+        }
+
+        body.exporting .section textarea {
+            border: none;
+        }
+
+        .ratio-wrapper {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .ratio-grid {
+            display: flex;
+            gap: 6px;
+        }
+
+        .ratio-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+
+        .ratio-option {
+            flex: 1;
+            border-radius: 8px;
+            border: 1px solid #e0d7c8;
+            background: #fff;
+            padding: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .ratio-option.active {
+            border-color: #2a7a57;
+        }
+
+        @media print {
+            body {
+                background: #ffffff;
+            }
+
+            .app-header {
+                display: none;
+            }
+
+            .slide {
+                box-shadow: none;
+                border-radius: 0;
             }
         }
     </style>
 </head>
 
 <body>
-    <main class="page">
-        <header class="header">
-            <div class="header-left">
-                <div class="title"><span>📅</span> Statistiques semaine</div>
-                <div class="subtitle">Vue des habitudes complétées de Lundi à Dimanche</div>
+    <div class="app">
+        <div class="app-header">
+            <div class="tabs-actions">
+                <div id="tabs"></div>
+                <button class="tab-btn-add" id="addTabBtn" type="button">+ page</button>
+                <button class="tab-btn-delete" id="deleteTabBtn" type="button">🗑 Supprimer</button>
             </div>
-            <div class="period-pill">
-                <button>←</button>
-                Semaine du 17 → 23 nov.
-                <button>→</button>
+            <div class="global-actions">
+                <button id="textStyleBtn" type="button" aria-label="Options d'affichage">📐 Réglages</button>
+                <button id="contextBtn" type="button" aria-label="AI Assistant">✨ AI</button>
+                <button id="importJsonBtn" type="button">⬆️ Import</button>
+                <button id="exportJsonBtn" type="button">⬇️ Export</button>
+                <button id="exportPptxBtn" type="button">📊 PPTX</button>
+                <button id="exportPngBtn" type="button" aria-label="Exporter la page">🖼️ IMG</button>
             </div>
-        </header>
+        </div>
 
-        <section class="week-grid">
-            <div class="week-header">
-                <div>Lu</div>
-                <div>Ma</div>
-                <div>Me</div>
-                <div>Je</div>
-                <div>Ve</div>
-                <div>Sa</div>
-                <div>Di</div>
-            </div>
-            <div class="week-row">
-                <div class="day-cell"><strong>3</strong><span>🌱 4</span></div>
-                <div class="day-cell"><strong>4</strong><span>🌿 6</span></div>
-                <div class="day-cell"><strong>5</strong><span>🌿 7</span></div>
-                <div class="day-cell day-cell--today"><strong>6</strong><span>🌻 8</span></div>
-                <div class="day-cell"><strong>7</strong><span>🌱 3</span></div>
-                <div class="day-cell"><strong>8</strong><span>🌱 2</span></div>
-                <div class="day-cell"><strong>9</strong><span>🌿 5</span></div>
-            </div>
-        </section>
+        <div class="slides-container">
+            <div id="slides" class="slide-wrapper"></div>
+        </div>
+    </div>
 
-        <section class="graph-card">
-            <div class="graph-header">
-                <div>Habitudes complétées</div>
-                <div class="graph-legend">
-                    <span><span class="legend-dot"></span> Cette semaine</span>
-                    <span><span class="legend-dot legend-dot--secondary"></span> Semaine passée</span>
-                </div>
+    <div class="modal-overlay" id="contextModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>IA & contexte</h3>
+                <button class="modal-close" data-close="contextModal">×</button>
             </div>
-            <div class="fake-graph">
-                <div class="graph-line-second">
-                    <span style="height:45%;"></span>
-                    <span style="height:65%;"></span>
-                    <span style="height:50%;"></span>
-                    <span style="height:60%;"></span>
-                    <span style="height:40%;"></span>
-                    <span style="height:30%;"></span>
-                    <span style="height:55%;"></span>
-                </div>
-                <div class="graph-line-main">
-                    <span style="height:55%;"></span>
-                    <span style="height:75%;"></span>
-                    <span style="height:70%;"></span>
-                    <span style="height:85%;"></span>
-                    <span style="height:45%;"></span>
-                    <span style="height:35%;"></span>
-                    <span style="height:65%;"></span>
-                </div>
+            <div class="modal-tabs">
+                <button class="modal-tab active" data-tab="context">Contexte</button>
+                <button class="modal-tab" data-tab="settings">Paramètres IA</button>
             </div>
-        </section>
+            <div class="modal-panel" data-panel="context">
+                <label>
+                    Décris ton produit, ton contexte et ta vision
+                    <textarea id="contextField" rows="4" placeholder="Contexte..."></textarea>
+                </label>
+            </div>
+            <div class="modal-panel hide" data-panel="settings">
+                <label>
+                    OpenAI API key
+                    <input type="password" id="apiKeyInput" autocomplete="off" placeholder="sk-...">
+                </label>
+                <label>
+                    Prompt de génération
+                    <textarea id="settingsPrompt" rows="4"></textarea>
+                </label>
+                <label>
+                    Prompt objectif (3–5 expressions courtes)
+                    <textarea id="objectivePrompt" rows="2"></textarea>
+                </label>
+                <label>
+                    Prompt moyens (3–5 expressions courtes)
+                    <textarea id="meansPrompt" rows="2"></textarea>
+                </label>
+                <label>
+                    Prompt indicateurs (3–5 expressions courtes)
+                    <textarea id="indicatorsPrompt" rows="2"></textarea>
+                </label>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="modalClose">Fermer</button>
+                <button type="button" class="primary" id="modalPrimary">Envoyer</button>
+            </div>
+        </div>
+    </div>
 
-        <section class="needs-row">
-            <div class="needs-chip"><span>🍎</span> Nutrition : 82%</div>
-            <div class="needs-chip"><span>🕊️</span> Calme : 60%</div>
-            <div class="needs-chip"><span>😄</span> Joie : 74%</div>
-            <div class="needs-chip"><span>🤝</span> Coopération : 41%</div>
-            <div class="needs-chip"><span>🌿</span> Nature : 55%</div>
-        </section>
-    </main>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
+    <script>
+        const stageColors = {
+            NOW: getComputedStyle(document.documentElement).getPropertyValue("--now-color").trim(),
+            NEXT: getComputedStyle(document.documentElement).getPropertyValue("--next-color").trim(),
+            LATER: getComputedStyle(document.documentElement).getPropertyValue("--later-color").trim()
+        };
+
+        const columnStageNames = {
+            NOW: "Maintenant",
+            NEXT: "Prochain",
+            LATER: "Plus tard"
+        };
+
+        const paletteColorOptions = ["transparent", "#ffffff", "#d9dce1"];
+        const columnColorOptions = paletteColorOptions;
+        const backgroundColorOptions = paletteColorOptions;
+
+        const textStyles = [
+            { name: "Moderne", font: "Inter, system-ui, sans-serif", size: 11 },
+            { name: "Serif", font: "Georgia, 'Times New Roman', serif", size: 12 },
+            { name: "Rounded", font: "'Segoe UI', 'Fredoka One', sans-serif", size: 12 },
+            { name: "Mono", font: "'JetBrains Mono', 'Menlo', monospace", size: 11 },
+        ];
+
+        const ratioOptions = [
+            { name: "16:9", css: "16 / 9", pptx: { width: 10, height: 5.625 } },
+            { name: "4:3", css: "4 / 3", pptx: { width: 10, height: 7.5 } },
+            { name: "A4", css: "297 / 210", pptx: { width: 11.69, height: 8.27 } }
+        ];
+
+        const sectionDefinitions = [
+            {
+                key: "objective",
+                icon: "🎯",
+                label: "Objectif / Impacts business",
+                examples:
+                    "Réduire délais certification, Fiabiliser mouvements équipage, Optimiser séquences maintenance, Accélérer reconfiguration cabine, Renforcer gouvernance sécurité, Augmenter capacité digitale, Limiter charge carburant, Garantir suivi oscillation, Piloter transitions logicielles, Maximiser synthèse trajectoire, Valider conformité eurocontrol, Simplifier briefing équipage, Harmoniser reporting navigation, Étendre liaison ATC, Intégrer données météo, Digitaliser check-lists terrain, Améliorer score expérience, Réduire replanification vols, Optimiser approches radar, Fiabiliser chaîne supply"
+            },
+            {
+                key: "means",
+                icon: "🚀",
+                label: "Moyens / Solutions / Livrables",
+                examples:
+                    "Cockpit numérique adaptatif, Suite simulation vol, Surveillance moteurs 24/7, Assistant briefing vocal, API data météo, Hub collaboration maintenance, Règles multi-facettes, Platforme intervention terrain, Capteurs vibration ailes, Notifications fatigue équipage"
+            },
+            {
+                key: "indicators",
+                icon: "📈",
+                label: "Indicateurs business",
+                examples:
+                    "Ponctualité 99%, MTTR 3h, Temps préparation 30min, Coût op unitaire 4200€, Charge vol 82%, Taux conformité 99.3%, Réactivité ATC 8s, Taux PBN 92%, Vols IFR 4500, Consommation 2.3t, NPS 74, Temps sortie piste 12min, Délais sécurité 45s, Fiabilité avion 99.98%, Volume cargo 6T, Capacité pax 180, Indisponibilité technique 0.4%, Délai livraison pièces 18j, Taux réclamation 1.2%, Disponibilité ligne 97%"
+            }
+        ];
+
+        const defaultSectionLabels = sectionDefinitions.reduce((acc, section) => {
+            acc[section.key] = `${section.icon} ${section.label}`;
+            return acc;
+        }, {});
+
+        const slidesContainer = document.getElementById("slides");
+        const tabsContainer = document.getElementById("tabs");
+        const addTabBtn = document.getElementById("addTabBtn");
+        const deleteTabBtn = document.getElementById("deleteTabBtn");
+        const exportBtn = document.getElementById("exportPngBtn");
+        const exportPptxBtn = document.getElementById("exportPptxBtn");
+        const textStyleBtn = document.getElementById("textStyleBtn");
+        const importJsonBtn = document.getElementById("importJsonBtn");
+        const exportJsonBtn = document.getElementById("exportJsonBtn");
+        const contextBtn = document.getElementById("contextBtn");
+        const contextBtnDefaultLabel = contextBtn.textContent;
+        function setContextButtonBusy(isBusy) {
+            contextBtn.textContent = isBusy ? "⏳" : contextBtnDefaultLabel;
+            contextBtn.disabled = isBusy;
+        }
+
+        const apiKeyInput = document.getElementById("apiKeyInput");
+        const settingsPromptInput = document.getElementById("settingsPrompt");
+        const objectivePromptInput = document.getElementById("objectivePrompt");
+        const meansPromptInput = document.getElementById("meansPrompt");
+        const indicatorsPromptInput = document.getElementById("indicatorsPrompt");
+        const contextModal = document.getElementById("contextModal");
+        const contextField = document.getElementById("contextField");
+        const modalTabs = document.querySelectorAll(".modal-tab");
+        const modalPanels = document.querySelectorAll(".modal-panel");
+        const modalPrimary = document.getElementById("modalPrimary");
+        const modalCloseBtn = document.getElementById("modalClose");
+
+        const STORAGE_KEY = "go-roadmap-state";
+        const defaultPromptText = `Tu es product manager / expert consultant avec 30 ans d'expérience.
+
+Identifie à partir du contexte {{contextField}}, les 6 objectifs que tu auras identifiés à court, moyen et long terme possibles. Ajoute également pour chaque période une demande qui permet de valider l'alignement business.
+
+Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals", "next_ask", "later_goals", "later_ask". Ajoute de plus "now_indicators", "next_indicators" et "later_indicators" pour nourrir les indicateurs business.`;
+        const defaultObjectivePrompt = `Réécris le texte ci-dessous en une liste à puces orientée produit métier qui dégage des objectifs forts. Contexte: {{contextField}} | Texte: {{fieldValue}}`;
+        const defaultMeansPrompt = `Réécris le texte ci-dessous sous forme de liste à puces en mettant en avant les moyens, fonctionnalités ou services produits mobilisables. Contexte: {{contextField}} | Texte: {{fieldValue}}`;
+        const defaultIndicatorsPrompt = `Réécris le texte ci-dessous sous forme de liste à puces d'indicateurs quantitatifs métier (en chiffres). Contexte: {{contextField}} | Texte: {{fieldValue}}`;
+
+        let persistTimer = null;
+
+        function schedulePersist() {
+            clearTimeout(persistTimer);
+            persistTimer = setTimeout(persistState, 500);
+        }
+
+        function persistState() {
+            const payload = {
+                slides: collectSlideData(),
+                settings: {
+                    ratioIndex: currentRatioIndex,
+                    textStyleIndex: currentTextStyleIndex,
+                    fontSize: currentFontSize,
+                    apiKey: apiKeyInput.value,
+                    instructions: settingsPromptInput.value,
+                    objectivePrompt: objectivePromptInput.value,
+                    meansPrompt: meansPromptInput.value,
+                    indicatorsPrompt: indicatorsPromptInput.value,
+                    context: contextField.value
+                }
+            };
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+            } catch (err) {
+                console.error("Impossible de sauvegarder l'état :", err);
+            }
+        }
+
+        function loadSavedState() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (!stored) {
+                settingsPromptInput.value = defaultPromptText;
+                return false;
+            }
+            try {
+                const parsed = JSON.parse(stored);
+                settingsPromptInput.value = parsed.settings?.instructions || defaultPromptText;
+                objectivePromptInput.value = parsed.settings?.objectivePrompt || defaultObjectivePrompt;
+                meansPromptInput.value = parsed.settings?.meansPrompt || defaultMeansPrompt;
+                indicatorsPromptInput.value = parsed.settings?.indicatorsPrompt || defaultIndicatorsPrompt;
+                apiKeyInput.value = parsed.settings?.apiKey || "";
+                contextField.value = parsed.settings?.context || "";
+                currentTextStyleIndex = parseStyleIndex(parsed.settings?.textStyleIndex);
+                currentFontSize = normalizeFontSize(parsed.settings?.fontSize ?? currentFontSize);
+                currentRatioIndex = Math.max(0, Math.min(ratioOptions.length - 1, parsed.settings?.ratioIndex ?? 0));
+                if (Array.isArray(parsed.slides) && parsed.slides.length) {
+                    importSlidesFromData(parsed.slides, parsed.settings ?? { ratioIndex: currentRatioIndex });
+                    return true;
+                }
+                return false;
+            } catch (err) {
+                console.error("Impossible de charger l'état :", err);
+                settingsPromptInput.value = defaultPromptText;
+                objectivePromptInput.value = defaultObjectivePrompt;
+                meansPromptInput.value = defaultMeansPrompt;
+                indicatorsPromptInput.value = defaultIndicatorsPrompt;
+                return false;
+            }
+        }
+
+        const importInput = document.createElement("input");
+        importInput.type = "file";
+        importInput.accept = "application/json";
+        importInput.style.display = "none";
+        document.body.appendChild(importInput);
+
+        let slideCount = 0;
+        let activeIndex = 0;
+        let activePaletteColumn = null;
+        let currentTextStyleIndex = 0;
+        let currentFontSize = 12;
+        let currentRatioIndex = 0;
+
+        const defaultTitle = "GO-Roadmap";
+        const defaultSubtitle = "Produit / équipe / scope";
+        const ratioButtons = [];
+
+        function parseStyleIndex(value) {
+            const parsed = parseInt(value, 10);
+            return Number.isNaN(parsed) ? currentTextStyleIndex : parsed;
+        }
+
+        function selectColumnForPalette(column) {
+            if (!column) {
+                activePaletteColumn = null;
+                document.querySelectorAll(".column.palette-active").forEach(el => el.classList.remove("palette-active"));
+                return;
+            }
+            document.querySelectorAll(".column.palette-active").forEach(el => el.classList.remove("palette-active"));
+            activePaletteColumn = column;
+            column.classList.add("palette-active");
+        }
+
+        function updateSectionLabelsInSlide(sectionKey, sourceLabel) {
+            const slide = sourceLabel.closest(".slide");
+            if (!slide) return;
+            const rawText = sourceLabel.textContent.trim();
+            const normalized = rawText || defaultSectionLabels[sectionKey];
+            slide.querySelectorAll(`.section-label[data-section="${sectionKey}"]`).forEach(label => {
+                label.textContent = normalized;
+            });
+        }
+
+        function bindSectionLabel(label) {
+            const sectionKey = label.dataset.section;
+            label.addEventListener("blur", () => {
+                if (!label.textContent.trim()) {
+                    label.textContent = defaultSectionLabels[sectionKey];
+                }
+                updateSectionLabelsInSlide(sectionKey, label);
+            });
+        }
+
+        function bindTextareaPlaceholder(textarea) {
+            const example = textarea.dataset.placeholder || "";
+            textarea.addEventListener("focus", () => {
+                if (!textarea.value) {
+                    textarea.placeholder = example;
+                }
+            });
+            textarea.addEventListener("blur", () => {
+                textarea.placeholder = "";
+            });
+        }
+
+        function positionMenu(trigger, menu) {
+            const rect = trigger.getBoundingClientRect();
+            const menuWidth = menu.offsetWidth;
+            const baseLeft = Math.max(rect.left + window.scrollX, window.scrollX + 8);
+            const maxLeft = window.scrollX + window.innerWidth - menuWidth - 8;
+            menu.style.left = `${Math.min(baseLeft, Math.max(maxLeft, window.scrollX + 8))}px`;
+            menu.style.top = `${rect.bottom + window.scrollY + 8}px`;
+        }
+
+        function getActiveSlideElement() {
+            return slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
+        }
+
+        function applyColumnStageColor(stage, color) {
+            const column = getActiveSlideElement()?.querySelector(`.column[data-stage="${stage}"]`);
+            if (!column) return;
+            column.style.setProperty("--stage-color", color);
+            schedulePersist();
+        }
+
+        function applyBackgroundToActiveSlide(color) {
+            const slide = getActiveSlideElement();
+            if (!slide) return;
+            applyBackgroundToSlide(slide, color);
+        }
+
+        const columnCustomInputs = {};
+        let backgroundCustomInput = null;
+
+        function createCustomColorControl(labelText, onChange, defaultColor = "#2a7a57") {
+            const control = document.createElement("div");
+            control.className = "custom-color-control";
+            const label = document.createElement("span");
+            label.textContent = labelText;
+            const input = document.createElement("input");
+            input.type = "color";
+            input.value = defaultColor;
+            input.addEventListener("input", () => onChange(input.value));
+            control.append(label, input);
+            return control;
+        }
+
+        function syncPaletteColorInputs() {
+            const slide = getActiveSlideElement();
+            if (!slide) return;
+            Object.keys(columnCustomInputs).forEach(stage => {
+                const column = slide.querySelector(`.column[data-stage="${stage}"]`);
+                const currentColor = column?.style.getPropertyValue("--stage-color").trim() || stageColors[stage];
+                columnCustomInputs[stage].value = currentColor || "#ffffff";
+            });
+            if (backgroundCustomInput) {
+                const bgColor = slide.dataset.bgColor || "transparent";
+                backgroundCustomInput.value = bgColor === "transparent" ? "#ffffff" : bgColor;
+            }
+        }
+
+        function normalizeFontSize(value) {
+            const parsed = Number(value);
+            if (Number.isNaN(parsed)) {
+                return currentFontSize;
+            }
+            return Math.max(8, Math.min(72, parsed));
+        }
+
+        let fontSelect;
+        let fontSizeInput;
+
+        function syncFontControls() {
+            if (fontSelect) {
+                fontSelect.value = currentTextStyleIndex;
+            }
+            if (fontSizeInput) {
+                fontSizeInput.value = currentFontSize;
+            }
+        }
+
+        function handleFontSizeChange(value) {
+            const normalized = normalizeFontSize(value);
+            if (normalized === currentFontSize && Number(value) === normalized) {
+                return;
+            }
+            currentFontSize = normalized;
+            if (fontSizeInput) {
+                fontSizeInput.value = normalized;
+            }
+            const activeSlide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
+            if (activeSlide) {
+                applyTextStyleToSlide(activeSlide, currentTextStyleIndex, currentFontSize);
+            }
+        }
+
+        function createTextStyleMenu() {
+            const menu = document.createElement("div");
+            menu.className = "text-style-menu";
+            const fontLabel = document.createElement("label");
+            fontLabel.textContent = "Police";
+            fontSelect = document.createElement("select");
+            textStyles.forEach((style, index) => {
+                const option = document.createElement("option");
+                option.value = index;
+                option.textContent = style.name;
+                fontSelect.appendChild(option);
+            });
+            fontLabel.appendChild(fontSelect);
+            menu.appendChild(fontLabel);
+
+            const sizeLabel = document.createElement("label");
+            sizeLabel.textContent = "Taille (px)";
+            const fontSizeControl = document.createElement("div");
+            fontSizeControl.className = "font-size-control";
+            const decreaseBtn = document.createElement("button");
+            decreaseBtn.type = "button";
+            decreaseBtn.textContent = "−";
+            const increaseBtn = document.createElement("button");
+            increaseBtn.type = "button";
+            increaseBtn.textContent = "+";
+            fontSizeInput = document.createElement("input");
+            fontSizeInput.type = "number";
+            fontSizeInput.min = "8";
+            fontSizeInput.max = "72";
+            fontSizeInput.step = "1";
+            fontSizeInput.value = currentFontSize;
+            fontSizeControl.append(decreaseBtn, fontSizeInput, increaseBtn);
+            sizeLabel.appendChild(fontSizeControl);
+            menu.appendChild(sizeLabel);
+
+            const ratioWrapper = document.createElement("div");
+            ratioWrapper.className = "ratio-wrapper";
+            const ratioLabel = document.createElement("div");
+            ratioLabel.className = "ratio-label";
+            ratioLabel.textContent = "Aspect ratio";
+            ratioWrapper.appendChild(ratioLabel);
+            const ratioGrid = document.createElement("div");
+            ratioGrid.className = "ratio-grid";
+            ratioOptions.forEach((ratio, index) => {
+                const option = document.createElement("button");
+                option.type = "button";
+                option.className = "ratio-option";
+                option.dataset.index = index;
+                option.textContent = ratio.name;
+                option.addEventListener("click", () => {
+                    applyRatio(index);
+                });
+                ratioButtons.push(option);
+                ratioGrid.appendChild(option);
+            });
+            ratioWrapper.appendChild(ratioGrid);
+            menu.appendChild(ratioWrapper);
+
+            const backgroundSection = document.createElement("div");
+            backgroundSection.className = "settings-section";
+            const backgroundHeading = document.createElement("div");
+            backgroundHeading.className = "section-heading";
+            backgroundHeading.textContent = "Fond de la slide";
+            backgroundSection.appendChild(backgroundHeading);
+            const backgroundGrid = document.createElement("div");
+            backgroundGrid.className = "slide-bg-grid";
+            backgroundColorOptions.forEach(color => {
+                const swatch = document.createElement("button");
+                swatch.type = "button";
+                swatch.className = "slide-bg-swatch";
+                swatch.dataset.color = color;
+                swatch.setAttribute("aria-label", `Fond ${color}`);
+                if (color === "transparent") {
+                    swatch.classList.add("transparent");
+                } else {
+                    swatch.style.background = color;
+                }
+                backgroundGrid.appendChild(swatch);
+            });
+            backgroundGrid.addEventListener("click", event => {
+                const swatch = event.target.closest(".slide-bg-swatch");
+                if (!swatch) return;
+                applyBackgroundToActiveSlide(swatch.dataset.color);
+            });
+            backgroundSection.appendChild(backgroundGrid);
+            const backgroundCustomControl = createCustomColorControl("Couleur personnalisée", applyBackgroundToActiveSlide, "#ffffff");
+            backgroundCustomInput = backgroundCustomControl.querySelector("input");
+            backgroundSection.appendChild(backgroundCustomControl);
+            menu.appendChild(backgroundSection);
+
+            const columnPaletteSection = document.createElement("div");
+            columnPaletteSection.className = "settings-section";
+            const columnHeading = document.createElement("div");
+            columnHeading.className = "section-heading";
+            columnHeading.textContent = "Couleurs des colonnes";
+            columnPaletteSection.appendChild(columnHeading);
+            Object.entries(columnStageNames).forEach(([stage, label]) => {
+                const stageBlock = document.createElement("div");
+                stageBlock.className = "palette-block";
+                const stageLabel = document.createElement("div");
+                stageLabel.className = "palette-label";
+                stageLabel.textContent = label;
+                const stageGrid = document.createElement("div");
+                stageGrid.className = "column-color-grid";
+                columnColorOptions.forEach(color => {
+                    const swatch = document.createElement("button");
+                    swatch.type = "button";
+                    swatch.className = "color-swatch";
+                    if (color === "transparent") {
+                        swatch.classList.add("transparent");
+                    } else {
+                        swatch.style.background = color;
+                    }
+                    swatch.dataset.color = color;
+                    swatch.setAttribute("aria-label", `Couleur ${label} ${color}`);
+                    stageGrid.appendChild(swatch);
+                });
+                stageGrid.addEventListener("click", event => {
+                    const swatch = event.target.closest(".color-swatch");
+                    if (!swatch) return;
+                    applyColumnStageColor(stage, swatch.dataset.color);
+                });
+                const customControl = createCustomColorControl("Couleur personnalisée", color => applyColumnStageColor(stage, color), stageColors[stage]);
+                const customInput = customControl.querySelector("input");
+                columnCustomInputs[stage] = customInput;
+                stageBlock.append(stageLabel, stageGrid, customControl);
+                columnPaletteSection.appendChild(stageBlock);
+            });
+            menu.appendChild(columnPaletteSection);
+            document.body.appendChild(menu);
+
+            fontSelect.addEventListener("change", () => {
+                currentTextStyleIndex = parseInt(fontSelect.value, 10);
+                const activeSlide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
+                if (activeSlide) {
+                    applyTextStyleToSlide(activeSlide, currentTextStyleIndex, currentFontSize);
+                }
+            });
+
+            const updateSize = () => handleFontSizeChange(fontSizeInput.value);
+            fontSizeInput.addEventListener("change", updateSize);
+            decreaseBtn.addEventListener("click", () => handleFontSizeChange(currentFontSize - 1));
+            increaseBtn.addEventListener("click", () => handleFontSizeChange(currentFontSize + 1));
+
+            return menu;
+        }
+
+        const textStyleMenu = createTextStyleMenu();
+
+        function openTextStyleMenu(trigger) {
+            syncFontControls();
+            syncPaletteColorInputs();
+            updateRatioButtons();
+            textStyleMenu.classList.add("visible");
+            positionMenu(trigger, textStyleMenu);
+        }
+
+        function closeTextStyleMenu() {
+            textStyleMenu.classList.remove("visible");
+        }
+
+        function updateRatioButtons() {
+            ratioButtons.forEach((button, index) => {
+                button.classList.toggle("active", index === currentRatioIndex);
+            });
+        }
+
+        function parseHexColor(value) {
+            const hex = value.replace(/^#/, "");
+            if (hex.length !== 6) return null;
+            return {
+                r: parseInt(hex.slice(0, 2), 16),
+                g: parseInt(hex.slice(2, 4), 16),
+                b: parseInt(hex.slice(4, 6), 16)
+            };
+        }
+
+        function getBrightnessFromColor(value) {
+            const parsed = parseHexColor(value);
+            if (!parsed) return 1;
+            return (parsed.r * 299 + parsed.g * 587 + parsed.b * 114) / 1000 / 255;
+        }
+
+        function getTextColorForBackground(value) {
+            if (!value || value === "transparent") {
+                return "#2f2922";
+            }
+            if (value.startsWith("linear-gradient")) {
+                const match = value.match(/#([0-9a-fA-F]{6})/);
+                if (match) {
+                    value = `#${match[1]}`;
+                }
+            }
+            const brightness = getBrightnessFromColor(value);
+            return brightness < 0.6 ? "#ffffff" : "#2f2922";
+        }
+
+        function setSlideTextColor(slide, color) {
+            const textColor = getTextColorForBackground(color);
+            slide.style.setProperty("--slide-text-color", textColor);
+        }
+
+        function applyBackgroundToSlide(slide, color) {
+            const normalized = color || "transparent";
+            slide.dataset.bgColor = normalized;
+            slide.style.setProperty("--slide-bg", normalized);
+            setSlideTextColor(slide, normalized);
+            schedulePersist();
+        }
+
+        function applyTextStyleToSlide(slide, styleIndex, size = currentFontSize) {
+            const style = textStyles[styleIndex] || textStyles[0];
+            const fontSize = typeof size === "number" ? size : currentFontSize;
+            slide.dataset.textStyleIndex = styleIndex;
+            slide.dataset.fontSize = fontSize;
+            slide.style.setProperty("--slide-font-family", style.font);
+            slide.style.setProperty("--slide-font-size", `${fontSize}px`);
+            const labelSize = Math.max(fontSize - 2, 12);
+            slide.style.setProperty("--slide-label-size", `${labelSize}px`);
+            schedulePersist();
+        }
+
+        function applyRatio(index) {
+            const ratio = ratioOptions[index] || ratioOptions[0];
+            currentRatioIndex = index;
+            document.documentElement.style.setProperty("--slide-aspect-ratio", ratio.css);
+            updateRatioButtons();
+            schedulePersist();
+        }
+
+        function collectSlideData() {
+            const slides = Array.from(slidesContainer.querySelectorAll(".slide"));
+            return slides.map(slide => {
+                const columns = Array.from(slide.querySelectorAll(".column")).map(column => {
+                    const columnTitleEl = column.querySelector(".column-title");
+                    const columnTitle = columnTitleEl ? columnTitleEl.value : "";
+                    const stagePill = column.querySelector(".stage-pill");
+                    const stageLabel = stagePill ? stagePill.textContent.trim() : "";
+                    const stageColor = column.style.getPropertyValue("--stage-color").trim();
+                    const columnData = {
+                        stage: column.dataset.stage,
+                        stageLabel,
+                        stageColor,
+                        title: columnTitle,
+                        sections: {}
+                    };
+                    sectionDefinitions.forEach(section => {
+                        const label = column.querySelector(`.section-label[data-section="${section.key}"]`);
+                        const textarea = column.querySelector(`textarea[data-section="${section.key}"]`);
+                        columnData.sections[section.key] = {
+                            label: label ? label.textContent.trim() : defaultSectionLabels[section.key],
+                            text: textarea ? textarea.value : ""
+                        };
+                    });
+                    return columnData;
+                });
+                const titleEl = slide.querySelector(".slide-title-input");
+                const subtitleEl = slide.querySelector(".slide-subtitle-input");
+                const fontSizeValue = parseInt(slide.dataset.fontSize, 10);
+                return {
+                    title: titleEl ? titleEl.value : defaultTitle,
+                    subtitle: subtitleEl ? subtitleEl.value : defaultSubtitle,
+                    bgColor: slide.dataset.bgColor || "transparent",
+                    textStyleIndex: parseStyleIndex(slide.dataset.textStyleIndex),
+                    fontSize: Number.isNaN(fontSizeValue) ? currentFontSize : fontSizeValue,
+                    columns
+                };
+            });
+        }
+
+        function createColumn(colIndex, stage = "NOW", seed = {}) {
+            const column = document.createElement("div");
+            column.className = "column";
+            column.dataset.stage = seed.stage || stage;
+            const humanIndex = colIndex + 1;
+            const defaultTitleText =
+                stage === "NOW" ? "Now" :
+                    stage === "NEXT" ? "Next" :
+                        stage === "LATER" ? "Later" :
+                            `Colonne ${humanIndex}`;
+            const fallbackStage = seed.stageLabel || column.dataset.stage;
+            const stageColor = seed.stageColor || stageColors[stage] || "#f0ede7";
+            column.style.setProperty("--stage-color", stageColor);
+
+            const sectionsHtml = sectionDefinitions.map(section => `
+        <div class="section">
+          <div class="section-label-row">
+            <span class="section-label" data-section="${section.key}" contenteditable="true">${section.icon} ${section.label}</span>
+          </div>
+          <div class="section-text-row">
+            <div class="textarea-wrapper">
+              <textarea class="editable" data-section="${section.key}" data-placeholder="${(section.examples || "").replace(/"/g, '&quot;')}"></textarea>
+              <button class="field-ai-btn inside" type="button" data-field="section-text" data-section="${section.key}" title="Générer le contenu" aria-label="Générer le contenu">✨ AI</button>
+            </div>
+          </div>
+        </div>
+      `).join("");
+
+            column.innerHTML = `
+      <div class="column-header">
+        <div class="column-header-main">
+          <span class="stage-pill" contenteditable="true">${fallbackStage}</span>
+          <input class="column-title editable" type="text"
+                 placeholder="Titre colonne"
+                 value="${(seed.title || defaultTitleText).replace(/"/g, '&quot;')}">
+        </div>
+      </div>
+      <div class="column-body">
+        ${sectionsHtml}
+      </div>
+    `;
+
+            const pill = column.querySelector(".stage-pill");
+            pill.addEventListener("focus", () => {
+                selectColumnForPalette(column);
+                const selection = window.getSelection();
+                if (selection) {
+                    const range = document.createRange();
+                    range.selectNodeContents(pill);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+            });
+            pill.addEventListener("keydown", event => {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    pill.blur();
+                }
+            });
+            pill.addEventListener("blur", () => {
+                if (!pill.textContent.trim()) {
+                    pill.textContent = fallbackStage;
+                }
+            });
+
+            column.querySelectorAll(".section-label").forEach(bindSectionLabel);
+
+            sectionDefinitions.forEach(section => {
+                const label = column.querySelector(`.section-label[data-section="${section.key}"]`);
+                const textarea = column.querySelector(`textarea[data-section="${section.key}"]`);
+                const sectionSeed = seed.sections && seed.sections[section.key];
+                if (sectionSeed) {
+                    label.textContent = sectionSeed.label || defaultSectionLabels[section.key];
+                    textarea.value = sectionSeed.text || "";
+                }
+            });
+
+            column.querySelectorAll("textarea").forEach(bindTextareaPlaceholder);
+
+            column.addEventListener("click", () => {
+                selectColumnForPalette(column);
+            });
+
+            return column;
+        }
+
+        function createSlide(index, seed = {}) {
+            const slide = document.createElement("div");
+            slide.className = "slide";
+            slide.dataset.index = index;
+            const titleValue = (seed.title || defaultTitle).replace(/"/g, '&quot;');
+            const subtitleValue = (seed.subtitle || defaultSubtitle).replace(/"/g, '&quot;');
+            slide.innerHTML = `
+  <div class="slide-header">
+    <div class="slide-title-row">
+      <input class="slide-title-input editable" type="text" value="${titleValue}">
+    </div>
+    <div class="slide-subtitle-row">
+      <input class="slide-subtitle-input editable" type="text" value="${subtitleValue}">
+    </div>
+  </div>
+  <div class="slide-body">
+    <div class="columns"></div>
+  </div>
+`;
+            const columnsContainer = slide.querySelector(".columns");
+            ["NOW", "NEXT", "LATER"].forEach((stage, columnIndex) => {
+                const columnSeed = seed.columns && seed.columns[columnIndex];
+                columnsContainer.appendChild(createColumn(columnIndex, stage, columnSeed));
+            });
+
+            columnsContainer.addEventListener("click", event => {
+                const targetColumn = event.target.closest(".column");
+                if (targetColumn) {
+                    selectColumnForPalette(targetColumn);
+                }
+            });
+            const bgColor = seed.bgColor || "transparent";
+            applyBackgroundToSlide(slide, bgColor);
+            const styleIndex = typeof seed.textStyleIndex === "number" ? seed.textStyleIndex : currentTextStyleIndex;
+            const fontSize = typeof seed.fontSize === "number" ? seed.fontSize : currentFontSize;
+            applyTextStyleToSlide(slide, styleIndex, fontSize);
+            return slide;
+        }
+
+        function createTabButton(index) {
+            const btn = document.createElement("button");
+            btn.className = "tab-btn";
+            btn.dataset.index = index;
+            btn.textContent = "Page " + (index + 1);
+            btn.addEventListener("click", () => setActiveTab(index));
+            tabsContainer.appendChild(btn);
+        }
+
+        function refreshTabs() {
+            tabsContainer.innerHTML = "";
+            const slides = slidesContainer.querySelectorAll(".slide");
+            slides.forEach((slide, idx) => {
+                slide.dataset.index = idx;
+                createTabButton(idx);
+            });
+            slideCount = slides.length;
+            updateDeleteButtonState();
+        }
+
+        function setActiveTab(index) {
+            closeTextStyleMenu();
+            activeIndex = index;
+            const slides = slidesContainer.querySelectorAll(".slide");
+            const tabBtns = tabsContainer.querySelectorAll(".tab-btn");
+            slides.forEach(s => {
+                s.classList.toggle("hidden", s.dataset.index != index);
+            });
+            tabBtns.forEach(b => {
+                b.classList.toggle("active", b.dataset.index == index);
+            });
+            const activeSlide = slidesContainer.querySelector(`.slide[data-index="${index}"]`);
+            const firstColumn = activeSlide ? activeSlide.querySelector(".column") : null;
+            if (firstColumn) {
+                selectColumnForPalette(firstColumn);
+            }
+            if (activeSlide) {
+                currentTextStyleIndex = parseStyleIndex(activeSlide.dataset.textStyleIndex);
+                currentFontSize = normalizeFontSize(activeSlide.dataset.fontSize ?? currentFontSize);
+                syncFontControls();
+            }
+        }
+
+        function getDefaultFromLastSlide() {
+            if (slideCount === 0) {
+                return {
+                    title: defaultTitle,
+                    subtitle: defaultSubtitle,
+                    bgColor: "transparent",
+                    textStyleIndex: currentTextStyleIndex,
+                    fontSize: currentFontSize
+                };
+            }
+            const previousSlide = slidesContainer.querySelector(`.slide[data-index="${slideCount - 1}"]`);
+            if (!previousSlide) {
+                return {
+                    title: defaultTitle,
+                    subtitle: defaultSubtitle,
+                    bgColor: "transparent",
+                    textStyleIndex: currentTextStyleIndex,
+                    fontSize: currentFontSize
+                };
+            }
+            const prevTitleEl = previousSlide.querySelector(".slide-title-input");
+            const prevSubtitleEl = previousSlide.querySelector(".slide-subtitle-input");
+            return {
+                title: prevTitleEl ? prevTitleEl.value : defaultTitle,
+                subtitle: prevSubtitleEl ? prevSubtitleEl.value : defaultSubtitle,
+                bgColor: previousSlide.dataset.bgColor || "transparent",
+                textStyleIndex: parseStyleIndex(previousSlide.dataset.textStyleIndex),
+                fontSize: normalizeFontSize(previousSlide.dataset.fontSize ?? currentFontSize)
+            };
+        }
+
+        function addTab() {
+            const idx = slideCount;
+            const seed = getDefaultFromLastSlide();
+            const slide = createSlide(idx, seed);
+            slidesContainer.appendChild(slide);
+            createTabButton(idx);
+            slideCount++;
+            updateDeleteButtonState();
+            setActiveTab(idx);
+            schedulePersist();
+        }
+
+        function updateDeleteButtonState() {
+            deleteTabBtn.disabled = slideCount <= 1;
+        }
+
+        addTabBtn.addEventListener("click", addTab);
+
+        deleteTabBtn.addEventListener("click", () => {
+            if (slideCount <= 1) {
+                return;
+            }
+            const currentSlide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
+            if (currentSlide) {
+                currentSlide.remove();
+            }
+            refreshTabs();
+            if (activeIndex >= slideCount) {
+                activeIndex = slideCount - 1;
+            }
+            setActiveTab(activeIndex);
+            schedulePersist();
+        });
+
+        textStyleBtn.addEventListener("click", event => {
+            event.stopPropagation();
+            openTextStyleMenu(textStyleBtn);
+        });
+
+        importJsonBtn.addEventListener("click", () => {
+            importInput.value = "";
+            importInput.click();
+        });
+
+        importInput.addEventListener("change", event => {
+            const files = event.target.files;
+            const file = files && files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const parsed = JSON.parse(reader.result);
+                    const payload = Array.isArray(parsed) ? { slides: parsed, settings: {} } : parsed;
+                    importSlidesFromData(payload.slides ?? payload, payload.settings ?? {});
+                } catch (err) {
+                    alert("Import JSON invalide.");
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        exportJsonBtn.addEventListener("click", () => {
+            const data = collectSlideData();
+            const payload = {
+                slides: data,
+                settings: {
+                    ratioIndex: currentRatioIndex,
+                    textStyleIndex: currentTextStyleIndex,
+                    fontSize: currentFontSize
+                }
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "go-roadmap.json";
+            link.click();
+            URL.revokeObjectURL(link.href);
+        });
+
+        function importSlidesFromData(slidesData, settings) {
+            const slideList = Array.isArray(slidesData) ? slidesData : [];
+            slidesContainer.innerHTML = "";
+            slideCount = 0;
+            activeIndex = 0;
+            if (typeof settings.ratioIndex === "number") {
+                applyRatio(settings.ratioIndex);
+            }
+            if (typeof settings.textStyleIndex === "number") {
+                currentTextStyleIndex = settings.textStyleIndex;
+            }
+            if (typeof settings.fontSize === "number") {
+                currentFontSize = normalizeFontSize(settings.fontSize);
+            }
+            slideList.forEach((slideData, index) => {
+                const slide = createSlide(index, {
+                    ...slideData,
+                    textStyleIndex: typeof slideData.textStyleIndex === "number" ? slideData.textStyleIndex : currentTextStyleIndex,
+                    fontSize: typeof slideData.fontSize === "number" ? slideData.fontSize : currentFontSize
+                });
+                slidesContainer.appendChild(slide);
+                slideCount++;
+            });
+            refreshTabs();
+            setActiveTab(0);
+            schedulePersist();
+        }
+
+        function withExportMode(action) {
+            return (async () => {
+                closeTextStyleMenu();
+                document.body.classList.add("exporting");
+                try {
+                    return await action();
+                } finally {
+                    document.body.classList.remove("exporting");
+                }
+            })();
+        }
+
+        exportBtn.addEventListener("click", async () => {
+            const slide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
+            if (!slide) return;
+            const oldText = exportBtn.textContent;
+            exportBtn.textContent = "⏳";
+            exportBtn.disabled = true;
+            try {
+                await withExportMode(async () => {
+                    const canvas = await html2canvas(slide, { scale: 2, backgroundColor: null, useCORS: true });
+                    const link = document.createElement("a");
+                    link.download = `go-roadmap-page-${activeIndex + 1}.png`;
+                    link.href = canvas.toDataURL("image/png");
+                    link.click();
+                });
+            } catch (err) {
+                alert("Export impossible. Tu peux utiliser l'impression PDF en secours.");
+                console.error(err);
+            } finally {
+                exportBtn.textContent = oldText;
+                exportBtn.disabled = false;
+            }
+        });
+
+        function buildTableDataForSlide(slideData) {
+            const columns = slideData.columns || [];
+            if (!columns.length) {
+                return [["", "Aucune colonne"]];
+            }
+
+            const formatSection = (section) =>
+                (section?.text || "")
+                    .split(/\n+/)
+                    .map(line => line.trim())
+                    .filter(Boolean)
+                    .map((line, idx) => `${idx + 1}. ${line}`)
+                    .join("\n");
+
+            const headerRow = [
+                { text: "", options: { bold: true } },
+                ...columns.map(column => ({
+                    text: column.stage || column.title || "Colonne",
+                    options: { bold: true }
+                }))
+            ];
+
+            const rows = [
+                {
+                    label: "Titre",
+                    cells: columns.map(column => column.title || "")
+                },
+                {
+                    label: "Objectifs",
+                    cells: columns.map(column => formatSection(column.sections.objective))
+                },
+                {
+                    label: "Moyens",
+                    cells: columns.map(column => formatSection(column.sections.means))
+                },
+                {
+                    label: "Indicateurs",
+                    cells: columns.map(column => formatSection(column.sections.indicators))
+                }
+            ];
+
+            return [
+                headerRow,
+                ...rows.map(row => [
+                    { text: row.label, options: { bold: true } },
+                    ...row.cells.map(text => ({ text: text || "", options: { fontSize: 10 } }))
+                ])
+            ];
+        }
+
+        async function exportPptxFromSlides() {
+            const ratio = ratioOptions[currentRatioIndex] || ratioOptions[0];
+            const data = collectSlideData();
+            if (!data.length) return;
+            const pptx = new PptxGenJS();
+            const layoutName = `CUSTOM_${ratio.name.replace(/[^a-zA-Z0-9]/g, "_")}`;
+            pptx.defineLayout({ name: layoutName, width: ratio.pptx.width, height: ratio.pptx.height });
+            pptx.layout = layoutName;
+            for (const slideData of data) {
+                const pptSlide = pptx.addSlide();
+                const table = buildTableDataForSlide(slideData);
+                pptSlide.addTable(table, {
+                    x: 0.4,
+                    y: 0.4,
+                    w: ratio.pptx.width - 0.8,
+                    border: { type: "none" },
+                    fontSize: 10,
+                    rowH: 0.4,
+                    valign: "top",
+                    color: "363636"
+                });
+                pptSlide.addText(`${slideData.title} — ${slideData.subtitle}`, {
+                    x: 0.4,
+                    y: 0.1,
+                    w: ratio.pptx.width - 0.8,
+                    fontSize: 12,
+                    bold: true
+                });
+            }
+            await pptx.writeFile({ fileName: "go-roadmap.pptx" });
+        }
+
+        exportPptxBtn.addEventListener("click", async () => {
+            exportPptxBtn.disabled = true;
+            try {
+                await withExportMode(async () => {
+                    await exportPptxFromSlides();
+                });
+            } catch (err) {
+                alert("Export PPTX impossible. Tu peux réessayer.");
+                console.error(err);
+            } finally {
+                exportPptxBtn.disabled = false;
+            }
+        });
+
+        function fillTemplate(template, data) {
+            return template.replace(/\{\{(\w+)\}\}/g, (_, key) => data[key] ?? "");
+        }
+
+        const fieldPromptMap = {
+            objective: () => objectivePromptInput.value.trim() || defaultObjectivePrompt,
+            means: () => meansPromptInput.value.trim() || defaultMeansPrompt,
+            indicators: () => indicatorsPromptInput.value.trim() || defaultIndicatorsPrompt
+        };
+
+        async function callOpenAI(messages) {
+            const apiKey = apiKeyInput.value.trim();
+            try {
+                const useProxy = !apiKey;
+                if (useProxy) {
+                    console.warn("Appel OpenAI via le proxy tranxq.workers.dev");
+                } else {
+                    console.warn("Appel OpenAI officiel");
+                }
+                const endpoint = apiKey
+                    ? "https://api.openai.com/v1/chat/completions"
+                    : "https://openai.tranxq.workers.dev/v1/chat/completions";
+                console.log(
+                    "send request",
+                    messages.map(message => ({
+                        role: message.role,
+                        content: message.content
+                    }))
+                );
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {})
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-5-nano",
+                        messages,
+                        temperature: 1,
+                        max_tokens: 800
+                    })
+                });
+                if (!response.ok) {
+                    const body = await response.text();
+                    throw new Error(body);
+                }
+                const payload = await response.json();
+                console.debug("OpenAI response payload", payload);
+                return payload.choices?.[0]?.message?.content || "";
+            } catch (err) {
+                console.error("Erreur OpenAI", err);
+                alert("Impossible de contacter OpenAI. Vérifie ta clé et ta connexion.");
+                return null;
+            }
+        }
+
+        function parseStructuredResponse(text) {
+            let jsonCandidate;
+            try {
+                jsonCandidate = JSON.parse(text);
+                return jsonCandidate;
+            } catch (err) {
+                const lines = text.split(/\\r?\\n/);
+                const result = {};
+                let currentKey = null;
+                lines.forEach(line => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return;
+                    const idx = trimmed.indexOf(":");
+                    if (idx >= 0) {
+                        currentKey = trimmed.slice(0, idx).trim().toLowerCase();
+                        result[currentKey] = trimmed.slice(idx + 1).trim();
+                    } else if (currentKey) {
+                        result[currentKey] = (result[currentKey] || "") + "\\n" + trimmed;
+                    }
+                });
+                return Object.keys(result).length ? result : null;
+            }
+        }
+
+        const responseSectionKeys = {
+            objective: "goals",
+            means: "ask",
+            indicators: "indicators"
+        };
+
+        function applyResponseToSlide(slide, data) {
+            if (!data) return;
+            const titleInput = slide.querySelector(".slide-title-input");
+            const subtitleInput = slide.querySelector(".slide-subtitle-input");
+            if (titleInput && data.title) titleInput.value = data.title;
+            if (subtitleInput && data.subtitle) subtitleInput.value = data.subtitle;
+            const columns = slide.querySelectorAll(".column");
+            const stageKeys = ["now", "next", "later"];
+            stageKeys.forEach((stageKey, idx) => {
+                const column = columns[idx];
+                if (!column) return;
+                const titleField = column.querySelector(".column-title");
+                const stagePill = column.querySelector(".stage-pill");
+                const titleValue = data[`${stageKey}_title`];
+                if (titleField && titleValue) titleField.value = titleValue;
+                if (stagePill) stagePill.textContent = stageKey.toUpperCase();
+                sectionDefinitions.forEach(section => {
+                    const textarea = column.querySelector(`textarea[data-section="${section.key}"]`);
+                    const sectionSuffix = responseSectionKeys[section.key];
+                    const sectionKey = `${stageKey}_${sectionSuffix}`;
+                    const sectionContent = data[sectionKey];
+                    if (textarea && typeof sectionContent === "string") {
+                        textarea.value = sectionContent;
+                    }
+                });
+            });
+            schedulePersist();
+        }
+
+        async function handleContextSubmit() {
+            const contextText = contextField.value.trim();
+            if (!contextText) {
+                alert("Décris d'abord ton contexte.");
+                return;
+            }
+            closeModal(contextModal);
+            setContextButtonBusy(true);
+            const structureInstruction = `
+Tu dois répondre au format JSON avec les clés suivantes :
+{
+  "now_goals": "...",
+  "now_ask": "...",
+  "now_indicators": "...",
+  "next_goals": "...",
+  "next_ask": "...",
+  "next_indicators": "...",
+  "later_goals": "...",
+  "later_ask": "...",
+  "later_indicators": "..."
+}`;
+            const messages = [
+                { role: "system", content: "Tu es un expert produit." },
+                {
+                    role: "user",
+                    content: `${fillTemplate(settingsPromptInput.value, { contextField: contextText })}\n\n${structureInstruction}`
+                }
+            ];
+            try {
+                const aiText = await callOpenAI(messages);
+                if (!aiText) return;
+                const parsed = parseStructuredResponse(aiText);
+                if (!parsed) {
+                    alert("OpenAI n'a pas retourné de réponse exploitable.");
+                    return;
+                }
+                const currentSlide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
+                if (currentSlide) {
+                    applyResponseToSlide(currentSlide, parsed);
+                }
+                schedulePersist();
+            } finally {
+                setContextButtonBusy(false);
+            }
+        }
+
+        let activeModalTab = "context";
+
+        function switchModalTab(tabName) {
+            activeModalTab = tabName;
+            modalTabs.forEach(tab => {
+                tab.classList.toggle("active", tab.dataset.tab === tabName);
+            });
+            modalPanels.forEach(panel => {
+                panel.classList.toggle("hide", panel.dataset.panel !== tabName);
+            });
+            modalPrimary.textContent = tabName === "context" ? "Envoyer" : "Enregistrer";
+        }
+
+        modalTabs.forEach(tab => {
+            tab.addEventListener("click", () => {
+                switchModalTab(tab.dataset.tab);
+            });
+        });
+
+        function handleSettingsSave() {
+            schedulePersist();
+            closeModal(contextModal);
+        }
+
+        modalPrimary.addEventListener("click", () => {
+            if (activeModalTab === "context") {
+                handleContextSubmit();
+            } else {
+                handleSettingsSave();
+            }
+        });
+
+        modalCloseBtn.addEventListener("click", () => closeModal(contextModal));
+
+        async function handleFieldAi(button) {
+            const section = button.dataset.section;
+            const textarea = button.closest(".section-text-row")?.querySelector("textarea");
+            if (!textarea) return;
+            const column = button.closest(".column");
+            const slide = button.closest(".slide");
+            const slideIndex = parseInt(slide?.dataset.index ?? activeIndex, 10);
+            const slideData = collectSlideData()[slideIndex];
+            const promptTemplate = fieldPromptMap[section]();
+            const baseMessage = fillTemplate(promptTemplate, {
+                contextField: contextField.value.trim(),
+                fieldValue: textarea.value.trim()
+            });
+            const messages = [
+                { role: "system", content: "Tu es un assistant produit." },
+                {
+                    role: "user",
+                    content: `${baseMessage}\nSlide: ${slideData.title} - ${slideData.subtitle}\nColonne: ${column?.dataset.stage}\nContenu actuel: ${textarea.value}`
+                }
+            ];
+            const aiText = await callOpenAI(messages);
+            if (!aiText) return;
+            textarea.value = aiText.trim();
+            schedulePersist();
+        }
+
+        document.addEventListener("click", event => {
+            const btn = event.target.closest(".field-ai-btn");
+            if (btn) {
+                event.stopPropagation();
+                handleFieldAi(btn);
+                return;
+            }
+            if (!event.target.closest("#textStyleBtn") && !textStyleMenu.contains(event.target)) {
+                closeTextStyleMenu();
+            }
+        });
+
+        window.addEventListener("beforeunload", persistState);
+
+        function openModal(modal) {
+            modal?.classList.add("open");
+        }
+
+        function closeModal(modal) {
+            modal?.classList.remove("open");
+        }
+
+        document.querySelectorAll(".modal-close").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const targetId = btn.dataset.close;
+                if (targetId) {
+                    closeModal(document.getElementById(targetId));
+                }
+            });
+        });
+
+        contextBtn.addEventListener("click", () => {
+            switchModalTab("context");
+            openModal(contextModal);
+        });
+        contextModal.addEventListener("click", event => {
+            if (event.target === contextModal) {
+                closeModal(contextModal);
+            }
+        });
+
+        switchModalTab("context");
+        const hadSavedSlides = loadSavedState();
+        if (!hadSavedSlides) {
+            addTab();
+        }
+        applyRatio(currentRatioIndex);
+    </script>
+
 </body>
 
 </html>
