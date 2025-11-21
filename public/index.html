@@ -28,12 +28,70 @@
             background: #fff;
             border-radius: 14px;
             padding: 18px;
-            max-width: 480px;
+            max-width: 940px;
             width: 100%;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             display: flex;
             flex-direction: column;
             gap: 12px;
+        }
+
+        .menu-trigger {
+            position: relative;
+            display: inline-flex;
+            align-items: stretch;
+        }
+
+        .context-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            min-width: 260px;
+            max-width: 320px;
+            display: none;
+            z-index: 40;
+        }
+
+        .context-menu.open {
+            display: block;
+        }
+
+        .menu-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .menu-header {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .context-menu label {
+            margin: 0;
+            font-size: 13px;
+        }
+
+        .context-menu select {
+            width: 100%;
+        }
+
+        .menu-item {
+            border-radius: 8px;
+            border: 1px solid #e0d7c8;
+            background: #fff;
+            padding: 8px 10px;
+            font-size: 14px;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .menu-item:hover {
+            border-color: #2a7a57;
         }
 
         .modal-header {
@@ -139,6 +197,21 @@
             gap: 4px;
             min-height: calc(100vh - 24px);
             width: 100%;
+            position: relative;
+            background: transparent;
+        }
+
+        .app::after {
+            content: "";
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            width: 120px;
+            height: 120px;
+            background: url("logo.gif") no-repeat center/contain;
+            opacity: 0.25;
+            pointer-events: none;
+            z-index: -1;
         }
 
         .app-header {
@@ -348,7 +421,7 @@
         }
 
         :root {
-            --global-background: #ffffff;
+            --global-background: transparent;
         }
 
         .column-header {
@@ -369,7 +442,7 @@
             width: 100%;
         }
 
-        .stage-pill {
+        .column-title {
             font-size: calc(var(--slide-font-size, 16px) + 3px);
             font-weight: 700;
             font-family: var(--slide-font-family, "Segoe UI", sans-serif);
@@ -383,7 +456,7 @@
             text-align: left;
         }
 
-        .stage-pill:focus-visible {
+        .column-title:focus-visible {
             outline: none;
             box-shadow: 0 0 0 2px rgba(42, 122, 87, 0.5);
         }
@@ -731,12 +804,55 @@
                 <button class="tab-btn-delete" id="deleteTabBtn" type="button">🗑️</button>
             </div>
             <div class="global-actions">
-                <button id="textStyleBtn" type="button" aria-label="Options d'affichage">🖌️</button>
+                <div class="menu-trigger" id="settingsMenuTrigger">
+                    <button id="textStyleBtn" type="button" aria-label="Options d'affichage">🖌️</button>
+                    <div class="context-menu" id="settingsMenu">
+                        <div class="menu-panel">
+                            <div class="menu-header">Réglages</div>
+                            <label>
+                                Police
+                                <select id="fontSelect"></select>
+                            </label>
+                            <label>
+                                Taille (px)
+                                <select id="fontSizeInput">
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="13">13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                </select>
+                            </label>
+                            <label>
+                                Fond global
+                                <select id="backgroundSelector">
+                                    <option value="transparent">Transparent</option>
+                                    <option value="#ffffff">Blanc</option>
+                                </select>
+                            </label>
+                            <div class="ratio-wrapper">
+                                <div class="ratio-label">Aspect ratio</div>
+                                <div class="ratio-grid" id="ratioGrid"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <button id="contextBtn" type="button" aria-label="AI Assistant">✨</button>
-                <button id="importJsonBtn" type="button">⬆️</button>
-                <button id="exportJsonBtn" type="button">⬇️</button>
-                <button id="exportPptxBtn" type="button">📊 PPTX</button>
-                <button id="exportPngBtn" type="button" aria-label="Exporter la page">🖼️</button>
+                <div class="menu-trigger" id="fileMenuTrigger">
+                    <button id="fileMenuBtn" type="button" aria-label="Fichier">📄 Fichier</button>
+                    <div class="context-menu" id="fileMenu">
+                        <div class="menu-panel">
+                            <div class="menu-header">📄 Fichier</div>
+                            <button id="importJsonBtn" type="button" class="menu-item">⬆️ Import JSON</button>
+                            <button id="exportJsonBtn" type="button" class="menu-item">⬇️ Export JSON</button>
+                            <button id="exportPptxBtn" type="button" class="menu-item">📊 PPTX</button>
+                            <button id="exportPngBtn" type="button" class="menu-item">🖼️ PNG</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -779,45 +895,6 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="settingsModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>Réglages</h3>
-                <button class="modal-close" data-close="settingsModal">×</button>
-            </div>
-            <div class="modal-panel" data-panel="settings">
-                <label>
-                    Police
-                    <select id="fontSelect"></select>
-                </label>
-                <label>
-                    Taille (px)
-                    <select id="fontSizeInput">
-                        <option value="9">9</option>
-                        <option value="10">10</option>
-                        <option value="11">11</option>
-                        <option value="12">12</option>
-                        <option value="13">13</option>
-                        <option value="14">14</option>
-                        <option value="15">15</option>
-                        <option value="16">16</option>
-                    </select>
-                </label>
-                <label>
-                    Fond global
-                    <select id="backgroundSelector">
-                        <option value="#ffffff">Blanc</option>
-                        <option value="transparent">Transparent</option>
-                    </select>
-                </label>
-                <div class="ratio-wrapper">
-                    <div class="ratio-label">Aspect ratio</div>
-                    <div class="ratio-grid" id="ratioGrid"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
     <script>
@@ -826,15 +903,16 @@
             NEXT: getComputedStyle(document.documentElement).getPropertyValue("--next-color").trim(),
             LATER: getComputedStyle(document.documentElement).getPropertyValue("--later-color").trim()
         };
-        document.documentElement.style.setProperty("--global-background", "#ffffff");
+        document.documentElement.style.setProperty("--global-background", "transparent");
 
         const textStyles = [
             { name: "Inter", font: "Inter, system-ui, sans-serif", size: 14 },
-            { name: "Space Grotesk", font: "'Space Grotesk', 'Inter', sans-serif", size: 14 },
-            { name: "Sora", font: "'Sora', 'Segoe UI', sans-serif", size: 15 },
-            { name: "Poppins", font: "'Poppins', 'Segoe UI', sans-serif", size: 14 },
-            { name: "Manrope", font: "'Manrope', 'Segoe UI', sans-serif", size: 14 },
-            { name: "IBM Plex Sans", font: "'IBM Plex Sans', 'Segoe UI', sans-serif", size: 14 },
+            { name: "Arial", font: "Arial, Helvetica, sans-serif", size: 14 },
+            { name: "Tahoma", font: "Tahoma, Geneva, sans-serif", size: 14 },
+            { name: "Trebuchet MS", font: "'Trebuchet MS', Helvetica, sans-serif", size: 14 },
+            { name: "Georgia", font: "Georgia, 'Times New Roman', serif", size: 16 },
+            { name: "Times New Roman", font: "'Times New Roman', Times, serif", size: 16 },
+            { name: "Lucida Console", font: "'Lucida Console', Monaco, monospace", size: 13 },
             { name: "Rounded", font: "'Segoe UI', 'Fredoka One', sans-serif", size: 14 },
             { name: "Serif", font: "Georgia, 'Times New Roman', serif", size: 16 },
             { name: "Mono", font: "'JetBrains Mono', 'Menlo', monospace", size: 13 }
@@ -850,7 +928,7 @@
             {
                 key: "objective",
                 icon: "🎯",
-                label: "Objectif / Impacts business",
+                label: "Objectif",
                 examples:
                     "Décrire ce que l’utilisateur ou l’entreprise gagne quand l’objectif est atteint. Formule courte + bénéfice métier. Exemples : \n• Améliorer la fiabilité des données pour réduire les erreurs de saisie de 20% \n• Accélérer l’accès aux indicateurs pour faciliter la décision \n• Simplifier le parcours utilisateur pour diminuer le temps d’action de 30%"
             },
@@ -888,30 +966,30 @@
         const exportBtn = document.getElementById("exportPngBtn");
         const exportPptxBtn = document.getElementById("exportPptxBtn");
         const textStyleBtn = document.getElementById("textStyleBtn");
+        const fileMenuBtn = document.getElementById("fileMenuBtn");
         const importJsonBtn = document.getElementById("importJsonBtn");
         const exportJsonBtn = document.getElementById("exportJsonBtn");
         const contextBtn = document.getElementById("contextBtn");
-
-        const apiKeyInput = document.getElementById("apiKeyInput");
-        const objectivePromptInput = document.getElementById("objectivePrompt");
-        const meansPromptInput = document.getElementById("meansPrompt");
-        const indicatorsPromptInput = document.getElementById("indicatorsPrompt");
         const contextModal = document.getElementById("contextModal");
         const contextField = document.getElementById("contextField");
         const contextModalTabs = contextModal.querySelectorAll(".modal-tab");
         const contextModalPanels = contextModal.querySelectorAll(".modal-panel");
-        const settingsModal = document.getElementById("settingsModal");
+        const settingsMenu = document.getElementById("settingsMenu");
+        const fileMenu = document.getElementById("fileMenu");
+        const apiKeyInput = document.getElementById("apiKeyInput");
+        const objectivePromptInput = document.getElementById("objectivePrompt");
+        const meansPromptInput = document.getElementById("meansPrompt");
+        const indicatorsPromptInput = document.getElementById("indicatorsPrompt");
         const fontSelect = document.getElementById("fontSelect");
         const fontSizeInput = document.getElementById("fontSizeInput");
         const ratioGrid = document.getElementById("ratioGrid");
         const backgroundSelector = document.getElementById("backgroundSelector");
-        const modalPrimary = document.getElementById("modalPrimary");
         const resetPromptsBtn = document.getElementById("resetPromptsBtn");
 
         const STORAGE_KEY = "go-roadmap-state";
-        const defaultObjectivePrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}} et du contenu {{fieldValue}}, reformule sur forme d'une liste de 2 à 3 objectifs clairs et impactants (un • de < 20 mots pour chaque) sans introduction préalable`;
-        const defaultMeansPrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}} et du contenu {{fieldValue}}, reformule sous forme d'une liste de 3 à 5 solutions / livrables / moyens concrets et actionnables (un • de < 20 mots pour chaque) sans introduction préalable`;
-        const defaultIndicatorsPrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}} et du contenu {{fieldValue}}, reformule sous forme d'une liste de 3 à 5 indicateurs clés (KPI/OKR) concrets et mesurables (un • de < 20 mots pour chaque) sans introduction préalable`;
+        const defaultObjectivePrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}}, de la colonne {{columnTitle}} et du contenu {{fieldValue}}, reformule sur forme d'une liste de 2 à 3 objectifs clairs et impactants d'un point de vue utilisateur (un • de < 20 mots pour chaque) sans introduction préalable`;
+        const defaultMeansPrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}}, de la colonne {{columnTitle}} et du contenu {{fieldValue}}, reformule sous forme d'une liste de 3 à 5 solutions / livrables / moyens concrets et actionnables (un • de < 20 mots pour chaque) sans introduction préalable`;
+        const defaultIndicatorsPrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}}, de la colonne {{columnTitle}} et du contenu {{fieldValue}}, reformule sous forme d'une liste de 3 à 5 indicateurs clés (KPI/OKR) concrets et mesurables (un • de < 20 mots pour chaque) sans introduction préalable`;
 
         let persistTimer = null;
 
@@ -1110,7 +1188,7 @@
             if (!backgroundSelector) return;
             const slide = getActiveSlideElement();
             if (!slide) return;
-            const value = slide.dataset.bgColor || "#ffffff";
+            const value = slide.dataset.bgColor ?? "transparent";
             backgroundSelector.value = value === "transparent" ? "transparent" : "#ffffff";
         }
 
@@ -1146,7 +1224,7 @@
             }
         }
 
-        function initSettingsModal() {
+        function initSettingsMenu() {
             fontSelect.innerHTML = "";
             textStyles.forEach((style, index) => {
                 const option = document.createElement("option");
@@ -1192,17 +1270,13 @@
             updateRatioButtons();
         }
 
-        function openSettingsModal() {
+        function toggleSettingsMenu() {
             syncFontControls();
             syncBackgroundSelector();
-            openModal(settingsModal);
+            toggleMenu(settingsMenu);
         }
 
-        function closeSettingsModal() {
-            closeModal(settingsModal);
-        }
-
-        initSettingsModal();
+        initSettingsMenu();
 
         function updateRatioButtons() {
             ratioButtons.forEach((button, index) => {
@@ -1277,9 +1351,9 @@
             const slides = Array.from(slidesContainer.querySelectorAll(".slide"));
             return slides.map(slide => {
                 const columns = Array.from(slide.querySelectorAll(".column")).map(column => {
-                    const columnTitle = column.querySelector(".stage-pill")?.textContent.trim() || "";
-                    const stagePill = column.querySelector(".stage-pill");
-                    const stageLabel = stagePill ? stagePill.textContent.trim() : "";
+                    const columnTitleEl = column.querySelector(".column-title");
+                    const columnTitle = columnTitleEl ? columnTitleEl.textContent.trim() : "";
+                    const stageLabel = columnTitleEl ? columnTitleEl.textContent.trim() : column.dataset.stage || "";
                     const stageColor = column.style.getPropertyValue("--stage-color").trim();
                     const columnData = {
                         stage: column.dataset.stage,
@@ -1341,7 +1415,7 @@
             column.innerHTML = `
       <div class="column-header">
         <div class="column-header-main">
-          <span class="stage-pill" contenteditable="true">${fallbackStage}</span>
+          <span class="column-title" contenteditable="true">${fallbackStage}</span>
         </div>
       </div>
       <div class="column-body">
@@ -1349,26 +1423,26 @@
       </div>
     `;
 
-            const pill = column.querySelector(".stage-pill");
-            pill.addEventListener("focus", () => {
+            const columnTitleEl = column.querySelector(".column-title");
+            columnTitleEl.addEventListener("focus", () => {
                 selectColumnForPalette(column);
                 const selection = window.getSelection();
                 if (selection) {
                     const range = document.createRange();
-                    range.selectNodeContents(pill);
+                    range.selectNodeContents(columnTitleEl);
                     selection.removeAllRanges();
                     selection.addRange(range);
                 }
             });
-            pill.addEventListener("keydown", event => {
+            columnTitleEl.addEventListener("keydown", event => {
                 if (event.key === "Enter") {
                     event.preventDefault();
-                    pill.blur();
+                    columnTitleEl.blur();
                 }
             });
-            pill.addEventListener("blur", () => {
-                if (!pill.textContent.trim()) {
-                    pill.textContent = fallbackStage;
+            columnTitleEl.addEventListener("blur", () => {
+                if (!columnTitleEl.textContent.trim()) {
+                    columnTitleEl.textContent = fallbackStage;
                 }
             });
 
@@ -1435,7 +1509,7 @@
                     selectColumnForPalette(targetColumn);
                 }
             });
-            const bgColor = seed.bgColor || "#ffffff";
+            const bgColor = seed.bgColor ?? "transparent";
             applyBackgroundToSlide(slide, bgColor);
             const styleIndex = typeof seed.textStyleIndex === "number" ? seed.textStyleIndex : currentTextStyleIndex;
             const fontSize = typeof seed.fontSize === "number" ? seed.fontSize : currentFontSize;
@@ -1474,7 +1548,7 @@
         }
 
         function setActiveTab(index) {
-            closeSettingsModal();
+            closeContextMenus();
             activeIndex = index;
             const slides = slidesContainer.querySelectorAll(".slide");
             const tabBtns = tabsContainer.querySelectorAll(".tab-btn");
@@ -1502,8 +1576,8 @@
                 return [];
             }
             return Array.from(slide.querySelectorAll(".column")).map(column => {
-                const stagePill = column.querySelector(".stage-pill");
-                const stageLabel = stagePill ? stagePill.textContent.trim() : column.dataset.stage || "";
+                const columnTitleEl = column.querySelector(".column-title");
+                const stageLabel = columnTitleEl ? columnTitleEl.textContent.trim() : column.dataset.stage || "";
                 const stageColor = column.style.getPropertyValue("--stage-color").trim() || "#ffffff";
                 const sections = {};
                 sectionDefinitions.forEach(section => {
@@ -1607,7 +1681,11 @@
 
         textStyleBtn.addEventListener("click", event => {
             event.stopPropagation();
-            openSettingsModal();
+            toggleSettingsMenu();
+        });
+        fileMenuBtn?.addEventListener("click", event => {
+            event.stopPropagation();
+            toggleMenu(fileMenu);
         });
 
         if (resetPromptsBtn) {
@@ -1622,6 +1700,7 @@
         importJsonBtn.addEventListener("click", () => {
             importInput.value = "";
             importInput.click();
+            closeContextMenus();
         });
 
         importInput.addEventListener("change", event => {
@@ -1658,6 +1737,7 @@
             link.download = "go-roadmap.json";
             link.click();
             URL.revokeObjectURL(link.href);
+            closeContextMenus();
         });
 
         function importSlidesFromData(slidesData, settings) {
@@ -1688,9 +1768,26 @@
             schedulePersist();
         }
 
+        function closeMenu(menu) {
+            menu?.classList.remove("open");
+        }
+
+        function toggleMenu(menu) {
+            if (!menu) return;
+            const isOpen = menu.classList.contains("open");
+            closeContextMenus();
+            if (!isOpen) {
+                menu.classList.add("open");
+            }
+        }
+
+        function closeContextMenus() {
+            [settingsMenu, fileMenu].forEach(menu => menu?.classList.remove("open"));
+        }
+
         function withExportMode(action) {
             return (async () => {
-                closeSettingsModal();
+                closeContextMenus();
                 document.body.classList.add("exporting");
                 try {
                     return await action();
@@ -1743,6 +1840,7 @@
         }
 
         exportBtn.addEventListener("click", async () => {
+            closeContextMenus();
             const slide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
             if (!slide) return;
             const oldText = exportBtn.textContent;
@@ -1800,7 +1898,7 @@
                 return parts.length ? parts : { text: "", options: { fontSize: 10 } };
             };
             const headerRow = columns.map(column => ({
-                text: `${column.stageLabel || column.stage || ""} — ${column.title || ""}`.trim(),
+                text: `${column.stageLabel || column.stage || ""}`.trim(),
                 options: { bold: true, fontSize: 10 }
             }));
             const sectionKeys = ["objective", "means", "indicators"];
@@ -1834,7 +1932,7 @@
                     valign: "top",
                     color: "363636"
                 });
-                pptSlide.addText(`${slideData.title} — ${slideData.subtitle}`, {
+                pptSlide.addText(`${slideData.title}`, {
                     x: 0.4,
                     y: 0.1,
                     w: ratio.pptx.width - 0.8,
@@ -1857,6 +1955,7 @@
             } finally {
                 exportPptxBtn.disabled = false;
             }
+            closeContextMenus();
         });
 
         function fillTemplate(template, data) {
@@ -1949,11 +2048,13 @@
             const textarea = button.closest(".section-text-row")?.querySelector("textarea");
             if (!textarea) return;
             const column = button.closest(".column");
-            const objectivesValue = column.querySelector("textarea[data-section=\"objective\"]")?.value.trim() || "";
-            const meansValue = column.querySelector("textarea[data-section=\"means\"]")?.value.trim() || "";
-            const indicatorsValue = column.querySelector("textarea[data-section=\"indicators\"]")?.value.trim() || "";
+            const columnTitle = column?.querySelector(".column-title")?.textContent.trim() || "";
+            const objectivesValue = column?.querySelector("textarea[data-section=\"objective\"]")?.value.trim() || "";
+            const meansValue = column?.querySelector("textarea[data-section=\"means\"]")?.value.trim() || "";
+            const indicatorsValue = column?.querySelector("textarea[data-section=\"indicators\"]")?.value.trim() || "";
             const promptContext = {
                 contextField: contextField.value.trim(),
+                columnTitle,
                 fieldValue: textarea.value.trim(),
                 objectifs: objectivesValue,
                 moyens: meansValue,
@@ -1985,8 +2086,8 @@
                 handleFieldAi(btn);
                 return;
             }
-            if (!event.target.closest("#textStyleBtn") && !settingsModal.contains(event.target)) {
-                closeSettingsModal();
+            if (!event.target.closest(".menu-trigger")) {
+                closeContextMenus();
             }
         });
 
@@ -2018,12 +2119,6 @@
                 closeModal(contextModal);
             }
         });
-        settingsModal.addEventListener("click", event => {
-            if (event.target === settingsModal) {
-                closeSettingsModal();
-            }
-        });
-
         switchModalTab("context");
         const hadSavedSlides = loadSavedState();
         if (!hadSavedSlides) {
