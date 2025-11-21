@@ -587,6 +587,13 @@
             gap: 6px;
         }
 
+        .ratio-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+
         .ratio-option {
             flex: 1;
             border-radius: 8px;
@@ -696,40 +703,6 @@
 
         body.exporting .section textarea {
             border: none;
-        }
-
-        .ratio-wrapper {
-            margin-top: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .ratio-grid {
-            display: flex;
-            gap: 6px;
-        }
-
-        .ratio-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--muted);
-        }
-
-        .ratio-option {
-            flex: 1;
-            border-radius: 8px;
-            border: 1px solid #e0d7c8;
-            background: #fff;
-            padding: 8px;
-            font-size: 12px;
-            cursor: pointer;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-        }
-
-        .ratio-option.active {
-            border-color: #2a7a57;
         }
 
         @media print {
@@ -936,9 +909,9 @@
         const resetPromptsBtn = document.getElementById("resetPromptsBtn");
 
         const STORAGE_KEY = "go-roadmap-state";
-        const defaultObjectivePrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}} et du contenu {{fieldValue}}, reformule sur forme d'une liste de 2 à 3 objectifs clairs et impactants (2 lignes max pour chaque) sans introduction préalable`;
-        const defaultMeansPrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}} et du contenu {{fieldValue}}, reformule sous forme d'une liste de 3 à 5 solutions / livrables / moyens concrets et actionnables (2 lignes max pour chaque) sans introduction préalable`;
-        const defaultIndicatorsPrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}} et du contenu {{fieldValue}}, reformule sous forme d'une liste de 3 à 5 indicateurs clés (KPI/OKR) concrets et mesurables (2 lignes max pour chaque) sans introduction préalable`;
+        const defaultObjectivePrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}} et du contenu {{fieldValue}}, reformule sur forme d'une liste de 2 à 3 objectifs clairs et impactants (un • de < 20 mots pour chaque) sans introduction préalable`;
+        const defaultMeansPrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}} et du contenu {{fieldValue}}, reformule sous forme d'une liste de 3 à 5 solutions / livrables / moyens concrets et actionnables (un • de < 20 mots pour chaque) sans introduction préalable`;
+        const defaultIndicatorsPrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}} et du contenu {{fieldValue}}, reformule sous forme d'une liste de 3 à 5 indicateurs clés (KPI/OKR) concrets et mesurables (un • de < 20 mots pour chaque) sans introduction préalable`;
 
         let persistTimer = null;
 
@@ -1802,13 +1775,30 @@
             if (!columns.length) {
                 return [];
             }
-            const formatSection = (section) =>
+            const formatSectionContent = (section) =>
                 (section?.text || "")
                     .split(/\n+/)
                     .map(line => line.trim())
                     .filter(Boolean)
-                    .map((line, idx) => `${idx + 1}. ${line}`)
                     .join("\n");
+            const formatSectionCell = (section) => {
+                const label = section?.label?.trim();
+                const content = formatSectionContent(section);
+                const parts = [];
+                if (label) {
+                    parts.push({
+                        text: label + (content ? "\n" : ""),
+                        options: { bold: true, fontSize: 10 }
+                    });
+                }
+                if (content) {
+                    parts.push({
+                        text: content,
+                        options: { fontSize: 10 }
+                    });
+                }
+                return parts.length ? parts : { text: "", options: { fontSize: 10 } };
+            };
             const headerRow = columns.map(column => ({
                 text: `${column.stageLabel || column.stage || ""} — ${column.title || ""}`.trim(),
                 options: { bold: true, fontSize: 10 }
@@ -1816,7 +1806,7 @@
             const sectionKeys = ["objective", "means", "indicators"];
             const rows = sectionKeys.map(key =>
                 columns.map(column => ({
-                    text: formatSection(column.sections[key]),
+                    text: formatSectionCell(column.sections[key]),
                     options: { fontSize: 10 }
                 }))
             );
