@@ -72,6 +72,11 @@
             font-family: inherit;
         }
 
+        .modal-panel textarea {
+            min-height: 90px;
+            height: 90px;
+        }
+
         .modal-footer {
             display: flex;
             justify-content: flex-end;
@@ -93,30 +98,6 @@
             color: #fff;
         }
 
-        .modal-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .modal-tab {
-            border-radius: 8px;
-            border: 1px solid #dcd0c1;
-            background: #fff;
-            padding: 6px 10px;
-            cursor: pointer;
-            font-size: 13px;
-        }
-
-        .modal-tab.active {
-            background: #2a7a57;
-            color: #fff;
-            border-color: #2a7a57;
-        }
-
-        .modal-panel.hide {
-            display: none;
-        }
 
         :root {
             --bg: #f5f2eb;
@@ -366,8 +347,12 @@
             border-color: #ebe0d1;
         }
 
+        :root {
+            --global-background: #ffffff;
+        }
+
         .column-header {
-            background: var(--stage-color);
+            background: var(--slide-bg, transparent);
             border-bottom: 1px solid rgba(0, 0, 0, 0.02);
             border-radius: 4px 4px 0 0;
             padding: 4px 4px 4px;
@@ -381,22 +366,21 @@
 
         .column-header-main {
             display: flex;
-            align-items: flex-start;
-            gap: 8px;
+            width: 100%;
         }
 
         .stage-pill {
             font-size: calc(var(--slide-font-size, 16px) + 3px);
             font-weight: 700;
             font-family: var(--slide-font-family, "Segoe UI", sans-serif);
-            text-transform: uppercase;
             letter-spacing: 0.08em;
-            padding: 2px 10px;
-            border-radius: 999px;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            background: rgba(255, 255, 255, 0.4);
+            padding: 8px 10px;
+            border-radius: 0px;
+            border: 0;
+            background: var(--slide-bg, transparent);
             cursor: text;
-            min-width: 20px;
+            width: 100%;
+            text-align: left;
         }
 
         .stage-pill:focus-visible {
@@ -404,28 +388,6 @@
             box-shadow: 0 0 0 2px rgba(42, 122, 87, 0.5);
         }
 
-        .column-title {
-            border: none;
-            background: transparent;
-            color: var(--slide-text-color, #2b2621);
-            flex: 1;
-            font-family: var(--slide-font-family, "Segoe UI", sans-serif);
-            font-size: calc(var(--slide-font-size, 16px) + 3px);
-            font-weight: 700;
-            padding: 2px 0;
-            margin: 0;
-            line-height: 1.25;
-            margin-top: 0px;
-        }
-
-        .column-title::placeholder {
-            color: #5d5650;
-        }
-
-        .column-title:focus-visible {
-            outline: none;
-            border-bottom: 1px solid rgba(93, 86, 80, 0.6);
-        }
 
 
         .column-body {
@@ -533,6 +495,10 @@
             -ms-overflow-style: none;
         }
 
+        .column-focused textarea {
+            border: 1px solid #cfcfcf;
+        }
+
         .section textarea::-webkit-scrollbar {
             width: 0;
             height: 0;
@@ -542,6 +508,11 @@
             outline: 1px solid rgba(42, 122, 87, 0.8);
             box-shadow: none;
             scrollbar-width: thin;
+        }
+
+        .section textarea.textarea-overflow {
+            border: 2px solid #f7c63a;
+            box-shadow: 0 0 0 1px rgba(247, 198, 58, 0.35);
         }
 
         .section textarea:focus-visible::-webkit-scrollbar {
@@ -603,26 +574,6 @@
             font-size: 12px;
             font-weight: 600;
             color: var(--text-main);
-        }
-
-        .palette-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .palette-row .column-color-grid,
-        .palette-row .slide-bg-grid {
-            flex: 1;
-        }
-
-        .custom-color-input {
-            border: none;
-            width: 34px;
-            height: 34px;
-            padding: 0;
-            background: none;
-            cursor: pointer;
         }
 
         .ratio-wrapper {
@@ -804,15 +755,15 @@
             <div class="tabs-actions">
                 <div id="tabs"></div>
                 <button class="tab-btn-add" id="addTabBtn" type="button">+ page</button>
-                <button class="tab-btn-delete" id="deleteTabBtn" type="button">🗑 Supprimer</button>
+                <button class="tab-btn-delete" id="deleteTabBtn" type="button">🗑️</button>
             </div>
             <div class="global-actions">
-                <button id="textStyleBtn" type="button" aria-label="Options d'affichage">📐 Réglages</button>
-                <button id="contextBtn" type="button" aria-label="AI Assistant">✨ AI</button>
-                <button id="importJsonBtn" type="button">⬆️ Import</button>
-                <button id="exportJsonBtn" type="button">⬇️ Export</button>
+                <button id="textStyleBtn" type="button" aria-label="Options d'affichage">🖌️</button>
+                <button id="contextBtn" type="button" aria-label="AI Assistant">✨</button>
+                <button id="importJsonBtn" type="button">⬆️</button>
+                <button id="exportJsonBtn" type="button">⬇️</button>
                 <button id="exportPptxBtn" type="button">📊 PPTX</button>
-                <button id="exportPngBtn" type="button" aria-label="Exporter la page">🖼️ IMG</button>
+                <button id="exportPngBtn" type="button" aria-label="Exporter la page">🖼️</button>
             </div>
         </div>
 
@@ -827,13 +778,9 @@
                 <h3>IA & contexte</h3>
                 <button class="modal-close" data-close="contextModal">×</button>
             </div>
-            <div class="modal-tabs">
-                <button class="modal-tab active" data-tab="context">Contexte</button>
-                <button class="modal-tab" data-tab="settings">Paramètres IA</button>
-            </div>
             <div class="modal-panel" data-panel="context">
                 <label>
-                    Décris ton produit, ton contexte et ta vision
+                    Décris ton contexte et ta vision de produit
                     <textarea id="contextField" rows="4" placeholder="Contexte..."></textarea>
                 </label>
             </div>
@@ -841,10 +788,6 @@
                 <label>
                     OpenAI API key
                     <input type="password" id="apiKeyInput" autocomplete="off" placeholder="sk-...">
-                </label>
-                <label>
-                    Prompt de génération
-                    <textarea id="settingsPrompt" rows="4"></textarea>
                 </label>
                 <label>
                     Prompt objectif (3–5 expressions courtes)
@@ -858,10 +801,7 @@
                     Prompt indicateurs (3–5 expressions courtes)
                     <textarea id="indicatorsPrompt" rows="2"></textarea>
                 </label>
-            </div>
-            <div class="modal-footer">
-                <button type="button" id="modalClose">Fermer</button>
-                <button type="button" class="primary" id="modalPrimary">Envoyer</button>
+                <button id="resetPromptsBtn" type="button">Réinitialiser les prompts</button>
             </div>
         </div>
     </div>
@@ -872,65 +812,35 @@
                 <h3>Réglages</h3>
                 <button class="modal-close" data-close="settingsModal">×</button>
             </div>
-            <div class="modal-tabs">
-                <button class="modal-tab active" data-tab="colors">🎨 Colors</button>
-                <button class="modal-tab" data-tab="format">🔠 Format</button>
-            </div>
-            <div class="modal-panel" data-panel="colors">
-                <div class="settings-section">
-                    <div class="section-heading">Fond de la slide</div>
-                    <div class="palette-row">
-                        <div class="slide-bg-grid" data-target="background"></div>
-                        <input type="color" class="custom-color-input" data-target="background" aria-label="Couleur personnalisée">
-                    </div>
-                </div>
-                <div class="settings-section">
-                    <div class="section-heading">Couleurs des colonnes</div>
-                    <div class="column-palettes">
-                        <div class="palette-block" data-stage="NOW">
-                            <div class="palette-label">Maintenant</div>
-                            <div class="palette-row">
-                                <div class="column-color-grid" data-stage="NOW"></div>
-                                <input type="color" class="custom-color-input" data-stage="NOW" aria-label="Couleur personnalisée">
-                            </div>
-                        </div>
-                        <div class="palette-block" data-stage="NEXT">
-                            <div class="palette-label">Prochain</div>
-                            <div class="palette-row">
-                                <div class="column-color-grid" data-stage="NEXT"></div>
-                                <input type="color" class="custom-color-input" data-stage="NEXT" aria-label="Couleur personnalisée">
-                            </div>
-                        </div>
-                        <div class="palette-block" data-stage="LATER">
-                            <div class="palette-label">Plus tard</div>
-                            <div class="palette-row">
-                                <div class="column-color-grid" data-stage="LATER"></div>
-                                <input type="color" class="custom-color-input" data-stage="LATER" aria-label="Couleur personnalisée">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-panel hide" data-panel="format">
+            <div class="modal-panel" data-panel="settings">
                 <label>
                     Police
                     <select id="fontSelect"></select>
                 </label>
                 <label>
                     Taille (px)
-                    <div class="font-size-control">
-                        <button type="button" data-font-step="-1">−</button>
-                        <input id="fontSizeInput" type="number" min="8" max="72" step="1">
-                        <button type="button" data-font-step="1">+</button>
-                    </div>
+                    <select id="fontSizeInput">
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                        <option value="13">13</option>
+                        <option value="14">14</option>
+                        <option value="15">15</option>
+                        <option value="16">16</option>
+                    </select>
+                </label>
+                <label>
+                    Fond global
+                    <select id="backgroundSelector">
+                        <option value="#ffffff">Blanc</option>
+                        <option value="transparent">Transparent</option>
+                    </select>
                 </label>
                 <div class="ratio-wrapper">
                     <div class="ratio-label">Aspect ratio</div>
                     <div class="ratio-grid" id="ratioGrid"></div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" data-close="settingsModal">Fermer</button>
             </div>
         </div>
     </div>
@@ -943,20 +853,18 @@
             NEXT: getComputedStyle(document.documentElement).getPropertyValue("--next-color").trim(),
             LATER: getComputedStyle(document.documentElement).getPropertyValue("--later-color").trim()
         };
-
-        const columnStageNames = {
-            NOW: "Maintenant",
-            NEXT: "Prochain",
-            LATER: "Plus tard"
-        };
-
-        const paletteColorOptions = ["transparent", "#ffffff", "#d9dce1"];
+        document.documentElement.style.setProperty("--global-background", "#ffffff");
 
         const textStyles = [
-            { name: "Moderne", font: "Inter, system-ui, sans-serif", size: 11 },
-            { name: "Serif", font: "Georgia, 'Times New Roman', serif", size: 12 },
-            { name: "Rounded", font: "'Segoe UI', 'Fredoka One', sans-serif", size: 12 },
-            { name: "Mono", font: "'JetBrains Mono', 'Menlo', monospace", size: 11 },
+            { name: "Inter", font: "Inter, system-ui, sans-serif", size: 14 },
+            { name: "Space Grotesk", font: "'Space Grotesk', 'Inter', sans-serif", size: 14 },
+            { name: "Sora", font: "'Sora', 'Segoe UI', sans-serif", size: 15 },
+            { name: "Poppins", font: "'Poppins', 'Segoe UI', sans-serif", size: 14 },
+            { name: "Manrope", font: "'Manrope', 'Segoe UI', sans-serif", size: 14 },
+            { name: "IBM Plex Sans", font: "'IBM Plex Sans', 'Segoe UI', sans-serif", size: 14 },
+            { name: "Rounded", font: "'Segoe UI', 'Fredoka One', sans-serif", size: 14 },
+            { name: "Serif", font: "Georgia, 'Times New Roman', serif", size: 16 },
+            { name: "Mono", font: "'JetBrains Mono', 'Menlo', monospace", size: 13 }
         ];
 
         const ratioOptions = [
@@ -971,21 +879,21 @@
                 icon: "🎯",
                 label: "Objectif / Impacts business",
                 examples:
-                    "Réduire délais certification, Fiabiliser mouvements équipage, Optimiser séquences maintenance, Accélérer reconfiguration cabine, Renforcer gouvernance sécurité, Augmenter capacité digitale, Limiter charge carburant, Garantir suivi oscillation, Piloter transitions logicielles, Maximiser synthèse trajectoire, Valider conformité eurocontrol, Simplifier briefing équipage, Harmoniser reporting navigation, Étendre liaison ATC, Intégrer données météo, Digitaliser check-lists terrain, Améliorer score expérience, Réduire replanification vols, Optimiser approches radar, Fiabiliser chaîne supply"
+                    "Décrire ce que l’utilisateur ou l’entreprise gagne quand l’objectif est atteint. Formule courte + bénéfice métier. Exemples : \n• Améliorer la fiabilité des données pour réduire les erreurs de saisie de 20% \n• Accélérer l’accès aux indicateurs pour faciliter la décision \n• Simplifier le parcours utilisateur pour diminuer le temps d’action de 30%"
             },
             {
                 key: "means",
                 icon: "🚀",
                 label: "Moyens / Solutions / Livrables",
                 examples:
-                    "Cockpit numérique adaptatif, Suite simulation vol, Surveillance moteurs 24/7, Assistant briefing vocal, API data météo, Hub collaboration maintenance, Règles multi-facettes, Platforme intervention terrain, Capteurs vibration ailes, Notifications fatigue équipage"
+                    "Lister ce que l’équipe va produire pour atteindre l’objectif : actions, fonctionnalités, ateliers, prototypes. Exemples : \n• Développer un module de validation automatique \n• Produire un tableau de bord Power BI \n• Revoir l’UX (wireframes + tests utilisateurs) \n• Mettre en place une API d’import automatisé"
             },
             {
                 key: "indicators",
                 icon: "📈",
                 label: "Indicateurs business",
                 examples:
-                    "Ponctualité 99%, MTTR 3h, Temps préparation 30min, Coût op unitaire 4200€, Charge vol 82%, Taux conformité 99.3%, Réactivité ATC 8s, Taux PBN 92%, Vols IFR 4500, Consommation 2.3t, NPS 74, Temps sortie piste 12min, Délais sécurité 45s, Fiabilité avion 99.98%, Volume cargo 6T, Capacité pax 180, Indisponibilité technique 0.4%, Délai livraison pièces 18j, Taux réclamation 1.2%, Disponibilité ligne 97%"
+                    "Décrire comment mesurer la réussite : chiffres, qualité, délais, adoption. Exemples : \n• K1 : 95% de données complètes et conformes \n• K2 : Temps moyen d’usage < 40s \n• K3 : 70% d’utilisateurs actifs hebdo \n• K4 : -30% de tickets support"
             }
         ];
 
@@ -993,6 +901,12 @@
             acc[section.key] = `${section.icon} ${section.label}`;
             return acc;
         }, {});
+
+        const defaultStagePillLabels = {
+            NOW: "🟢 NOW - Chantier 1",
+            NEXT: "🟡 NEXT - Chantier 2",
+            LATER: "🔵 LATER - Chantier 3"
+        };
 
         const slidesContainer = document.getElementById("slides");
         const tabsContainer = document.getElementById("tabs");
@@ -1004,14 +918,8 @@
         const importJsonBtn = document.getElementById("importJsonBtn");
         const exportJsonBtn = document.getElementById("exportJsonBtn");
         const contextBtn = document.getElementById("contextBtn");
-        const contextBtnDefaultLabel = contextBtn.textContent;
-        function setContextButtonBusy(isBusy) {
-            contextBtn.textContent = isBusy ? "⏳" : contextBtnDefaultLabel;
-            contextBtn.disabled = isBusy;
-        }
 
         const apiKeyInput = document.getElementById("apiKeyInput");
-        const settingsPromptInput = document.getElementById("settingsPrompt");
         const objectivePromptInput = document.getElementById("objectivePrompt");
         const meansPromptInput = document.getElementById("meansPrompt");
         const indicatorsPromptInput = document.getElementById("indicatorsPrompt");
@@ -1020,26 +928,17 @@
         const contextModalTabs = contextModal.querySelectorAll(".modal-tab");
         const contextModalPanels = contextModal.querySelectorAll(".modal-panel");
         const settingsModal = document.getElementById("settingsModal");
-        const settingsModalTabs = settingsModal.querySelectorAll(".modal-tab");
-        const settingsModalPanels = settingsModal.querySelectorAll(".modal-panel");
         const fontSelect = document.getElementById("fontSelect");
         const fontSizeInput = document.getElementById("fontSizeInput");
         const ratioGrid = document.getElementById("ratioGrid");
-        const slideBgGrid = settingsModal.querySelector(".slide-bg-grid[data-target='background']");
-        const backgroundCustomInput = settingsModal.querySelector(".custom-color-input[data-target='background']");
-        const columnCustomInputs = {};
+        const backgroundSelector = document.getElementById("backgroundSelector");
         const modalPrimary = document.getElementById("modalPrimary");
-        const modalCloseBtn = document.getElementById("modalClose");
+        const resetPromptsBtn = document.getElementById("resetPromptsBtn");
 
         const STORAGE_KEY = "go-roadmap-state";
-        const defaultPromptText = `Tu es product manager / expert consultant avec 30 ans d'expérience.
-
-Identifie à partir du contexte {{contextField}}, les 6 objectifs que tu auras identifiés à court, moyen et long terme possibles. Ajoute également pour chaque période une demande qui permet de valider l'alignement business.
-
-Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals", "next_ask", "later_goals", "later_ask". Ajoute de plus "now_indicators", "next_indicators" et "later_indicators" pour nourrir les indicateurs business.`;
-        const defaultObjectivePrompt = `Réécris le texte ci-dessous en une liste à puces orientée produit métier qui dégage des objectifs forts. Contexte: {{contextField}} | Texte: {{fieldValue}}`;
-        const defaultMeansPrompt = `Réécris le texte ci-dessous sous forme de liste à puces en mettant en avant les moyens, fonctionnalités ou services produits mobilisables. Contexte: {{contextField}} | Texte: {{fieldValue}}`;
-        const defaultIndicatorsPrompt = `Réécris le texte ci-dessous sous forme de liste à puces d'indicateurs quantitatifs métier (en chiffres). Contexte: {{contextField}} | Texte: {{fieldValue}}`;
+        const defaultObjectivePrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}} et du contenu {{fieldValue}}, reformule sur forme d'une liste de 2 à 3 objectifs clairs et impactants (2 lignes max pour chaque) sans introduction préalable`;
+        const defaultMeansPrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}} et du contenu {{fieldValue}}, reformule sous forme d'une liste de 3 à 5 solutions / livrables / moyens concrets et actionnables (2 lignes max pour chaque) sans introduction préalable`;
+        const defaultIndicatorsPrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}} et du contenu {{fieldValue}}, reformule sous forme d'une liste de 3 à 5 indicateurs clés (KPI/OKR) concrets et mesurables (2 lignes max pour chaque) sans introduction préalable`;
 
         let persistTimer = null;
 
@@ -1056,7 +955,6 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
                     textStyleIndex: currentTextStyleIndex,
                     fontSize: currentFontSize,
                     apiKey: apiKeyInput.value,
-                    instructions: settingsPromptInput.value,
                     objectivePrompt: objectivePromptInput.value,
                     meansPrompt: meansPromptInput.value,
                     indicatorsPrompt: indicatorsPromptInput.value,
@@ -1073,12 +971,10 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
         function loadSavedState() {
             const stored = localStorage.getItem(STORAGE_KEY);
             if (!stored) {
-                settingsPromptInput.value = defaultPromptText;
                 return false;
             }
             try {
                 const parsed = JSON.parse(stored);
-                settingsPromptInput.value = parsed.settings?.instructions || defaultPromptText;
                 objectivePromptInput.value = parsed.settings?.objectivePrompt || defaultObjectivePrompt;
                 meansPromptInput.value = parsed.settings?.meansPrompt || defaultMeansPrompt;
                 indicatorsPromptInput.value = parsed.settings?.indicatorsPrompt || defaultIndicatorsPrompt;
@@ -1094,7 +990,6 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
                 return false;
             } catch (err) {
                 console.error("Impossible de charger l'état :", err);
-                settingsPromptInput.value = defaultPromptText;
                 objectivePromptInput.value = defaultObjectivePrompt;
                 meansPromptInput.value = defaultMeansPrompt;
                 indicatorsPromptInput.value = defaultIndicatorsPrompt;
@@ -1167,6 +1062,57 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
             });
         }
 
+        function showColumnPlaceholders(column) {
+            column.querySelectorAll("textarea").forEach(textarea => {
+                if (!textarea.value) {
+                    textarea.placeholder = textarea.dataset.placeholder || "";
+                }
+            });
+        }
+
+        function clearColumnPlaceholders(column) {
+            column.querySelectorAll("textarea").forEach(textarea => {
+                if (!textarea.value) {
+                    textarea.placeholder = "";
+                }
+            });
+        }
+
+        function normalizeBullets(textarea) {
+            const lines = textarea.value.split("\n");
+            const normalized = lines.map(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return "";
+                return trimmed.startsWith("•") ? trimmed : `• ${trimmed}`;
+            });
+            textarea.value = normalized.join("\n");
+        }
+
+        function updateTextareaOverflowState(textarea) {
+            if (!textarea) return;
+            textarea.classList.toggle("textarea-overflow", textarea.scrollHeight > textarea.clientHeight);
+        }
+
+        function monitorTextareaOverflow(textarea) {
+            updateTextareaOverflowState(textarea);
+            textarea.addEventListener("input", () => updateTextareaOverflowState(textarea));
+            textarea.addEventListener("keydown", event => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    const insert = "\n• ";
+                    textarea.setRangeText(insert, start, end, "end");
+                    const newPos = start + insert.length;
+                    textarea.setSelectionRange(newPos, newPos);
+                    updateTextareaOverflowState(textarea);
+                }
+            });
+            textarea.addEventListener("blur", () => {
+                normalizeBullets(textarea);
+            });
+        }
+
 
         function getActiveSlideElement() {
             return slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
@@ -1177,28 +1123,22 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
             if (!column) return;
             column.style.setProperty("--stage-color", color);
             schedulePersist();
-            syncPaletteColorInputs();
         }
 
         function applyBackgroundToActiveSlide(color) {
             const slide = getActiveSlideElement();
             if (!slide) return;
             applyBackgroundToSlide(slide, color);
-            syncPaletteColorInputs();
+            syncBackgroundSelector();
+            document.documentElement.style.setProperty("--global-background", color);
         }
 
-        function syncPaletteColorInputs() {
+        function syncBackgroundSelector() {
+            if (!backgroundSelector) return;
             const slide = getActiveSlideElement();
             if (!slide) return;
-            Object.keys(columnCustomInputs).forEach(stage => {
-                const column = slide.querySelector(`.column[data-stage="${stage}"]`);
-                const currentColor = column?.style.getPropertyValue("--stage-color").trim() || stageColors[stage];
-                columnCustomInputs[stage].value = currentColor ? currentColor : "#ffffff";
-            });
-            if (backgroundCustomInput) {
-                const bgColor = slide.dataset.bgColor || "transparent";
-                backgroundCustomInput.value = bgColor === "transparent" ? "#ffffff" : bgColor;
-            }
+            const value = slide.dataset.bgColor || "#ffffff";
+            backgroundSelector.value = value === "transparent" ? "transparent" : "#ffffff";
         }
 
         function normalizeFontSize(value) {
@@ -1233,33 +1173,14 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
             }
         }
 
-        function buildSwatches(container, labelPrefix, onSelect) {
-            paletteColorOptions.forEach(color => {
-                const swatch = document.createElement("button");
-                swatch.type = "button";
-                swatch.className = "color-swatch";
-                if (color === "transparent") {
-                    swatch.classList.add("transparent");
-                } else {
-                    swatch.style.background = color;
-                }
-                swatch.dataset.color = color;
-                swatch.setAttribute("aria-label", `${labelPrefix} ${color}`);
-                container.appendChild(swatch);
-            });
-            container.addEventListener("click", event => {
-                const swatch = event.target.closest(".color-swatch");
-                if (!swatch) return;
-                onSelect(swatch.dataset.color);
-            });
-        }
-
         function initSettingsModal() {
             fontSelect.innerHTML = "";
             textStyles.forEach((style, index) => {
                 const option = document.createElement("option");
                 option.value = index;
                 option.textContent = style.name;
+                option.style.fontFamily = style.font;
+                option.style.fontSize = `${style.size}px`;
                 fontSelect.appendChild(option);
             });
 
@@ -1278,50 +1199,35 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
                 ratioGrid.appendChild(btn);
             });
 
-            updateRatioButtons();
-            buildSwatches(slideBgGrid, "Fond", applyBackgroundToActiveSlide);
-            settingsModal.querySelectorAll(".column-color-grid").forEach(grid => {
-                const stage = grid.dataset.stage;
-                buildSwatches(grid, columnStageNames[stage] || stage, color => applyColumnStageColor(stage, color));
+            fontSelect.addEventListener("change", () => {
+                currentTextStyleIndex = parseInt(fontSelect.value, 10);
+                const activeSlide = getActiveSlideElement();
+                if (activeSlide) {
+                    applyTextStyleToSlide(activeSlide, currentTextStyleIndex, currentFontSize);
+                }
             });
-
-            settingsModal.querySelectorAll(".custom-color-input[data-stage]").forEach(input => {
-                const stage = input.dataset.stage;
-                columnCustomInputs[stage] = input;
-                input.addEventListener("input", () => applyColumnStageColor(stage, input.value));
+            fontSizeInput.addEventListener("change", () => handleFontSizeChange(fontSizeInput.value));
+            Array.from(fontSizeInput.options).forEach(opt => {
+                opt.style.fontSize = `${opt.value}px`;
             });
-
-            if (backgroundCustomInput) {
-                backgroundCustomInput.addEventListener("input", () => applyBackgroundToActiveSlide(backgroundCustomInput.value));
-            }
+            backgroundSelector.addEventListener("change", () => {
+                applyBackgroundToActiveSlide(backgroundSelector.value);
+            });
 
             syncFontControls();
-            syncPaletteColorInputs();
-        }
-
-        function switchSettingsTab(tabName) {
-            settingsModalTabs.forEach(tab => {
-                tab.classList.toggle("active", tab.dataset.tab === tabName);
-            });
-            settingsModalPanels.forEach(panel => {
-                panel.classList.toggle("hide", panel.dataset.panel !== tabName);
-            });
+            syncBackgroundSelector();
+            updateRatioButtons();
         }
 
         function openSettingsModal() {
-            switchSettingsTab("colors");
             syncFontControls();
-            syncPaletteColorInputs();
+            syncBackgroundSelector();
             openModal(settingsModal);
         }
 
         function closeSettingsModal() {
             closeModal(settingsModal);
         }
-
-        settingsModalTabs.forEach(tab => {
-            tab.addEventListener("click", () => switchSettingsTab(tab.dataset.tab));
-        });
 
         initSettingsModal();
 
@@ -1398,8 +1304,7 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
             const slides = Array.from(slidesContainer.querySelectorAll(".slide"));
             return slides.map(slide => {
                 const columns = Array.from(slide.querySelectorAll(".column")).map(column => {
-                    const columnTitleEl = column.querySelector(".column-title");
-                    const columnTitle = columnTitleEl ? columnTitleEl.value : "";
+                    const columnTitle = column.querySelector(".stage-pill")?.textContent.trim() || "";
                     const stagePill = column.querySelector(".stage-pill");
                     const stageLabel = stagePill ? stagePill.textContent.trim() : "";
                     const stageColor = column.style.getPropertyValue("--stage-color").trim();
@@ -1421,11 +1326,9 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
                     return columnData;
                 });
                 const titleEl = slide.querySelector(".slide-title-input");
-                const subtitleEl = slide.querySelector(".slide-subtitle-input");
                 const fontSizeValue = parseInt(slide.dataset.fontSize, 10);
                 return {
                     title: titleEl ? titleEl.value : defaultTitle,
-                    subtitle: subtitleEl ? subtitleEl.value : defaultSubtitle,
                     bgColor: slide.dataset.bgColor || "transparent",
                     textStyleIndex: parseStyleIndex(slide.dataset.textStyleIndex),
                     fontSize: Number.isNaN(fontSizeValue) ? currentFontSize : fontSizeValue,
@@ -1444,8 +1347,8 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
                     stage === "NEXT" ? "Next" :
                         stage === "LATER" ? "Later" :
                             `Colonne ${humanIndex}`;
-            const fallbackStage = seed.stageLabel || column.dataset.stage;
-            const stageColor = seed.stageColor || stageColors[stage] || "#f0ede7";
+            const fallbackStage = seed.stageLabel || defaultStagePillLabels[column.dataset.stage] || column.dataset.stage;
+            const stageColor = seed.stageColor || "#ffffff";
             column.style.setProperty("--stage-color", stageColor);
 
             const sectionsHtml = sectionDefinitions.map(section => `
@@ -1456,7 +1359,7 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
           <div class="section-text-row">
             <div class="textarea-wrapper">
               <textarea class="editable" data-section="${section.key}" data-placeholder="${(section.examples || "").replace(/"/g, '&quot;')}"></textarea>
-              <button class="field-ai-btn inside" type="button" data-field="section-text" data-section="${section.key}" title="Générer le contenu" aria-label="Générer le contenu">✨ AI</button>
+              <button class="field-ai-btn inside" type="button" data-field="section-text" data-section="${section.key}" title="Générer le contenu" aria-label="Générer le contenu">✨</button>
             </div>
           </div>
         </div>
@@ -1466,9 +1369,6 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
       <div class="column-header">
         <div class="column-header-main">
           <span class="stage-pill" contenteditable="true">${fallbackStage}</span>
-          <input class="column-title editable" type="text"
-                 placeholder="Titre colonne"
-                 value="${(seed.title || defaultTitleText).replace(/"/g, '&quot;')}">
         </div>
       </div>
       <div class="column-body">
@@ -1509,6 +1409,20 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
                     label.textContent = sectionSeed.label || defaultSectionLabels[section.key];
                     textarea.value = sectionSeed.text || "";
                 }
+                monitorTextareaOverflow(textarea);
+            });
+
+            column.addEventListener("focusin", () => {
+                column.classList.add("column-focused");
+                showColumnPlaceholders(column);
+            });
+            column.addEventListener("focusout", () => {
+                column.classList.remove("column-focused");
+                setTimeout(() => {
+                    if (!column.contains(document.activeElement)) {
+                        clearColumnPlaceholders(column);
+                    }
+                }, 0);
             });
 
             column.querySelectorAll("textarea").forEach(bindTextareaPlaceholder);
@@ -1531,9 +1445,6 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
     <div class="slide-title-row">
       <input class="slide-title-input editable" type="text" value="${titleValue}">
     </div>
-    <div class="slide-subtitle-row">
-      <input class="slide-subtitle-input editable" type="text" value="${subtitleValue}">
-    </div>
   </div>
   <div class="slide-body">
     <div class="columns"></div>
@@ -1551,7 +1462,7 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
                     selectColumnForPalette(targetColumn);
                 }
             });
-            const bgColor = seed.bgColor || "transparent";
+            const bgColor = seed.bgColor || "#ffffff";
             applyBackgroundToSlide(slide, bgColor);
             const styleIndex = typeof seed.textStyleIndex === "number" ? seed.textStyleIndex : currentTextStyleIndex;
             const fontSize = typeof seed.fontSize === "number" ? seed.fontSize : currentFontSize;
@@ -1563,8 +1474,18 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
             const btn = document.createElement("button");
             btn.className = "tab-btn";
             btn.dataset.index = index;
-            btn.textContent = "Page " + (index + 1);
+            const slide = slidesContainer.querySelector(`.slide[data-index="${index}"]`);
+            const label = slide?.dataset.tabLabel || "Page " + (index + 1);
+            btn.textContent = label;
             btn.addEventListener("click", () => setActiveTab(index));
+            btn.addEventListener("dblclick", () => {
+                const newName = prompt("Renommer l'onglet", btn.textContent);
+                if (!newName) return;
+                btn.textContent = newName;
+                if (slide) {
+                    slide.dataset.tabLabel = newName;
+                }
+            });
             tabsContainer.appendChild(btn);
         }
 
@@ -1599,8 +1520,48 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
                 currentTextStyleIndex = parseStyleIndex(activeSlide.dataset.textStyleIndex);
                 currentFontSize = normalizeFontSize(activeSlide.dataset.fontSize ?? currentFontSize);
                 syncFontControls();
-                syncPaletteColorInputs();
+                syncBackgroundSelector();
             }
+        }
+
+        function buildColumnSeeds(slide) {
+            if (!slide) {
+                return [];
+            }
+            return Array.from(slide.querySelectorAll(".column")).map(column => {
+                const stagePill = column.querySelector(".stage-pill");
+                const stageLabel = stagePill ? stagePill.textContent.trim() : column.dataset.stage || "";
+                const stageColor = column.style.getPropertyValue("--stage-color").trim() || "#ffffff";
+                const sections = {};
+                sectionDefinitions.forEach(section => {
+                    const label = column.querySelector(`.section-label[data-section="${section.key}"]`);
+                    sections[section.key] = {
+                        label: label ? (label.textContent.trim() || defaultSectionLabels[section.key]) : defaultSectionLabels[section.key]
+                    };
+                });
+                return { stageLabel, stageColor, sections };
+            });
+        }
+
+        function getDefaultFromCurrentSlide() {
+            const slide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
+            if (!slide) {
+                return null;
+            }
+            const titleEl = slide.querySelector(".slide-title-input");
+            const subtitleEl = slide.querySelector(".slide-subtitle-input");
+            const bgColor = slide.dataset.bgColor || "#ffffff";
+            const textStyleIndex = parseStyleIndex(slide.dataset.textStyleIndex);
+            const fontSize = normalizeFontSize(slide.dataset.fontSize ?? currentFontSize);
+            const columns = buildColumnSeeds(slide);
+            return {
+                title: titleEl?.value || defaultTitle,
+                subtitle: subtitleEl?.value || defaultSubtitle,
+                bgColor,
+                textStyleIndex,
+                fontSize,
+                columns
+            };
         }
 
         function getDefaultFromLastSlide() {
@@ -1630,13 +1591,14 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
                 subtitle: prevSubtitleEl ? prevSubtitleEl.value : defaultSubtitle,
                 bgColor: previousSlide.dataset.bgColor || "transparent",
                 textStyleIndex: parseStyleIndex(previousSlide.dataset.textStyleIndex),
-                fontSize: normalizeFontSize(previousSlide.dataset.fontSize ?? currentFontSize)
+                fontSize: normalizeFontSize(previousSlide.dataset.fontSize ?? currentFontSize),
+                columns: buildColumnSeeds(previousSlide)
             };
         }
 
         function addTab() {
             const idx = slideCount;
-            const seed = getDefaultFromLastSlide();
+            const seed = getDefaultFromCurrentSlide() || getDefaultFromLastSlide();
             const slide = createSlide(idx, seed);
             slidesContainer.appendChild(slide);
             createTabButton(idx);
@@ -1646,11 +1608,13 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
             schedulePersist();
         }
 
+
         function updateDeleteButtonState() {
             deleteTabBtn.disabled = slideCount <= 1;
         }
 
         addTabBtn.addEventListener("click", addTab);
+
 
         deleteTabBtn.addEventListener("click", () => {
             if (slideCount <= 1) {
@@ -1672,6 +1636,15 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
             event.stopPropagation();
             openSettingsModal();
         });
+
+        if (resetPromptsBtn) {
+            resetPromptsBtn.addEventListener("click", () => {
+                objectivePromptInput.value = defaultObjectivePrompt;
+                meansPromptInput.value = defaultMeansPrompt;
+                indicatorsPromptInput.value = defaultIndicatorsPrompt;
+                schedulePersist();
+            });
+        }
 
         importJsonBtn.addEventListener("click", () => {
             importInput.value = "";
@@ -1778,6 +1751,21 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
                 replacement.style.boxSizing = "border-box";
                 textarea.replaceWith(replacement);
             });
+            clone.querySelectorAll(".column-title").forEach(input => {
+                const computed = window.getComputedStyle(input);
+                const replacement = document.createElement("div");
+                replacement.textContent = input.value || "";
+                replacement.style.cssText = computed.cssText;
+                replacement.style.whiteSpace = "nowrap";
+                replacement.style.overflow = "visible";
+                replacement.style.width = computed.width;
+                replacement.style.height = computed.height;
+                replacement.style.fontSize = `calc(${computed.fontSize} + 5px)`;
+                replacement.style.position = "relative";
+                replacement.style.top = "10px";
+                replacement.style.boxSizing = "border-box";
+                input.replaceWith(replacement);
+            });
             return { wrapper, clone };
         }
 
@@ -1812,9 +1800,8 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
         function buildTableDataForSlide(slideData) {
             const columns = slideData.columns || [];
             if (!columns.length) {
-                return [["", "Aucune colonne"]];
+                return [];
             }
-
             const formatSection = (section) =>
                 (section?.text || "")
                     .split(/\n+/)
@@ -1822,41 +1809,18 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
                     .filter(Boolean)
                     .map((line, idx) => `${idx + 1}. ${line}`)
                     .join("\n");
-
-            const headerRow = [
-                { text: "", options: { bold: true } },
-                ...columns.map(column => ({
-                    text: column.stage || column.title || "Colonne",
-                    options: { bold: true }
+            const headerRow = columns.map(column => ({
+                text: `${column.stageLabel || column.stage || ""} — ${column.title || ""}`.trim(),
+                options: { bold: true, fontSize: 10 }
+            }));
+            const sectionKeys = ["objective", "means", "indicators"];
+            const rows = sectionKeys.map(key =>
+                columns.map(column => ({
+                    text: formatSection(column.sections[key]),
+                    options: { fontSize: 10 }
                 }))
-            ];
-
-            const rows = [
-                {
-                    label: "Titre",
-                    cells: columns.map(column => column.title || "")
-                },
-                {
-                    label: "Objectifs",
-                    cells: columns.map(column => formatSection(column.sections.objective))
-                },
-                {
-                    label: "Moyens",
-                    cells: columns.map(column => formatSection(column.sections.means))
-                },
-                {
-                    label: "Indicateurs",
-                    cells: columns.map(column => formatSection(column.sections.indicators))
-                }
-            ];
-
-            return [
-                headerRow,
-                ...rows.map(row => [
-                    { text: row.label, options: { bold: true } },
-                    ...row.cells.map(text => ({ text: text || "", options: { fontSize: 10 } }))
-                ])
-            ];
+            );
+            return [headerRow, ...rows];
         }
 
         async function exportPptxFromSlides() {
@@ -1909,11 +1873,16 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
             return template.replace(/\{\{(\w+)\}\}/g, (_, key) => data[key] ?? "");
         }
 
-        const fieldPromptMap = {
+        const fieldPromptTemplates = {
             objective: () => objectivePromptInput.value.trim() || defaultObjectivePrompt,
             means: () => meansPromptInput.value.trim() || defaultMeansPrompt,
             indicators: () => indicatorsPromptInput.value.trim() || defaultIndicatorsPrompt
         };
+
+        function buildFieldPrompt(section, contextData) {
+            const template = fieldPromptTemplates[section]();
+            return fillTemplate(template, contextData);
+        }
 
         async function callOpenAI(messages) {
             const apiKey = apiKeyInput.value.trim();
@@ -1961,111 +1930,6 @@ Tu rempliras ta réponse au format JSON sous "now_goals", "now_ask", "next_goals
             }
         }
 
-        function parseStructuredResponse(text) {
-            let jsonCandidate;
-            try {
-                jsonCandidate = JSON.parse(text);
-                return jsonCandidate;
-            } catch (err) {
-                const lines = text.split(/\\r?\\n/);
-                const result = {};
-                let currentKey = null;
-                lines.forEach(line => {
-                    const trimmed = line.trim();
-                    if (!trimmed) return;
-                    const idx = trimmed.indexOf(":");
-                    if (idx >= 0) {
-                        currentKey = trimmed.slice(0, idx).trim().toLowerCase();
-                        result[currentKey] = trimmed.slice(idx + 1).trim();
-                    } else if (currentKey) {
-                        result[currentKey] = (result[currentKey] || "") + "\\n" + trimmed;
-                    }
-                });
-                return Object.keys(result).length ? result : null;
-            }
-        }
-
-        const responseSectionKeys = {
-            objective: "goals",
-            means: "ask",
-            indicators: "indicators"
-        };
-
-        function applyResponseToSlide(slide, data) {
-            if (!data) return;
-            const titleInput = slide.querySelector(".slide-title-input");
-            const subtitleInput = slide.querySelector(".slide-subtitle-input");
-            if (titleInput && data.title) titleInput.value = data.title;
-            if (subtitleInput && data.subtitle) subtitleInput.value = data.subtitle;
-            const columns = slide.querySelectorAll(".column");
-            const stageKeys = ["now", "next", "later"];
-            stageKeys.forEach((stageKey, idx) => {
-                const column = columns[idx];
-                if (!column) return;
-                const titleField = column.querySelector(".column-title");
-                const stagePill = column.querySelector(".stage-pill");
-                const titleValue = data[`${stageKey}_title`];
-                if (titleField && titleValue) titleField.value = titleValue;
-                if (stagePill) stagePill.textContent = stageKey.toUpperCase();
-                sectionDefinitions.forEach(section => {
-                    const textarea = column.querySelector(`textarea[data-section="${section.key}"]`);
-                    const sectionSuffix = responseSectionKeys[section.key];
-                    const sectionKey = `${stageKey}_${sectionSuffix}`;
-                    const sectionContent = data[sectionKey];
-                    if (textarea && typeof sectionContent === "string") {
-                        textarea.value = sectionContent;
-                    }
-                });
-            });
-            schedulePersist();
-        }
-
-        async function handleContextSubmit() {
-            const contextText = contextField.value.trim();
-            if (!contextText) {
-                alert("Décris d'abord ton contexte.");
-                return;
-            }
-            closeModal(contextModal);
-            setContextButtonBusy(true);
-            const structureInstruction = `
-Tu dois répondre au format JSON avec les clés suivantes :
-{
-  "now_goals": "...",
-  "now_ask": "...",
-  "now_indicators": "...",
-  "next_goals": "...",
-  "next_ask": "...",
-  "next_indicators": "...",
-  "later_goals": "...",
-  "later_ask": "...",
-  "later_indicators": "..."
-}`;
-            const messages = [
-                { role: "system", content: "Tu es un expert produit." },
-                {
-                    role: "user",
-                    content: `${fillTemplate(settingsPromptInput.value, { contextField: contextText })}\n\n${structureInstruction}`
-                }
-            ];
-            try {
-                const aiText = await callOpenAI(messages);
-                if (!aiText) return;
-                const parsed = parseStructuredResponse(aiText);
-                if (!parsed) {
-                    alert("OpenAI n'a pas retourné de réponse exploitable.");
-                    return;
-                }
-                const currentSlide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
-                if (currentSlide) {
-                    applyResponseToSlide(currentSlide, parsed);
-                }
-                schedulePersist();
-            } finally {
-                setContextButtonBusy(false);
-            }
-        }
-
         let activeModalTab = "context";
 
         function switchModalTab(tabName) {
@@ -2076,7 +1940,6 @@ Tu dois répondre au format JSON avec les clés suivantes :
             contextModalPanels.forEach(panel => {
                 panel.classList.toggle("hide", panel.dataset.panel !== tabName);
             });
-            modalPrimary.textContent = tabName === "context" ? "Envoyer" : "Enregistrer";
         }
 
         contextModalTabs.forEach(tab => {
@@ -2089,41 +1952,40 @@ Tu dois répondre au format JSON avec les clés suivantes :
             schedulePersist();
             closeModal(contextModal);
         }
-
-        modalPrimary.addEventListener("click", () => {
-            if (activeModalTab === "context") {
-                handleContextSubmit();
-            } else {
-                handleSettingsSave();
-            }
-        });
-
-        modalCloseBtn.addEventListener("click", () => closeModal(contextModal));
+        ;
 
         async function handleFieldAi(button) {
             const section = button.dataset.section;
             const textarea = button.closest(".section-text-row")?.querySelector("textarea");
             if (!textarea) return;
             const column = button.closest(".column");
-            const slide = button.closest(".slide");
-            const slideIndex = parseInt(slide?.dataset.index ?? activeIndex, 10);
-            const slideData = collectSlideData()[slideIndex];
-            const promptTemplate = fieldPromptMap[section]();
-            const baseMessage = fillTemplate(promptTemplate, {
+            const objectivesValue = column.querySelector("textarea[data-section=\"objective\"]")?.value.trim() || "";
+            const meansValue = column.querySelector("textarea[data-section=\"means\"]")?.value.trim() || "";
+            const indicatorsValue = column.querySelector("textarea[data-section=\"indicators\"]")?.value.trim() || "";
+            const promptContext = {
                 contextField: contextField.value.trim(),
-                fieldValue: textarea.value.trim()
-            });
+                fieldValue: textarea.value.trim(),
+                objectifs: objectivesValue,
+                moyens: meansValue,
+                indicateurs: indicatorsValue
+            };
+            const message = buildFieldPrompt(section, promptContext);
             const messages = [
                 { role: "system", content: "Tu es un assistant produit." },
-                {
-                    role: "user",
-                    content: `${baseMessage}\nSlide: ${slideData.title} - ${slideData.subtitle}\nColonne: ${column?.dataset.stage}\nContenu actuel: ${textarea.value}`
-                }
+                { role: "user", content: message }
             ];
-            const aiText = await callOpenAI(messages);
-            if (!aiText) return;
-            textarea.value = aiText.trim();
-            schedulePersist();
+            button.textContent = "⏳";
+            button.disabled = true;
+            try {
+                const aiText = await callOpenAI(messages);
+                if (!aiText) return;
+                textarea.value = aiText.trim();
+                updateTextareaOverflowState(textarea);
+                schedulePersist();
+            } finally {
+                button.textContent = "✨";
+                button.disabled = false;
+            }
         }
 
         document.addEventListener("click", event => {
