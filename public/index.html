@@ -1133,7 +1133,7 @@
             <div class="modal-panel" data-panel="context">
 
                 <label>
-                    Décris ton contexte et ta vision de produit
+                    Décris ton contexte et ta vision du produit
                     <textarea id="contextField" rows="4" placeholder="Contexte..."></textarea>
                 </label>
             </div>
@@ -1167,7 +1167,7 @@
                         </label>
                     </div>
                 </div>
-                <button id="resetPromptsBtn" type="button" class="reset-prompts-btn">Réinitialiser les prompts</button>
+                <button id="resetPromptsBtn" type="button" class="reset-prompts-btn">Réinitialiser</button>
             </div>
         </div>
     </div>
@@ -1206,7 +1206,7 @@
         const templates = [
             {
                 id: "go-roadmap",
-                emoji: "🗺️",
+                emoji: "🧭",
                 name: "GO-Roadmap",
                 defaultTitle: "GO-Roadmap",
                 columns: [
@@ -1240,7 +1240,7 @@
             },
             {
                 id: "go-design",
-                emoji: "👤",
+                emoji: "⭐",
                 name: "GO-Design",
                 defaultTitle: "Go-Design",
                 columns: [
@@ -1274,7 +1274,7 @@
             },
             {
                 id: "go-solve",
-                emoji: "🔎",
+                emoji: "🌱",
                 name: "GO-Solve",
                 defaultTitle: "Go-Solve",
                 columns: [
@@ -2141,11 +2141,12 @@
             }
         }
 
-        function buildColumnSeeds(slide) {
+        function buildColumnSeeds(slide, options = {}) {
             if (!slide) {
                 return [];
             }
             const templateId = slide.dataset.templateId || templates[0].id;
+            const includeText = options.includeText !== false;
             return Array.from(slide.querySelectorAll(".column")).map(column => {
                 const columnTitleEl = column.querySelector(".column-title");
                 const stageLabel = columnTitleEl ? columnTitleEl.textContent.trim() : column.dataset.stage || "";
@@ -2156,7 +2157,7 @@
                     const textarea = column.querySelector(`textarea[data-section="${section.key}"]`);
                     sections[section.key] = {
                         label: label ? (label.textContent.trim() || getDefaultSectionLabel(templateId, section.key)) : getDefaultSectionLabel(templateId, section.key),
-                        text: textarea ? textarea.value : ""
+                        text: textarea ? (includeText ? textarea.value : "") : ""
                     };
                 });
                 return { stageLabel, stageColor, sections };
@@ -2173,7 +2174,7 @@
             const bgColor = slide.dataset.bgColor || "#ffffff";
             const textStyleIndex = parseStyleIndex(slide.dataset.textStyleIndex);
             const fontSize = normalizeFontSize(slide.dataset.fontSize ?? currentFontSize);
-            const columns = buildColumnSeeds(slide);
+            const columns = buildColumnSeeds(slide, { includeText: false });
             const templateId = slide.dataset.templateId || templates[0].id;
             return {
                 title: titleEl?.value || getDefaultTitle(templateId),
@@ -2218,7 +2219,7 @@
                 bgColor: previousSlide.dataset.bgColor || "transparent",
                 textStyleIndex: parseStyleIndex(previousSlide.dataset.textStyleIndex),
                 fontSize: normalizeFontSize(previousSlide.dataset.fontSize ?? currentFontSize),
-                columns: buildColumnSeeds(previousSlide)
+                columns: buildColumnSeeds(previousSlide, { includeText: false })
             };
         }
 
