@@ -1354,7 +1354,7 @@
         ];
 
         const defaultPromptTemplate = `Tu es un consultant product owner expérimenté, sur la base du contexte {{contextField}} et dans le cadre de {{columnTitle}}, reformuler {{fieldValue}} sous forme de 2 à 3 {{sectionTitle}} d'un point de vue business et utilisateur (un • de < 18 mots pour chaque) sans introduction préalable ni émoji`;
-        const apprentPromptTemplate = `Tu es un coach product owner expérimenté, sur la base du contexte {{contextField}} et dans le cadre de {{columnTitle}}, reprendre le texte suivant ({{fieldValue}}) en ignorant les éléments entre "[ ]" sous forme de 2 à 3 éléments synthétiques (un • de < 18 mots pour chaque) sans toucher au sens, puis en dessous, proposer 2 à 3 questions d'approfondissement pour l'aider à formuler des {{sectionTitle}} synthétiques et pertinents (< 20 mots pour chaque et entre "[ ]" ). Tout ça sans introduction préalable ni émoji`;
+        const apprentPromptTemplate = `Tu es un coach product owner expérimenté, sur la base du contexte {{contextField}} et dans le cadre de {{columnTitle}}, reprendre ({{fieldValue}}) en ignorant les éléments entre "[ ]" sous forme de 2 à 3 éléments synthétiques (un • de < 18 mots pour chaque) sans toucher au sens, puis en dessous, proposer 2 à 3 questions d'approfondissement pour l'aider à formuler des {{sectionTitle}} synthétiques et pertinents (< 20 mots pour chaque et entre "[ ]" ). Tout ça sans introduction préalable ni émoji`;
         const IA_MODE_EXPRESS = "express";
         const IA_MODE_APPRENTI = "apprenti";
         const IA_MODE_EXPERIMENTAL = "experimental";
@@ -2669,7 +2669,7 @@
                 return content;
             } catch (err) {
                 console.error("Erreur OpenAI", err);
-                alert("Impossible de contacter OpenAI. Vérifie ta clé Open API Platform et ta connexion.");
+                alert("Impossible de contacter OpenAI (accès non autorisé ou quota excédé). Utilise ta propre clé Open API.");
                 return null;
             }
         }
@@ -2793,17 +2793,17 @@
         const tourSteps = [
             {
                 title: "Go-Toolkit, ton assistant rédaction",
-                description: "Go-Toolkit aide les consultants à préparer des supports de présentation clairs, structurés et pertinents",
+                description: "Go-Toolkit aide les Product Owners à préparer des supports de présentation clairs, structurés et pertinents",
                 selector: null
             },
             {
-                title: "Sélecteur de template",
+                title: "Choix de modèle de documents",
                 description: "Choisis parmi les trois modèles disponibles, navigue page par page via les onglets et utilise les icônes ➕/🗑️ pour ajouter, renommer ou supprimer une page à tout moment.",
                 selectors: ["#templateSelect", "#tabs", ".tab-btn-add", ".tab-btn-delete"]
             },
             {
-                title: "Titre, colonnes et sections",
-                description: "Chaque page propose un titre, des colonnes liées au template, des titres de section et des champs texte larges pour structurer ton message.",
+                title: "Structure entièrement personnalisable",
+                description: "Chaque page propose un titre, des colonnes, des section et des champs éditables pour structurer ton propos.",
                 selectors: [".slide-title-input", ".column-title", ".section-label"]
             },
             {
