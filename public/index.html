@@ -1084,8 +1084,8 @@
                     <button id="fileMenuBtn" type="button" aria-label="Fichier">📄</button>
                     <div class="context-menu" id="fileMenu">
                         <div class="menu-panel">
-                            <button id="importJsonBtn" type="button" class="menu-panel-btn">⬆️ Open</button>
-                            <button id="exportJsonBtn" type="button" class="menu-panel-btn">⬇️ Save</button>
+                            <button id="importJsonBtn" type="button" class="menu-panel-btn">📂 Ouvrir</button>
+                            <button id="exportJsonBtn" type="button" class="menu-panel-btn">💾 Enregsitrer</button>
                             <button id="exportPptxBtn" type="button" class="menu-panel-btn">📊 Powerpoint</button>
                             <button id="exportPngBtn" type="button" class="menu-panel-btn">🖼️ Image</button>
                         </div>
@@ -1308,7 +1308,7 @@
             }
         ];
 
-        const defaultPromptTemplate = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}} et du contenu {{fieldValue}}, reformule avec la perspective du {{columnTitle}}, sous forme de 2 à 3 {{sectionTitle}} d'un point de vue utilisateur (un • de < 20 mots pour chaque) sans introduction préalable ni émoji`;
+        const defaultPromptTemplate = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}}, du contenu {{fieldValue}} et dans le cadre de {{columnTitle}}, sous forme de 2 à 3 {{sectionTitle}} d'un point de vue utilisateur (un • de < 20 mots pour chaque) sans introduction préalable ni émoji`;
 
         function getTemplateById(id) {
             return templates.find(template => template.id === id) || templates[0];
@@ -2735,16 +2735,16 @@
             {
                 title: "Prompts personnalisables",
                 description: "Dans le modal IA, tu peux adapter les prompts par section afin de guider la génération du texte comme tu l'entends.",
-                selector: "#promptTemplateSelect",
+                selectors: ["#promptTemplateSelect", "#promptFields"],
                 openContextModal: true
             },
             {
-                title: "Colonnes, sections, Open & Save",
-                description: "Tu peux modifier librement les colonnes et les titres des sections à ton usage. À la fin, utilise Open/Save pour sauvegarder ton travail puisque l'app n'enregistre pas de données sur le serveur.",
+                title: "Colonnes, sections, ouvrir & enregistrer",
+                description: "Tu peux modifier librement les colonnes et les titres des sections à ton usage. À la fin, sauvegarde ton travail dans un fichier puisque l'app n'enregistre pas de données sur le serveur.",
                 selector: "#tabs"
             },
             {
-                title: "Phase expérimentale",
+                title: "Usage IA expérimental et limité",
                 description: "L'appli est en expérimentation : l'usage de l'IA doit rester dans le cadre de Savane Consulting. Une clé OpenAI est à fournir pour un usage intensif ou autre.",
                 selector: "#contextField"
             }
