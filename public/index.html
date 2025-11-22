@@ -1308,7 +1308,7 @@
             }
         ];
 
-        const defaultPromptTemplate = `En tant que consultant product owner expérimenté, sur la base du contexte {{contextField}}, du contenu {{fieldValue}} et dans le cadre de {{columnTitle}}, sous forme de 2 à 3 {{sectionTitle}} d'un point de vue utilisateur (un • de < 20 mots pour chaque) sans introduction préalable ni émoji`;
+        const defaultPromptTemplate = `En tant que consultant product owner expérimenté, sur la base du contexte {{contextField}} et dans le cadre de {{columnTitle}}, reformuler {{fieldValue}} sous forme de 2 à 3 {{sectionTitle}} d'un point de vue business et utilisateur (un • de < 20 mots pour chaque) sans introduction préalable ni émoji`;
 
         function getTemplateById(id) {
             return templates.find(template => template.id === id) || templates[0];
