@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Go-Roadmap – Tabs 3 colonnes</title>
+    <title>Go-Toolkit</title>
     <style>
         * {
             box-sizing: border-box;
@@ -135,6 +135,43 @@
             height: 90px;
         }
 
+        .prompt-template-select {
+            border-radius: 8px;
+            border: 1px solid #d0c3ad;
+            background: #fff;
+            padding: 6px 10px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        #promptFields {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .prompt-row label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .prompt-label-text {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .prompt-input {
+            min-height: 80px;
+            border-radius: 8px;
+            border: 1px solid #d0c3ad;
+            padding: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            resize: vertical;
+        }
+
         .modal-footer {
             display: flex;
             justify-content: flex-end;
@@ -252,6 +289,23 @@
             background: #2a7a57;
             color: #fff;
             box-shadow: var(--shadow-soft);
+        }
+
+        .template-select {
+            border-radius: 999px;
+            border: 1px solid #ebe0d1;
+            background: #fff;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            color: var(--text-main);
+            appearance: none;
+        }
+
+        .template-select:focus-visible {
+            outline: none;
+            border-color: #2a7a57;
+            box-shadow: 0 0 0 2px rgba(42, 122, 87, 0.4);
         }
 
         #tabs {
@@ -805,6 +859,7 @@
             </div>
             <div class="global-actions">
                 <div class="menu-trigger" id="settingsMenuTrigger">
+                    <select id="templateSelect" class="template-select" aria-label="Sélecteur de template"></select>
                     <button id="textStyleBtn" type="button" aria-label="Options d'affichage">🖌️</button>
                     <div class="context-menu" id="settingsMenu">
                         <div class="menu-panel">
@@ -869,27 +924,39 @@
             </div>
             <div class="modal-panel" data-panel="context">
                 <label>
+                    OpenAI API key
+                    <input type="password" id="apiKeyInput" autocomplete="off" placeholder="sk-...">
+                </label>
+                <label>
                     Décris ton contexte et ta vision de produit
                     <textarea id="contextField" rows="4" placeholder="Contexte..."></textarea>
                 </label>
             </div>
             <div class="modal-panel hide" data-panel="settings">
                 <label>
-                    OpenAI API key
-                    <input type="password" id="apiKeyInput" autocomplete="off" placeholder="sk-...">
+                    Modèle de prompts
+                    <select id="promptTemplateSelect" class="prompt-template-select"></select>
                 </label>
-                <label>
-                    Prompt objectif (3–5 expressions courtes)
-                    <textarea id="objectivePrompt" rows="2"></textarea>
-                </label>
-                <label>
-                    Prompt moyens (3–5 expressions courtes)
-                    <textarea id="meansPrompt" rows="2"></textarea>
-                </label>
-                <label>
-                    Prompt indicateurs (3–5 expressions courtes)
-                    <textarea id="indicatorsPrompt" rows="2"></textarea>
-                </label>
+                <div id="promptFields">
+                    <div class="prompt-row" data-section="first-section">
+                        <label>
+                            <span class="prompt-label-text">Prompt - Section</span>
+                            <textarea class="prompt-input" data-section="first-section" rows="2"></textarea>
+                        </label>
+                    </div>
+                    <div class="prompt-row" data-section="second-section">
+                        <label>
+                            <span class="prompt-label-text">Prompt - Section</span>
+                            <textarea class="prompt-input" data-section="second-section" rows="2"></textarea>
+                        </label>
+                    </div>
+                    <div class="prompt-row" data-section="third-section">
+                        <label>
+                            <span class="prompt-label-text">Prompt - Section</span>
+                            <textarea class="prompt-input" data-section="third-section" rows="2"></textarea>
+                        </label>
+                    </div>
+                </div>
                 <button id="resetPromptsBtn" type="button">Réinitialiser les prompts</button>
             </div>
         </div>
@@ -924,40 +991,136 @@
             { name: "A4", css: "297 / 210", pptx: { width: 11.69, height: 8.27 } }
         ];
 
-        const sectionDefinitions = [
+        const sectionKeys = ["first-section", "second-section", "third-section"];
+
+        const templates = [
             {
-                key: "objective",
-                icon: "🎯",
-                label: "Objectif",
-                examples:
-                    "Décrire ce que l’utilisateur ou l’entreprise gagne quand l’objectif est atteint. Formule courte + bénéfice métier. Exemples : \n• Améliorer la fiabilité des données pour réduire les erreurs de saisie de 20% \n• Accélérer l’accès aux indicateurs pour faciliter la décision \n• Simplifier le parcours utilisateur pour diminuer le temps d’action de 30%"
+                id: "go-roadmap",
+                emoji: "🗺️",
+                name: "GO-Roadmap",
+                columns: [
+                    { stage: "NOW", label: "NOW" },
+                    { stage: "NEXT", label: "NEXT" },
+                    { stage: "LATER", label: "LATER" }
+                ],
+                sections: [
+                    {
+                        key: "first-section",
+                        icon: "🎯",
+                        label: "Objectif",
+                        examples:
+                            "Décrire ce que l’utilisateur ou l’entreprise gagne quand l’objectif est atteint. Exemples : \n• Réduire les erreurs de saisie de 20% \n• Accélérer l’accès aux indicateurs pour faciliter la décision \n• Simplifier le parcours utilisateur pour diminuer le temps d’action de 30%"
+                    },
+                    {
+                        key: "second-section",
+                        icon: "🚀",
+                        label: "Moyens / Solutions / Livrables",
+                        examples:
+                            "Lister les actions, fonctionnalités ou livrables concrets. Exemples : \n• Développer un module de validation automatique \n• Produire un tableau de bord Power BI \n• Revoir l’UX (wireframes + tests utilisateurs) \n• Mettre en place une API d’import automatisé"
+                    },
+                    {
+                        key: "third-section",
+                        icon: "📈",
+                        label: "Indicateurs business",
+                        examples:
+                            "Décrire comment mesurer la réussite : chiffres, adoption, délais. Exemples : \n• K1 : 95% de données complètes et conformes \n• K2 : Temps moyen d’usage < 40s \n• K3 : 70% d’utilisateurs actifs hebdo \n• K4 : -30% de tickets support"
+                    }
+                ]
             },
             {
-                key: "means",
-                icon: "🚀",
-                label: "Moyens / Solutions / Livrables",
-                examples:
-                    "Lister ce que l’équipe va produire pour atteindre l’objectif : actions, fonctionnalités, ateliers, prototypes. Exemples : \n• Développer un module de validation automatique \n• Produire un tableau de bord Power BI \n• Revoir l’UX (wireframes + tests utilisateurs) \n• Mettre en place une API d’import automatisé"
+                id: "go-design",
+                emoji: "👤",
+                name: "GO-Design",
+                columns: [
+                    { stage: "NOW", label: "Saisie de données" },
+                    { stage: "NEXT", label: "Consultation de données" },
+                    { stage: "LATER", label: "Analyse de données" }
+                ],
+                sections: [
+                    {
+                        key: "first-section",
+                        icon: "👥",
+                        label: "Personas",
+                        examples:
+                            "Décrire les profils utilisateurs prioritaires, leurs motivations et frustrations. Exemples : \n• Responsable data qui manque d’indicateurs fiables \n• Analyste qui perd du temps à consolider \n• Support qui reçoit des tickets de saisie"
+                    },
+                    {
+                        key: "second-section",
+                        icon: "🧩",
+                        label: "Besoins",
+                        examples:
+                            "Lister les besoins métier ou utilisateur prioritaires. Exemples : \n• Saisir une donnée en moins de 15s \n• Visualiser les tendances en un coup d’œil \n• Exporter automatiquement pour reporting"
+                    },
+                    {
+                        key: "third-section",
+                        icon: "💡",
+                        label: "Opportunités",
+                        examples:
+                            "Identifier les opportunités de design, de différenciation ou d’impact. Exemples : \n• Automatiser la validation pour réduire les erreurs \n• Proposer des parcours contextualisés \n• Réconcilier les sources pour enrichir l’analyse"
+                    }
+                ]
             },
             {
-                key: "indicators",
-                icon: "📈",
-                label: "Indicateurs business",
-                examples:
-                    "Décrire comment mesurer la réussite : chiffres, qualité, délais, adoption. Exemples : \n• K1 : 95% de données complètes et conformes \n• K2 : Temps moyen d’usage < 40s \n• K3 : 70% d’utilisateurs actifs hebdo \n• K4 : -30% de tickets support"
+                id: "go-workshop",
+                emoji: "💡",
+                name: "GO-Workshop",
+                columns: [
+                    { stage: "NOW", label: "UI" },
+                    { stage: "NEXT", label: "Data" },
+                    { stage: "LATER", label: "API" }
+                ],
+                sections: [
+                    {
+                        key: "first-section",
+                        icon: "⚠️",
+                        label: "Problèmes",
+                        examples:
+                            "Lister les problèmes, frictions ou irritants observés. Exemples : \n• Les utilisateurs abandonnent la saisie \n• Les données sont incohérentes \n• L’API manque d’observabilité"
+                    },
+                    {
+                        key: "second-section",
+                        icon: "🧠",
+                        label: "Causes",
+                        examples:
+                            "Identifier les causes profondes ou hypothèses. Exemples : \n• UI trop chargée \n• Schéma data non aligné \n• API non documentée"
+                    },
+                    {
+                        key: "third-section",
+                        icon: "🛠️",
+                        label: "Solutions",
+                        examples:
+                            "Proposer des solutions rapides ou expérimentations. Exemples : \n• Prototyper un wizard de saisie \n• Ajouter des contrôles qualité data \n• Créer des endpoints documentés et versionnés"
+                    }
+                ]
             }
         ];
 
-        const defaultSectionLabels = sectionDefinitions.reduce((acc, section) => {
-            acc[section.key] = `${section.icon} ${section.label}`;
-            return acc;
-        }, {});
+        const defaultPromptTemplate = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}} et du contenu {{fieldValue}}, reformule avec la perspective du {{columnTitle}}, sous forme de 2 à 3 {{sectionTitle}} d'un point de vue utilisateur (un • de < 20 mots pour chaque) sans introduction préalable ni émoji`;
 
-        const defaultStagePillLabels = {
-            NOW: "🟢 NOW - Chantier 1",
-            NEXT: "🟡 NEXT - Chantier 2",
-            LATER: "🔵 LATER - Chantier 3"
-        };
+        function getTemplateById(id) {
+            return templates.find(template => template.id === id) || templates[0];
+        }
+
+        function getTemplateSections(templateId) {
+            return getTemplateById(templateId).sections;
+        }
+
+        function getTemplateSection(templateId, sectionKey) {
+            return getTemplateSections(templateId).find(section => section.key === sectionKey);
+        }
+
+        function getDefaultSectionLabel(templateId, sectionKey) {
+            const section = getTemplateSection(templateId, sectionKey);
+            return section ? `${section.icon} ${section.label}` : sectionKey;
+        }
+
+        function getTemplateColumns(templateId) {
+            return getTemplateById(templateId).columns;
+        }
+
+        function getTemplateColumn(templateId, index) {
+            return getTemplateColumns(templateId)[index] || { stage: "NOW", label: `Colonne ${index + 1}` };
+        }
 
         const slidesContainer = document.getElementById("slides");
         const tabsContainer = document.getElementById("tabs");
@@ -966,6 +1129,7 @@
         const exportBtn = document.getElementById("exportPngBtn");
         const exportPptxBtn = document.getElementById("exportPptxBtn");
         const textStyleBtn = document.getElementById("textStyleBtn");
+        const templateSelect = document.getElementById("templateSelect");
         const fileMenuBtn = document.getElementById("fileMenuBtn");
         const importJsonBtn = document.getElementById("importJsonBtn");
         const exportJsonBtn = document.getElementById("exportJsonBtn");
@@ -977,9 +1141,8 @@
         const settingsMenu = document.getElementById("settingsMenu");
         const fileMenu = document.getElementById("fileMenu");
         const apiKeyInput = document.getElementById("apiKeyInput");
-        const objectivePromptInput = document.getElementById("objectivePrompt");
-        const meansPromptInput = document.getElementById("meansPrompt");
-        const indicatorsPromptInput = document.getElementById("indicatorsPrompt");
+        const promptTemplateSelect = document.getElementById("promptTemplateSelect");
+        const promptInputs = Array.from(document.querySelectorAll(".prompt-input"));
         const fontSelect = document.getElementById("fontSelect");
         const fontSizeInput = document.getElementById("fontSizeInput");
         const ratioGrid = document.getElementById("ratioGrid");
@@ -987,9 +1150,6 @@
         const resetPromptsBtn = document.getElementById("resetPromptsBtn");
 
         const STORAGE_KEY = "go-roadmap-state";
-        const defaultObjectivePrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}}, de la colonne {{columnTitle}} et du contenu {{fieldValue}}, reformule sur forme d'une liste de 2 à 3 objectifs clairs et impactants d'un point de vue utilisateur (un • de < 20 mots pour chaque) sans introduction préalable`;
-        const defaultMeansPrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}}, de la colonne {{columnTitle}} et du contenu {{fieldValue}}, reformule sous forme d'une liste de 3 à 5 solutions / livrables / moyens concrets et actionnables (un • de < 20 mots pour chaque) sans introduction préalable`;
-        const defaultIndicatorsPrompt = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}}, de la colonne {{columnTitle}} et du contenu {{fieldValue}}, reformule sous forme d'une liste de 3 à 5 indicateurs clés (KPI/OKR) concrets et mesurables (un • de < 20 mots pour chaque) sans introduction préalable`;
 
         let persistTimer = null;
 
@@ -1006,10 +1166,10 @@
                     textStyleIndex: currentTextStyleIndex,
                     fontSize: currentFontSize,
                     apiKey: apiKeyInput.value,
-                    objectivePrompt: objectivePromptInput.value,
-                    meansPrompt: meansPromptInput.value,
-                    indicatorsPrompt: indicatorsPromptInput.value,
-                    context: contextField.value
+                    context: contextField.value,
+                    prompts: promptLibrary,
+                    promptTemplateId: activePromptTemplateId,
+                    defaultTemplateId: currentTemplateId
                 }
             };
             try {
@@ -1026,24 +1186,16 @@
             }
             try {
                 const parsed = JSON.parse(stored);
-                objectivePromptInput.value = parsed.settings?.objectivePrompt || defaultObjectivePrompt;
-                meansPromptInput.value = parsed.settings?.meansPrompt || defaultMeansPrompt;
-                indicatorsPromptInput.value = parsed.settings?.indicatorsPrompt || defaultIndicatorsPrompt;
-                apiKeyInput.value = parsed.settings?.apiKey || "";
-                contextField.value = parsed.settings?.context || "";
-                currentTextStyleIndex = parseStyleIndex(parsed.settings?.textStyleIndex);
-                currentFontSize = normalizeFontSize(parsed.settings?.fontSize ?? currentFontSize);
-                currentRatioIndex = Math.max(0, Math.min(ratioOptions.length - 1, parsed.settings?.ratioIndex ?? 0));
+                const settings = parsed.settings || {};
                 if (Array.isArray(parsed.slides) && parsed.slides.length) {
-                    importSlidesFromData(parsed.slides, parsed.settings ?? { ratioIndex: currentRatioIndex });
+                    importSlidesFromData(parsed.slides, settings);
                     return true;
                 }
+                applySettingsFromPayload(settings);
                 return false;
             } catch (err) {
                 console.error("Impossible de charger l'état :", err);
-                objectivePromptInput.value = defaultObjectivePrompt;
-                meansPromptInput.value = defaultMeansPrompt;
-                indicatorsPromptInput.value = defaultIndicatorsPrompt;
+                setPromptFieldsForTemplate(activePromptTemplateId);
                 return false;
             }
         }
@@ -1060,6 +1212,75 @@
         let currentTextStyleIndex = 0;
         let currentFontSize = 12;
         let currentRatioIndex = 0;
+        let currentTemplateId = templates[0].id;
+        let activePromptTemplateId = templates[0].id;
+        const promptLibrary = templates.reduce((acc, template) => {
+            acc[template.id] = sectionKeys.reduce((inner, key) => {
+                inner[key] = defaultPromptTemplate;
+                return inner;
+            }, {});
+            return acc;
+        }, {});
+
+        function populateTemplateSelectors() {
+            [templateSelect, promptTemplateSelect].forEach(select => {
+                if (!select) return;
+                select.innerHTML = "";
+                templates.forEach(template => {
+                    const option = document.createElement("option");
+                    option.value = template.id;
+                    option.textContent = `${template.emoji} ${template.name}`;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        populateTemplateSelectors();
+        if (templateSelect) {
+            templateSelect.value = currentTemplateId;
+        }
+        if (promptTemplateSelect) {
+            promptTemplateSelect.value = activePromptTemplateId;
+        }
+        setPromptFieldsForTemplate(activePromptTemplateId);
+
+        function applySettingsFromPayload(settings = {}) {
+            const payload = settings || {};
+            if (payload.prompts) {
+                Object.entries(payload.prompts).forEach(([templateId, prompts]) => {
+                    if (!promptLibrary[templateId]) return;
+                    sectionKeys.forEach(sectionKey => {
+                        promptLibrary[templateId][sectionKey] = prompts[sectionKey] || defaultPromptTemplate;
+                    });
+                });
+            } else if (payload.objectivePrompt || payload.meansPrompt || payload.indicatorsPrompt) {
+                const templateId = templates[0].id;
+                promptLibrary[templateId]["first-section"] = payload.objectivePrompt || defaultPromptTemplate;
+                promptLibrary[templateId]["second-section"] = payload.meansPrompt || defaultPromptTemplate;
+                promptLibrary[templateId]["third-section"] = payload.indicatorsPrompt || defaultPromptTemplate;
+            }
+            activePromptTemplateId = payload.promptTemplateId || activePromptTemplateId;
+            currentTemplateId = payload.defaultTemplateId || currentTemplateId;
+            if (templateSelect) {
+                templateSelect.value = currentTemplateId;
+            }
+            if (promptTemplateSelect) {
+                promptTemplateSelect.value = activePromptTemplateId;
+            }
+            apiKeyInput.value = payload.apiKey || "";
+            contextField.value = payload.context || "";
+            if (typeof payload.ratioIndex === "number") {
+                currentRatioIndex = Math.max(0, Math.min(ratioOptions.length - 1, payload.ratioIndex));
+                applyRatio(currentRatioIndex);
+            }
+            if (typeof payload.textStyleIndex === "number") {
+                currentTextStyleIndex = payload.textStyleIndex;
+            }
+            if (typeof payload.fontSize === "number") {
+                currentFontSize = normalizeFontSize(payload.fontSize);
+            }
+            setPromptFieldsForTemplate(activePromptTemplateId);
+        }
 
         const defaultTitle = "GO-Roadmap";
         const defaultSubtitle = "Produit / équipe / scope";
@@ -1085,7 +1306,9 @@
             const slide = sourceLabel.closest(".slide");
             if (!slide) return;
             const rawText = sourceLabel.textContent.trim();
-            const normalized = rawText || defaultSectionLabels[sectionKey];
+            const templateId = slide.dataset.templateId || templates[0].id;
+            const defaultLabel = getDefaultSectionLabel(templateId, sectionKey);
+            const normalized = rawText || defaultLabel;
             slide.querySelectorAll(`.section-label[data-section="${sectionKey}"]`).forEach(label => {
                 label.textContent = normalized;
             });
@@ -1095,7 +1318,9 @@
             const sectionKey = label.dataset.section;
             label.addEventListener("blur", () => {
                 if (!label.textContent.trim()) {
-                    label.textContent = defaultSectionLabels[sectionKey];
+                    const slide = label.closest(".slide");
+                    const templateId = slide?.dataset.templateId || templates[0].id;
+                    label.textContent = getDefaultSectionLabel(templateId, sectionKey);
                 }
                 updateSectionLabelsInSlide(sectionKey, label);
             });
@@ -1112,6 +1337,55 @@
                 textarea.placeholder = "";
             });
         }
+
+        function getPromptValue(templateId, sectionKey) {
+            const templatePrompts = promptLibrary[templateId] || promptLibrary[templates[0].id];
+            return templatePrompts[sectionKey] || defaultPromptTemplate;
+        }
+
+        function updatePromptLabels(templateId) {
+            promptInputs.forEach(textarea => {
+                const sectionKey = textarea.dataset.section;
+                const sectionDef = getTemplateSection(templateId, sectionKey);
+                const labelEl = textarea.closest(".prompt-row")?.querySelector(".prompt-label-text");
+                if (labelEl) {
+                    const sectionLabel = sectionDef ? `${sectionDef.icon} ${sectionDef.label}` : sectionKey;
+                    labelEl.textContent = `Prompt - ${sectionLabel}`;
+                }
+            });
+        }
+
+        function setPromptFieldsForTemplate(templateId) {
+            promptInputs.forEach(textarea => {
+                const sectionKey = textarea.dataset.section;
+                textarea.value = getPromptValue(templateId, sectionKey);
+            });
+            updatePromptLabels(templateId);
+        }
+
+        promptInputs.forEach(textarea => {
+            textarea.addEventListener("input", () => {
+                const sectionKey = textarea.dataset.section;
+                if (!sectionKey) return;
+                promptLibrary[activePromptTemplateId][sectionKey] = textarea.value;
+                schedulePersist();
+            });
+        });
+
+        templateSelect?.addEventListener("change", () => {
+            const selected = templateSelect.value;
+            currentTemplateId = selected;
+            const slide = getActiveSlideElement();
+            if (slide) {
+                applyTemplateToSlide(slide, selected);
+                schedulePersist();
+            }
+        });
+
+        promptTemplateSelect?.addEventListener("change", () => {
+            activePromptTemplateId = promptTemplateSelect.value;
+            setPromptFieldsForTemplate(activePromptTemplateId);
+        });
 
         function showColumnPlaceholders(column) {
             column.querySelectorAll("textarea").forEach(textarea => {
@@ -1350,6 +1624,7 @@
         function collectSlideData() {
             const slides = Array.from(slidesContainer.querySelectorAll(".slide"));
             return slides.map(slide => {
+                const templateId = slide.dataset.templateId || templates[0].id;
                 const columns = Array.from(slide.querySelectorAll(".column")).map(column => {
                     const columnTitleEl = column.querySelector(".column-title");
                     const columnTitle = columnTitleEl ? columnTitleEl.textContent.trim() : "";
@@ -1362,11 +1637,11 @@
                         title: columnTitle,
                         sections: {}
                     };
-                    sectionDefinitions.forEach(section => {
+                    getTemplateSections(templateId).forEach(section => {
                         const label = column.querySelector(`.section-label[data-section="${section.key}"]`);
                         const textarea = column.querySelector(`textarea[data-section="${section.key}"]`);
                         columnData.sections[section.key] = {
-                            label: label ? label.textContent.trim() : defaultSectionLabels[section.key],
+                            label: label ? label.textContent.trim() : getDefaultSectionLabel(templateId, section.key),
                             text: textarea ? textarea.value : ""
                         };
                     });
@@ -1376,6 +1651,7 @@
                 const fontSizeValue = parseInt(slide.dataset.fontSize, 10);
                 return {
                     title: titleEl ? titleEl.value : defaultTitle,
+                    templateId,
                     bgColor: slide.dataset.bgColor || "transparent",
                     textStyleIndex: parseStyleIndex(slide.dataset.textStyleIndex),
                     fontSize: Number.isNaN(fontSizeValue) ? currentFontSize : fontSizeValue,
@@ -1384,21 +1660,18 @@
             });
         }
 
-        function createColumn(colIndex, stage = "NOW", seed = {}) {
+        function createColumn(templateId, columnIndex, seed = {}) {
             const column = document.createElement("div");
             column.className = "column";
-            column.dataset.stage = seed.stage || stage;
-            const humanIndex = colIndex + 1;
-            const defaultTitleText =
-                stage === "NOW" ? "Now" :
-                    stage === "NEXT" ? "Next" :
-                        stage === "LATER" ? "Later" :
-                            `Colonne ${humanIndex}`;
-            const fallbackStage = seed.stageLabel || defaultStagePillLabels[column.dataset.stage] || column.dataset.stage;
-            const stageColor = seed.stageColor || "#ffffff";
+            const columnConfig = getTemplateColumn(templateId, columnIndex);
+            column.dataset.stage = columnConfig.stage;
+            const baseStageLabel = columnConfig.label;
+            const fallbackStage = seed.stageLabel || baseStageLabel;
+            const stageColor = seed.stageColor || stageColors[columnConfig.stage] || "#ffffff";
             column.style.setProperty("--stage-color", stageColor);
 
-            const sectionsHtml = sectionDefinitions.map(section => `
+            const sectionsHtml = getTemplateSections(templateId)
+                .map(section => `
         <div class="section">
           <div class="section-label-row">
             <span class="section-label" data-section="${section.key}" contenteditable="true">${section.icon} ${section.label}</span>
@@ -1448,12 +1721,12 @@
 
             column.querySelectorAll(".section-label").forEach(bindSectionLabel);
 
-            sectionDefinitions.forEach(section => {
+            getTemplateSections(templateId).forEach(section => {
                 const label = column.querySelector(`.section-label[data-section="${section.key}"]`);
                 const textarea = column.querySelector(`textarea[data-section="${section.key}"]`);
                 const sectionSeed = seed.sections && seed.sections[section.key];
                 if (sectionSeed) {
-                    label.textContent = sectionSeed.label || defaultSectionLabels[section.key];
+                    label.textContent = sectionSeed.label || getDefaultSectionLabel(templateId, section.key);
                     textarea.value = sectionSeed.text || "";
                 }
                 monitorTextareaOverflow(textarea);
@@ -1487,6 +1760,10 @@
             slide.dataset.index = index;
             const titleValue = (seed.title || defaultTitle).replace(/"/g, '&quot;');
             const subtitleValue = (seed.subtitle || defaultSubtitle).replace(/"/g, '&quot;');
+            const templateId = seed.templateId || templates[0].id;
+            const template = getTemplateById(templateId);
+            slide.dataset.templateId = templateId;
+            slide.dataset.tabLabel = seed.tabLabel || template.name;
             slide.innerHTML = `
   <div class="slide-header">
     <div class="slide-title-row">
@@ -1498,9 +1775,16 @@
   </div>
 `;
             const columnsContainer = slide.querySelector(".columns");
-            ["NOW", "NEXT", "LATER"].forEach((stage, columnIndex) => {
+            getTemplateColumns(templateId).forEach((_, columnIndex) => {
                 const columnSeed = seed.columns && seed.columns[columnIndex];
-                columnsContainer.appendChild(createColumn(columnIndex, stage, columnSeed));
+                columnsContainer.appendChild(createColumn(templateId, columnIndex, columnSeed));
+            });
+            const templateColumns = getTemplateColumns(templateId);
+            columnsContainer.querySelectorAll(".column").forEach((column, columnIndex) => {
+                const columnTitle = column.querySelector(".column-title");
+                if (!columnTitle.textContent.trim()) {
+                    columnTitle.textContent = templateColumns[columnIndex]?.label || "";
+                }
             });
 
             columnsContainer.addEventListener("click", event => {
@@ -1517,18 +1801,55 @@
             return slide;
         }
 
+        function applyTemplateToSlide(slide, templateId) {
+            if (!slide) return;
+            const columnDefs = getTemplateColumns(templateId);
+            const templateSections = getTemplateSections(templateId);
+            slide.dataset.templateId = templateId;
+            slide.dataset.tabLabel = getTemplateById(templateId).name;
+            columnDefs.forEach((columnDef, columnIndex) => {
+                const column = slide.querySelectorAll(".column")[columnIndex];
+                if (!column) return;
+                column.dataset.stage = columnDef.stage;
+                column.style.setProperty("--stage-color", stageColors[columnDef.stage] || "#ffffff");
+                const columnTitle = column.querySelector(".column-title");
+                if (columnTitle) {
+                    columnTitle.textContent = columnDef.label;
+                }
+                templateSections.forEach(section => {
+                    const label = column.querySelector(`.section-label[data-section="${section.key}"]`);
+                    if (label) {
+                        label.textContent = `${section.icon} ${section.label}`;
+                    }
+                    const textarea = column.querySelector(`textarea[data-section="${section.key}"]`);
+                    if (textarea) {
+                        textarea.dataset.placeholder = section.examples || "";
+                        if (!textarea.value) {
+                            textarea.placeholder = section.examples || "";
+                        }
+                    }
+                });
+            });
+            refreshTabs();
+            setActiveTab(activeIndex);
+        }
+
         function createTabButton(index) {
             const btn = document.createElement("button");
             btn.className = "tab-btn";
             btn.dataset.index = index;
             const slide = slidesContainer.querySelector(`.slide[data-index="${index}"]`);
-            const label = slide?.dataset.tabLabel || "Page " + (index + 1);
+            const template = slide ? getTemplateById(slide.dataset.templateId) : templates[0];
+            const baseLabel = (slide?.dataset.tabLabel || template?.name || `Page ${index + 1}`).trim();
+            const label = `${template?.emoji || ""} ${baseLabel}`.trim();
             btn.textContent = label;
             btn.addEventListener("click", () => setActiveTab(index));
             btn.addEventListener("dblclick", () => {
                 const newName = prompt("Renommer l'onglet", btn.textContent);
                 if (!newName) return;
-                btn.textContent = newName;
+                const template = slide ? getTemplateById(slide.dataset.templateId) : templates[0];
+                const formatted = `${template?.emoji || ""} ${newName}`.trim();
+                btn.textContent = formatted;
                 if (slide) {
                     slide.dataset.tabLabel = newName;
                 }
@@ -1568,6 +1889,10 @@
                 currentFontSize = normalizeFontSize(activeSlide.dataset.fontSize ?? currentFontSize);
                 syncFontControls();
                 syncBackgroundSelector();
+                currentTemplateId = activeSlide.dataset.templateId || templates[0].id;
+                if (templateSelect) {
+                    templateSelect.value = currentTemplateId;
+                }
             }
         }
 
@@ -1575,15 +1900,18 @@
             if (!slide) {
                 return [];
             }
+            const templateId = slide.dataset.templateId || templates[0].id;
             return Array.from(slide.querySelectorAll(".column")).map(column => {
                 const columnTitleEl = column.querySelector(".column-title");
                 const stageLabel = columnTitleEl ? columnTitleEl.textContent.trim() : column.dataset.stage || "";
                 const stageColor = column.style.getPropertyValue("--stage-color").trim() || "#ffffff";
                 const sections = {};
-                sectionDefinitions.forEach(section => {
+                getTemplateSections(templateId).forEach(section => {
                     const label = column.querySelector(`.section-label[data-section="${section.key}"]`);
+                    const textarea = column.querySelector(`textarea[data-section="${section.key}"]`);
                     sections[section.key] = {
-                        label: label ? (label.textContent.trim() || defaultSectionLabels[section.key]) : defaultSectionLabels[section.key]
+                        label: label ? (label.textContent.trim() || getDefaultSectionLabel(templateId, section.key)) : getDefaultSectionLabel(templateId, section.key),
+                        text: textarea ? textarea.value : ""
                     };
                 });
                 return { stageLabel, stageColor, sections };
@@ -1601,12 +1929,14 @@
             const textStyleIndex = parseStyleIndex(slide.dataset.textStyleIndex);
             const fontSize = normalizeFontSize(slide.dataset.fontSize ?? currentFontSize);
             const columns = buildColumnSeeds(slide);
+            const templateId = slide.dataset.templateId || templates[0].id;
             return {
                 title: titleEl?.value || defaultTitle,
                 subtitle: subtitleEl?.value || defaultSubtitle,
                 bgColor,
                 textStyleIndex,
                 fontSize,
+                templateId,
                 columns
             };
         }
@@ -1616,6 +1946,7 @@
                 return {
                     title: defaultTitle,
                     subtitle: defaultSubtitle,
+                    templateId: templates[0].id,
                     bgColor: "transparent",
                     textStyleIndex: currentTextStyleIndex,
                     fontSize: currentFontSize
@@ -1626,6 +1957,7 @@
                 return {
                     title: defaultTitle,
                     subtitle: defaultSubtitle,
+                    templateId: templates[0].id,
                     bgColor: "transparent",
                     textStyleIndex: currentTextStyleIndex,
                     fontSize: currentFontSize
@@ -1636,6 +1968,7 @@
             return {
                 title: prevTitleEl ? prevTitleEl.value : defaultTitle,
                 subtitle: prevSubtitleEl ? prevSubtitleEl.value : defaultSubtitle,
+                templateId: previousSlide.dataset.templateId || templates[0].id,
                 bgColor: previousSlide.dataset.bgColor || "transparent",
                 textStyleIndex: parseStyleIndex(previousSlide.dataset.textStyleIndex),
                 fontSize: normalizeFontSize(previousSlide.dataset.fontSize ?? currentFontSize),
@@ -1653,6 +1986,19 @@
             updateDeleteButtonState();
             setActiveTab(idx);
             schedulePersist();
+        }
+
+        function createDefaultSlides() {
+            slidesContainer.innerHTML = "";
+            slideCount = 0;
+            activeIndex = 0;
+            templates.forEach((template, index) => {
+                const slide = createSlide(index, { templateId: template.id });
+                slidesContainer.appendChild(slide);
+                slideCount++;
+            });
+            refreshTabs();
+            setActiveTab(0);
         }
 
 
@@ -1690,9 +2036,10 @@
 
         if (resetPromptsBtn) {
             resetPromptsBtn.addEventListener("click", () => {
-                objectivePromptInput.value = defaultObjectivePrompt;
-                meansPromptInput.value = defaultMeansPrompt;
-                indicatorsPromptInput.value = defaultIndicatorsPrompt;
+                sectionKeys.forEach(sectionKey => {
+                    promptLibrary[activePromptTemplateId][sectionKey] = defaultPromptTemplate;
+                });
+                setPromptFieldsForTemplate(activePromptTemplateId);
                 schedulePersist();
             });
         }
@@ -1728,7 +2075,12 @@
                 settings: {
                     ratioIndex: currentRatioIndex,
                     textStyleIndex: currentTextStyleIndex,
-                    fontSize: currentFontSize
+                    fontSize: currentFontSize,
+                    apiKey: apiKeyInput.value,
+                    context: contextField.value,
+                    prompts: promptLibrary,
+                    promptTemplateId: activePromptTemplateId,
+                    defaultTemplateId: currentTemplateId
                 }
             };
             const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -1740,20 +2092,12 @@
             closeContextMenus();
         });
 
-        function importSlidesFromData(slidesData, settings) {
+        function importSlidesFromData(slidesData, settings = {}) {
             const slideList = Array.isArray(slidesData) ? slidesData : [];
             slidesContainer.innerHTML = "";
             slideCount = 0;
             activeIndex = 0;
-            if (typeof settings.ratioIndex === "number") {
-                applyRatio(settings.ratioIndex);
-            }
-            if (typeof settings.textStyleIndex === "number") {
-                currentTextStyleIndex = settings.textStyleIndex;
-            }
-            if (typeof settings.fontSize === "number") {
-                currentFontSize = normalizeFontSize(settings.fontSize);
-            }
+            applySettingsFromPayload(settings);
             slideList.forEach((slideData, index) => {
                 const slide = createSlide(index, {
                     ...slideData,
@@ -1901,7 +2245,6 @@
                 text: `${column.stageLabel || column.stage || ""}`.trim(),
                 options: { bold: true, fontSize: 10 }
             }));
-            const sectionKeys = ["objective", "means", "indicators"];
             const rows = sectionKeys.map(key =>
                 columns.map(column => ({
                     text: formatSectionCell(column.sections[key]),
@@ -1962,14 +2305,13 @@
             return template.replace(/\{\{(\w+)\}\}/g, (_, key) => data[key] ?? "");
         }
 
-        const fieldPromptTemplates = {
-            objective: () => objectivePromptInput.value.trim() || defaultObjectivePrompt,
-            means: () => meansPromptInput.value.trim() || defaultMeansPrompt,
-            indicators: () => indicatorsPromptInput.value.trim() || defaultIndicatorsPrompt
-        };
+        function getPromptTemplateForSection(templateId, sectionKey) {
+            const sectionPrompts = promptLibrary[templateId] || promptLibrary[templates[0].id];
+            return sectionPrompts[sectionKey] || defaultPromptTemplate;
+        }
 
-        function buildFieldPrompt(section, contextData) {
-            const template = fieldPromptTemplates[section]();
+        function buildFieldPrompt(section, templateId, contextData) {
+            const template = getPromptTemplateForSection(templateId, section);
             return fillTemplate(template, contextData);
         }
 
@@ -2046,21 +2388,19 @@
         async function handleFieldAi(button) {
             const section = button.dataset.section;
             const textarea = button.closest(".section-text-row")?.querySelector("textarea");
-            if (!textarea) return;
+            if (!textarea || !section) return;
             const column = button.closest(".column");
+            const slide = button.closest(".slide");
             const columnTitle = column?.querySelector(".column-title")?.textContent.trim() || "";
-            const objectivesValue = column?.querySelector("textarea[data-section=\"objective\"]")?.value.trim() || "";
-            const meansValue = column?.querySelector("textarea[data-section=\"means\"]")?.value.trim() || "";
-            const indicatorsValue = column?.querySelector("textarea[data-section=\"indicators\"]")?.value.trim() || "";
+            const sectionLabel = column?.querySelector(`.section-label[data-section="${section}"]`)?.textContent.trim() || "";
+            const templateId = slide?.dataset.templateId || templates[0].id;
             const promptContext = {
                 contextField: contextField.value.trim(),
                 columnTitle,
                 fieldValue: textarea.value.trim(),
-                objectifs: objectivesValue,
-                moyens: meansValue,
-                indicateurs: indicatorsValue
+                sectionTitle: sectionLabel
             };
-            const message = buildFieldPrompt(section, promptContext);
+            const message = buildFieldPrompt(section, templateId, promptContext);
             const messages = [
                 { role: "system", content: "Tu es un assistant produit." },
                 { role: "user", content: message }
@@ -2122,7 +2462,7 @@
         switchModalTab("context");
         const hadSavedSlides = loadSavedState();
         if (!hadSavedSlides) {
-            addTab();
+            createDefaultSlides();
         }
         applyRatio(currentRatioIndex);
     </script>
