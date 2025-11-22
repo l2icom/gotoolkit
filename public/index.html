@@ -49,8 +49,8 @@
             background: #fff;
             border-radius: 14px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            padding: 12px;
-            min-width: 260px;
+            padding: 0;
+            min-width: 150px;
             max-width: 320px;
             display: none;
             z-index: 40;
@@ -63,7 +63,8 @@
         .menu-panel {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 0;
+            padding: 0;
         }
 
         .menu-header {
@@ -74,10 +75,42 @@
         .context-menu label {
             margin: 0;
             font-size: 13px;
+            padding: 12px;
         }
 
         .context-menu select {
             width: 100%;
+        }
+
+        .context-menu button {
+            border-radius: 0;
+            background: transparent;
+            text-align: left;
+            padding: 0;
+            width: 100%;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .menu-panel-btn {
+            border-radius: 0;
+            border: 1px solid #fff;
+            background: transparent;
+            text-align: left;
+            padding: 8px 12px;
+            width: 100%;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .menu-panel-btn:hover {
+            background: rgba(42, 122, 87, 0.08);
+            border-radius: 0px;
+        }
+
+        .context-menu button:hover {
+            background: rgba(42, 122, 87, 0.08);
         }
 
 
@@ -851,6 +884,7 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
+            padding: 10px;
         }
 
         .ratio-grid {
@@ -1045,10 +1079,10 @@
                     <button id="fileMenuBtn" type="button" aria-label="Fichier">📄</button>
                     <div class="context-menu" id="fileMenu">
                         <div class="menu-panel">
-                            <button id="importJsonBtn" type="button">⬆️ Open</button>
-                            <button id="exportJsonBtn" type="button">⬇️ Save</button>
-                            <button id="exportPptxBtn" type="button">📊 Powerpoint</button>
-                            <button id="exportPngBtn" type="button">🖼️ Image</button>
+                            <button id="importJsonBtn" type="button" class="menu-panel-btn">⬆️ Open</button>
+                            <button id="exportJsonBtn" type="button" class="menu-panel-btn">⬇️ Save</button>
+                            <button id="exportPptxBtn" type="button" class="menu-panel-btn">📊 Powerpoint</button>
+                            <button id="exportPngBtn" type="button" class="menu-panel-btn">🖼️ Image</button>
                         </div>
                     </div>
                 </div>
@@ -1060,7 +1094,7 @@
             <img src="logo.gif" alt="Logo Go-Toolkit">
             <strong>Go-Toolkit</strong>
             <span>Version 0.11.22</span>
-            <span>Développée par Quang TRAN avec Codex.</span>
+            <span>Développé par Quang TRAN.</span>
             <span>Code source disponible sur <a href="https://github.com/quangfr/gotoolkit" target="_blank"
                     rel="noreferrer">github.com/quangfr/gotoolkit</a>.</span>
             <span>Usage réservé à Savane Consulting.</span>
@@ -1171,9 +1205,9 @@
                 name: "GO-Roadmap",
                 defaultTitle: "GO-Roadmap",
                 columns: [
-                    { stage: "first-col", label: "NOW" },
-                    { stage: "second-col", label: "NEXT" },
-                    { stage: "third-col", label: "LATER" }
+                    { stage: "first-col", label: "Now" },
+                    { stage: "second-col", label: "Next" },
+                    { stage: "third-col", label: "Later" }
                 ],
                 sections: [
                     {
