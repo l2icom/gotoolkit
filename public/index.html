@@ -1100,8 +1100,6 @@
             <strong>Go-Toolkit</strong>
             <span>Version 0.11.22</span>
             <span>Développé par Quang TRAN.</span>
-            <span>Code source disponible sur <a href="https://github.com/quangfr/gotoolkit" target="_blank"
-                    rel="noreferrer">github.com/quangfr/gotoolkit</a>.</span>
             <span>Usage réservé à Savane Consulting.</span>
             <button id="tourReplayBtn" type="button">Tour guidé</button>
         </div>
@@ -1308,7 +1306,7 @@
             }
         ];
 
-        const defaultPromptTemplate = `En tant que consultant product owner expérimenté de 20 ans, sur la base du contexte {{contextField}}, du contenu {{fieldValue}} et dans le cadre de {{columnTitle}}, sous forme de 2 à 3 {{sectionTitle}} d'un point de vue utilisateur (un • de < 20 mots pour chaque) sans introduction préalable ni émoji`;
+        const defaultPromptTemplate = `En tant que consultant product owner expérimenté, sur la base du contexte {{contextField}}, du contenu {{fieldValue}} et dans le cadre de {{columnTitle}}, sous forme de 2 à 3 {{sectionTitle}} d'un point de vue utilisateur (un • de < 20 mots pour chaque) sans introduction préalable ni émoji`;
 
         function getTemplateById(id) {
             return templates.find(template => template.id === id) || templates[0];
