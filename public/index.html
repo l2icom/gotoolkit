@@ -1211,6 +1211,7 @@
                             </label>
                         </div>
                     </div>
+                    <button id="applyPromptToAllBtn" type="button" class="reset-prompts-btn">Tout appliquer</button>
                     <button id="resetPromptsBtn" type="button" class="reset-prompts-btn">Réinitialiser</button>
                 </div>
             </div>
@@ -1450,6 +1451,7 @@
         const iaModeToggle = document.getElementById("iaModeToggle");
         const iaModeButtons = Array.from(iaModeToggle?.querySelectorAll("[data-ia-mode]") ?? []);
         const promptCustomizationArea = document.getElementById("promptCustomizationArea");
+        const applyPromptToAllBtn = document.getElementById("applyPromptToAllBtn");
 
         const STORAGE_KEY = "go-roadmap-state";
 
@@ -1528,6 +1530,7 @@
         let currentTemplateId = templates[0].id;
         let activePromptTemplateId = templates[0].id;
         let activeIaMode = IA_MODE_EXPRESS;
+        let lastFocusedPromptTextarea = null;
         const promptLibrary = templates.reduce((acc, template) => {
             acc[template.id] = sectionKeys.reduce((inner, key) => {
                 inner[key] = defaultPromptTemplate;
@@ -1697,6 +1700,9 @@
         }
 
         promptInputs.forEach(textarea => {
+            textarea.addEventListener("focus", () => {
+                lastFocusedPromptTextarea = textarea;
+            });
             textarea.addEventListener("input", () => {
                 const sectionKey = textarea.dataset.section;
                 if (!sectionKey) return;
@@ -2347,10 +2353,32 @@
             toggleMenu(fileMenu);
         });
 
+        if (applyPromptToAllBtn) {
+            applyPromptToAllBtn.addEventListener("click", () => {
+                const fallbackTextarea = promptInputs[0];
+                if (!fallbackTextarea) return;
+                const sourceValue = (lastFocusedPromptTextarea?.value ?? fallbackTextarea.value ?? "").trim();
+                const promptValue = sourceValue || defaultPromptTemplate;
+                templates.forEach(template => {
+                    const library = promptLibrary[template.id] || {};
+                    sectionKeys.forEach(sectionKey => {
+                        library[sectionKey] = promptValue;
+                    });
+                    promptLibrary[template.id] = library;
+                });
+                setPromptFieldsForTemplate(activePromptTemplateId);
+                schedulePersist();
+            });
+        }
+
         if (resetPromptsBtn) {
             resetPromptsBtn.addEventListener("click", () => {
-                sectionKeys.forEach(sectionKey => {
-                    promptLibrary[activePromptTemplateId][sectionKey] = defaultPromptTemplate;
+                templates.forEach(template => {
+                    const library = promptLibrary[template.id] || {};
+                    sectionKeys.forEach(sectionKey => {
+                        library[sectionKey] = defaultPromptTemplate;
+                    });
+                    promptLibrary[template.id] = library;
                 });
                 setPromptFieldsForTemplate(activePromptTemplateId);
                 schedulePersist();
@@ -2764,7 +2792,18 @@
             });
         });
 
+        document.addEventListener("keydown", event => {
+            if (event.key === "Escape") {
+                document.querySelectorAll(".modal-overlay.open").forEach(modal => closeModal(modal));
+            }
+        });
+
         contextBtn.addEventListener("click", () => {
+            activePromptTemplateId = currentTemplateId;
+            if (promptTemplateSelect) {
+                promptTemplateSelect.value = currentTemplateId;
+            }
+            setPromptFieldsForTemplate(activePromptTemplateId);
             switchModalTab("context");
             openModal(contextModal);
         });
