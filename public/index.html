@@ -2665,7 +2665,9 @@
                 }
                 const payload = await response.json();
                 console.debug("OpenAI response payload", payload);
-                return payload.choices?.[0]?.message?.content || "";
+                const choice = payload.choices?.[0] || {};
+                const content = choice.message?.content ?? choice.text ?? "";
+                return content;
             } catch (err) {
                 console.error("Erreur OpenAI", err);
                 alert("Impossible de contacter OpenAI. Vérifie ta clé Open API Platform et ta connexion.");
@@ -2720,8 +2722,9 @@
             button.textContent = "⏳";
             button.disabled = true;
             try {
-                const aiText = await callOpenAI(messages);
-                if (!aiText) return;
+            const aiText = await callOpenAI(messages);
+            console.log("OpenAI field response", aiText);
+            if (aiText == null) return;
                 textarea.value = aiText.trim();
                 updateTextareaOverflowState(textarea);
                 schedulePersist();
@@ -2806,13 +2809,8 @@
             },
             {
                 title: "Exports",
-                description: "Le bouton 📄 permet d'exporter la page courante en Image ou en PowerPoint (texte) pour l'intégrer dans tes livrables.",
+                description: "Le bouton 📄 permet d'exporter la page courante en Image (page courante) ou en PowerPoint (texte) pour l'intégrer dans tes livrables.",
                 selector: "#fileMenuTrigger"
-            },
-            {
-                title: "Personnalisation",
-                description: "Le bouton 🖌️ donne accès aux options d'affichage (police, taille, ratio, fond de couleur) afin que l'export en Image soit lisible.",
-                selector: "#textStyleBtn"
             },
             {
                 title: "Assistant ✨IA",
