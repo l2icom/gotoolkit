@@ -1353,8 +1353,8 @@
             }
         ];
 
-        const defaultPromptTemplate = `Tu es un consultant product owner expérimenté, sur la base du contexte {{contextField}} et dans le cadre de {{columnTitle}}, reformuler {{fieldValue}} sous forme de 2 à 3 {{sectionTitle}} d'un point de vue business et utilisateur (un • de < 20 mots pour chaque) sans introduction préalable ni émoji`;
-        const apprentPromptTemplate = `Tu es un coach product owner expérimenté, sur la base du contexte {{contextField}} et dans le cadre de {{columnTitle}}, reprendre le texte suivant ({{fieldValue}}) en ignorant les éléments entre "[ ]" sous forme de 2 à 3 éléments synthétique (un • de < 20 mots pour chaque) sans toucher au sens, puis en dessous, donne entre 2-3 pistes d'amélioration (💡) et 2-3 pistes de réflexion (💭) (commencer par un 💡 ou un 💭 de < 20 mots pour chaque et entre "[ ]" ) pour obtenir 2 à 3 {{sectionTitle}} d'un point de vue business et utilisateur (un • de < 20 mots pour chaque). Tout ça sans introduction préalable ni émoji`;
+        const defaultPromptTemplate = `Tu es un consultant product owner expérimenté, sur la base du contexte {{contextField}} et dans le cadre de {{columnTitle}}, reformuler {{fieldValue}} sous forme de 2 à 3 {{sectionTitle}} d'un point de vue business et utilisateur (un • de < 18 mots pour chaque) sans introduction préalable ni émoji`;
+        const apprentPromptTemplate = `Tu es un coach product owner expérimenté, sur la base du contexte {{contextField}} et dans le cadre de {{columnTitle}}, reprendre le texte suivant ({{fieldValue}}) en ignorant les éléments entre "[ ]" sous forme de 2 à 3 éléments synthétiques (un • de < 18 mots pour chaque) sans toucher au sens, puis en dessous, proposer 2 à 3 questions d'approfondissement pour l'aider à formuler des {{sectionTitle}} synthétiques et pertinents (< 20 mots pour chaque et entre "[ ]" ). Tout ça sans introduction préalable ni émoji`;
         const IA_MODE_EXPRESS = "express";
         const IA_MODE_APPRENTI = "apprenti";
         const IA_MODE_EXPERIMENTAL = "experimental";
@@ -2655,8 +2655,7 @@
                     body: JSON.stringify({
                         model: "gpt-5-nano",
                         messages,
-                        temperature: 1,
-                        max_completion_tokens: 800
+                        temperature: 1
                     })
                 });
                 if (!response.ok) {
@@ -2722,9 +2721,9 @@
             button.textContent = "⏳";
             button.disabled = true;
             try {
-            const aiText = await callOpenAI(messages);
-            console.log("OpenAI field response", aiText);
-            if (aiText == null) return;
+                const aiText = await callOpenAI(messages);
+                console.log("OpenAI field response", aiText);
+                if (aiText == null) return;
                 textarea.value = aiText.trim();
                 updateTextareaOverflowState(textarea);
                 schedulePersist();
