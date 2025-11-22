@@ -1122,7 +1122,7 @@
                     <button id="tourCloseBtn" type="button">Fermer</button>
                 </div>
             </div>
-            <button id="tourSkipBtn" class="tour-skip" type="button">Ne plus afficher</button>
+            <button id="tourSkipBtn" class="tour-skip" type="button">×</button>
         </div>
     </div>
 
@@ -2705,7 +2705,7 @@
             {
                 title: "Sélecteur de template",
                 description: "Choisis parmi les trois modèles disponibles, navigue page par page via les onglets et utilise les icônes ➕/🗑️ pour ajouter, renommer ou supprimer une page à tout moment.",
-                selector: "#templateSelect"
+                selectors: ["#templateSelect", "#tabs", ".tab-btn-add", ".tab-btn-delete"]
             },
             {
                 title: "Titre, colonnes et sections",
@@ -2714,7 +2714,7 @@
             },
             {
                 title: "Exports",
-                description: "Le menu Fichier permet d'exporter la page courante en Image ou en PowerPoint (texte) pour l'intégrer dans tes livrables.",
+                description: "Le bouton 📄 permet d'exporter la page courante en Image ou en PowerPoint (texte) pour l'intégrer dans tes livrables.",
                 selector: "#fileMenuTrigger"
             },
             {
@@ -2729,13 +2729,14 @@
             },
             {
                 title: "IA sur chaque champ",
-                description: "Le bouton ✨ te renvoit une réponse claire et structuré en 10-30 secondes à partir des éléments renseignés",
+                description: "Le bouton ✨ te renvoit une réponse claire et structuré en 15-30 secondes à partir des éléments renseignés",
                 selector: ".field-ai-btn"
             },
             {
                 title: "Prompts personnalisables",
                 description: "Dans le modal IA, tu peux adapter les prompts par section afin de guider la génération du texte comme tu l'entends.",
-                selector: "#promptTemplateSelect"
+                selector: "#promptTemplateSelect",
+                openContextModal: true
             },
             {
                 title: "Colonnes, sections, Open & Save",
@@ -2853,6 +2854,15 @@
             tourHighlight.style.top = `${rect.top - offset}px`;
         }
 
+        function handleTourModal(step) {
+            if (!contextModal) return;
+            if (step?.openContextModal) {
+                openModal(contextModal);
+            } else {
+                closeModal(contextModal);
+            }
+        }
+
         function renderTourStep() {
             if (!tourOverlay || !tourSteps.length) return;
             const step = tourSteps[currentTourIndex];
@@ -2864,6 +2874,7 @@
             const selectors = getSelectorsFromStep(step);
             updateHighlight(selectors);
             positionTourPanel(selectors);
+            handleTourModal(step);
         }
 
         function openTour(startIndex = 0) {
