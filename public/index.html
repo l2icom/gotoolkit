@@ -1122,13 +1122,13 @@
                     <div class="context-menu" id="fileMenu">
                         <div class="menu-panel">
                             <button id="importJsonBtn" type="button" class="menu-panel-btn">📂 Ouvrir</button>
-                            <button id="exportJsonBtn" type="button" class="menu-panel-btn">💾 Enregsitrer</button>
+                            <button id="exportJsonBtn" type="button" class="menu-panel-btn">💾 Enregistrer</button>
                             <button id="exportPptxBtn" type="button" class="menu-panel-btn">📊 Powerpoint</button>
                             <button id="exportPngBtn" type="button" class="menu-panel-btn">🖼️ Image</button>
+                            <button id="infoButton" type="button" class="menu-panel-btn">ℹ️ À propos</button>
                         </div>
                     </div>
                 </div>
-                <button id="infoButton" type="button" class="info-button" aria-label="Plus d'informations">ℹ️</button>
             </div>
         </div>
 
@@ -2780,13 +2780,19 @@
 
         const infoButton = document.getElementById("infoButton");
         const infoPopup = document.getElementById("infoPopup");
+
+        function closeInfoPopup() {
+            infoPopup?.classList.remove("open");
+        }
+
         infoButton?.addEventListener("click", event => {
             event.stopPropagation();
+            closeContextMenus();
             infoPopup?.classList.toggle("open");
         });
         document.addEventListener("click", event => {
             if (!infoPopup?.contains(event.target) && event.target !== infoButton) {
-                infoPopup?.classList.remove("open");
+                closeInfoPopup();
             }
         });
 
@@ -2952,6 +2958,7 @@
 
         function openTour(startIndex = 0) {
             if (!tourOverlay) return;
+            closeInfoPopup();
             currentTourIndex = startIndex;
             tourOverlay.classList.add("visible");
             tourOverlay.setAttribute("aria-hidden", "false");
