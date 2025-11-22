@@ -1131,16 +1131,18 @@
                 <button class="modal-close" data-close="contextModal">×</button>
             </div>
             <div class="modal-panel" data-panel="context">
-                <label>
-                    OpenAI API key
-                    <input type="password" id="apiKeyInput" autocomplete="off" placeholder="sk-...">
-                </label>
+
                 <label>
                     Décris ton contexte et ta vision de produit
                     <textarea id="contextField" rows="4" placeholder="Contexte..."></textarea>
                 </label>
             </div>
             <div class="modal-panel hide" data-panel="settings">
+                <label>
+                    <a href="https://platform.openai.com/settings/organization/api-keys" target="_blank"
+                        rel="noreferrer">OpenAI API key</a>
+                    <input type="password" id="apiKeyInput" autocomplete="off" placeholder="sk-...">
+                </label>
                 <label>
                     Modèle de prompts
                     <select id="promptTemplateSelect" class="prompt-template-select"></select>
@@ -1215,8 +1217,8 @@
                 sections: [
                     {
                         key: "first-section",
-                        icon: "🎯",
-                        label: "Objectif",
+                        icon: "🧭",
+                        label: "Objectifs",
                         examples:
                             "Décrire ce que l’utilisateur ou l’entreprise gagne quand l’objectif est atteint. Exemples : \n• Réduire les erreurs de saisie de 20% \n• Accélérer l’accès aux indicateurs pour faciliter la décision \n• Simplifier le parcours utilisateur pour diminuer le temps d’action de 30%"
                     },
@@ -1229,7 +1231,7 @@
                     },
                     {
                         key: "third-section",
-                        icon: "📈",
+                        icon: "🔢",
                         label: "Indicateurs",
                         examples:
                             "Décrire comment mesurer la réussite : chiffres, adoption, délais. Exemples : \n• K1 : 95% de données complètes et conformes \n• K2 : Temps moyen d’usage < 40s \n• K3 : 70% d’utilisateurs actifs hebdo \n• K4 : -30% de tickets support"
@@ -1256,14 +1258,14 @@
                     },
                     {
                         key: "second-section",
-                        icon: "🧩",
+                        icon: "❤️",
                         label: "Besoins",
                         examples:
                             "Lister les besoins métier ou utilisateur prioritaires. Exemples : \n• Saisir une donnée en moins de 15s \n• Visualiser les tendances en un coup d’œil \n• Exporter automatiquement pour reporting"
                     },
                     {
                         key: "third-section",
-                        icon: "💡",
+                        icon: "⭐",
                         label: "Opportunités",
                         examples:
                             "Identifier les opportunités de design, de différenciation ou d’impact. Exemples : \n• Automatiser la validation pour réduire les erreurs \n• Proposer des parcours contextualisés \n• Réconcilier les sources pour enrichir l’analyse"
@@ -1283,21 +1285,21 @@
                 sections: [
                     {
                         key: "first-section",
-                        icon: "⚠️",
+                        icon: "🌧️",
                         label: "Problèmes",
                         examples:
                             "Lister les problèmes, frictions ou irritants observés. Exemples : \n• Les utilisateurs abandonnent la saisie \n• Les données sont incohérentes \n• L’API manque d’observabilité"
                     },
                     {
                         key: "second-section",
-                        icon: "🧠",
+                        icon: "🍂",
                         label: "Causes",
                         examples:
                             "Identifier les causes profondes ou hypothèses. Exemples : \n• UI trop chargée \n• Schéma data non aligné \n• API non documentée"
                     },
                     {
                         key: "third-section",
-                        icon: "🛠️",
+                        icon: "🌱",
                         label: "Solutions",
                         examples:
                             "Proposer des solutions rapides ou expérimentations. Exemples : \n• Prototyper un wizard de saisie \n• Ajouter des contrôles qualité data \n• Créer des endpoints documentés et versionnés"
@@ -2574,7 +2576,7 @@
                 return payload.choices?.[0]?.message?.content || "";
             } catch (err) {
                 console.error("Erreur OpenAI", err);
-                alert("Impossible de contacter OpenAI. Vérifie ta clé et ta connexion.");
+                alert("Impossible de contacter OpenAI. Vérifie ta clé Open API Platform et ta connexion.");
                 return null;
             }
         }
