@@ -80,19 +80,6 @@
             width: 100%;
         }
 
-        .menu-item {
-            border-radius: 8px;
-            border: 1px solid #e0d7c8;
-            background: #fff;
-            padding: 8px 10px;
-            font-size: 14px;
-            text-align: left;
-            cursor: pointer;
-        }
-
-        .menu-item:hover {
-            border-color: #2a7a57;
-        }
 
         .modal-header {
             display: flex;
@@ -274,7 +261,8 @@
             flex-wrap: wrap;
         }
 
-        .global-actions button {
+        .global-actions button,
+        .reset-prompts-btn {
             border-radius: 999px;
             border: 1px solid #ebe0d1;
             background: #fff;
@@ -289,6 +277,165 @@
             background: #2a7a57;
             color: #fff;
             box-shadow: var(--shadow-soft);
+        }
+
+        .info-button {
+            border-radius: 999px;
+            border: 1px solid #ebe0d1;
+            background: #fff;
+            padding: 6px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+        }
+
+        .info-popup {
+            position: absolute;
+            top: 56px;
+            right: 12px;
+            width: 280px;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 12px;
+            z-index: 60;
+        }
+
+        .info-popup.open {
+            display: flex;
+        }
+
+        .info-popup img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            align-self: center;
+        }
+
+        .info-popup a {
+            color: #2a7a57;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .info-popup button {
+            border-radius: 8px;
+            border: none;
+            background: #2a7a57;
+            color: #fff;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .tour-overlay {
+            position: fixed;
+            inset: 0;
+            background: transparent;
+            display: none;
+            z-index: 120;
+            pointer-events: auto;
+        }
+
+        .tour-overlay.dimmed {
+            background: rgba(15, 15, 15, 0.65);
+        }
+
+        .tour-overlay.visible {
+            display: block;
+        }
+
+        .tour-highlight {
+            position: absolute;
+            border: 2px solid #2a7a57;
+            border-radius: 12px;
+            background: transparent;
+            box-shadow: 0 0 0 9999px rgba(15, 15, 15, 0.65);
+            transition: all 0.25s ease;
+            pointer-events: none;
+        }
+
+        .tour-highlight.hidden {
+            opacity: 0;
+        }
+
+        .tour-panel {
+            position: absolute;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 460px;
+            width: calc(100% - 40px);
+            background: #fff;
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+            color: #1f1f1f;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .tour-panel h4 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .tour-panel p {
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .tour-step-counter {
+            font-size: 11px;
+            color: #918b7f;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .tour-step-footer {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .tour-panel button {
+            border-radius: 8px;
+            border: 1px solid #ebe0d1;
+            background: #fff;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .tour-panel button.primary {
+            border: none;
+            background: #2a7a57;
+            color: #fff;
+        }
+
+        .tour-panel button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .tour-skip {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            border: none;
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
         }
 
         .template-select {
@@ -857,6 +1004,8 @@
                 <button class="tab-btn-delete" id="deleteTabBtn" type="button">🗑️</button>
             </div>
             <div class="global-actions">
+                <button id="contextBtn" type="button" aria-label="AI Assistant">✨</button>
+
                 <div class="menu-trigger" id="settingsMenuTrigger">
                     <button id="textStyleBtn" type="button" aria-label="Options d'affichage">🖌️</button>
                     <div class="context-menu" id="settingsMenu">
@@ -892,23 +1041,49 @@
                         </div>
                     </div>
                 </div>
-                <button id="contextBtn" type="button" aria-label="AI Assistant">✨</button>
                 <div class="menu-trigger" id="fileMenuTrigger">
                     <button id="fileMenuBtn" type="button" aria-label="Fichier">📄</button>
                     <div class="context-menu" id="fileMenu">
                         <div class="menu-panel">
-                            <button id="importJsonBtn" type="button" class="menu-item">⬆️ Import All</button>
-                            <button id="exportJsonBtn" type="button" class="menu-item">⬇️ Export All</button>
-                            <button id="exportPptxBtn" type="button" class="menu-item">📊 Powerpoint</button>
-                            <button id="exportPngBtn" type="button" class="menu-item">🖼️ Image</button>
+                            <button id="importJsonBtn" type="button">⬆️ Open</button>
+                            <button id="exportJsonBtn" type="button">⬇️ Save</button>
+                            <button id="exportPptxBtn" type="button">📊 Powerpoint</button>
+                            <button id="exportPngBtn" type="button">🖼️ Image</button>
                         </div>
                     </div>
                 </div>
+                <button id="infoButton" type="button" class="info-button" aria-label="Plus d'informations">ℹ️</button>
             </div>
+        </div>
+
+        <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
+            <img src="logo.gif" alt="Logo Go-Toolkit">
+            <strong>Go-Toolkit</strong>
+            <span>Version 0.11.22</span>
+            <span>Développée par Quang TRAN avec Codex.</span>
+            <span>Code source disponible sur <a href="https://github.com/quangfr/gotoolkit" target="_blank"
+                    rel="noreferrer">github.com/quangfr/gotoolkit</a>.</span>
+            <span>Usage réservé à Savane Consulting.</span>
+            <button id="tourReplayBtn" type="button">Tour guidé</button>
         </div>
 
         <div class="slides-container">
             <div id="slides" class="slide-wrapper"></div>
+        </div>
+
+        <div id="tourOverlay" class="tour-overlay" aria-hidden="true">
+            <div class="tour-highlight hidden" aria-hidden="true"></div>
+            <div class="tour-panel">
+                <span class="tour-step-counter" id="tourStepCounter"></span>
+                <h4 id="tourStepTitle"></h4>
+                <p id="tourStepDescription"></p>
+                <div class="tour-step-footer">
+                    <button id="tourPrevBtn" type="button">Précédent</button>
+                    <button id="tourNextBtn" type="button" class="primary">Suivant</button>
+                    <button id="tourCloseBtn" type="button">Fermer</button>
+                </div>
+            </div>
+            <button id="tourSkipBtn" class="tour-skip" type="button">Ne plus afficher</button>
         </div>
     </div>
 
@@ -953,7 +1128,7 @@
                         </label>
                     </div>
                 </div>
-                <button id="resetPromptsBtn" type="button">Réinitialiser les prompts</button>
+                <button id="resetPromptsBtn" type="button" class="reset-prompts-btn">Réinitialiser les prompts</button>
             </div>
         </div>
     </div>
@@ -962,9 +1137,9 @@
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
     <script>
         const stageColors = {
-            NOW: getComputedStyle(document.documentElement).getPropertyValue("--now-color").trim(),
-            NEXT: getComputedStyle(document.documentElement).getPropertyValue("--next-color").trim(),
-            LATER: getComputedStyle(document.documentElement).getPropertyValue("--later-color").trim()
+            "first-col": getComputedStyle(document.documentElement).getPropertyValue("--now-color").trim(),
+            "second-col": getComputedStyle(document.documentElement).getPropertyValue("--next-color").trim(),
+            "third-col": getComputedStyle(document.documentElement).getPropertyValue("--later-color").trim()
         };
         document.documentElement.style.setProperty("--global-background", "transparent");
 
@@ -994,10 +1169,11 @@
                 id: "go-roadmap",
                 emoji: "🗺️",
                 name: "GO-Roadmap",
+                defaultTitle: "GO-Roadmap",
                 columns: [
-                    { stage: "NOW", label: "NOW" },
-                    { stage: "NEXT", label: "NEXT" },
-                    { stage: "LATER", label: "LATER" }
+                    { stage: "first-col", label: "NOW" },
+                    { stage: "second-col", label: "NEXT" },
+                    { stage: "third-col", label: "LATER" }
                 ],
                 sections: [
                     {
@@ -1027,10 +1203,11 @@
                 id: "go-design",
                 emoji: "👤",
                 name: "GO-Design",
+                defaultTitle: "Go-Design",
                 columns: [
-                    { stage: "NOW", label: "Saisie de données" },
-                    { stage: "NEXT", label: "Consultation de données" },
-                    { stage: "LATER", label: "Analyse de données" }
+                    { stage: "first-col", label: "Saisie de données" },
+                    { stage: "second-col", label: "Consultation de données" },
+                    { stage: "third-col", label: "Analyse de données" }
                 ],
                 sections: [
                     {
@@ -1057,13 +1234,14 @@
                 ]
             },
             {
-                id: "go-workshop",
-                emoji: "💡",
-                name: "GO-Workshop",
+                id: "go-solve",
+                emoji: "🔎",
+                name: "GO-Solve",
+                defaultTitle: "Go-Solve",
                 columns: [
-                    { stage: "NOW", label: "UI" },
-                    { stage: "NEXT", label: "Data" },
-                    { stage: "LATER", label: "API" }
+                    { stage: "first-col", label: "UI" },
+                    { stage: "second-col", label: "Data" },
+                    { stage: "third-col", label: "API" }
                 ],
                 sections: [
                     {
@@ -1097,6 +1275,11 @@
             return templates.find(template => template.id === id) || templates[0];
         }
 
+        function getDefaultTitle(templateId) {
+            const template = getTemplateById(templateId);
+            return template?.defaultTitle || template?.name || fallbackTitle;
+        }
+
         function getTemplateSections(templateId) {
             return getTemplateById(templateId).sections;
         }
@@ -1115,7 +1298,7 @@
         }
 
         function getTemplateColumn(templateId, index) {
-            return getTemplateColumns(templateId)[index] || { stage: "NOW", label: `Colonne ${index + 1}` };
+            return getTemplateColumns(templateId)[index] || { stage: "first-col", label: `Colonne ${index + 1}` };
         }
 
         let templateSlides = {};
@@ -1320,7 +1503,7 @@
             setPromptFieldsForTemplate(activePromptTemplateId);
         }
 
-        const defaultTitle = "GO-Roadmap";
+        const fallbackTitle = "GO-Roadmap";
         const defaultSubtitle = "Produit / équipe / scope";
         const ratioButtons = [];
 
@@ -1690,7 +1873,7 @@
                 const titleEl = slide.querySelector(".slide-title-input");
                 const fontSizeValue = parseInt(slide.dataset.fontSize, 10);
                 return {
-                    title: titleEl ? titleEl.value : defaultTitle,
+                    title: titleEl ? titleEl.value : getDefaultTitle(templateId),
                     templateId,
                     bgColor: slide.dataset.bgColor || "transparent",
                     textStyleIndex: parseStyleIndex(slide.dataset.textStyleIndex),
@@ -1798,10 +1981,9 @@
             const slide = document.createElement("div");
             slide.className = "slide";
             slide.dataset.index = index;
-            const titleValue = (seed.title || defaultTitle).replace(/"/g, '&quot;');
-            const subtitleValue = (seed.subtitle || defaultSubtitle).replace(/"/g, '&quot;');
             const templateId = seed.templateId || templates[0].id;
-            const template = getTemplateById(templateId);
+            const titleValue = (seed.title || getDefaultTitle(templateId)).replace(/"/g, '&quot;');
+            const subtitleValue = (seed.subtitle || defaultSubtitle).replace(/"/g, '&quot;');
             slide.dataset.templateId = templateId;
             slide.dataset.tabLabel = seed.tabLabel || `Page ${index + 1}`;
             slide.innerHTML = `
@@ -1955,7 +2137,7 @@
             const columns = buildColumnSeeds(slide);
             const templateId = slide.dataset.templateId || templates[0].id;
             return {
-                title: titleEl?.value || defaultTitle,
+                title: titleEl?.value || getDefaultTitle(templateId),
                 subtitle: subtitleEl?.value || defaultSubtitle,
                 bgColor,
                 textStyleIndex,
@@ -1968,7 +2150,7 @@
         function getDefaultFromLastSlide() {
             if (slideCount === 0) {
                 return {
-                    title: defaultTitle,
+                    title: getDefaultTitle(templates[0].id),
                     subtitle: defaultSubtitle,
                     templateId: templates[0].id,
                     bgColor: "transparent",
@@ -1979,7 +2161,7 @@
             const previousSlide = slidesContainer.querySelector(`.slide[data-index="${slideCount - 1}"]`);
             if (!previousSlide) {
                 return {
-                    title: defaultTitle,
+                    title: getDefaultTitle(templates[0].id),
                     subtitle: defaultSubtitle,
                     templateId: templates[0].id,
                     bgColor: "transparent",
@@ -1989,10 +2171,11 @@
             }
             const prevTitleEl = previousSlide.querySelector(".slide-title-input");
             const prevSubtitleEl = previousSlide.querySelector(".slide-subtitle-input");
+            const prevTemplateId = previousSlide.dataset.templateId || templates[0].id;
             return {
-                title: prevTitleEl ? prevTitleEl.value : defaultTitle,
+                title: prevTitleEl ? prevTitleEl.value : getDefaultTitle(prevTemplateId),
                 subtitle: prevSubtitleEl ? prevSubtitleEl.value : defaultSubtitle,
-                templateId: previousSlide.dataset.templateId || templates[0].id,
+                templateId: prevTemplateId,
                 bgColor: previousSlide.dataset.bgColor || "transparent",
                 textStyleIndex: parseStyleIndex(previousSlide.dataset.textStyleIndex),
                 fontSize: normalizeFontSize(previousSlide.dataset.fontSize ?? currentFontSize),
@@ -2254,7 +2437,7 @@
 
         async function exportPptxFromSlides() {
             const ratio = ratioOptions[currentRatioIndex] || ratioOptions[0];
-            const data = collectAllSlides();
+            const data = collectSlidesFromDOM();
             if (!data.length) return;
             const pptx = new PptxGenJS();
             const layoutName = `CUSTOM_${ratio.name.replace(/[^a-zA-Z0-9]/g, "_")}`;
@@ -2461,6 +2644,245 @@
         loadSavedState();
         renderSlidesForTemplate(currentTemplateId);
         applyRatio(currentRatioIndex);
+
+        const infoButton = document.getElementById("infoButton");
+        const infoPopup = document.getElementById("infoPopup");
+        infoButton?.addEventListener("click", event => {
+            event.stopPropagation();
+            infoPopup?.classList.toggle("open");
+        });
+        document.addEventListener("click", event => {
+            if (!infoPopup?.contains(event.target) && event.target !== infoButton) {
+                infoPopup?.classList.remove("open");
+            }
+        });
+
+        const tourSteps = [
+            {
+                title: "Go-Toolkit, ton assistant rédaction",
+                description: "Go-Toolkit aide les consultants à préparer des supports de présentation clairs, structurés et pertinents",
+                selector: null
+            },
+            {
+                title: "Sélecteur de template",
+                description: "Choisis parmi les trois modèles disponibles, navigue page par page via les onglets et utilise les icônes ➕/🗑️ pour ajouter, renommer ou supprimer une page à tout moment.",
+                selector: "#templateSelect"
+            },
+            {
+                title: "Titre, colonnes et sections",
+                description: "Chaque page propose un titre, des colonnes liées au template, des titres de section et des champs texte larges pour structurer ton message.",
+                selectors: [".slide-title-input", ".column-title", ".section-label"]
+            },
+            {
+                title: "Exports",
+                description: "Le menu Fichier permet d'exporter la page courante en Image ou en PowerPoint (texte) pour l'intégrer dans tes livrables.",
+                selector: "#fileMenuTrigger"
+            },
+            {
+                title: "Personnalisation",
+                description: "Le bouton 🖌️ donne accès aux options d'affichage (police, taille, ratio, fond de couleur) afin que l'export en Image soit lisible.",
+                selector: "#textStyleBtn"
+            },
+            {
+                title: "Assistant ✨IA",
+                description: "Avant d'utiliser l'IA, décris ton contexte; remplis les éléments du tableau de ton mieux",
+                selector: "#contextBtn"
+            },
+            {
+                title: "IA sur chaque champ",
+                description: "Le bouton ✨ te renvoit une réponse claire et structuré en 10-30 secondes à partir des éléments renseignés",
+                selector: ".field-ai-btn"
+            },
+            {
+                title: "Prompts personnalisables",
+                description: "Dans le modal IA, tu peux adapter les prompts par section afin de guider la génération du texte comme tu l'entends.",
+                selector: "#promptTemplateSelect"
+            },
+            {
+                title: "Colonnes, sections, Open & Save",
+                description: "Tu peux modifier librement les colonnes et les titres des sections à ton usage. À la fin, utilise Open/Save pour sauvegarder ton travail puisque l'app n'enregistre pas de données sur le serveur.",
+                selector: "#tabs"
+            },
+            {
+                title: "Phase expérimentale",
+                description: "L'appli est en expérimentation : l'usage de l'IA doit rester dans le cadre de Savane Consulting. Une clé OpenAI est à fournir pour un usage intensif ou autre.",
+                selector: "#contextField"
+            }
+        ];
+
+        const tourOverlay = document.getElementById("tourOverlay");
+        const tourHighlight = tourOverlay?.querySelector(".tour-highlight");
+        const tourPanel = tourOverlay?.querySelector(".tour-panel");
+        const tourTitle = document.getElementById("tourStepTitle");
+        const tourDescription = document.getElementById("tourStepDescription");
+        const tourCounter = document.getElementById("tourStepCounter");
+        const tourPrevBtn = document.getElementById("tourPrevBtn");
+        const tourNextBtn = document.getElementById("tourNextBtn");
+        const tourCloseBtn = document.getElementById("tourCloseBtn");
+        const tourSkipBtn = document.getElementById("tourSkipBtn");
+        const tourReplayBtn = document.getElementById("tourReplayBtn");
+        const tourStorageKey = "goToolkitTourCompleted";
+        let currentTourIndex = 0;
+
+        function getSelectorsFromStep(step) {
+            if (!step) {
+                return [];
+            }
+            if (Array.isArray(step.selectors)) {
+                return step.selectors;
+            }
+            if (step.selector) {
+                return [step.selector];
+            }
+            return [];
+        }
+
+        function getSelectorsBoundingRect(selectors) {
+            if (!selectors?.length) {
+                return null;
+            }
+            let unionRect = null;
+            selectors.forEach(selector => {
+                const target = document.querySelector(selector);
+                if (!target) {
+                    return;
+                }
+                const rect = target.getBoundingClientRect();
+                if (!unionRect) {
+                    unionRect = {
+                        top: rect.top,
+                        left: rect.left,
+                        right: rect.right,
+                        bottom: rect.bottom,
+                        width: rect.width,
+                        height: rect.height
+                    };
+                } else {
+                    unionRect.top = Math.min(unionRect.top, rect.top);
+                    unionRect.left = Math.min(unionRect.left, rect.left);
+                    unionRect.right = Math.max(unionRect.right, rect.right);
+                    unionRect.bottom = Math.max(unionRect.bottom, rect.bottom);
+                    unionRect.width = unionRect.right - unionRect.left;
+                    unionRect.height = unionRect.bottom - unionRect.top;
+                }
+            });
+            return unionRect;
+        }
+
+        function positionTourPanel(selectors) {
+            if (!tourPanel) return;
+            const spacing = 14;
+            const defaultStyles = {
+                top: "auto",
+                bottom: "28px",
+                left: "50%",
+                right: "auto",
+                transform: "translateX(-50%)"
+            };
+            Object.assign(tourPanel.style, defaultStyles);
+            const rect = getSelectorsBoundingRect(selectors);
+            if (!rect) return;
+            const panelRect = tourPanel.getBoundingClientRect();
+            let top = rect.bottom + spacing;
+            if (top + panelRect.height > window.innerHeight - spacing) {
+                top = rect.top - panelRect.height - spacing;
+            }
+            let left = rect.left + rect.width / 2 - panelRect.width / 2;
+            left = Math.max(spacing, Math.min(left, window.innerWidth - panelRect.width - spacing));
+            tourPanel.style.top = `${Math.max(spacing, top)}px`;
+            tourPanel.style.left = `${left}px`;
+            tourPanel.style.bottom = "auto";
+            tourPanel.style.right = "auto";
+            tourPanel.style.transform = "none";
+        }
+
+        function updateHighlight(selectors) {
+            if (!tourHighlight) return;
+            const rect = getSelectorsBoundingRect(selectors);
+            if (!rect) {
+                tourHighlight.classList.add("hidden");
+                tourOverlay?.classList.add("dimmed");
+                return;
+            }
+            tourOverlay?.classList.remove("dimmed");
+            tourHighlight.classList.remove("hidden");
+            const offset = 10;
+            tourHighlight.style.width = `${rect.width + offset * 2}px`;
+            tourHighlight.style.height = `${rect.height + offset * 2}px`;
+            tourHighlight.style.transform = "translate(0, 0)";
+            tourHighlight.style.left = `${rect.left - offset}px`;
+            tourHighlight.style.top = `${rect.top - offset}px`;
+        }
+
+        function renderTourStep() {
+            if (!tourOverlay || !tourSteps.length) return;
+            const step = tourSteps[currentTourIndex];
+            tourTitle.textContent = step.title;
+            tourDescription.textContent = step.description;
+            tourCounter.textContent = `Étape ${currentTourIndex + 1} / ${tourSteps.length}`;
+            tourPrevBtn.disabled = currentTourIndex === 0;
+            tourNextBtn.textContent = currentTourIndex === tourSteps.length - 1 ? "Terminé" : "Suivant";
+            const selectors = getSelectorsFromStep(step);
+            updateHighlight(selectors);
+            positionTourPanel(selectors);
+        }
+
+        function openTour(startIndex = 0) {
+            if (!tourOverlay) return;
+            currentTourIndex = startIndex;
+            tourOverlay.classList.add("visible");
+            tourOverlay.setAttribute("aria-hidden", "false");
+            renderTourStep();
+        }
+
+        function closeTour(markSeen = false) {
+            if (markSeen && window.localStorage) {
+                window.localStorage.setItem(tourStorageKey, "1");
+            }
+            if (!tourOverlay) return;
+            tourOverlay.classList.remove("visible");
+            tourOverlay.setAttribute("aria-hidden", "true");
+            tourOverlay.classList.remove("dimmed");
+            if (tourHighlight) {
+                tourHighlight.classList.add("hidden");
+            }
+        }
+
+        if (tourPrevBtn) {
+            tourPrevBtn.addEventListener("click", () => {
+                if (currentTourIndex === 0) return;
+                currentTourIndex = Math.max(0, currentTourIndex - 1);
+                renderTourStep();
+            });
+        }
+
+        tourNextBtn?.addEventListener("click", () => {
+            if (currentTourIndex >= tourSteps.length - 1) {
+                closeTour(true);
+                return;
+            }
+            currentTourIndex = Math.min(tourSteps.length - 1, currentTourIndex + 1);
+            renderTourStep();
+        });
+
+        tourCloseBtn?.addEventListener("click", () => closeTour(true));
+        tourSkipBtn?.addEventListener("click", () => closeTour(true));
+        tourReplayBtn?.addEventListener("click", () => {
+            if (window.localStorage) {
+                window.localStorage.removeItem(tourStorageKey);
+            }
+            openTour(0);
+        });
+
+        window.addEventListener("resize", () => {
+            if (!tourOverlay?.classList.contains("visible")) return;
+            renderTourStep();
+        });
+
+        const tourSeen = window.localStorage?.getItem(tourStorageKey);
+        if (!tourSeen) {
+            setTimeout(() => openTour(0), 200);
+        }
     </script>
 
 </body>
