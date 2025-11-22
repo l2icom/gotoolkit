@@ -344,10 +344,7 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
         }
 
-        .tab-btn-delete {
-            border-color: #d86f6f;
-            color: #c04040;
-        }
+
 
         .slides-container {
             position: relative;
@@ -853,17 +850,17 @@
     <div class="app">
         <div class="app-header">
             <div class="tabs-actions">
+                <select id="templateSelect" class="template-select" aria-label="Sélecteur de template"></select>
+
                 <div id="tabs"></div>
-                <button class="tab-btn-add" id="addTabBtn" type="button">+ page</button>
+                <button class="tab-btn-add" id="addTabBtn" type="button">➕</button>
                 <button class="tab-btn-delete" id="deleteTabBtn" type="button">🗑️</button>
             </div>
             <div class="global-actions">
                 <div class="menu-trigger" id="settingsMenuTrigger">
-                    <select id="templateSelect" class="template-select" aria-label="Sélecteur de template"></select>
                     <button id="textStyleBtn" type="button" aria-label="Options d'affichage">🖌️</button>
                     <div class="context-menu" id="settingsMenu">
                         <div class="menu-panel">
-                            <div class="menu-header">Réglages</div>
                             <label>
                                 Police
                                 <select id="fontSelect"></select>
@@ -897,14 +894,13 @@
                 </div>
                 <button id="contextBtn" type="button" aria-label="AI Assistant">✨</button>
                 <div class="menu-trigger" id="fileMenuTrigger">
-                    <button id="fileMenuBtn" type="button" aria-label="Fichier">📄 Fichier</button>
+                    <button id="fileMenuBtn" type="button" aria-label="Fichier">📄</button>
                     <div class="context-menu" id="fileMenu">
                         <div class="menu-panel">
-                            <div class="menu-header">📄 Fichier</div>
-                            <button id="importJsonBtn" type="button" class="menu-item">⬆️ Import JSON</button>
-                            <button id="exportJsonBtn" type="button" class="menu-item">⬇️ Export JSON</button>
-                            <button id="exportPptxBtn" type="button" class="menu-item">📊 PPTX</button>
-                            <button id="exportPngBtn" type="button" class="menu-item">🖼️ PNG</button>
+                            <button id="importJsonBtn" type="button" class="menu-item">⬆️ Import All</button>
+                            <button id="exportJsonBtn" type="button" class="menu-item">⬇️ Export All</button>
+                            <button id="exportPptxBtn" type="button" class="menu-item">📊 Powerpoint</button>
+                            <button id="exportPngBtn" type="button" class="menu-item">🖼️ Image</button>
                         </div>
                     </div>
                 </div>
@@ -1122,6 +1118,38 @@
             return getTemplateColumns(templateId)[index] || { stage: "NOW", label: `Colonne ${index + 1}` };
         }
 
+        let templateSlides = {};
+
+        function initializeTemplateSlides(slideList = []) {
+            templateSlides = templates.reduce((acc, template) => {
+                acc[template.id] = [];
+                return acc;
+            }, {});
+            slideList.forEach(slide => {
+                const templateId = slide.templateId || templates[0].id;
+                if (!templateSlides[templateId]) {
+                    templateSlides[templateId] = [];
+                }
+                templateSlides[templateId].push(slide);
+            });
+            templates.forEach(template => {
+                if (!templateSlides[template.id] || !templateSlides[template.id].length) {
+                    templateSlides[template.id] = [{ templateId: template.id }];
+                }
+            });
+        }
+
+        function getTemplateSlidesList(templateId) {
+            if (!templateSlides[templateId]) {
+                templateSlides[templateId] = [];
+            }
+            if (!templateSlides[templateId].length) {
+                templateSlides[templateId].push({ templateId });
+            }
+            return templateSlides[templateId];
+        }
+
+
         const slidesContainer = document.getElementById("slides");
         const tabsContainer = document.getElementById("tabs");
         const addTabBtn = document.getElementById("addTabBtn");
@@ -1158,9 +1186,20 @@
             persistTimer = setTimeout(persistState, 500);
         }
 
+        function collectAllSlides() {
+            const all = [];
+            Object.entries(templateSlides).forEach(([templateId, slides]) => {
+                slides.forEach(slide => {
+                    all.push({ ...slide, templateId });
+                });
+            });
+            return all;
+        }
+
         function persistState() {
+            storeCurrentSlides();
             const payload = {
-                slides: collectSlideData(),
+                slides: collectAllSlides(),
                 settings: {
                     ratioIndex: currentRatioIndex,
                     textStyleIndex: currentTextStyleIndex,
@@ -1182,19 +1221,18 @@
         function loadSavedState() {
             const stored = localStorage.getItem(STORAGE_KEY);
             if (!stored) {
+                initializeTemplateSlides();
                 return false;
             }
             try {
                 const parsed = JSON.parse(stored);
                 const settings = parsed.settings || {};
-                if (Array.isArray(parsed.slides) && parsed.slides.length) {
-                    importSlidesFromData(parsed.slides, settings);
-                    return true;
-                }
+                initializeTemplateSlides(Array.isArray(parsed.slides) ? parsed.slides : []);
                 applySettingsFromPayload(settings);
-                return false;
+                return Array.isArray(parsed.slides) && parsed.slides.length;
             } catch (err) {
                 console.error("Impossible de charger l'état :", err);
+                initializeTemplateSlides();
                 setPromptFieldsForTemplate(activePromptTemplateId);
                 return false;
             }
@@ -1374,17 +1412,19 @@
 
         templateSelect?.addEventListener("change", () => {
             const selected = templateSelect.value;
-            currentTemplateId = selected;
-            const slide = getActiveSlideElement();
-            if (slide) {
-                applyTemplateToSlide(slide, selected);
-                schedulePersist();
+            if (!selected || selected === currentTemplateId) {
+                return;
             }
+            storeCurrentSlides();
+            currentTemplateId = selected;
+            renderSlidesForTemplate(currentTemplateId);
+            schedulePersist();
         });
 
         promptTemplateSelect?.addEventListener("change", () => {
             activePromptTemplateId = promptTemplateSelect.value;
             setPromptFieldsForTemplate(activePromptTemplateId);
+            schedulePersist();
         });
 
         function showColumnPlaceholders(column) {
@@ -1621,7 +1661,7 @@
             schedulePersist();
         }
 
-        function collectSlideData() {
+        function collectSlidesFromDOM() {
             const slides = Array.from(slidesContainer.querySelectorAll(".slide"));
             return slides.map(slide => {
                 const templateId = slide.dataset.templateId || templates[0].id;
@@ -1763,7 +1803,7 @@
             const templateId = seed.templateId || templates[0].id;
             const template = getTemplateById(templateId);
             slide.dataset.templateId = templateId;
-            slide.dataset.tabLabel = seed.tabLabel || template.name;
+            slide.dataset.tabLabel = seed.tabLabel || `Page ${index + 1}`;
             slide.innerHTML = `
   <div class="slide-header">
     <div class="slide-title-row">
@@ -1801,37 +1841,25 @@
             return slide;
         }
 
-        function applyTemplateToSlide(slide, templateId) {
-            if (!slide) return;
-            const columnDefs = getTemplateColumns(templateId);
-            const templateSections = getTemplateSections(templateId);
-            slide.dataset.templateId = templateId;
-            slide.dataset.tabLabel = getTemplateById(templateId).name;
-            columnDefs.forEach((columnDef, columnIndex) => {
-                const column = slide.querySelectorAll(".column")[columnIndex];
-                if (!column) return;
-                column.dataset.stage = columnDef.stage;
-                column.style.setProperty("--stage-color", stageColors[columnDef.stage] || "#ffffff");
-                const columnTitle = column.querySelector(".column-title");
-                if (columnTitle) {
-                    columnTitle.textContent = columnDef.label;
-                }
-                templateSections.forEach(section => {
-                    const label = column.querySelector(`.section-label[data-section="${section.key}"]`);
-                    if (label) {
-                        label.textContent = `${section.icon} ${section.label}`;
-                    }
-                    const textarea = column.querySelector(`textarea[data-section="${section.key}"]`);
-                    if (textarea) {
-                        textarea.dataset.placeholder = section.examples || "";
-                        if (!textarea.value) {
-                            textarea.placeholder = section.examples || "";
-                        }
-                    }
-                });
+        function renderSlidesForTemplate(templateId) {
+            currentTemplateId = templateId || currentTemplateId;
+            const slides = getTemplateSlidesList(currentTemplateId);
+            slidesContainer.innerHTML = "";
+            slideCount = 0;
+            slides.forEach((slideData, index) => {
+                const slide = createSlide(index, slideData);
+                slidesContainer.appendChild(slide);
+                slideCount++;
             });
             refreshTabs();
-            setActiveTab(activeIndex);
+            setActiveTab(0);
+            if (templateSelect) {
+                templateSelect.value = currentTemplateId;
+            }
+        }
+
+        function storeCurrentSlides() {
+            templateSlides[currentTemplateId] = collectSlidesFromDOM();
         }
 
         function createTabButton(index) {
@@ -1839,17 +1867,13 @@
             btn.className = "tab-btn";
             btn.dataset.index = index;
             const slide = slidesContainer.querySelector(`.slide[data-index="${index}"]`);
-            const template = slide ? getTemplateById(slide.dataset.templateId) : templates[0];
-            const baseLabel = (slide?.dataset.tabLabel || template?.name || `Page ${index + 1}`).trim();
-            const label = `${template?.emoji || ""} ${baseLabel}`.trim();
+            const label = (slide?.dataset.tabLabel || `Page ${index + 1}`).trim();
             btn.textContent = label;
             btn.addEventListener("click", () => setActiveTab(index));
             btn.addEventListener("dblclick", () => {
                 const newName = prompt("Renommer l'onglet", btn.textContent);
                 if (!newName) return;
-                const template = slide ? getTemplateById(slide.dataset.templateId) : templates[0];
-                const formatted = `${template?.emoji || ""} ${newName}`.trim();
-                btn.textContent = formatted;
+                btn.textContent = newName;
                 if (slide) {
                     slide.dataset.tabLabel = newName;
                 }
@@ -1988,20 +2012,6 @@
             schedulePersist();
         }
 
-        function createDefaultSlides() {
-            slidesContainer.innerHTML = "";
-            slideCount = 0;
-            activeIndex = 0;
-            templates.forEach((template, index) => {
-                const slide = createSlide(index, { templateId: template.id });
-                slidesContainer.appendChild(slide);
-                slideCount++;
-            });
-            refreshTabs();
-            setActiveTab(0);
-        }
-
-
         function updateDeleteButtonState() {
             deleteTabBtn.disabled = slideCount <= 1;
         }
@@ -2069,7 +2079,7 @@
         });
 
         exportJsonBtn.addEventListener("click", () => {
-            const data = collectSlideData();
+            const data = collectAllSlides();
             const payload = {
                 slides: data,
                 settings: {
@@ -2094,21 +2104,9 @@
 
         function importSlidesFromData(slidesData, settings = {}) {
             const slideList = Array.isArray(slidesData) ? slidesData : [];
-            slidesContainer.innerHTML = "";
-            slideCount = 0;
-            activeIndex = 0;
+            initializeTemplateSlides(slideList);
             applySettingsFromPayload(settings);
-            slideList.forEach((slideData, index) => {
-                const slide = createSlide(index, {
-                    ...slideData,
-                    textStyleIndex: typeof slideData.textStyleIndex === "number" ? slideData.textStyleIndex : currentTextStyleIndex,
-                    fontSize: typeof slideData.fontSize === "number" ? slideData.fontSize : currentFontSize
-                });
-                slidesContainer.appendChild(slide);
-                slideCount++;
-            });
-            refreshTabs();
-            setActiveTab(0);
+            renderSlidesForTemplate(currentTemplateId);
             schedulePersist();
         }
 
@@ -2256,7 +2254,7 @@
 
         async function exportPptxFromSlides() {
             const ratio = ratioOptions[currentRatioIndex] || ratioOptions[0];
-            const data = collectSlideData();
+            const data = collectAllSlides();
             if (!data.length) return;
             const pptx = new PptxGenJS();
             const layoutName = `CUSTOM_${ratio.name.replace(/[^a-zA-Z0-9]/g, "_")}`;
@@ -2460,10 +2458,8 @@
             }
         });
         switchModalTab("context");
-        const hadSavedSlides = loadSavedState();
-        if (!hadSavedSlides) {
-            createDefaultSlides();
-        }
+        loadSavedState();
+        renderSlidesForTemplate(currentTemplateId);
         applyRatio(currentRatioIndex);
     </script>
 
