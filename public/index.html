@@ -156,8 +156,8 @@
         }
 
         .modal-panel textarea {
-            min-height: 90px;
-            height: 90px;
+            min-height: 80px;
+            height: 80px;
         }
 
         .prompt-template-select {
@@ -216,6 +216,43 @@
             border: none;
             background: #2a7a57;
             color: #fff;
+        }
+
+        .ia-mode-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            padding-top: 12px;
+        }
+
+        .ia-mode-toggle button {
+            border-radius: 999px;
+            border: 1px solid #ebe0d1;
+            background: #fff;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .ia-mode-label {
+            width: 100%;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+
+        .ia-mode-toggle button.active {
+            background: #2a7a57;
+            color: #fff;
+            border-color: #2a7a57;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #promptCustomizationArea.hidden {
+            display: none;
         }
 
 
@@ -1143,31 +1180,39 @@
                         rel="noreferrer">OpenAI API key</a>
                     <input type="password" id="apiKeyInput" autocomplete="off" placeholder="sk-...">
                 </label>
-                <label>
-                    Modèle de prompts
-                    <select id="promptTemplateSelect" class="prompt-template-select"></select>
-                </label>
-                <div id="promptFields">
-                    <div class="prompt-row" data-section="first-section">
-                        <label>
-                            <span class="prompt-label-text">Prompt - Section</span>
-                            <textarea class="prompt-input" data-section="first-section" rows="2"></textarea>
-                        </label>
-                    </div>
-                    <div class="prompt-row" data-section="second-section">
-                        <label>
-                            <span class="prompt-label-text">Prompt - Section</span>
-                            <textarea class="prompt-input" data-section="second-section" rows="2"></textarea>
-                        </label>
-                    </div>
-                    <div class="prompt-row" data-section="third-section">
-                        <label>
-                            <span class="prompt-label-text">Prompt - Section</span>
-                            <textarea class="prompt-input" data-section="third-section" rows="2"></textarea>
-                        </label>
-                    </div>
+                <div class="ia-mode-toggle" id="iaModeToggle">
+                    <div class="ia-mode-label">IA Mode</div>
+                    <button type="button" data-ia-mode="express">⚡ Express</button>
+                    <button type="button" data-ia-mode="apprenti">💡 Apprenti</button>
+                    <button type="button" data-ia-mode="experimental">🧪 Expérimental</button>
                 </div>
-                <button id="resetPromptsBtn" type="button" class="reset-prompts-btn">Réinitialiser</button>
+                <div id="promptCustomizationArea">
+                    <label>
+                        Modèle de prompts
+                        <select id="promptTemplateSelect" class="prompt-template-select"></select>
+                    </label>
+                    <div id="promptFields">
+                        <div class="prompt-row" data-section="first-section">
+                            <label>
+                                <span class="prompt-label-text">Prompt - Section</span>
+                                <textarea class="prompt-input" data-section="first-section" rows="2"></textarea>
+                            </label>
+                        </div>
+                        <div class="prompt-row" data-section="second-section">
+                            <label>
+                                <span class="prompt-label-text">Prompt - Section</span>
+                                <textarea class="prompt-input" data-section="second-section" rows="2"></textarea>
+                            </label>
+                        </div>
+                        <div class="prompt-row" data-section="third-section">
+                            <label>
+                                <span class="prompt-label-text">Prompt - Section</span>
+                                <textarea class="prompt-input" data-section="third-section" rows="2"></textarea>
+                            </label>
+                        </div>
+                    </div>
+                    <button id="resetPromptsBtn" type="button" class="reset-prompts-btn">Réinitialiser</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1308,7 +1353,11 @@
             }
         ];
 
-        const defaultPromptTemplate = `En tant que consultant product owner expérimenté, sur la base du contexte {{contextField}} et dans le cadre de {{columnTitle}}, reformuler {{fieldValue}} sous forme de 2 à 3 {{sectionTitle}} d'un point de vue business et utilisateur (un • de < 20 mots pour chaque) sans introduction préalable ni émoji`;
+        const defaultPromptTemplate = `Tu es un consultant product owner expérimenté, sur la base du contexte {{contextField}} et dans le cadre de {{columnTitle}}, reformuler {{fieldValue}} sous forme de 2 à 3 {{sectionTitle}} d'un point de vue business et utilisateur (un • de < 20 mots pour chaque) sans introduction préalable ni émoji`;
+        const apprentPromptTemplate = `Tu es un coach product owner expérimenté, sur la base du contexte {{contextField}} et dans le cadre de {{columnTitle}}, remet {{fieldValue}} en ignorant les éléments entre "[ ]" sous forme de 2 à 3 éléments synthétique (un • de < 20 mots pour chaque) sans toucher au sens, puis en dessous, donne entre 2-3 pistes d'amélioration (💡) et 2-3 pistes de réflexion (💭) (commencer par un 💡 ou un 💭 de < 20 mots pour chaque et entre "[ ]" ) pour obtenir 2 à 3 {{sectionTitle}} d'un point de vue business et utilisateur (un • de < 20 mots pour chaque). Tout ça sans introduction préalable ni émoji`;
+        const IA_MODE_EXPRESS = "express";
+        const IA_MODE_APPRENTI = "apprenti";
+        const IA_MODE_EXPERIMENTAL = "experimental";
 
         function getTemplateById(id) {
             return templates.find(template => template.id === id) || templates[0];
@@ -1398,6 +1447,9 @@
         const ratioGrid = document.getElementById("ratioGrid");
         const backgroundSelector = document.getElementById("backgroundSelector");
         const resetPromptsBtn = document.getElementById("resetPromptsBtn");
+        const iaModeToggle = document.getElementById("iaModeToggle");
+        const iaModeButtons = Array.from(iaModeToggle?.querySelectorAll("[data-ia-mode]") ?? []);
+        const promptCustomizationArea = document.getElementById("promptCustomizationArea");
 
         const STORAGE_KEY = "go-roadmap-state";
 
@@ -1430,6 +1482,7 @@
                     context: contextField.value,
                     prompts: promptLibrary,
                     promptTemplateId: activePromptTemplateId,
+                    iaMode: activeIaMode,
                     defaultTemplateId: currentTemplateId
                 }
             };
@@ -1474,6 +1527,7 @@
         let currentRatioIndex = 0;
         let currentTemplateId = templates[0].id;
         let activePromptTemplateId = templates[0].id;
+        let activeIaMode = IA_MODE_EXPRESS;
         const promptLibrary = templates.reduce((acc, template) => {
             acc[template.id] = sectionKeys.reduce((inner, key) => {
                 inner[key] = defaultPromptTemplate;
@@ -1503,6 +1557,7 @@
             promptTemplateSelect.value = activePromptTemplateId;
         }
         setPromptFieldsForTemplate(activePromptTemplateId);
+        setActiveIaMode(activeIaMode);
 
         function applySettingsFromPayload(settings = {}) {
             const payload = settings || {};
@@ -1540,6 +1595,7 @@
                 currentFontSize = normalizeFontSize(payload.fontSize);
             }
             setPromptFieldsForTemplate(activePromptTemplateId);
+            setActiveIaMode(payload.iaMode || activeIaMode);
         }
 
         const fallbackTitle = "GO-Roadmap";
@@ -1623,11 +1679,35 @@
             updatePromptLabels(templateId);
         }
 
+        function updateIaModeUI() {
+            iaModeButtons.forEach(button => {
+                button.classList.toggle("active", button.dataset.iaMode === activeIaMode);
+            });
+            if (promptCustomizationArea) {
+                promptCustomizationArea.classList.toggle("hidden", activeIaMode !== IA_MODE_EXPERIMENTAL);
+            }
+        }
+
+        function setActiveIaMode(mode) {
+            if (![IA_MODE_EXPRESS, IA_MODE_APPRENTI, IA_MODE_EXPERIMENTAL].includes(mode)) {
+                return;
+            }
+            activeIaMode = mode;
+            updateIaModeUI();
+        }
+
         promptInputs.forEach(textarea => {
             textarea.addEventListener("input", () => {
                 const sectionKey = textarea.dataset.section;
                 if (!sectionKey) return;
                 promptLibrary[activePromptTemplateId][sectionKey] = textarea.value;
+                schedulePersist();
+            });
+        });
+
+        iaModeButtons.forEach(button => {
+            button.addEventListener("click", () => {
+                setActiveIaMode(button.dataset.iaMode);
                 schedulePersist();
             });
         });
@@ -2313,6 +2393,7 @@
                     context: contextField.value,
                     prompts: promptLibrary,
                     promptTemplateId: activePromptTemplateId,
+                    iaMode: activeIaMode,
                     defaultTemplateId: currentTemplateId
                 }
             };
@@ -2531,8 +2612,18 @@
             return sectionPrompts[sectionKey] || defaultPromptTemplate;
         }
 
+        function getPromptTemplateForMode(section, templateId) {
+            if (activeIaMode === IA_MODE_EXPRESS) {
+                return defaultPromptTemplate;
+            }
+            if (activeIaMode === IA_MODE_APPRENTI) {
+                return apprentPromptTemplate;
+            }
+            return getPromptTemplateForSection(templateId, section);
+        }
+
         function buildFieldPrompt(section, templateId, contextData) {
-            const template = getPromptTemplateForSection(templateId, section);
+            const template = getPromptTemplateForMode(section, templateId);
             return fillTemplate(template, contextData);
         }
 

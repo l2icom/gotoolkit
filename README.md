@@ -48,6 +48,7 @@ Les dépendances tierces sont chargées via CDN, il n’y a donc pas de `npm ins
 
 - **Ajouter un template** : ajouter un objet dans `templates` avec `id`, `emoji`, `columns` et `sections`, puis l’inclure via `populateTemplateSelectors`.
 - **Mettre à jour les prompts** : modifier `promptLibrary` ou les valeurs par défaut `defaultPromptTemplate`, puis utiliser `resetPromptsBtn` ou `import JSON`.
+- **Modes IA** : la modal IA propose trois modes (⚡ Express par défaut, 💡 Apprenti, 🧪 Expérimental) qui masquent ou affichent l’éditeur de prompts et appliquent respectivement le prompt par défaut, le prompt coach ou la saisie personnalisée.
 - **Adapter les exports** : la fonction `buildTableDataForSlide` icône les colonnes et sections. Vous pouvez y injecter d’autres formats (Markdown, CSV, API interne).
 - **Tour & onboarding** : enrichir `tourSteps` pour guider les nouvelles fonctionnalités.
 - **Proxy IA** : le proxy `https://openai.tranxq.workers.dev` est utilisé dès que l’utilisateur n’a pas sa clé OpenAI pour garantir un fallback limité.
