@@ -2656,7 +2656,7 @@
                         model: "gpt-5-nano",
                         messages,
                         temperature: 1,
-                        max_tokens: 800
+                        max_completion_tokens: 800
                     })
                 });
                 if (!response.ok) {
@@ -2824,22 +2824,6 @@
                 description: "Le bouton ✨ te renvoit une réponse claire et structuré en 15-30 secondes à partir des éléments renseignés",
                 selector: ".field-ai-btn"
             },
-            {
-                title: "Prompts personnalisables",
-                description: "Dans le modal IA, tu peux adapter les prompts par section afin de guider la génération du texte comme tu l'entends.",
-                selectors: ["#promptTemplateSelect", "#promptFields"],
-                openContextModal: true
-            },
-            {
-                title: "Colonnes, sections, ouvrir & enregistrer",
-                description: "Tu peux modifier librement les colonnes et les titres des sections à ton usage. À la fin, sauvegarde ton travail dans un fichier puisque l'app n'enregistre pas de données sur le serveur.",
-                selector: "#tabs"
-            },
-            {
-                title: "Usage IA expérimental et limité",
-                description: "L'appli est en expérimentation : l'usage de l'IA doit rester dans le cadre de Savane Consulting. Une clé OpenAI est à fournir pour un usage intensif ou autre.",
-                selector: "#contextField"
-            }
         ];
 
         const tourOverlay = document.getElementById("tourOverlay");
