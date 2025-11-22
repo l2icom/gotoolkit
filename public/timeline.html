@@ -1,0 +1,2005 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Planning PI – Maintenance moteurs</title>
+    <style>
+        :root {
+            --bg: #f5f5f7;
+            --panel: #ffffff;
+            --border: #d0d3da;
+            --accent: #2563eb;
+            --text: #1f2933;
+            --muted: #6b7280;
+            --line-control-width: 100px;
+            --row-height: 65px;
+            --timeline-height: 35px;
+            --grid-step: 40px;
+            /* largeur d'une colonne */
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 12px 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app {
+            width: min(1200px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 12px 16px 24px;
+            background: var(--panel);
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 24px);
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+
+        .title {
+            font-size: 18px;
+            font-weight: 600;
+            cursor: text;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 13px;
+            color: var(--muted);
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .toolbar-group {
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .toolbar button {
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: #f9fafb;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .toolbar button.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: #e0ecff;
+        }
+
+        .views-tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 4px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 8px 8px 0 0;
+            border: 1px solid transparent;
+            border-bottom: none;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--muted);
+            background: transparent;
+        }
+
+        .tab.active {
+            background: #ffffff;
+            border-color: var(--border);
+            border-bottom-color: #ffffff;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .tab--icon {
+            border-radius: 999px 999px 0 0;
+            padding-inline: 8px;
+        }
+
+        .tab-label-edit {
+            border: none;
+            font-size: 13px;
+            width: 160px;
+            outline: none;
+        }
+
+        .view-scroll {
+            overflow-x: auto;
+            overflow-y: auto;
+            padding-bottom: 4px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .view-scroll.dragging {
+            cursor: grabbing;
+        }
+
+        .view-inner {
+            min-width: 800px;
+        }
+
+        .timeline-header {
+            margin-top: 0;
+            padding-left: calc(var(--line-control-width) + 4px);
+            font-size: 11px;
+            color: var(--muted);
+            user-select: none;
+        }
+
+        .view-section-actions {
+            display: flex;
+            gap: 8px;
+            padding-left: calc(var(--line-control-width) + 4px);
+            margin-bottom: 6px;
+        }
+
+        .section-action-btn {
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: #f9fafb;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .section-action-btn.danger {
+            border-color: #f87171;
+            color: #b91c1c;
+        }
+
+        .timeline-header-track {
+            position: relative;
+            height: 34px;
+        }
+
+        .timeline-header-top,
+        .timeline-header-bottom {
+            position: absolute;
+            inset-inline: 0;
+            display: flex;
+            font-size: 10px;
+            pointer-events: none;
+        }
+
+        .timeline-header-top {
+            top: 0;
+            height: 14px;
+            align-items: flex-start;
+        }
+
+        .timeline-header-bottom {
+            bottom: 0;
+            height: 18px;
+            align-items: flex-end;
+        }
+
+        .timeline-header-bottom span {
+            min-width: var(--grid-step);
+            text-align: center;
+        }
+
+        .timeline-header-top span {
+            text-align: center;
+            border-right: 1px solid rgba(148, 163, 184, 0.4);
+            padding-inline: 2px;
+            white-space: nowrap;
+        }
+
+        .view {
+            margin-top: 4px;
+        }
+
+        .section {
+            padding-top: 4px;
+            margin-top: 6px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            margin-bottom: 2px;
+            position: relative;
+            padding-left: calc(var(--line-control-width) + 4px);
+            min-height: 40px;
+        }
+
+        .section-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .section-title {
+            font-weight: 500;
+            cursor: text;
+        }
+
+        .section-title-input {
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            padding: 2px 6px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .section-add-btn {
+            font-size: 11px;
+            border-radius: 999px;
+            border: 1px dashed var(--border);
+            background: #f9fafb;
+            padding: 2px 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            margin: auto 0;
+            z-index: 2;
+        }
+
+        .section-add-select-container {
+            position: absolute;
+            left: 0;
+            top: 24px;
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            padding: 4px 6px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+            display: none;
+            z-index: 5;
+        }
+
+        .section-add-select-container select {
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            padding: 2px 4px;
+            font-size: 11px;
+            background: white;
+            outline: none;
+            width: 220px;
+        }
+
+        .lines {
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+        }
+
+        .line {
+            display: flex;
+            align-items: stretch;
+            border-top: 1px solid #e5e7eb;
+            background: #fcfcfd;
+            position: relative;
+            min-height: var(--row-height);
+            overflow: visible;
+        }
+
+        .line:first-child {
+            border-top: none;
+        }
+
+        .line-controls {
+            width: var(--line-control-width);
+            min-width: var(--line-control-width);
+            padding: 8px 6px;
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 2px;
+            border-right: 1px solid #e5e7eb;
+            background: #f9fafb;
+            flex-shrink: 0;
+            position: sticky;
+            left: 0;
+            top: 0;
+            z-index: 2;
+            height: 100%;
+        }
+
+        .icon-btn {
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: #ffffff;
+            font-size: 13px;
+            width: 26px;
+            height: 26px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .icon-btn.danger {
+            border-color: #fecaca;
+            color: #b91c1c;
+            background: #fef2f2;
+        }
+
+        .timeline-row {
+            flex: 1;
+            position: relative;
+            background-image: linear-gradient(to right, rgba(226, 232, 240, 0.9) 1px, transparent 1px);
+            background-size: var(--grid-step) 100%;
+            overflow: hidden;
+            min-height: var(--row-height);
+        }
+
+        .item {
+            position: absolute;
+            top: 25px;
+            height: var(--timeline-height);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px 5px;
+            font-size: 12px;
+            cursor: grab;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+            background: #94a3b8;
+            outline: 1px solid transparent;
+            line-height: 1.2;
+        }
+
+        .item:active {
+            cursor: grabbing;
+        }
+
+        .item--focused {
+            outline: 2px solid #0ea5e9;
+        }
+
+        .item-label,
+        .item-input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .item-label {
+            white-space: normal;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            word-break: break-word;
+        }
+
+        .item-input {
+            display: none;
+            border: none;
+            font-size: 12px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            outline: none;
+            background: rgba(255, 255, 255, 0.85);
+        }
+
+        .item.editing .item-label {
+            display: none;
+        }
+
+        .item.editing .item-input {
+            display: block;
+        }
+
+        .resize-handle {
+            width: 2px;
+            height: 70%;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.18);
+            cursor: ew-resize;
+            flex: 0 0 auto;
+        }
+
+        .resize-handle.left {
+            margin-right: 6px;
+        }
+
+        .resize-handle.right {
+            margin-left: 6px;
+        }
+
+        /* Milestones */
+        .milestone {
+            position: absolute;
+            top: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: grab;
+        }
+
+        .milestone:active {
+            cursor: grabbing;
+        }
+
+        .milestone-diamond {
+            width: 12px;
+            height: 12px;
+            background: #f97316;
+            transform: rotate(45deg);
+            border-radius: 3px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.4);
+            flex-shrink: 0;
+        }
+
+        .milestone-label {
+            font-size: 11px;
+            color: #374151;
+            white-space: nowrap;
+            max-width: 220px;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+
+        .milestone-input {
+            display: none;
+            font-size: 11px;
+            padding: 1px 3px;
+            border-radius: 4px;
+            border: 1px solid #d1d5db;
+            outline: none;
+            background: #ffffff;
+        }
+
+        .milestone.editing .milestone-label {
+            display: none;
+        }
+
+        .milestone.editing .milestone-input {
+            display: inline-block;
+        }
+
+        /* Modal types */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 40;
+        }
+
+        .modal-backdrop.show {
+            display: flex;
+        }
+
+        .modal {
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 14px 16px;
+            width: 360px;
+            max-width: 96vw;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.35);
+            font-size: 13px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .modal-header h2 {
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .modal-row {
+            display: grid;
+            grid-template-columns: 1fr 90px 40px;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .modal-row input[type="text"] {
+            width: 100%;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            padding: 3px 6px;
+            font-size: 12px;
+        }
+
+        .modal-row input[type="color"] {
+            width: 100%;
+            height: 26px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #ffffff;
+            padding: 0;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .btn {
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: #ffffff;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .btn.primary {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: #ffffff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <header>
+            <div class="title" id="mainTitle">Planning PI – Maintenance moteurs</div>
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    Vue temps :
+                    <button data-zoom="day" class="zoom-btn active">Jour</button>
+                    <button data-zoom="week" class="zoom-btn">Semaine</button>
+                    <button data-zoom="month" class="zoom-btn">Mois</button>
+                </div>
+                <div class="toolbar-group">
+                    Colonnes :
+                    <button id="colZoomOut">−</button>
+                    <button id="colZoomIn">+</button>
+                </div>
+                <div class="toolbar-group">
+                    <button id="openTypesBtn">⚙️ Types & couleurs</button>
+                    <button id="importBtn">📥 Import JSON</button>
+                    <button id="exportBtn">📤 Export JSON</button>
+                    <input type="file" id="importInput" accept="application/json" style="display:none">
+                </div>
+            </div>
+        </header>
+
+        <div class="views-tabs" id="tabs"></div>
+
+        <div class="view-scroll" id="viewScroll">
+            <div class="view-inner" id="viewInner">
+                <div class="timeline-header">
+                    <div class="timeline-header-track" id="timelineTrack">
+                        <div class="timeline-header-top" id="timelineTop"></div>
+                        <div class="timeline-header-bottom" id="timelineBottom"></div>
+                    </div>
+                </div>
+                <div class="view-section-actions">
+                    <button class="section-action-btn" id="viewAddSectionBtn">➕ Section</button>
+                    <button class="section-action-btn danger" id="viewRemoveSectionBtn">🗑️ Section</button>
+                </div>
+                <div id="views"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal types -->
+    <div class="modal-backdrop" id="typesModalBackdrop">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Types d'items & couleurs</h2>
+                <button class="btn" id="closeTypesBtn">✕</button>
+            </div>
+            <div id="typesList"></div>
+            <button class="btn" id="addTypeBtn">➕ Ajouter un type</button>
+            <div class="modal-footer">
+                <button class="btn" id="cancelTypesBtn">Annuler</button>
+                <button class="btn primary" id="saveTypesBtn">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Temps & calendrier ---
+        const BASE_DATE = new Date(2025, 0, 1);
+        const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+        function dayIndexFromISO(iso) {
+            const d = new Date(iso + "T00:00:00");
+            return Math.round((d - BASE_DATE) / MS_PER_DAY);
+        }
+        function isoFromDayIndex(idx) {
+            const d = new Date(BASE_DATE);
+            d.setDate(d.getDate() + idx);
+            return d.toISOString().slice(0, 10);
+        }
+        function dayToDate(idx) {
+            const d = new Date(BASE_DATE);
+            d.setDate(d.getDate() + idx);
+            return d;
+        }
+        function getMonthShort(date) {
+            const fr = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+            return fr[date.getMonth()];
+        }
+        function getISOWeek(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNo = Math.ceil((((d - yearStart) / MS_PER_DAY) + 1) / 7);
+            return weekNo;
+        }
+        function getStepDays(mode) {
+            if (mode === "day") return 1;
+            return 7; // semaine / mois
+        }
+
+        // --- Types ---
+        const types = [
+            { id: "inspection", label: "Inspection / diagnostic", color: "#38bdf8" },
+            { id: "maintenance", label: "Maintenance planifiée", color: "#22c55e" },
+            { id: "upgrade", label: "Upgrade / retrofit", color: "#f97316" },
+            { id: "risk", label: "Risque / aléa", color: "#ef4444" }
+        ];
+        function getTypeById(id) {
+            return types.find(t => t.id === id) || types[0];
+        }
+        function getContrastingTextColor(hex) {
+            if (!hex) return "#111827";
+            let c = hex.replace("#", "");
+            if (c.length === 3) {
+                c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+            }
+            const r = parseInt(c.slice(0, 2), 16);
+            const g = parseInt(c.slice(2, 4), 16);
+            const b = parseInt(c.slice(4, 6), 16);
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return luminance > 0.6 ? "#111827" : "#ffffff";
+        }
+
+        // --- Données planning ---
+        const data = {
+            views: [
+                {
+                    id: "v1",
+                    name: "PI1 – Hiver 2025",
+                    sections: [
+                        {
+                            id: "v1s1",
+                            title: "Préparation & diagnostic",
+                            lines: [
+                                {
+                                    id: "v1s1l1",
+                                    typeId: "inspection",
+                                    text: "Audit vibratoire flotte CFM56",
+                                    start: "2025-01-10",
+                                    end: "2025-02-05",
+                                    milestones: [
+                                        { id: "m1", date: "2025-01-20", text: "Rapport préliminaire" },
+                                        { id: "m2", date: "2025-01-30", text: "Validation client" }
+                                    ]
+                                },
+                                {
+                                    id: "v1s1l2",
+                                    typeId: "inspection",
+                                    text: "Collecte données FDR & capteurs",
+                                    start: "2025-01-20",
+                                    end: "2025-02-20",
+                                    milestones: [
+                                        { id: "m3", date: "2025-02-10", text: "Données consolidées" }
+                                    ]
+                                },
+                                {
+                                    id: "v1s1l3",
+                                    typeId: "inspection",
+                                    text: "Analyse causes racines pannes récurrentes",
+                                    start: "2025-02-05",
+                                    end: "2025-03-05",
+                                    milestones: [
+                                        { id: "m4", date: "2025-02-25", text: "Top 5 causes" }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            id: "v1s2",
+                            title: "Planification visites shop",
+                            lines: [
+                                {
+                                    id: "v1s2l1",
+                                    typeId: "maintenance",
+                                    text: "Réservation slots atelier LEAP-1A",
+                                    start: "2025-02-01",
+                                    end: "2025-03-10",
+                                    milestones: [
+                                        { id: "m5", date: "2025-02-15", text: "Slots confirmés" }
+                                    ]
+                                },
+                                {
+                                    id: "v1s2l2",
+                                    typeId: "maintenance",
+                                    text: "Plan logistique pièces critiques",
+                                    start: "2025-02-10",
+                                    end: "2025-03-20",
+                                    milestones: [
+                                        { id: "m6", date: "2025-03-05", text: "Pièces en stock" }
+                                    ]
+                                },
+                                {
+                                    id: "v1s2l3",
+                                    typeId: "maintenance",
+                                    text: "Ajustement capacité équipe shop",
+                                    start: "2025-02-15",
+                                    end: "2025-03-25",
+                                    milestones: [
+                                        { id: "m7", date: "2025-03-15", text: "Planning équipes validé" }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            id: "v1s3",
+                            title: "Gestion des risques",
+                            lines: [
+                                {
+                                    id: "v1s3l1",
+                                    typeId: "risk",
+                                    text: "Risque indisponibilité flotte CFM56",
+                                    start: "2025-01-25",
+                                    end: "2025-03-15",
+                                    milestones: [
+                                        { id: "m8", date: "2025-02-10", text: "Plan de secours validé" }
+                                    ]
+                                },
+                                {
+                                    id: "v1s3l2",
+                                    typeId: "risk",
+                                    text: "Scénarios panne LEAP-1A haute saison",
+                                    start: "2025-02-20",
+                                    end: "2025-04-01",
+                                    milestones: [
+                                        { id: "m9", date: "2025-03-20", text: "Scénarios simulés" }
+                                    ]
+                                },
+                                {
+                                    id: "v1s3l3",
+                                    typeId: "risk",
+                                    text: "Plan communication aléa majeur",
+                                    start: "2025-02-10",
+                                    end: "2025-03-30",
+                                    milestones: [
+                                        { id: "m10", date: "2025-03-10", text: "Kit communication prêt" }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: "v2",
+                    name: "PI2 – Été 2025",
+                    sections: [
+                        {
+                            id: "v2s1",
+                            title: "Préparation campagne été",
+                            lines: [
+                                {
+                                    id: "v2s1l1",
+                                    typeId: "inspection",
+                                    text: "Analyse capacité flotte moteurs été",
+                                    start: "2025-04-01",
+                                    end: "2025-04-30",
+                                    milestones: [
+                                        { id: "m11", date: "2025-04-15", text: "Capacité validée" }
+                                    ]
+                                },
+                                {
+                                    id: "v2s1l2",
+                                    typeId: "maintenance",
+                                    text: "Projection charge ateliers pic été",
+                                    start: "2025-04-10",
+                                    end: "2025-05-15",
+                                    milestones: []
+                                },
+                                {
+                                    id: "v2s1l3",
+                                    typeId: "upgrade",
+                                    text: "Révision SLA compagnies à risque",
+                                    start: "2025-04-20",
+                                    end: "2025-05-20",
+                                    milestones: [
+                                        { id: "m12", date: "2025-05-10", text: "SLA renégociés" }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            id: "v2s2",
+                            title: "Exécution visites & upgrades",
+                            lines: [
+                                {
+                                    id: "v2s2l1",
+                                    typeId: "upgrade",
+                                    text: "Campagne retrofit compresseur HPC",
+                                    start: "2025-05-01",
+                                    end: "2025-06-30",
+                                    milestones: [
+                                        { id: "m13", date: "2025-06-01", text: "1ère vague terminée" }
+                                    ]
+                                },
+                                {
+                                    id: "v2s2l2",
+                                    typeId: "upgrade",
+                                    text: "Modifications mineures flotte régionale",
+                                    start: "2025-06-10",
+                                    end: "2025-07-15",
+                                    milestones: []
+                                },
+                                {
+                                    id: "v2s2l3",
+                                    typeId: "inspection",
+                                    text: "Retour d'expérience après upgrades",
+                                    start: "2025-07-01",
+                                    end: "2025-07-25",
+                                    milestones: []
+                                }
+                            ]
+                        },
+                        {
+                            id: "v2s3",
+                            title: "Suivi performance flotte",
+                            lines: [
+                                {
+                                    id: "v2s3l1",
+                                    typeId: "inspection",
+                                    text: "Suivi dérive conso carburant",
+                                    start: "2025-06-15",
+                                    end: "2025-08-15",
+                                    milestones: [
+                                        { id: "m14", date: "2025-07-15", text: "1er bilan conso" }
+                                    ]
+                                },
+                                {
+                                    id: "v2s3l2",
+                                    typeId: "maintenance",
+                                    text: "Suivi taux disponibilité moteurs",
+                                    start: "2025-06-20",
+                                    end: "2025-08-31",
+                                    milestones: []
+                                },
+                                {
+                                    id: "v2s3l3",
+                                    typeId: "upgrade",
+                                    text: "Mise à jour cockpit indicateurs client",
+                                    start: "2025-07-10",
+                                    end: "2025-08-10",
+                                    milestones: []
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        let activeViewId = data.views[0].id;
+        let zoomMode = "day";
+        let axisConfig = { baseDay: 0, endDay: 180, stepDays: 1, columnCount: 181 };
+        let dragState = null;
+        let columnZoom = 1;
+        let focusedLineId = null;
+        let viewPanState = null;
+
+        const tabsEl = document.getElementById("tabs");
+        const viewsEl = document.getElementById("views");
+        const timelineTopEl = document.getElementById("timelineTop");
+        const timelineBottomEl = document.getElementById("timelineBottom");
+        const timelineTrackEl = document.getElementById("timelineTrack");
+        const viewInnerEl = document.getElementById("viewInner");
+        const viewScrollEl = document.getElementById("viewScroll");
+        const viewAddSectionBtn = document.getElementById("viewAddSectionBtn");
+        const viewRemoveSectionBtn = document.getElementById("viewRemoveSectionBtn");
+
+        function getGridStep() {
+            const v = getComputedStyle(document.documentElement).getPropertyValue("--grid-step").trim();
+            return parseFloat(v) || 40;
+        }
+        function getBaseStepForMode(mode) {
+            if (mode === "day") return 40;
+            if (mode === "week") return 60;
+            return 70; // month
+        }
+        function applyColumnWidth() {
+            const base = getBaseStepForMode(zoomMode);
+            if (columnZoom < 0.6) columnZoom = 0.6;
+            if (columnZoom > 1.6) columnZoom = 1.6;
+            const step = base * columnZoom;
+            document.documentElement.style.setProperty("--grid-step", step + "px");
+            updateWidths();
+            renderTimeline();
+            renderViews();
+        }
+
+        function getAllLines() {
+            const lines = [];
+            data.views.forEach(v => {
+                v.sections.forEach(s => {
+                    s.lines.forEach(l => lines.push(l));
+                });
+            });
+            return lines;
+        }
+
+        function recomputeAxis() {
+            const lines = getAllLines();
+            if (!lines.length) {
+                const stepDays = getStepDays(zoomMode);
+                axisConfig = { baseDay: 0, endDay: 180, stepDays, columnCount: Math.ceil(181 / stepDays) };
+                renderTimeline();
+                updateWidths();
+                return;
+            }
+            let minDay = Infinity;
+            let maxDay = -Infinity;
+            lines.forEach(line => {
+                const s = dayIndexFromISO(line.start);
+                const e = dayIndexFromISO(line.end);
+                if (s < minDay) minDay = s;
+                if (e > maxDay) maxDay = e;
+            });
+            const margin = 7;
+            minDay -= margin;
+            if (minDay < 0) minDay = 0;
+            maxDay += margin;
+            const stepDays = getStepDays(zoomMode);
+            const baseDay = minDay - (minDay % stepDays);
+            const totalDays = maxDay - baseDay + 1;
+            const columnCount = Math.ceil(totalDays / stepDays);
+            axisConfig = {
+                baseDay,
+                endDay: baseDay + columnCount * stepDays - 1,
+                stepDays,
+                columnCount
+            };
+            renderTimeline();
+            updateWidths();
+        }
+
+        function updateWidths() {
+            const gridStep = getGridStep();
+            const { columnCount } = axisConfig;
+            const timelineWidth = columnCount * gridStep;
+            const totalWidth = timelineWidth + 180; // 180 = padding-left header approx
+            if (timelineTrackEl) {
+                timelineTrackEl.style.width = timelineWidth + "px";
+            }
+            if (viewInnerEl) {
+                viewInnerEl.style.width = totalWidth + "px";
+            }
+        }
+
+        function renderTimeline() {
+            timelineTopEl.innerHTML = "";
+            timelineBottomEl.innerHTML = "";
+            const { baseDay, endDay, stepDays, columnCount } = axisConfig;
+
+            for (let i = 0; i < columnCount; i++) {
+                const span = document.createElement("span");
+                const dayIdx = baseDay + i * stepDays;
+                const date = dayToDate(dayIdx);
+                if (zoomMode === "day") {
+                    span.textContent = date.getDate();
+                } else if (zoomMode === "week") {
+                    span.textContent = getISOWeek(date);
+                } else {
+                    span.textContent = getMonthShort(date);
+                }
+                timelineBottomEl.appendChild(span);
+            }
+
+            if (zoomMode === "month") {
+                const segments = [];
+                let currentYear = null;
+                let segStart = baseDay;
+                for (let d = baseDay; d <= endDay; d += stepDays) {
+                    const date = dayToDate(d);
+                    const y = date.getFullYear();
+                    if (currentYear === null) {
+                        currentYear = y;
+                        segStart = d;
+                    } else if (y !== currentYear) {
+                        segments.push({ label: String(currentYear), from: segStart, to: d - stepDays });
+                        currentYear = y;
+                        segStart = d;
+                    }
+                }
+                if (currentYear !== null) {
+                    segments.push({ label: String(currentYear), from: segStart, to: endDay });
+                }
+                segments.forEach(seg => {
+                    const span = document.createElement("span");
+                    span.textContent = seg.label;
+                    const days = seg.to - seg.from + 1;
+                    const cols = days / stepDays;
+                    span.style.flex = cols;
+                    timelineTopEl.appendChild(span);
+                });
+            } else {
+                const segments = [];
+                let currentMonth = null;
+                let currentYear = null;
+                let segStart = baseDay;
+                for (let d = baseDay; d <= endDay; d += stepDays) {
+                    const date = dayToDate(d);
+                    const m = date.getMonth();
+                    const y = date.getFullYear();
+                    if (currentMonth === null) {
+                        currentMonth = m;
+                        currentYear = y;
+                        segStart = d;
+                    } else if (m !== currentMonth || y !== currentYear) {
+                        const label = getMonthShort(new Date(currentYear, currentMonth, 1));
+                        segments.push({ label, from: segStart, to: d - stepDays });
+                        currentMonth = m;
+                        currentYear = y;
+                        segStart = d;
+                    }
+                }
+                if (currentMonth !== null) {
+                    const label = getMonthShort(new Date(currentYear, currentMonth, 1));
+                    segments.push({ label, from: segStart, to: endDay });
+                }
+                segments.forEach(seg => {
+                    const span = document.createElement("span");
+                    span.textContent = seg.label;
+                    const days = seg.to - seg.from + 1;
+                    const cols = days / stepDays;
+                    span.style.flex = cols;
+                    timelineTopEl.appendChild(span);
+                });
+            }
+        }
+
+        // --- Focus & scroll sur item ---
+        function scrollToFocusedItem() {
+            if (!focusedLineId) return;
+            const line = getAllLines().find(l => l.id === focusedLineId);
+            if (!line) return;
+            const { baseDay, stepDays } = axisConfig;
+            const gridStep = getGridStep();
+            const startDay = dayIndexFromISO(line.start);
+            const colStart = (startDay - baseDay) / stepDays;
+            const x = Math.max(0, colStart * gridStep - 60); // petite marge
+            viewScrollEl.scrollLeft = x;
+        }
+
+        function getActiveView() {
+            return data.views.find(v => v.id === activeViewId);
+        }
+
+        function findSectionById(sectionId) {
+            const view = getActiveView();
+            if (!view) return null;
+            return view.sections.find(s => s.id === sectionId) || null;
+        }
+
+        function findSectionInfoByLineId(lineId) {
+            const view = getActiveView();
+            if (!view) return null;
+            for (const section of view.sections) {
+                const index = section.lines.findIndex(l => l.id === lineId);
+                if (index >= 0) {
+                    return { section, index };
+                }
+            }
+            return null;
+        }
+
+        function onViewPanMove(e) {
+            if (!viewPanState) return;
+            const dx = e.clientX - viewPanState.startX;
+            viewScrollEl.scrollLeft = viewPanState.startScroll - dx;
+        }
+
+        function onViewPanEnd() {
+            if (!viewPanState) return;
+            viewPanState = null;
+            document.body.style.cursor = "";
+            viewScrollEl.classList.remove("dragging");
+            document.removeEventListener("mousemove", onViewPanMove);
+            document.removeEventListener("mouseup", onViewPanEnd);
+        }
+
+        viewScrollEl.addEventListener("mousedown", e => {
+            if (e.button !== 0) return;
+            if (dragState || viewPanState) return;
+            const forbids = e.target.closest(".item, .resize-handle, .icon-btn, .section-add-btn, .section-add-select-container, .section-action-btn, .section-title-wrap, .section-title-input, .line-controls");
+            if (forbids) return;
+            viewPanState = { startX: e.clientX, startScroll: viewScrollEl.scrollLeft };
+            document.body.style.cursor = "grabbing";
+            viewScrollEl.classList.add("dragging");
+            document.addEventListener("mousemove", onViewPanMove);
+            document.addEventListener("mouseup", onViewPanEnd);
+            e.preventDefault();
+        });
+
+        // --- Onglets ---
+        function renderTabs() {
+            tabsEl.innerHTML = "";
+            data.views.forEach(view => {
+                const btn = document.createElement("button");
+                btn.className = "tab" + (view.id === activeViewId ? " active" : "");
+                btn.dataset.id = view.id;
+
+                const labelSpan = document.createElement("span");
+                labelSpan.textContent = view.name;
+
+                const input = document.createElement("input");
+                input.className = "tab-label-edit";
+                input.value = view.name;
+                input.style.display = "none";
+
+                btn.appendChild(labelSpan);
+                btn.appendChild(input);
+
+                btn.addEventListener("click", e => {
+                    if (e.detail === 2) return;
+                    activeViewId = view.id;
+                    renderTabs();
+                    renderViews();
+                });
+
+                btn.addEventListener("dblclick", () => {
+                    labelSpan.style.display = "none";
+                    input.style.display = "block";
+                    input.focus();
+                    input.select();
+                });
+
+                input.addEventListener("blur", () => {
+                    view.name = input.value || view.name;
+                    labelSpan.textContent = view.name;
+                    labelSpan.style.display = "block";
+                    input.style.display = "none";
+                });
+                input.addEventListener("keydown", e => {
+                    if (e.key === "Enter") input.blur();
+                });
+
+                tabsEl.appendChild(btn);
+            });
+
+            const addTab = document.createElement("button");
+            addTab.className = "tab tab--icon";
+            addTab.title = "Nouvelle vue";
+            addTab.textContent = "➕";
+            addTab.addEventListener("click", () => {
+                const id = "v-" + Date.now().toString(16);
+                const newView = {
+                    id,
+                    name: "Nouvelle vue",
+                    sections: [{ id: id + "-s1", title: "Nouvelle section", lines: [] }]
+                };
+                data.views.push(newView);
+                activeViewId = id;
+                recomputeAxis();
+                renderTabs();
+                renderViews();
+            });
+            tabsEl.appendChild(addTab);
+
+            const delTab = document.createElement("button");
+            delTab.className = "tab tab--icon";
+            delTab.title = "Supprimer la vue courante";
+            delTab.textContent = "🗑️";
+            delTab.addEventListener("click", () => {
+                if (data.views.length <= 1) {
+                    alert("Impossible de supprimer la dernière vue.");
+                    return;
+                }
+                const view = data.views.find(v => v.id === activeViewId);
+                if (confirm(`Supprimer la vue "${view.name}" ?`)) {
+                    const idx = data.views.findIndex(v => v.id === activeViewId);
+                    data.views.splice(idx, 1);
+                    activeViewId = data.views[Math.max(0, idx - 1)].id;
+                    recomputeAxis();
+                    renderTabs();
+                    renderViews();
+                }
+            });
+            tabsEl.appendChild(delTab);
+        }
+
+        // --- Vues / sections / lignes ---
+        function renderViews() {
+            const view = getActiveView();
+            if (!view) return;
+            viewsEl.innerHTML = "";
+            const viewEl = document.createElement("div");
+            viewEl.className = "view";
+            const gridStep = getGridStep();
+            const { baseDay, stepDays, columnCount } = axisConfig;
+            const totalTimelineWidth = columnCount * gridStep;
+
+            view.sections.forEach(section => {
+                const sectionEl = document.createElement("div");
+                sectionEl.className = "section";
+                sectionEl.dataset.sectionId = section.id;
+
+                const header = document.createElement("div");
+                header.className = "section-header";
+
+                const addBtn = document.createElement("button");
+                addBtn.className = "section-add-btn";
+                addBtn.innerHTML = "➕ Ligne";
+
+                const title = document.createElement("div");
+                title.className = "section-title";
+                title.textContent = section.title;
+
+                const titleInput = document.createElement("input");
+                titleInput.className = "section-title-input";
+                titleInput.value = section.title;
+
+                title.addEventListener("dblclick", () => {
+                    title.style.display = "none";
+                    titleInput.style.display = "inline-block";
+                    titleInput.focus();
+                    titleInput.select();
+                });
+                titleInput.addEventListener("blur", () => {
+                    section.title = titleInput.value || section.title;
+                    title.textContent = section.title;
+                    title.style.display = "block";
+                    titleInput.style.display = "none";
+                });
+                titleInput.addEventListener("keydown", e => {
+                    if (e.key === "Enter") titleInput.blur();
+                });
+
+                const selectContainer = document.createElement("div");
+                selectContainer.className = "section-add-select-container";
+                const select = document.createElement("select");
+                types.forEach(t => {
+                    const opt = document.createElement("option");
+                    opt.value = t.id;
+                    opt.textContent = t.label;
+                    select.appendChild(opt);
+                });
+                selectContainer.appendChild(select);
+
+                addBtn.addEventListener("click", () => {
+                    selectContainer.style.display = "block";
+                    if (typeof select.showPicker === "function") {
+                        select.showPicker();
+                    } else {
+                        select.focus();
+                        select.click();
+                    }
+                });
+
+                select.addEventListener("change", () => {
+                    const typeId = select.value;
+                    const todayIdx = 0;
+                    const newLine = {
+                        id: "line-" + Date.now() + "-" + Math.random().toString(16).slice(2),
+                        typeId,
+                        text: "Nouvel item",
+                        start: isoFromDayIndex(todayIdx),
+                        end: isoFromDayIndex(todayIdx + getStepDays(zoomMode) * 2),
+                        milestones: []
+                    };
+                    section.lines.push(newLine);
+                    selectContainer.style.display = "none";
+                    focusedLineId = newLine.id;
+                    recomputeAxis();
+                    renderViews();
+                    scrollToFocusedItem();
+                    setTimeout(() => {
+                        const itemEl = document.querySelector(`[data-line-id="${newLine.id}"] .item`);
+                        if (itemEl) startEditItemLabel(itemEl);
+                    }, 0);
+                });
+
+                select.addEventListener("blur", () => {
+                    setTimeout(() => {
+                        if (document.activeElement !== select) {
+                            selectContainer.style.display = "none";
+                        }
+                    }, 150);
+                });
+
+                const titleWrap = document.createElement("div");
+                titleWrap.className = "section-title-wrap";
+                titleWrap.appendChild(title);
+                titleWrap.appendChild(titleInput);
+
+                header.appendChild(addBtn);
+                header.appendChild(titleWrap);
+                header.appendChild(selectContainer);
+                sectionEl.appendChild(header);
+
+                const linesEl = document.createElement("div");
+                linesEl.className = "lines";
+
+                section.lines.forEach(line => {
+                    const lineEl = document.createElement("div");
+                    lineEl.className = "line";
+                    lineEl.dataset.lineId = line.id;
+                    lineEl.dataset.sectionId = section.id;
+
+                    const controlsEl = document.createElement("div");
+                    controlsEl.className = "line-controls";
+
+                    const addMilestone = document.createElement("button");
+                    addMilestone.className = "icon-btn";
+                    addMilestone.title = "Ajouter un jalon";
+                    addMilestone.textContent = "📌";
+
+                    const editLineBtn = document.createElement("button");
+                    editLineBtn.className = "icon-btn";
+                    editLineBtn.title = "Éditer l'intitulé";
+                    editLineBtn.textContent = "✏️";
+
+                    const deleteLine = document.createElement("button");
+                    deleteLine.className = "icon-btn danger";
+                    deleteLine.title = "Supprimer la ligne";
+                    deleteLine.textContent = "🗑️";
+
+                    controlsEl.appendChild(addMilestone);
+                    controlsEl.appendChild(editLineBtn);
+                    controlsEl.appendChild(deleteLine);
+
+                    const rowEl = document.createElement("div");
+                    rowEl.className = "timeline-row";
+                    rowEl.style.width = totalTimelineWidth + "px";
+
+                    const itemEl = document.createElement("div");
+                    itemEl.className = "item";
+                    if (line.id === focusedLineId) {
+                        itemEl.classList.add("item--focused");
+                    }
+                    const type = getTypeById(line.typeId);
+                    itemEl.style.background = type.color;
+                    itemEl.style.color = getContrastingTextColor(type.color);
+
+                    const startDay = dayIndexFromISO(line.start);
+                    const endDay = dayIndexFromISO(line.end);
+                    const colStart = (startDay - baseDay) / stepDays;
+                    const colSpan = Math.max(1, (endDay - startDay + 1) / stepDays);
+                    const leftPx = colStart * gridStep;
+                    const widthPx = colSpan * gridStep;
+                    itemEl.style.left = leftPx + "px";
+                    itemEl.style.width = widthPx + "px";
+
+                    const leftHandle = document.createElement("div");
+                    leftHandle.className = "resize-handle left";
+                    const rightHandle = document.createElement("div");
+                    rightHandle.className = "resize-handle right";
+
+                    const labelSpan = document.createElement("span");
+                    labelSpan.className = "item-label";
+                    labelSpan.textContent = line.text;
+
+                    const input = document.createElement("input");
+                    input.className = "item-input";
+                    input.value = line.text;
+
+                    itemEl.appendChild(leftHandle);
+                    itemEl.appendChild(labelSpan);
+                    itemEl.appendChild(input);
+                    itemEl.appendChild(rightHandle);
+
+                    itemEl.addEventListener("dblclick", () => {
+                        focusedLineId = line.id;
+                        renderViews();
+                        scrollToFocusedItem();
+                        setTimeout(() => {
+                            const el = document.querySelector(`[data-line-id="${line.id}"] .item`);
+                            if (el) startEditItemLabel(el);
+                        }, 0);
+                    });
+
+                    itemEl.addEventListener("mousedown", e => {
+                        if (e.detail === 2) return;
+                        if (focusedLineId !== line.id) {
+                            focusedLineId = line.id;
+                            renderViews();
+                            return;
+                        }
+                        if (e.target === leftHandle || e.target === rightHandle) return;
+                        startDragItem(e, itemEl, line, rowEl, section.id);
+                    });
+
+                    input.addEventListener("blur", () => {
+                        finishEditItemLabel(itemEl, line);
+                    });
+                    input.addEventListener("keydown", e => {
+                        if (e.key === "Enter") input.blur();
+                    });
+
+                    leftHandle.addEventListener("mousedown", e => {
+                        if (e.detail === 2) return;
+                        e.stopPropagation();
+                        if (focusedLineId !== line.id) {
+                            focusedLineId = line.id;
+                            renderViews();
+                            return;
+                        }
+                        startResizeItem(e, itemEl, line, "left", rowEl);
+                    });
+                    rightHandle.addEventListener("mousedown", e => {
+                        if (e.detail === 2) return;
+                        e.stopPropagation();
+                        if (focusedLineId !== line.id) {
+                            focusedLineId = line.id;
+                            renderViews();
+                            return;
+                        }
+                        startResizeItem(e, itemEl, line, "right", rowEl);
+                    });
+
+                    rowEl.appendChild(itemEl);
+
+                    line.milestones.forEach(ms => {
+                        const msEl = createMilestoneElement(ms, rowEl, line);
+                        rowEl.appendChild(msEl);
+                    });
+
+                    editLineBtn.addEventListener("click", () => {
+                        focusedLineId = line.id;
+                        renderViews();
+                        setTimeout(() => {
+                            scrollToFocusedItem();
+                            const cursorItem = document.querySelector(`[data-line-id="${line.id}"] .item`);
+                            if (cursorItem) startEditItemLabel(cursorItem);
+                        }, 0);
+                    });
+
+                    addMilestone.addEventListener("click", () => {
+                        const defaultDay = endDay + stepDays;
+                        const newMs = {
+                            id: "ms-" + Date.now() + "-" + Math.random().toString(16).slice(2),
+                            date: isoFromDayIndex(defaultDay),
+                            text: "Nouveau jalon"
+                        };
+                        line.milestones.push(newMs);
+                        recomputeAxis();
+                        renderViews();
+                        setTimeout(() => {
+                            const msDom = document.querySelector(`[data-ms-id="${newMs.id}"]`);
+                            if (msDom) startEditMilestoneLabel(msDom);
+                        }, 0);
+                    });
+
+                    deleteLine.addEventListener("click", () => {
+                        section.lines = section.lines.filter(l => l.id !== line.id);
+                        if (focusedLineId === line.id) focusedLineId = null;
+                        recomputeAxis();
+                        renderViews();
+                    });
+
+                    lineEl.appendChild(controlsEl);
+                    lineEl.appendChild(rowEl);
+                    linesEl.appendChild(lineEl);
+                });
+
+                sectionEl.appendChild(linesEl);
+                viewEl.appendChild(sectionEl);
+            });
+
+            viewsEl.appendChild(viewEl);
+        }
+
+        viewAddSectionBtn.addEventListener("click", () => {
+            const view = getActiveView();
+            if (!view) return;
+            const id = "section-" + Date.now().toString(16);
+            const newSection = { id, title: "Nouvelle section", lines: [] };
+            view.sections.push(newSection);
+            recomputeAxis();
+            renderViews();
+        });
+
+        viewRemoveSectionBtn.addEventListener("click", () => {
+            const view = getActiveView();
+            if (!view) return;
+            if (view.sections.length <= 1) {
+                alert("Impossible de supprimer la dernière section.");
+                return;
+            }
+            const lastSection = view.sections[view.sections.length - 1];
+            if (!confirm(`Supprimer la section "${lastSection.title}" ?`)) return;
+            const hadFocus = lastSection.lines.some(l => l.id === focusedLineId);
+            view.sections.pop();
+            if (hadFocus) focusedLineId = null;
+            recomputeAxis();
+            renderViews();
+        });
+
+        // --- Edition item ---
+        function startEditItemLabel(itemEl) {
+            itemEl.classList.add("editing");
+            const input = itemEl.querySelector(".item-input");
+            input.style.display = "block";
+            input.focus();
+            input.select();
+        }
+        function finishEditItemLabel(itemEl, line) {
+            const input = itemEl.querySelector(".item-input");
+            const label = itemEl.querySelector(".item-label");
+            line.text = input.value || line.text;
+            label.textContent = line.text;
+            itemEl.classList.remove("editing");
+            input.style.display = "none";
+        }
+
+        // --- Jalons ---
+        function createMilestoneElement(ms, rowEl, line) {
+            const gridStep = getGridStep();
+            const { baseDay, stepDays } = axisConfig;
+
+            const wrap = document.createElement("div");
+            wrap.className = "milestone";
+            wrap.dataset.msId = ms.id;
+            wrap.dataset.lineId = line.id;
+
+            const dayIdx = dayIndexFromISO(ms.date);
+            const col = (dayIdx - baseDay) / stepDays;
+            const leftPx = col * gridStep;
+            wrap.style.left = leftPx + "px";
+
+            const diamond = document.createElement("div");
+            diamond.className = "milestone-diamond";
+
+            const label = document.createElement("span");
+            label.className = "milestone-label";
+            label.textContent = ms.text;
+
+            const input = document.createElement("input");
+            input.className = "milestone-input";
+            input.value = ms.text;
+
+            wrap.appendChild(diamond);
+            wrap.appendChild(label);
+            wrap.appendChild(input);
+
+            wrap.addEventListener("dblclick", () => {
+                startEditMilestoneLabel(wrap);
+            });
+
+            input.addEventListener("blur", () => {
+                finishEditMilestoneLabel(wrap, line);
+            });
+            input.addEventListener("keydown", e => {
+                if (e.key === "Enter") input.blur();
+            });
+
+            wrap.addEventListener("mousedown", e => {
+                if (e.detail === 2) return; // ne pas démarrer de drag sur double-clic
+                startDragMilestone(e, wrap, ms, rowEl);
+            });
+
+            return wrap;
+        }
+
+        function startEditMilestoneLabel(msEl) {
+            msEl.classList.add("editing");
+            const input = msEl.querySelector(".milestone-input");
+            input.style.display = "inline-block";
+            input.focus();
+            input.select();
+        }
+        function finishEditMilestoneLabel(msEl, line) {
+            const input = msEl.querySelector(".milestone-input");
+            const label = msEl.querySelector(".milestone-label");
+            const id = msEl.dataset.msId;
+            const ms = line.milestones.find(m => m.id === id);
+            if (ms) {
+                ms.text = input.value || ms.text;
+                label.textContent = ms.text;
+            }
+            msEl.classList.remove("editing");
+            input.style.display = "none";
+        }
+
+        // --- Drag & resize ---
+        function startDragItem(e, el, line, rowEl, sectionId) {
+            e.preventDefault();
+            const rect = el.getBoundingClientRect();
+            const rowRect = rowEl.getBoundingClientRect();
+            dragState = {
+                type: "item",
+                el,
+                line,
+                rowEl,
+                startX: e.clientX,
+                originLeft: rect.left - rowRect.left,
+                sectionId,
+                dropSectionId: sectionId,
+                dropLineId: line.id,
+                dropLineRect: rowRect,
+                lastPointerY: null
+            };
+            document.addEventListener("mousemove", onDragMove);
+            document.addEventListener("mouseup", onDragEnd);
+        }
+
+        function startResizeItem(e, el, line, side, rowEl) {
+            e.preventDefault();
+            const rect = el.getBoundingClientRect();
+            const rowRect = rowEl.getBoundingClientRect();
+            dragState = {
+                type: "resize",
+                side,
+                el,
+                line,
+                rowEl,
+                startX: e.clientX,
+                originLeft: rect.left - rowRect.left,
+                originWidth: rect.width
+            };
+            document.addEventListener("mousemove", onDragMove);
+            document.addEventListener("mouseup", onDragEnd);
+        }
+
+        function startDragMilestone(e, el, ms, rowEl) {
+            e.preventDefault();
+            const rect = el.getBoundingClientRect();
+            const rowRect = rowEl.getBoundingClientRect();
+            dragState = {
+                type: "milestone",
+                el,
+                ms,
+                rowEl,
+                startX: e.clientX,
+                originLeft: rect.left - rowRect.left
+            };
+            document.addEventListener("mousemove", onDragMove);
+            document.addEventListener("mouseup", onDragEnd);
+        }
+
+        function onDragMove(e) {
+            if (!dragState) return;
+            const gridStep = getGridStep();
+            const rowRect = dragState.rowEl.getBoundingClientRect();
+            const minPx = 0;
+            const maxPx = rowRect.width - gridStep;
+            const dx = e.clientX - dragState.startX;
+
+            if (dragState.type === "item") {
+                let newLeft = dragState.originLeft + dx;
+                newLeft = Math.max(minPx, Math.min(maxPx, newLeft));
+                const col = Math.round(newLeft / gridStep);
+                dragState.el.style.left = (col * gridStep) + "px";
+                dragState.lastPointerY = e.clientY;
+                const hoveredElements = document.elementsFromPoint(e.clientX, e.clientY);
+                let hoveredLineEl = null;
+                for (const candidate of hoveredElements) {
+                    if (!(candidate instanceof Element)) continue;
+                    const lineCandidate = candidate.closest(".line");
+                    if (lineCandidate) {
+                        hoveredLineEl = lineCandidate;
+                        break;
+                    }
+                }
+                if (hoveredLineEl) {
+                    dragState.dropLineId = hoveredLineEl.dataset.lineId;
+                    dragState.dropSectionId = hoveredLineEl.dataset.sectionId || dragState.dropSectionId;
+                    dragState.dropLineRect = hoveredLineEl.getBoundingClientRect();
+                } else {
+                    let hoveredSectionEl = null;
+                    for (const candidate of hoveredElements) {
+                        if (!(candidate instanceof Element)) continue;
+                        const sectionCandidate = candidate.closest(".section");
+                        if (sectionCandidate) {
+                            hoveredSectionEl = sectionCandidate;
+                            break;
+                        }
+                    }
+                    if (hoveredSectionEl) {
+                        dragState.dropSectionId = hoveredSectionEl.dataset.sectionId || dragState.dropSectionId;
+                        dragState.dropLineId = null;
+                        dragState.dropLineRect = null;
+                    }
+                }
+            } else if (dragState.type === "resize") {
+                let left = dragState.originLeft;
+                let width = dragState.originWidth;
+                if (dragState.side === "left") {
+                    left = dragState.originLeft + dx;
+                    width = dragState.originWidth - dx;
+                } else {
+                    width = dragState.originWidth + dx;
+                }
+                if (width < gridStep) width = gridStep;
+                if (left < minPx) left = minPx;
+                if (left + width > rowRect.width) {
+                    width = rowRect.width - left;
+                }
+                const leftCol = Math.round(left / gridStep);
+                const widthCols = Math.max(1, Math.round(width / gridStep));
+                dragState.el.style.left = (leftCol * gridStep) + "px";
+                dragState.el.style.width = (widthCols * gridStep) + "px";
+            } else if (dragState.type === "milestone") {
+                let newLeft = dragState.originLeft + dx;
+                newLeft = Math.max(minPx, Math.min(maxPx, newLeft));
+                const col = Math.round(newLeft / gridStep);
+                dragState.el.style.left = (col * gridStep) + "px";
+            }
+        }
+
+        function onDragEnd(e) {
+            if (!dragState) return;
+            const gridStep = getGridStep();
+            const { baseDay, stepDays } = axisConfig;
+
+            if (dragState.type === "item" || dragState.type === "resize") {
+                const el = dragState.el;
+                const line = dragState.line;
+                const leftPx = parseFloat(el.style.left) || 0;
+                const widthPx = parseFloat(el.style.width) || gridStep;
+                const colStart = Math.round(leftPx / gridStep);
+                const colSpan = Math.max(1, Math.round(widthPx / gridStep));
+                const startDay = baseDay + colStart * stepDays;
+                const endDay = startDay + colSpan * stepDays - 1;
+                line.start = isoFromDayIndex(startDay);
+                line.end = isoFromDayIndex(endDay);
+            } else if (dragState.type === "milestone") {
+                const el = dragState.el;
+                const ms = dragState.ms;
+                const leftPx = parseFloat(el.style.left) || 0;
+                const col = Math.round(leftPx / gridStep);
+                const day = baseDay + col * stepDays;
+                ms.date = isoFromDayIndex(day);
+            }
+
+            if (dragState.type === "item") {
+                const sourceInfo = findSectionInfoByLineId(dragState.line.id);
+                if (sourceInfo) {
+                    let targetSection = findSectionById(dragState.dropSectionId) || sourceInfo.section;
+                    let insertIndex = sourceInfo.index;
+                    if (dragState.dropLineId) {
+                        const targetIndex = targetSection.lines.findIndex(l => l.id === dragState.dropLineId);
+                        if (targetIndex >= 0) {
+                            insertIndex = targetIndex;
+                            if (dragState.dropLineRect) {
+                                const pointerY = dragState.lastPointerY || (e && e.clientY) || 0;
+                                const mid = dragState.dropLineRect.top + dragState.dropLineRect.height / 2;
+                                if (pointerY >= mid) insertIndex = targetIndex + 1;
+                            } else {
+                                insertIndex = targetIndex + 1;
+                            }
+                        } else {
+                            insertIndex = targetSection.lines.length;
+                        }
+                    } else if (targetSection !== sourceInfo.section) {
+                        insertIndex = targetSection.lines.length;
+                    }
+                    insertIndex = Math.max(0, Math.min(insertIndex, targetSection.lines.length));
+                    if (targetSection === sourceInfo.section && insertIndex > sourceInfo.index) {
+                        insertIndex--;
+                    }
+                    if (targetSection !== sourceInfo.section || insertIndex !== sourceInfo.index) {
+                        sourceInfo.section.lines.splice(sourceInfo.index, 1);
+                        targetSection.lines.splice(insertIndex, 0, dragState.line);
+                    }
+                }
+            }
+
+            dragState = null;
+            document.removeEventListener("mousemove", onDragMove);
+            document.removeEventListener("mouseup", onDragEnd);
+            recomputeAxis();
+            renderViews();
+        }
+
+        // --- Modal types ---
+        const typesModalBackdrop = document.getElementById("typesModalBackdrop");
+        const openTypesBtn = document.getElementById("openTypesBtn");
+        const closeTypesBtn = document.getElementById("closeTypesBtn");
+        const cancelTypesBtn = document.getElementById("cancelTypesBtn");
+        const saveTypesBtn = document.getElementById("saveTypesBtn");
+        const addTypeBtn = document.getElementById("addTypeBtn");
+        const typesListEl = document.getElementById("typesList");
+        let tempTypes = [];
+
+        function openTypesModal() {
+            tempTypes = types.map(t => ({ ...t }));
+            renderTypesList();
+            typesModalBackdrop.classList.add("show");
+        }
+        function closeTypesModal() {
+            typesModalBackdrop.classList.remove("show");
+        }
+        function renderTypesList() {
+            typesListEl.innerHTML = "";
+            tempTypes.forEach((t, idx) => {
+                const row = document.createElement("div");
+                row.className = "modal-row";
+                const labelInput = document.createElement("input");
+                labelInput.type = "text";
+                labelInput.value = t.label;
+                labelInput.addEventListener("input", () => t.label = labelInput.value);
+
+                const colorInput = document.createElement("input");
+                colorInput.type = "color";
+                colorInput.value = t.color;
+                colorInput.addEventListener("input", () => t.color = colorInput.value);
+
+                const deleteBtn = document.createElement("button");
+                deleteBtn.className = "btn";
+                deleteBtn.textContent = "🗑️";
+                deleteBtn.addEventListener("click", () => {
+                    if (tempTypes.length <= 1) return;
+                    tempTypes.splice(idx, 1);
+                    renderTypesList();
+                });
+
+                row.appendChild(labelInput);
+                row.appendChild(colorInput);
+                row.appendChild(deleteBtn);
+                typesListEl.appendChild(row);
+            });
+        }
+
+        openTypesBtn.addEventListener("click", openTypesModal);
+        closeTypesBtn.addEventListener("click", closeTypesModal);
+        cancelTypesBtn.addEventListener("click", closeTypesModal);
+        typesModalBackdrop.addEventListener("click", e => {
+            if (e.target === typesModalBackdrop) closeTypesModal();
+        });
+        saveTypesBtn.addEventListener("click", () => {
+            types.length = 0;
+            tempTypes.forEach(t => {
+                if (!t.id) t.id = "type-" + Math.random().toString(16).slice(2);
+                types.push(t);
+            });
+            closeTypesModal();
+            recomputeAxis();
+            renderTabs();
+            renderViews();
+        });
+        addTypeBtn.addEventListener("click", () => {
+            tempTypes.push({
+                id: "type-" + Math.random().toString(16).slice(2),
+                label: "Nouveau type",
+                color: "#6b7280"
+            });
+            renderTypesList();
+        });
+
+        // --- Zoom temps ---
+        document.querySelectorAll(".zoom-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll(".zoom-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                zoomMode = btn.dataset.zoom;
+                recomputeAxis();
+                applyColumnWidth();
+                scrollToFocusedItem();
+            });
+        });
+
+        // --- Zoom colonnes (largeur) ---
+        const colZoomInBtn = document.getElementById("colZoomIn");
+        const colZoomOutBtn = document.getElementById("colZoomOut");
+        colZoomInBtn.addEventListener("click", () => {
+            columnZoom += 0.1;
+            applyColumnWidth();
+        });
+        colZoomOutBtn.addEventListener("click", () => {
+            columnZoom -= 0.1;
+            applyColumnWidth();
+        });
+
+        // --- Import / Export JSON ---
+        const importBtn = document.getElementById("importBtn");
+        const exportBtn = document.getElementById("exportBtn");
+        const importInput = document.getElementById("importInput");
+
+        exportBtn.addEventListener("click", () => {
+            const payload = { types, views: data.views };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "planning.json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        importBtn.addEventListener("click", () => {
+            importInput.value = "";
+            importInput.click();
+        });
+
+        importInput.addEventListener("change", e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const obj = JSON.parse(reader.result);
+                    if (obj.types && Array.isArray(obj.types)) {
+                        types.length = 0;
+                        obj.types.forEach(t => types.push(t));
+                    }
+                    if (obj.views && Array.isArray(obj.views) && obj.views.length) {
+                        data.views = obj.views;
+                        activeViewId = data.views[0].id;
+                        focusedLineId = null;
+                    }
+                    recomputeAxis();
+                    renderTabs();
+                    renderViews();
+                } catch (err) {
+                    alert("JSON invalide.");
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // --- Edition titre header ---
+        const mainTitleEl = document.getElementById("mainTitle");
+        mainTitleEl.addEventListener("dblclick", () => {
+            const newTitle = prompt("Modifier le titre :", mainTitleEl.textContent);
+            if (newTitle) mainTitleEl.textContent = newTitle;
+        });
+
+        // --- Init ---
+        recomputeAxis();
+        applyColumnWidth();
+        renderTabs();
+        renderViews();
+    </script>
+</body>
+
+</html>
