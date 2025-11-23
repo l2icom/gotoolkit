@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>PI Planning – Proto OpenAI + vis-timeline</title>
+    <title>Go-Toolkit - Go-Timeline</title>
 
     <!-- Vis Timeline -->
     <link rel="stylesheet" href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css"
@@ -19,10 +19,11 @@
             --surface-soft: #f7f7f7;
             --border: #e5e7eb;
             --border-strong: #d1d5db;
+            --timeline-background: #ffffff;
 
             --primary: #2a7a57;
-            --primary-soft: rgba(37, 99, 235, 0.08);
-            --primary-strong: #1d4ed8;
+            --primary-soft: rgba(42, 122, 87, 0.17);
+            --primary-strong: #1f4f3d;
 
             --text: #111827;
             --muted: #8b8173;
@@ -218,10 +219,6 @@
             white-space: nowrap;
             background: var(--primary);
             color: #fff;
-            transition:
-                background 120ms ease,
-                box-shadow 120ms ease,
-                transform 80ms ease;
         }
 
         .white-btn {
@@ -246,8 +243,7 @@
         }
 
         .btn:hover {
-            background: var(--primary-strong);
-            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.32);
+            box-shadow: 0 6px 18px rgba(42, 122, 87, 0.32);
         }
 
         .btn-ghost:hover {
@@ -279,7 +275,7 @@
 
         /* Timeline + toolbar */
         .timeline-card {
-            background: var(--surface);
+            background: var(--timeline-background);
             border-radius: var(--radius-lg);
             border: 1px solid var(--border);
             padding: 10px 10px 12px;
@@ -918,7 +914,7 @@
         }
 
         #timeline {
-            background: var(--surface);
+            background: var(--timeline-background, var(--surface));
             border-radius: 12px;
             border: 1px solid var(--border);
             height: 100%;
@@ -1085,15 +1081,6 @@
                         <div class="context-menu" id="optionsMenu">
                             <div class="menu-panel">
                                 <label>
-                                    Police
-                                    <select id="fontSelect">
-                                        <option value="Inter">Inter</option>
-                                        <option value="Nunito">Nunito</option>
-                                        <option value="Source Sans Pro">Source Sans Pro</option>
-                                        <option value="Roboto">Roboto</option>
-                                    </select>
-                                </label>
-                                <label>
                                     Taille (px)
                                     <select id="fontSizeInput">
                                         <option value="9">9</option>
@@ -1111,14 +1098,6 @@
                                         <option value="transparent">Transparent</option>
                                     </select>
                                 </label>
-                                <div class="ratio-wrapper">
-                                    <div class="ratio-label">Ratio</div>
-                                    <div class="ratio-grid" id="ratioGrid">
-                                        <button type="button" data-ratio="4:3">4:3</button>
-                                        <button type="button" data-ratio="16:9">16:9</button>
-                                        <button type="button" data-ratio="3:2">3:2</button>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -1467,7 +1446,7 @@
                     ratio: "16:9"
                 }
             };
-            var allowedBackgroundValues = ["#ffffff", "transparent"];
+            var allowedBackgroundValues = ["transparent", "#ffffff"];
 
             function sanitizeTypeId(raw) {
                 var id = (raw || "").toLowerCase().trim();
@@ -1558,7 +1537,7 @@
             var displayPreferences = {
                 font: "Inter",
                 fontSize: 14,
-                background: "#ffffff",
+                background: "transparent",
                 ratio: "16:9"
             };
             var persistedState = loadPersistedTimelineState();
@@ -1746,10 +1725,8 @@
 
             var optionsBtn = document.getElementById("optionsBtn");
             var optionsMenu = document.getElementById("optionsMenu");
-            var fontSelect = document.getElementById("fontSelect");
             var fontSizeInput = document.getElementById("fontSizeInput");
             var backgroundSelector = document.getElementById("backgroundSelector");
-            var ratioGrid = document.getElementById("ratioGrid");
             var fileMenuBtn = document.getElementById("fileMenuBtn");
             var fileMenu = document.getElementById("fileMenu");
             var importJsonBtn = document.getElementById("importJsonBtn");
@@ -1763,28 +1740,7 @@
             var infoCloseBtn = infoPopup ? infoPopup.querySelector(".info-close") : null;
             var timelineCard = document.querySelector(".timeline-card");
             var switchToIndexBtn = document.getElementById("switchToIndex");
-            var fontChoices = [
-                "Inter",
-                "Nunito",
-                "Source Sans Pro",
-                "Roboto"
-            ];
             var fontSizeChoices = [9, 10, 11, 12, 13, 14, 15, 16];
-
-            function renderFontOptions() {
-                if (!fontSelect) return;
-                fontSelect.innerHTML = "";
-                fontChoices.forEach(function (choice) {
-                    var option = document.createElement("option");
-                    option.value = choice;
-                    option.textContent = choice + " · Aa Bb";
-                    option.style.fontFamily = choice;
-                    fontSelect.appendChild(option);
-                });
-                if (displayPreferences.font) {
-                    fontSelect.value = displayPreferences.font;
-                }
-            }
 
             function renderFontSizeOptions() {
                 if (!fontSizeInput) return;
@@ -1960,7 +1916,6 @@
                 if (state.displayPreferences) {
                     Object.assign(displayPreferences, state.displayPreferences);
                 }
-                renderFontOptions();
                 renderFontSizeOptions();
                 applyDisplayPreferences();
                 syncFontControls();
@@ -2045,6 +2000,13 @@
 
             function applyFont(font) {
                 document.documentElement.style.setProperty("--app-font", font);
+                document.body.style.fontFamily = font;
+                if (timelineCard) {
+                    timelineCard.style.fontFamily = font;
+                }
+                if (container) {
+                    container.style.fontFamily = font;
+                }
                 displayPreferences.font = font;
             }
 
@@ -2063,13 +2025,6 @@
 
             function syncFontControls() {
                 var computed = getComputedStyle(document.documentElement);
-                if (fontSelect) {
-                    var rawFont = (computed.getPropertyValue("--app-font") || "").split(",")[0].trim();
-                    rawFont = rawFont.replace(/^["']|["']$/g, "");
-                    if (rawFont) {
-                        fontSelect.value = rawFont;
-                    }
-                }
                 if (fontSizeInput) {
                     var rawSize = computed.getPropertyValue("--global-font-size").trim();
                     var calculated = parseInt(rawSize, 10);
@@ -2091,6 +2046,7 @@
                     cardValue = "rgba(255, 255, 255, 0.6)";
                 }
                 document.body.style.background = bodyValue;
+                document.documentElement.style.setProperty("--timeline-background", cardValue);
                 if (timelineCard) {
                     timelineCard.style.background = cardValue;
                 }
@@ -2111,8 +2067,7 @@
             }
 
             function applyDisplayPreferences() {
-                if (fontSelect && displayPreferences.font) {
-                    fontSelect.value = displayPreferences.font;
+                if (displayPreferences.font) {
                     applyFont(displayPreferences.font);
                 }
                 if (fontSizeInput && displayPreferences.fontSize) {
@@ -2132,24 +2087,14 @@
                 }
             }
 
-            renderFontOptions();
             renderFontSizeOptions();
 
-            if (fontSelect) fontSelect.addEventListener("change", function () {
-                applyFont(this.value);
-            });
             if (fontSizeInput) fontSizeInput.addEventListener("change", function () {
                 updateFontSize(this.value);
             });
             if (backgroundSelector) backgroundSelector.addEventListener("change", function () {
                 applyBackground(this.value);
             });
-            if (ratioGrid) {
-                ratioGrid.addEventListener("click", function (event) {
-                    var ratio = event.target.dataset.ratio;
-                    if (ratio) applyRatio(ratio);
-                });
-            }
 
             applyDisplayPreferences();
             syncFontControls();
