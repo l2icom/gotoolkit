@@ -10,6 +10,7 @@
         type="text/css" />
     <script src="https://unpkg.com/vis-timeline@latest/standalone/umd/vis-timeline-graph2d.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <style>
         :root {
@@ -19,7 +20,7 @@
             --border: #e5e7eb;
             --border-strong: #d1d5db;
 
-            --primary: #2563eb;
+            --primary: #2a7a57;
             --primary-soft: rgba(37, 99, 235, 0.08);
             --primary-strong: #1d4ed8;
 
@@ -47,7 +48,7 @@
 
         body {
             margin: 0;
-            padding: 16px;
+            padding: 4px;
             background: #f7f7f7;
             color: var(--text);
             font-family: var(--app-font, "Inter");
@@ -66,7 +67,6 @@
             gap: 2px;
             align-items: stretch;
             min-height: calc(100vh - 32px);
-            height: calc(100vh - 32px);
         }
 
         .app-header {
@@ -75,7 +75,6 @@
             align-items: center;
             padding: 0;
             border-radius: 0;
-            background: #f7f7f7;
             border: none;
             box-shadow: none;
         }
@@ -88,10 +87,22 @@
             flex-wrap: wrap;
         }
 
+        .tabs-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            min-width: 0;
+        }
+
         .tabs-actions {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 0;
+            width: 100%;
+        }
+
+        .ia-header-actions {
             width: 100%;
         }
 
@@ -106,6 +117,12 @@
             transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
 
+        .context-menu.file-menu {
+            padding: 0;
+            margin: 0;
+            transform: translateX(10px);
+        }
+
         .tab.active {
             background: var(--primary);
             border-color: var(--primary);
@@ -113,9 +130,16 @@
         }
 
         .tab-actions {
-            margin-left: auto;
             display: flex;
             gap: 4px;
+            align-items: center;
+        }
+
+        .header-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 6px;
+            align-items: center;
         }
 
         .tab-btn-add,
@@ -200,6 +224,21 @@
                 transform 80ms ease;
         }
 
+        .white-btn {
+            border-color: rgba(15, 23, 42, 0.2);
+            background: #fff;
+            color: #0f172a;
+            margin-right: 6px;
+        }
+
+        .white-btn:hover,
+        .white-btn:focus-visible {
+            border-color: #2a7a57;
+            background: #fff;
+            color: #2a7a57;
+            box-shadow: 0 6px 18px rgba(42, 122, 87, 0.25);
+        }
+
         .btn-ghost {
             background: var(--surface-soft);
             color: var(--text);
@@ -247,10 +286,10 @@
             display: flex;
             flex-direction: column;
             gap: 2px;
-            flex: 1 1 auto;
+            flex: 0 1 auto;
             min-height: 0;
-            height: 100%;
-            width: auto;
+            height: auto;
+            width: 100%;
             max-width: 100%;
             font-size: var(--global-font-size, 14px);
             aspect-ratio: var(--timeline-aspect-ratio, 16 / 9);
@@ -433,6 +472,171 @@
             left: -10px;
         }
 
+        #fileMenu .menu-panel {
+            padding: 0;
+            gap: 0;
+        }
+
+        .info-popup {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 60;
+        }
+
+        .info-popup.open {
+            display: flex;
+        }
+
+        .info-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 320px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .info-card strong {
+            font-size: 18px;
+        }
+
+        .info-close {
+            align-self: flex-end;
+            border: none;
+            background: transparent;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .tour-overlay {
+            position: fixed;
+            inset: 0;
+            background: transparent;
+            display: none;
+            z-index: 120;
+            pointer-events: auto;
+        }
+
+        .tour-overlay.visible {
+            display: block;
+        }
+
+        .tour-overlay.dimmed {
+            background: rgba(15, 15, 15, 0.65);
+        }
+
+        .tour-highlight {
+            position: absolute;
+            border: 2px solid #2a7a57;
+            border-radius: 12px;
+            background: transparent;
+            box-shadow: 0 0 0 9999px rgba(15, 15, 15, 0.65);
+            transition: all 0.25s ease;
+            pointer-events: none;
+        }
+
+        .tour-highlight.hidden {
+            opacity: 0;
+        }
+
+        .tour-panel {
+            position: absolute;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 460px;
+            width: calc(100% - 40px);
+            background: #fff;
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+            color: #1f1f1f;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .tour-panel h4 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .tour-panel p {
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .tour-step-counter {
+            font-size: 11px;
+            color: #918b7f;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .tour-step-footer {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .tour-panel button {
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: #fff;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .tour-panel button.primary {
+            border: none;
+            background: #2a7a57;
+            color: #fff;
+        }
+
+        .tour-panel button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .tour-skip {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            border: none;
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .menu-panel-btn {
+            border-radius: 0;
+            background: transparent;
+            text-align: left;
+            padding: 8px 12px;
+            width: 100%;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s ease;
+        }
+
+        .menu-panel-btn:hover {
+            background: rgba(42, 122, 87, 0.08);
+        }
+
         .ratio-wrapper {
             display: flex;
             flex-direction: column;
@@ -510,16 +714,36 @@
 
         .header-actions {
             display: flex;
+            flex-direction: row;
+            gap: 8px;
+            max-width: 800px;
+            width: 100%;
+            justify-content: flex-end;
+            align-items: flex-start;
+        }
+
+        .ia-actions {
+            display: flex;
             flex-direction: column;
             gap: 8px;
             max-width: 800px;
             width: 100%;
+            justify-content: flex-end;
+            align-items: flex-start;
         }
 
         .header-actions .header-row {
             display: flex;
             flex-direction: column;
             gap: 4px;
+            width: 100%;
+        }
+
+        .header-actions .header-row label,
+        .header-actions .header-row textarea,
+        .header-actions .header-row select,
+        .header-actions .header-row button {
+            width: 100%;
         }
 
         .header-actions textarea {
@@ -528,7 +752,11 @@
         }
 
         .header-actions button {
-            align-self: flex-start;
+            align-self: flex-end;
+            background: #fff;
+            border: 1px solid rgba(15, 23, 42, 0.2);
+            color: #0f172a;
+            box-shadow: none;
         }
 
         .menu-trigger {
@@ -690,7 +918,7 @@
         }
 
         #timeline {
-            background: var(--surface-soft);
+            background: var(--surface);
             border-radius: 12px;
             border: 1px solid var(--border);
             height: 100%;
@@ -726,8 +954,6 @@
                 color 120ms ease;
             white-space: normal;
             word-break: break-word;
-            padding-top: 4px;
-            padding-bottom: 4px;
         }
 
         .vis-item.vis-range.type-training.vis-editable {
@@ -805,6 +1031,21 @@
             flex-shrink: 0;
         }
 
+        .vis-item.type-milestone.vis-selected,
+        .vis-item.milestone-class.vis-selected {
+            background: rgba(37, 99, 235, 0.18);
+            border-color: rgba(37, 99, 235, 0.8);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
+        }
+
+        .vis-item.type-milestone.vis-selected .ms-pill,
+        .vis-item.milestone-class.vis-selected .ms-pill {
+            background: #2a7a57;
+            border-color: #2a7a57;
+            color: #fff;
+            box-shadow: 0 3px 14px rgba(42, 122, 87, 0.4);
+        }
+
         .vis-time-axis .vis-text {
             font-size: 10px;
             color: var(--muted);
@@ -827,14 +1068,17 @@
     <div class="app">
         <div class="app-header">
             <div class="tabs-actions">
-                <div id="viewTabs" class="tabs"></div>
-
-                <div class="tab-actions">
-                    <button class="tab-btn-add" id="addViewBtn" type="button" aria-label="Ajouter une vue">➕</button>
-                    <button class="tab-btn-delete" id="deleteViewBtn" type="button"
-                        aria-label="Supprimer la vue active">🗑️</button>
+                <button class="btn white-btn" id="switchToIndex" aria-label="Go to index">⇆ Go-Timeline</button>
+                <div class="tabs-wrapper">
+                    <div id="viewTabs" class="tabs"></div>
+                    <div class="tab-actions">
+                        <button class="tab-btn-add" id="addViewBtn" type="button"
+                            aria-label="Ajouter une vue">➕</button>
+                        <button class="tab-btn-delete" id="deleteViewBtn" type="button"
+                            aria-label="Supprimer la vue active">🗑️</button>
+                    </div>
                 </div>
-                <div class="app-actions">
+                <div class="header-actions">
                     <button class="btn" id="openIaModal" aria-label="Ouvrir l'IA">✨</button>
                     <div class="menu-trigger">
                         <button class="btn" id="optionsBtn" aria-label="Options d'affichage">🖌️</button>
@@ -863,11 +1107,8 @@
                                 <label>
                                     Fond
                                     <select id="backgroundSelector">
-                                        <option value="#f7f7f7">Gris clair</option>
                                         <option value="#ffffff">Blanc</option>
                                         <option value="transparent">Transparent</option>
-                                        <option value="#f3f7ff">Bleu clair</option>
-                                        <option value="#0f172a">Sombre</option>
                                     </select>
                                 </label>
                                 <div class="ratio-wrapper">
@@ -878,6 +1119,18 @@
                                         <button type="button" data-ratio="3:2">3:2</button>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="menu-trigger">
+                        <button class="btn" id="fileMenuBtn" aria-label="Fichier">📄</button>
+                        <div class="context-menu file-menu" id="fileMenu">
+                            <div class="menu-panel" style="transform: translateX(10px);">
+                                <button id="importJsonBtn" type="button" class="menu-panel-btn">📂 Open</button>
+                                <button id="exportJsonBtn" type="button" class="menu-panel-btn">💾 Save</button>
+                                <button id="exportImageBtn" type="button" class="menu-panel-btn">🖼️ Image</button>
+                                <button id="exportExcelBtn" type="button" class="menu-panel-btn">📊 Excel</button>
+                                <button id="aboutTimelineBtn" type="button" class="menu-panel-btn">ℹ️ À propos</button>
                             </div>
                         </div>
                     </div>
@@ -928,24 +1181,51 @@
                     <h3 id="iaModalTitle">Assistant IA</h3>
                     <button class="modal-close" id="iaModalClose" type="button" aria-label="Fermer l'IA">×</button>
                 </div>
-                <div class="header-actions">
-                    <div class="header-row">
+                <div class="ia-actions">
+                    <div class="header-row  ia-header-actions">
                         <label for="mode">Mode d'action</label>
                         <select id="mode">
-                            <option value="create">🆕 Créer un planning à partir du prompt</option>
-                            <option value="modify">✏️ Modifier le planning actuel avec le prompt</option>
+                            <option value="create">🆕 Créer un planning</option>
+                            <option value="modify">✏️ Modifier le planning</option>
                         </select>
                     </div>
-                    <div class="header-row">
-                        <label for="prompt">Prompt envoyé à OpenAI</label>
-                        <textarea id="prompt" rows="4"
-                            placeholder="Exemple : Crée un planning PI de 10 semaines..."></textarea>
+                    <div class="header-row ia-header-actions">
+                        <label for="prompt">Demande</label>
+                        <textarea id="prompt" rows="30"
+                            placeholder="Élaborer un planning opérationnel pour une demande de maintenance moteur.&#10;&#10;Objectifs :&#10;- Période : janvier–mars 2025&#10;- Segments : Préparation opérationnelle, Inspection technique, Actions correctives&#10;- Natures : diagnostic, intervention, contrôle qualité, jalon&#10;- Générer 6 interventions datées (début/fin) avec logique métier&#10;- Ajouter 2 jalons clés (Feu vert inspection, Clôture technique)&#10;- Libellés courts et professionnels"></textarea>
                     </div>
                     <button class="btn" id="btn-call">
                         <span>✨ Envoyer</span>
                     </button>
                 </div>
             </div>
+        </div>
+
+        <div id="timelineInfoPopup" class="info-popup" role="dialog" aria-live="polite">
+            <div class="info-card">
+                <button class="info-close" type="button" aria-label="Fermer">×</button>
+                <img src="logo.gif" alt="Logo Go-Toolkit">
+                <strong>Go-Toolkit</strong>
+                <span>Version 0.11.23</span>
+                <span>Développé par Quang TRAN.</span>
+                <span>Usage réservé à Savane Consulting.</span>
+                <button id="timelineTourReplayBtn" type="button" class="btn">Tour guidé</button>
+            </div>
+        </div>
+
+        <div id="timelineTourOverlay" class="tour-overlay" aria-hidden="true">
+            <div class="tour-highlight hidden" aria-hidden="true"></div>
+            <div class="tour-panel">
+                <span class="tour-step-counter" id="timelineTourStepCounter"></span>
+                <h4 id="timelineTourStepTitle"></h4>
+                <p id="timelineTourStepDescription"></p>
+                <div class="tour-step-footer">
+                    <button id="timelineTourPrevBtn" type="button">Précédent</button>
+                    <button id="timelineTourNextBtn" type="button" class="primary">Suivant</button>
+                    <button id="timelineTourCloseBtn" type="button">Fermer</button>
+                </div>
+            </div>
+            <button id="timelineTourSkipBtn" class="tour-skip" type="button">×</button>
         </div>
 
         <input type="file" id="importJsonInput" accept="application/json" style="display:none">
@@ -1024,6 +1304,170 @@
             typeStyleElement.id = "timeline-type-styles";
             document.head.appendChild(typeStyleElement);
             var persistenceLocked = false;
+            function deepClone(value) {
+                if (value === undefined || value === null) return value;
+                return JSON.parse(JSON.stringify(value));
+            }
+            var DEMO_STATE = {
+                views: [
+                    {
+                        name: "Vue 1",
+                        title: "Vue 1",
+                        planning: {
+                            timeline: {
+                                start: "2025-11-30",
+                                end: "2026-06-15"
+                            },
+                            groups: [
+                                { id: "g1", label: "PM & Stakeholders" },
+                                { id: "g2", label: "Architecture & Data" },
+                                { id: "g3", label: "Backend" },
+                                { id: "g4", label: "Frontend & UX" },
+                                { id: "g5", label: "Quality Assurance" },
+                                { id: "g6", label: "DevOps & Infra" },
+                                { id: "g7", label: "Formation & Support" }
+                            ],
+                            items: [
+                                {
+                                    id: "i2",
+                                    groupId: "g2",
+                                    label: "Architecture Freeze",
+                                    kind: "milestone",
+                                    date: "2025-12-21"
+                                },
+                                {
+                                    id: "i3",
+                                    groupId: "g4",
+                                    label: "MVP Scope Freeze",
+                                    kind: "milestone",
+                                    date: "2026-02-15"
+                                },
+                                {
+                                    id: "i4",
+                                    groupId: "g6",
+                                    label: "Production Readiness",
+                                    kind: "milestone",
+                                    date: "2026-05-31"
+                                },
+                                {
+                                    id: "i5",
+                                    groupId: "g1",
+                                    label: "Review & Next PI",
+                                    kind: "milestone",
+                                    date: "2026-05-31"
+                                },
+                                {
+                                    id: "i9",
+                                    groupId: "g3",
+                                    label: "API: Demandes de maintenance endpoints",
+                                    kind: "feature",
+                                    start: "2025-11-30",
+                                    end: "2026-01-19"
+                                },
+                                {
+                                    id: "i10",
+                                    groupId: "g3",
+                                    label: "Gestion des états de demande",
+                                    kind: "task",
+                                    start: "2026-01-31",
+                                    end: "2026-03-13"
+                                },
+                                {
+                                    id: "i11",
+                                    groupId: "g4",
+                                    label: "UI: Création et suivi des demandes",
+                                    kind: "feature",
+                                    start: "2025-12-15",
+                                    end: "2026-02-28"
+                                },
+                                {
+                                    id: "i12",
+                                    groupId: "g4",
+                                    label: "Dashboard & filtres",
+                                    kind: "task",
+                                    start: "2026-01-10",
+                                    end: "2026-03-20"
+                                },
+                                {
+                                    id: "i13",
+                                    groupId: "g5",
+                                    label: "Tests fonctionnels & acceptance criteria",
+                                    kind: "documentation",
+                                    start: "2026-01-15",
+                                    end: "2026-03-15"
+                                },
+                                {
+                                    id: "i14",
+                                    groupId: "g5",
+                                    label: "Automatisation QA",
+                                    kind: "task",
+                                    start: "2026-02-20",
+                                    end: "2026-04-30"
+                                },
+                                {
+                                    id: "i15",
+                                    groupId: "g6",
+                                    label: "CI/CD & Environnements",
+                                    kind: "integration",
+                                    start: "2025-12-15",
+                                    end: "2026-04-30"
+                                },
+                                {
+                                    id: "i16",
+                                    groupId: "g6",
+                                    label: "Monitoring & Observabilité",
+                                    kind: "task",
+                                    start: "2026-03-01",
+                                    end: "2026-05-31"
+                                },
+                                {
+                                    id: "i17",
+                                    groupId: "g7",
+                                    label: "Formation utilisateur",
+                                    kind: "documentation",
+                                    start: "2026-03-15",
+                                    end: "2026-04-30"
+                                },
+                                {
+                                    id: "i18",
+                                    groupId: "g7",
+                                    label: "Support post-déploiement",
+                                    kind: "task",
+                                    start: "2026-04-01",
+                                    end: "2026-06-15"
+                                },
+                                {
+                                    id: "i20",
+                                    groupId: "g3",
+                                    label: "Intégration sécurité & conformité API",
+                                    kind: "integration",
+                                    start: "2026-01-05",
+                                    end: "2026-02-28"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        name: "Vue 2",
+                        title: "Vue 2",
+                        planning: {
+                            timeline: {
+                                start: "2025-11-23",
+                                end: "2025-11-23"
+                            },
+                            groups: [],
+                            items: []
+                        }
+                    }
+                ],
+                displayPreferences: {
+                    font: "Inter",
+                    fontSize: 14,
+                    background: "#f7f7f7",
+                    ratio: "16:9"
+                }
+            };
+            var allowedBackgroundValues = ["#ffffff", "transparent"];
 
             function sanitizeTypeId(raw) {
                 var id = (raw || "").toLowerCase().trim();
@@ -1034,9 +1478,13 @@
             function rebuildTypeStyles() {
                 var rules = Object.keys(typeDefinitions).map(function (key) {
                     var def = typeDefinitions[key];
+                    var background = def.background;
+                    if (key === "milestone") {
+                        background = "transparent";
+                    }
                     return [
                         ".vis-item.type-" + def.id + " {",
-                        "  background: " + def.background + ";",
+                        "  background: " + background + ";",
                         "  border-color: " + def.border + ";",
                         "  color: " + def.color + ";",
                         "}"
@@ -1076,16 +1524,25 @@
                 });
             }
 
-            function persistPlanningState(planning) {
-                if (!planning) return;
+            function persistTimelineState() {
                 try {
-                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(planning));
+                    var payload = {
+                        views: views.map(function (view) {
+                            return {
+                                name: view.name,
+                                title: view.title,
+                                planning: view.planning
+                            };
+                        }),
+                        displayPreferences: Object.assign({}, displayPreferences)
+                    };
+                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
                 } catch (err) {
                     console.warn("Impossible de sauvegarder le planning", err);
                 }
             }
 
-            function loadPersistedPlanning() {
+            function loadPersistedTimelineState() {
                 try {
                     var raw = localStorage.getItem(LOCAL_STORAGE_KEY);
                     if (!raw) return null;
@@ -1096,9 +1553,54 @@
                 }
             }
 
+            var views = [];
+            var activeViewIndex = 0;
+            var displayPreferences = {
+                font: "Inter",
+                fontSize: 14,
+                background: "#ffffff",
+                ratio: "16:9"
+            };
+            var persistedState = loadPersistedTimelineState();
+            if (persistedState) {
+                if (Array.isArray(persistedState.views) && persistedState.views.length) {
+                    views = persistedState.views.map(function (view, index) {
+                        return {
+                            name: view.name || view.title || ("Vue " + (index + 1)),
+                            title: view.title || view.name || ("Vue " + (index + 1)),
+                            planning: view.planning || null
+                        };
+                    });
+                } else if (persistedState.groups) {
+                    var defaultLabel = persistedState.label || persistedState.name || "Vue 1";
+                    views = [{
+                        name: defaultLabel,
+                        title: defaultLabel,
+                        planning: persistedState
+                    }];
+                }
+                if (persistedState.displayPreferences) {
+                    Object.assign(displayPreferences, persistedState.displayPreferences);
+                }
+            } else {
+                if (Array.isArray(DEMO_STATE.views) && DEMO_STATE.views.length) {
+                    views = deepClone(DEMO_STATE.views);
+                }
+                if (DEMO_STATE.displayPreferences) {
+                    var demoPrefs = deepClone(DEMO_STATE.displayPreferences);
+                    demoPrefs.background = "#ffffff";
+                    Object.assign(displayPreferences, demoPrefs);
+                }
+            }
+            if (!views.length) {
+                views = [{ name: "Vue 1", title: "Vue 1", planning: null }];
+            }
+
             function persistCurrentPlanning() {
                 if (persistenceLocked) return;
-                persistPlanningState(exportPlanningToJson());
+                if (!views[activeViewIndex]) return;
+                views[activeViewIndex].planning = exportPlanningToJson();
+                persistTimelineState();
             }
 
             function getActiveTypeIds() {
@@ -1248,7 +1750,19 @@
             var fontSizeInput = document.getElementById("fontSizeInput");
             var backgroundSelector = document.getElementById("backgroundSelector");
             var ratioGrid = document.getElementById("ratioGrid");
+            var fileMenuBtn = document.getElementById("fileMenuBtn");
+            var fileMenu = document.getElementById("fileMenu");
+            var importJsonBtn = document.getElementById("importJsonBtn");
+            var exportJsonBtn = document.getElementById("exportJsonBtn");
+            var exportImageBtn = document.getElementById("exportImageBtn");
+            var exportExcelBtn = document.getElementById("exportExcelBtn");
+            var aboutTimelineBtn = document.getElementById("aboutTimelineBtn");
+            var importJsonInput = document.getElementById("importJsonInput");
+            var headerTitleElement = document.querySelector(".header-text h1");
+            var infoPopup = document.getElementById("timelineInfoPopup");
+            var infoCloseBtn = infoPopup ? infoPopup.querySelector(".info-close") : null;
             var timelineCard = document.querySelector(".timeline-card");
+            var switchToIndexBtn = document.getElementById("switchToIndex");
             var fontChoices = [
                 "Inter",
                 "Nunito",
@@ -1267,6 +1781,9 @@
                     option.style.fontFamily = choice;
                     fontSelect.appendChild(option);
                 });
+                if (displayPreferences.font) {
+                    fontSelect.value = displayPreferences.font;
+                }
             }
 
             function renderFontSizeOptions() {
@@ -1279,10 +1796,14 @@
                     option.style.fontSize = size + "px";
                     fontSizeInput.appendChild(option);
                 });
+                if (displayPreferences.fontSize) {
+                    fontSizeInput.value = displayPreferences.fontSize;
+                }
             }
 
             function closeContextMenus() {
                 if (optionsMenu) optionsMenu.classList.remove("open");
+                if (fileMenu) fileMenu.classList.remove("open");
             }
 
             if (optionsBtn && optionsMenu) {
@@ -1294,14 +1815,237 @@
                 });
             }
 
+            if (fileMenuBtn && fileMenu) {
+                fileMenuBtn.addEventListener("click", function (event) {
+                    event.stopPropagation();
+                    closeContextMenus();
+                    fileMenu.classList.toggle("open");
+                });
+            }
+
             document.addEventListener("click", function (event) {
                 if (optionsMenu && !optionsMenu.contains(event.target) && optionsBtn !== event.target) {
                     optionsMenu.classList.remove("open");
                 }
+                if (fileMenu && !fileMenu.contains(event.target) && fileMenuBtn !== event.target) {
+                    fileMenu.classList.remove("open");
+                }
             });
+
+            function downloadJson(filename, payload) {
+                var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+                var url = URL.createObjectURL(blob);
+                var anchor = document.createElement("a");
+                anchor.href = url;
+                anchor.download = filename;
+                document.body.appendChild(anchor);
+                anchor.click();
+                document.body.removeChild(anchor);
+                setTimeout(function () {
+                    URL.revokeObjectURL(url);
+                }, 1000);
+            }
+
+            function gatherExportState() {
+                persistCurrentPlanning();
+                return {
+                    views: views.map(function (view) {
+                        return {
+                            name: view.name,
+                            title: view.title,
+                            planning: view.planning
+                        };
+                    }),
+                    displayPreferences: Object.assign({}, displayPreferences)
+                };
+            }
+
+            function exportTimelineState() {
+                var payload = gatherExportState();
+                downloadJson("timeline-views.json", payload);
+            }
+
+            async function exportTimelineImage() {
+                if (!timelineCard || !exportImageBtn) return;
+                closeContextMenus();
+                var initialLabel = exportImageBtn.textContent;
+                exportImageBtn.disabled = true;
+                exportImageBtn.textContent = "⏳";
+                try {
+                    var canvas = await html2canvas(timelineCard, { scale: 2, backgroundColor: null, useCORS: true });
+                    var link = document.createElement("a");
+                    link.href = canvas.toDataURL("image/png");
+                    link.download = "go-timeline-view.png";
+                    link.click();
+                } catch (err) {
+                    console.error("Export image impossible", err);
+                    alert("Export image impossible. Réessaie.");
+                } finally {
+                    exportImageBtn.textContent = initialLabel;
+                    exportImageBtn.disabled = false;
+                }
+            }
+
+            function buildExcelRows(planning) {
+                if (!planning || !Array.isArray(planning.items)) return [];
+                var groupMap = {};
+                (planning.groups || []).forEach(function (group) {
+                    if (group && group.id) {
+                        groupMap[group.id] = group.label || "";
+                    }
+                });
+                return planning.items.map(function (item) {
+                    return {
+                        Ligne: groupMap[item.groupId] || item.groupId || "",
+                        Activité: item.label || "",
+                        Type: item.kind || "",
+                        Début: item.start || "",
+                        Fin: item.end || "",
+                        Date: item.date || ""
+                    };
+                });
+            }
+
+            function exportTimelineExcel() {
+                if (!exportExcelBtn) return;
+                closeContextMenus();
+                exportExcelBtn.disabled = true;
+                var initialLabel = exportExcelBtn.textContent;
+                exportExcelBtn.textContent = "⏳";
+                try {
+                    persistCurrentPlanning();
+                    var currentView = views[activeViewIndex];
+                    var planning = (currentView && currentView.planning) || exportPlanningToJson();
+                    var rows = buildExcelRows(planning);
+                    if (!rows.length) {
+                        alert("Aucun élément à exporter.");
+                        return;
+                    }
+                    var worksheet = XLSX.utils.json_to_sheet(rows, {
+                        header: ["Ligne", "Activité", "Type", "Début", "Fin", "Date"]
+                    });
+                    var workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, "Planning");
+                    XLSX.writeFile(workbook, "go-timeline.xlsx");
+                } catch (err) {
+                    console.error("Export Excel failed", err);
+                    alert("Export Excel impossible. Réessaie.");
+                } finally {
+                    exportExcelBtn.textContent = initialLabel;
+                    exportExcelBtn.disabled = false;
+                }
+            }
+
+            function applyImportedState(state) {
+                if (!state) return;
+                var importedViews = [];
+                if (Array.isArray(state.views) && state.views.length) {
+                    importedViews = state.views.map(function (view, index) {
+                        var label = view.name || view.title || ("Vue " + (index + 1));
+                        return {
+                            name: label,
+                            title: view.title || view.name || label,
+                            planning: view.planning || null
+                        };
+                    });
+                } else if (state.groups) {
+                    var label = state.label || state.name || "Vue 1";
+                    importedViews = [{ name: label, title: label, planning: state }];
+                }
+                if (!importedViews.length) {
+                    alert("Aucune vue valide à importer.");
+                    return;
+                }
+                views = importedViews;
+                if (state.displayPreferences) {
+                    Object.assign(displayPreferences, state.displayPreferences);
+                }
+                renderFontOptions();
+                renderFontSizeOptions();
+                applyDisplayPreferences();
+                syncFontControls();
+                renderViewTabs();
+                activateView(0, true);
+                persistTimelineState();
+            }
+
+            function triggerImportJson() {
+                if (!importJsonInput) return;
+                importJsonInput.value = "";
+                importJsonInput.click();
+            }
+
+            if (importJsonInput) {
+                importJsonInput.addEventListener("change", function (event) {
+                    var file = event.target.files && event.target.files[0];
+                    if (!file) return;
+                    var reader = new FileReader();
+                    reader.onload = function () {
+                        try {
+                            var payload = JSON.parse(reader.result);
+                            applyImportedState(payload);
+                        } catch (err) {
+                            alert("Fichier JSON invalide.");
+                        }
+                    };
+                    reader.readAsText(file);
+                    importJsonInput.value = "";
+                });
+            }
+
+            if (importJsonBtn) {
+                importJsonBtn.addEventListener("click", function () {
+                    triggerImportJson();
+                    closeContextMenus();
+                });
+            }
+            if (exportJsonBtn) {
+                exportJsonBtn.addEventListener("click", function () {
+                    exportTimelineState();
+                    closeContextMenus();
+                });
+            }
+            if (exportImageBtn) {
+                exportImageBtn.addEventListener("click", exportTimelineImage);
+            }
+            if (exportExcelBtn) {
+                exportExcelBtn.addEventListener("click", exportTimelineExcel);
+            }
+            function showTimelineAbout() {
+                if (!infoPopup) return;
+                infoPopup.classList.add("open");
+            }
+            function hideTimelineAbout() {
+                if (!infoPopup) return;
+                infoPopup.classList.remove("open");
+            }
+            if (aboutTimelineBtn) {
+                aboutTimelineBtn.addEventListener("click", function () {
+                    showTimelineAbout();
+                    closeContextMenus();
+                });
+            }
+            if (infoCloseBtn) {
+                infoCloseBtn.addEventListener("click", function () {
+                    hideTimelineAbout();
+                });
+            }
+            if (infoPopup) {
+                infoPopup.addEventListener("click", function (event) {
+                    if (event.target === infoPopup) {
+                        hideTimelineAbout();
+                    }
+                });
+            }
+            if (switchToIndexBtn) {
+                switchToIndexBtn.addEventListener("click", function () {
+                    window.location.href = "index.html";
+                });
+            }
 
             function applyFont(font) {
                 document.documentElement.style.setProperty("--app-font", font);
+                displayPreferences.font = font;
             }
 
             function updateFontSize(size) {
@@ -1314,6 +2058,7 @@
                 document.body.style.fontSize = value;
                 if (timelineCard) timelineCard.style.fontSize = value;
                 if (container) container.style.fontSize = value;
+                displayPreferences.fontSize = normalized;
             }
 
             function syncFontControls() {
@@ -1338,28 +2083,18 @@
             }
 
             function applyBackground(value) {
-                var bodyValue = "#f7f7f7";
-                var cardValue = "";
-                if (value === "#f7f7f7") {
-                    bodyValue = "#f7f7f7";
-                    cardValue = "var(--surface)";
-                } else if (value === "transparent") {
+                var normalized = allowedBackgroundValues.includes(value) ? value : allowedBackgroundValues[0];
+                var bodyValue = "#ffffff";
+                var cardValue = "#ffffff";
+                if (normalized === "transparent") {
                     bodyValue = "#f7f7f7";
                     cardValue = "rgba(255, 255, 255, 0.6)";
-                } else if (value === "#ffffff") {
-                    bodyValue = "#ffffff";
-                    cardValue = "#ffffff";
-                } else if (value === "#f3f7ff") {
-                    bodyValue = "radial-gradient(circle at top left, #cce1ff, #f3f7ff)";
-                    cardValue = "#f3f7ff";
-                } else if (value === "#0f172a") {
-                    bodyValue = "radial-gradient(circle at top left, #172554, #0f172a)";
-                    cardValue = "#0f172a";
                 }
                 document.body.style.background = bodyValue;
                 if (timelineCard) {
-                    timelineCard.style.background = cardValue || "var(--surface)";
+                    timelineCard.style.background = cardValue;
                 }
+                displayPreferences.background = normalized;
             }
 
             function updateTimelineAspect(ratio) {
@@ -1371,7 +2106,30 @@
             }
 
             function applyRatio(ratio) {
+                displayPreferences.ratio = ratio;
                 updateTimelineAspect(ratio);
+            }
+
+            function applyDisplayPreferences() {
+                if (fontSelect && displayPreferences.font) {
+                    fontSelect.value = displayPreferences.font;
+                    applyFont(displayPreferences.font);
+                }
+                if (fontSizeInput && displayPreferences.fontSize) {
+                    fontSizeInput.value = displayPreferences.fontSize;
+                    updateFontSize(displayPreferences.fontSize);
+                }
+                if (backgroundSelector) {
+                    var backgroundValue = displayPreferences.background || backgroundSelector.value;
+                    if (allowedBackgroundValues.indexOf(backgroundValue) < 0) {
+                        backgroundValue = allowedBackgroundValues[0];
+                    }
+                    backgroundSelector.value = backgroundValue;
+                    applyBackground(backgroundValue);
+                }
+                if (displayPreferences.ratio) {
+                    applyRatio(displayPreferences.ratio);
+                }
             }
 
             renderFontOptions();
@@ -1393,19 +2151,73 @@
                 });
             }
 
-            applyRatio("16:9");
-
-            if (backgroundSelector) {
-                applyBackground(backgroundSelector.value);
-            }
-
+            applyDisplayPreferences();
             syncFontControls();
 
             var viewTabs = document.getElementById("viewTabs");
             var addViewBtn = document.getElementById("addViewBtn");
             var deleteViewBtn = document.getElementById("deleteViewBtn");
-            var views = ["Vue 1"];
-            var activeViewIndex = 0;
+
+            function ensureViewName(index) {
+                var view = views[index];
+                if (!view) return "Vue " + (index + 1);
+                return view.name || view.title || ("Vue " + (index + 1));
+            }
+
+            function refreshHeaderText() {
+                if (!headerTitleElement) return;
+                var currentView = views[activeViewIndex];
+                headerTitleElement.textContent =
+                    (currentView && (currentView.title || currentView.name)) || "Outil de planning · OpenAI ready";
+            }
+
+            function resetTimelineForEmptyView() {
+                persistenceLocked = true;
+                groups.clear();
+                items.clear();
+                persistenceLocked = false;
+                timeline.setWindow(
+                    new Date(now.getTime() - 2 * oneWeek),
+                    new Date(now.getTime() + 6 * oneWeek),
+                    { animation: false }
+                );
+                refreshTypeFilterUI();
+                updateTimelineFilter();
+                persistCurrentPlanning();
+            }
+
+            function activateView(index, skipSave) {
+                if (index < 0 || index >= views.length) return;
+                if (!skipSave) {
+                    persistCurrentPlanning();
+                }
+                activeViewIndex = index;
+                var view = views[index];
+                if (view && view.planning) {
+                    applyPlanningFromJson(view.planning);
+                } else {
+                    resetTimelineForEmptyView();
+                }
+                refreshHeaderText();
+                renderViewTabs();
+            }
+
+            if (headerTitleElement) {
+                headerTitleElement.addEventListener("dblclick", function () {
+                    var currentLabel = (headerTitleElement.textContent || "").trim();
+                    var label = window.prompt("Nom de la vue", currentLabel);
+                    if (label === null) return;
+                    label = label.trim();
+                    if (!label) return;
+                    var view = views[activeViewIndex];
+                    if (!view) return;
+                    view.name = label;
+                    view.title = label;
+                    refreshHeaderText();
+                    persistTimelineState();
+                    renderViewTabs();
+                });
+            }
 
             function renderViewTabs() {
                 if (!viewTabs) return;
@@ -1414,54 +2226,97 @@
                     var btn = document.createElement("button");
                     btn.type = "button";
                     btn.className = "tab" + (index === activeViewIndex ? " active" : "");
-                    btn.textContent = view;
+                    btn.textContent = ensureViewName(index);
                     btn.dataset.index = index;
                     btn.addEventListener("click", function () {
-                        activeViewIndex = Number(this.dataset.index);
-                        renderViewTabs();
+                        activateView(Number(this.dataset.index));
                     });
                     viewTabs.appendChild(btn);
                 });
+                if (viewTabs.children.length > 0) {
+                    var last = viewTabs.children[viewTabs.children.length - 1];
+                    last.scrollIntoView({ behavior: "smooth", inline: "end" });
+                }
             }
 
             function addView() {
-                views.push("Vue " + (views.length + 1));
-                activeViewIndex = views.length - 1;
-                renderViewTabs();
+                persistCurrentPlanning();
+                var label = "Vue " + (views.length + 1);
+                views.push({ name: label, title: label, planning: null });
+                persistTimelineState();
+                activateView(views.length - 1, true);
             }
 
             function deleteView() {
                 if (views.length <= 1) return;
                 views.splice(activeViewIndex, 1);
-                activeViewIndex = Math.min(activeViewIndex, views.length - 1);
-                renderViewTabs();
+                if (activeViewIndex >= views.length) {
+                    activeViewIndex = views.length - 1;
+                }
+                persistTimelineState();
+                activateView(activeViewIndex, true);
             }
 
             addViewBtn && addViewBtn.addEventListener("click", addView);
             deleteViewBtn && deleteViewBtn.addEventListener("click", deleteView);
+
             renderViewTabs();
+            activateView(activeViewIndex, true);
             // ============================================================
             // 3. Inline labeling via prompt (double-clic)
             // ============================================================
+            var renameGuard = false;
             function editItemLabel(itemId) {
+                if (renameGuard) return;
+                renameGuard = true;
+                setTimeout(function () {
+                    renameGuard = false;
+                }, 300);
                 var it = items.get(itemId);
                 if (!it) return;
                 var current = (it.content || "").trim();
-                var label = window.prompt("Saisis un libellé", current);
+                var label = window.prompt("Saisis un libellé ou vide pour supprimer", current);
                 if (label === null) return;
                 label = label.trim();
                 if (!label) {
-                    var keeper = current || itemId;
-                    if (confirm("Supprimer « " + keeper + " » ?")) {
-                        items.remove(itemId);
-                    }
+                    items.remove(itemId);
                     return;
                 }
                 items.update({ id: itemId, content: label });
             }
 
+            function editGroupLabel(groupId) {
+                if (!groupId) return;
+                var group = groups.get(groupId);
+                if (!group) return;
+                var current = (group.content || group.label || group.id || "").trim();
+                var label = window.prompt("Nom du groupe. Vider pour supprimer", current);
+                if (label === null) return;
+                label = label.trim();
+                if (!label) {
+                    if (!confirm("Supprimer ce groupe et tous les éléments associés ?")) {
+                        return;
+                    }
+                    var relatedItems = items.get({
+                        filter: function (item) {
+                            return item.group === groupId;
+                        }
+                    });
+                    relatedItems.forEach(function (item) {
+                        items.remove(item.id);
+                    });
+                    groups.remove(groupId);
+                    return;
+                }
+                groups.update({ id: groupId, content: label, label: label });
+            }
+
             // Double-clic : éditer ou créer
             timeline.on("doubleClick", function (props) {
+                if (props.what === "group-label" && props.group) {
+                    editGroupLabel(props.group);
+                    return;
+                }
                 if (props.item) {
                     editItemLabel(props.item);
                     return;
@@ -1646,7 +2501,7 @@
                 } finally {
                     persistenceLocked = false;
                 }
-                persistPlanningState(planning);
+                persistCurrentPlanning();
             }
 
             function exportPlanningToJson() {
@@ -1945,17 +2800,210 @@
                 }
             });
 
-            // Initial : vue vide ou planning persisté + focus prompt
-            var persistedPlanning = loadPersistedPlanning();
-            if (persistedPlanning) {
-                applyPlanningFromJson(persistedPlanning);
-            } else {
-                timeline.setWindow(
-                    new Date(now.getTime() - 2 * oneWeek),
-                    new Date(now.getTime() + 6 * oneWeek),
-                    { animation: false }
-                );
+            var timelineTourSteps = [
+                {
+                    title: "Go-Timeline, ton copilote planning",
+                    description: "Go-Timeline aide les consultants à générer des plannings de projet clairs et rapides pour cadrer leurs prochaines étapes.",
+                    selectors: [".timeline-header"]
+                },
+                {
+                    title: "Démarre par la modal IA ✨",
+                    description: "Clique sur ✨, décris ta demande dans la fenêtre IA et patiente pendant que la magie transforme ton besoin en planning.",
+                    selectors: ["#openIaModal"]
+                },
+                {
+                    title: "Affiche, zoome, navigue",
+                    description: "Le planning apparaît, tu peux zoomer, te déplacer dans le temps et jongler avec les boutons de la barre d’outils.",
+                    selectors: [".toolbar"]
+                },
+                {
+                    title: "Modifie librement le contenu",
+                    description: "Renomme, déplace, ajuste les durées ou supprime n’importe quel élément directement dans la timeline.",
+                    selectors: ["#timeline"]
+                },
+                {
+                    title: "Exporte en image ou Excel",
+                    description: "Le menu 📄 permet de télécharger la vue courante en image ou en Excel pour la partager rapidement.",
+                    selectors: ["#fileMenuBtn"]
+                }
+            ];
+            var timelineTourOverlay = document.getElementById("timelineTourOverlay");
+            var timelineTourHighlight = timelineTourOverlay && timelineTourOverlay.querySelector(".tour-highlight");
+            var timelineTourPanel = timelineTourOverlay && timelineTourOverlay.querySelector(".tour-panel");
+            var timelineTourTitle = document.getElementById("timelineTourStepTitle");
+            var timelineTourDescription = document.getElementById("timelineTourStepDescription");
+            var timelineTourCounter = document.getElementById("timelineTourStepCounter");
+            var timelineTourPrevBtn = document.getElementById("timelineTourPrevBtn");
+            var timelineTourNextBtn = document.getElementById("timelineTourNextBtn");
+            var timelineTourCloseBtn = document.getElementById("timelineTourCloseBtn");
+            var timelineTourSkipBtn = document.getElementById("timelineTourSkipBtn");
+            var timelineTourReplayBtn = document.getElementById("timelineTourReplayBtn");
+            var timelineTourStorageKey = "goTimelineTourSeen";
+            var timelineCurrentTourIndex = 0;
+
+            function getSelectorsFromStep(step) {
+                if (!step) return [];
+                if (Array.isArray(step.selectors)) return step.selectors;
+                if (step.selector) return [step.selector];
+                return [];
             }
+
+            function getSelectorsBoundingRect(selectors) {
+                if (!selectors || !selectors.length) {
+                    return null;
+                }
+                let unionRect = null;
+                selectors.forEach(function (selector) {
+                    var target = document.querySelector(selector);
+                    if (!target) return;
+                    var rect = target.getBoundingClientRect();
+                    if (!unionRect) {
+                        unionRect = {
+                            top: rect.top,
+                            left: rect.left,
+                            right: rect.right,
+                            bottom: rect.bottom
+                        };
+                    } else {
+                        unionRect.top = Math.min(unionRect.top, rect.top);
+                        unionRect.left = Math.min(unionRect.left, rect.left);
+                        unionRect.right = Math.max(unionRect.right, rect.right);
+                        unionRect.bottom = Math.max(unionRect.bottom, rect.bottom);
+                    }
+                });
+                if (!unionRect) return null;
+                unionRect.width = unionRect.right - unionRect.left;
+                unionRect.height = unionRect.bottom - unionRect.top;
+                return unionRect;
+            }
+
+            function positionTourPanel(selectors) {
+                if (!timelineTourPanel) return;
+                var spacing = 14;
+                var defaults = {
+                    top: "auto",
+                    bottom: "28px",
+                    left: "50%",
+                    right: "auto",
+                    transform: "translateX(-50%)"
+                };
+                Object.assign(timelineTourPanel.style, defaults);
+                var rect = getSelectorsBoundingRect(selectors);
+                if (!rect) return;
+                var panelRect = timelineTourPanel.getBoundingClientRect();
+                var top = rect.bottom + spacing;
+                if (top + panelRect.height > window.innerHeight - spacing) {
+                    top = rect.top - panelRect.height - spacing;
+                }
+                var left = rect.left + rect.width / 2 - panelRect.width / 2;
+                left = Math.max(spacing, Math.min(left, window.innerWidth - panelRect.width - spacing));
+                timelineTourPanel.style.top = Math.max(spacing, top) + "px";
+                timelineTourPanel.style.left = left + "px";
+                timelineTourPanel.style.bottom = "auto";
+                timelineTourPanel.style.right = "auto";
+                timelineTourPanel.style.transform = "none";
+            }
+
+            function updateHighlight(selectors) {
+                if (!timelineTourHighlight || !timelineTourOverlay) return;
+                var rect = getSelectorsBoundingRect(selectors);
+                if (!rect) {
+                    timelineTourHighlight.classList.add("hidden");
+                    timelineTourOverlay.classList.add("dimmed");
+                    return;
+                }
+                timelineTourOverlay.classList.remove("dimmed");
+                timelineTourHighlight.classList.remove("hidden");
+                var offset = 10;
+                timelineTourHighlight.style.width = rect.width + offset * 2 + "px";
+                timelineTourHighlight.style.height = rect.height + offset * 2 + "px";
+                timelineTourHighlight.style.left = rect.left - offset + "px";
+                timelineTourHighlight.style.top = rect.top - offset + "px";
+            }
+
+            function renderTimelineTourStep() {
+                if (!timelineTourOverlay || !timelineTourSteps.length) return;
+                var step = timelineTourSteps[timelineCurrentTourIndex];
+                if (!step) return;
+                timelineTourTitle.textContent = step.title;
+                timelineTourDescription.textContent = step.description;
+                timelineTourCounter.textContent = "Étape " + (timelineCurrentTourIndex + 1) + " / " + timelineTourSteps.length;
+                timelineTourPrevBtn.disabled = timelineCurrentTourIndex === 0;
+                timelineTourNextBtn.textContent = timelineCurrentTourIndex === timelineTourSteps.length - 1 ? "Terminé" : "Suivant";
+                var selectors = getSelectorsFromStep(step);
+                updateHighlight(selectors);
+                positionTourPanel(selectors);
+            }
+
+            function openTimelineTour(startIndex) {
+                if (!timelineTourOverlay) return;
+                timelineCurrentTourIndex = typeof startIndex === "number" ? startIndex : 0;
+                timelineTourOverlay.classList.add("visible");
+                timelineTourOverlay.setAttribute("aria-hidden", "false");
+                renderTimelineTourStep();
+            }
+
+            function closeTimelineTour(markSeen) {
+                if (markSeen && window.localStorage) {
+                    window.localStorage.setItem(timelineTourStorageKey, "1");
+                }
+                if (!timelineTourOverlay) return;
+                timelineTourOverlay.classList.remove("visible");
+                timelineTourOverlay.setAttribute("aria-hidden", "true");
+                timelineTourOverlay.classList.remove("dimmed");
+                if (timelineTourHighlight) {
+                    timelineTourHighlight.classList.add("hidden");
+                }
+            }
+
+            if (timelineTourPrevBtn) {
+                timelineTourPrevBtn.addEventListener("click", function () {
+                    if (timelineCurrentTourIndex === 0) return;
+                    timelineCurrentTourIndex--;
+                    renderTimelineTourStep();
+                });
+            }
+            if (timelineTourNextBtn) {
+                timelineTourNextBtn.addEventListener("click", function () {
+                    if (timelineCurrentTourIndex >= timelineTourSteps.length - 1) {
+                        closeTimelineTour(true);
+                        return;
+                    }
+                    timelineCurrentTourIndex++;
+                    renderTimelineTourStep();
+                });
+            }
+            if (timelineTourCloseBtn) {
+                timelineTourCloseBtn.addEventListener("click", function () {
+                    closeTimelineTour(true);
+                });
+            }
+            if (timelineTourSkipBtn) {
+                timelineTourSkipBtn.addEventListener("click", function () {
+                    closeTimelineTour(true);
+                });
+            }
+            if (timelineTourReplayBtn) {
+                timelineTourReplayBtn.addEventListener("click", function () {
+                    if (window.localStorage) {
+                        window.localStorage.removeItem(timelineTourStorageKey);
+                    }
+                    openTimelineTour(0);
+                });
+            }
+
+            window.addEventListener("resize", function () {
+                if (!timelineTourOverlay || !timelineTourOverlay.classList.contains("visible")) return;
+                renderTimelineTourStep();
+            });
+
+            var timelineTourSeen = window.localStorage && window.localStorage.getItem(timelineTourStorageKey);
+            if (!timelineTourSeen) {
+                setTimeout(function () {
+                    openTimelineTour(0);
+                }, 200);
+            }
+
             setScale("week");
             txtPrompt.focus();
         </script>

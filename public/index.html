@@ -185,6 +185,10 @@
         .prompt-label-text {
             font-size: 13px;
             font-weight: 600;
+            text-decoration: underline dotted;
+            text-underline-offset: 4px;
+            text-decoration-thickness: 1px;
+            cursor: help;
         }
 
         .prompt-input {
@@ -566,6 +570,25 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
         }
 
+        .timeline-nav-btn {
+            border-radius: 999px;
+            border: 1px solid #ebe0d1;
+            background: #fff;
+            padding: 4px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-main);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timeline-nav-btn:hover {
+            border-color: #2a7a57;
+        }
+
 
 
         .slides-container {
@@ -594,10 +617,10 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            height: calc(100vh - 45px);
-            max-height: calc(100vh - 45px);
             aspect-ratio: var(--slide-aspect-ratio, 16 / 9);
-            width: auto;
+            width: min(1180px, 100%);
+            height: auto;
+            max-height: none;
         }
 
         .slide,
@@ -1073,6 +1096,8 @@
     <div class="app">
         <div class="app-header">
             <div class="tabs-actions">
+                <a class="timeline-nav-btn" href="timeline.html" aria-label="Ouvrir la timeline"
+                    title="Ouvrir la timeline">⇆ Go-Slides</a>
                 <select id="templateSelect" class="template-select" aria-label="Sélecteur de template"></select>
 
                 <div id="tabs"></div>
@@ -1135,7 +1160,7 @@
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
             <strong>Go-Toolkit</strong>
-            <span>Version 0.11.22</span>
+            <span>Version 0.11.23</span>
             <span>Développé par Quang TRAN.</span>
             <span>Usage réservé à Savane Consulting.</span>
             <button id="tourReplayBtn" type="button">Tour guidé</button>
@@ -1353,6 +1378,12 @@
                 ]
             }
         ];
+        const promptVariableDefinitions = {
+            contextField: "Contexte saisi dans la modal",
+            columnTitle: "Titre de la colonne concernée",
+            fieldValue: "Valeur actuelle du champ",
+            sectionTitle: "Intitulé de la section ciblée"
+        };
 
         const defaultPromptTemplate = `Tu es un consultant product owner expérimenté, sur la base du contexte {{contextField}} et dans le cadre de {{columnTitle}}, reformuler {{fieldValue}} sous forme de 2 à 3 {{sectionTitle}} d'un point de vue business et utilisateur (un • de < 18 mots pour chaque) sans introduction préalable ni émoji`;
         const apprentPromptTemplate = `Tu es un coach product owner expérimenté, sur la base du contexte {{contextField}} et dans le cadre de {{columnTitle}}, reprendre ({{fieldValue}}) en ignorant les éléments entre "[ ]" sous forme de 2 à 3 éléments synthétiques (un • de < 18 mots pour chaque) sans toucher au sens, puis en dessous, proposer 2 à 3 questions d'approfondissement pour l'aider à formuler des {{sectionTitle}} synthétiques et pertinents (< 20 mots pour chaque et entre "[ ]" ). Tout ça sans introduction préalable ni émoji`;
@@ -1674,12 +1705,71 @@
             });
         }
 
+        function getCurrentPromptVariableValues() {
+            const contextValue = contextField?.value.trim() || "non renseigné";
+            const activeSlide = getActiveSlideElement() || slidesContainer.querySelector(".slide");
+            const columnTitle = activeSlide?.querySelector(".column-title")?.textContent.trim() || "Colonne exemple";
+            const sectionTitle = activeSlide?.querySelector(".section-label")?.textContent.trim() || "Section exemple";
+            const firstField = activeSlide?.querySelector(".section-text-row textarea");
+            const fieldValue = firstField?.value.trim() || "(vide)";
+            return {
+                contextField: contextValue,
+                columnTitle,
+                sectionTitle,
+                fieldValue
+            };
+        }
+
+        function describePromptVariables(includeDefinition = false) {
+            const variables = getCurrentPromptVariableValues();
+            return Object.entries(variables)
+                .map(([key, value]) => {
+                    const parts = [`{{${key}}}=${value}`];
+                    if (includeDefinition && promptVariableDefinitions[key]) {
+                        parts.push(`(${promptVariableDefinitions[key]})`);
+                    }
+                    return parts.join(" ");
+                })
+                .join(" · ");
+        }
+
+        function renderPromptWithVariables(promptText) {
+            if (!promptText) {
+                return "";
+            }
+            const variables = getCurrentPromptVariableValues();
+            return promptText.replace(/\{\{(\w+)\}\}/g, (_, key) => variables[key] ?? "");
+        }
+
+        function updatePromptTooltip(textarea) {
+            const labelEl = textarea.closest(".prompt-row")?.querySelector(".prompt-label-text");
+            if (!labelEl) return;
+            const matrixSection = textarea.dataset.section;
+            const storedPrompt = matrixSection ? getPromptValue(activePromptTemplateId, matrixSection) : "";
+            const promptValue = textarea.value || storedPrompt || "";
+            const filledPrompt = renderPromptWithVariables(promptValue);
+            labelEl.title = filledPrompt || "Prompt vide";
+        }
+
+        function updatePromptPlaceholders() {
+            const variableDescription = describePromptVariables(true);
+            promptInputs.forEach(textarea => {
+                textarea.placeholder = variableDescription;
+            });
+        }
+
+        function refreshPromptUI() {
+            updatePromptPlaceholders();
+            promptInputs.forEach(textarea => updatePromptTooltip(textarea));
+        }
+
         function setPromptFieldsForTemplate(templateId) {
             promptInputs.forEach(textarea => {
                 const sectionKey = textarea.dataset.section;
                 textarea.value = getPromptValue(templateId, sectionKey);
             });
             updatePromptLabels(templateId);
+            refreshPromptUI();
         }
 
         function updateIaModeUI() {
@@ -1708,7 +1798,15 @@
                 if (!sectionKey) return;
                 promptLibrary[activePromptTemplateId][sectionKey] = textarea.value;
                 schedulePersist();
+                updatePromptTooltip(textarea);
             });
+        });
+        contextField?.addEventListener("input", () => refreshPromptUI());
+        document.addEventListener("input", event => {
+            const target = event.target;
+            if (target instanceof Element && target.matches(".column-title, .section-label, .section-text-row textarea")) {
+                refreshPromptUI();
+            }
         });
 
         iaModeButtons.forEach(button => {
@@ -2746,7 +2844,20 @@
                 { role: "system", content: "Tu es un assistant produit." },
                 { role: "user", content: message }
             ];
-            button.textContent = "⏳";
+            const countdownDuration = 30;
+            let remainingSeconds = countdownDuration;
+            let countdownInterval = null;
+            const updateCountdownLabel = () => {
+                button.textContent = `⏳ ${remainingSeconds}s`;
+            };
+            updateCountdownLabel();
+            countdownInterval = setInterval(() => {
+                remainingSeconds = Math.max(0, remainingSeconds - 1);
+                updateCountdownLabel();
+                if (remainingSeconds === 0) {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
             button.disabled = true;
             try {
                 const aiText = await callOpenAI(messages);
@@ -2756,6 +2867,9 @@
                 updateTextareaOverflowState(textarea);
                 schedulePersist();
             } finally {
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                }
                 button.textContent = "✨";
                 button.disabled = false;
             }
@@ -2837,8 +2951,8 @@
 
         const tourSteps = [
             {
-                title: "Go-Toolkit, ton assistant rédaction",
-                description: "Go-Toolkit permet aux consultants de créer des supports clairs, structurés et pertinents",
+                title: "Go-Slides, ton assistant rédaction",
+                description: "Go-Slides permet aux consultants de créer des supports de présentation clairs, structurés et pertinents",
                 selector: null
             },
             {
