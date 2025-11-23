@@ -9,12 +9,13 @@
     <link rel="stylesheet" href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css"
         type="text/css" />
     <script src="https://unpkg.com/vis-timeline@latest/standalone/umd/vis-timeline-graph2d.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <style>
         :root {
             --bg: #f3f4f6;
             --surface: #ffffff;
-            --surface-soft: #f9fafb;
+            --surface-soft: #f7f7f7;
             --border: #e5e7eb;
             --border-strong: #d1d5db;
 
@@ -23,7 +24,7 @@
             --primary-strong: #1d4ed8;
 
             --text: #111827;
-            --muted: #6b7280;
+            --muted: #8b8173;
 
             --feature: #2563eb;
             --enabler: #059669;
@@ -35,6 +36,8 @@
             --radius-sm: 8px;
 
             --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.12);
+            --app-font: "Inter", system-ui;
+            --global-font-size: 14px;
         }
 
         * {
@@ -45,8 +48,14 @@
         body {
             margin: 0;
             padding: 16px;
-            background: radial-gradient(circle at top left, #e0edff, var(--bg) 40%, #ffffff 80%);
+            background: #f7f7f7;
             color: var(--text);
+            font-family: var(--app-font, "Inter");
+        }
+
+        .vis-item .vis-item-content {
+            white-space: normal !important;
+            word-break: break-word;
         }
 
         .app {
@@ -54,9 +63,69 @@
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 2px;
             align-items: stretch;
             min-height: calc(100vh - 32px);
+            height: calc(100vh - 32px);
+        }
+
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0;
+            border-radius: 0;
+            background: #f7f7f7;
+            border: none;
+            box-shadow: none;
+        }
+
+        .tabs {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .tabs-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .tab {
+            border-radius: 999px;
+            border: 1px solid transparent;
+            padding: 4px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--muted);
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        .tab-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 4px;
+        }
+
+        .tab-btn-add,
+        .tab-btn-delete {
+            border-radius: 999px;
+            border: 1px solid rgba(15, 23, 42, 0.2);
+            background: #fff;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
         }
 
         h1 {
@@ -175,12 +244,16 @@
             border-radius: var(--radius-lg);
             border: 1px solid var(--border);
             padding: 10px 10px 12px;
-            box-shadow: var(--shadow-soft);
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            flex: 1;
-            min-height: 100%;
+            gap: 2px;
+            flex: 1 1 auto;
+            min-height: 0;
+            height: 100%;
+            width: auto;
+            max-width: 100%;
+            font-size: var(--global-font-size, 14px);
+            aspect-ratio: var(--timeline-aspect-ratio, 16 / 9);
         }
 
         .timeline-header {
@@ -189,6 +262,250 @@
             align-items: flex-start;
             gap: 16px;
             flex-wrap: wrap;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        .header-buttons .btn {
+            background: #ffffff;
+            border-color: rgba(15, 23, 42, 0.08);
+            color: #0f172a;
+            padding: 0 16px;
+            min-height: 36px;
+            border-radius: 999px;
+            font-size: 14px;
+        }
+
+        .menu-trigger {
+            position: relative;
+        }
+
+        .context-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 12px 20px rgba(15, 23, 42, 0.2);
+            display: none;
+            z-index: 40;
+        }
+
+        .context-menu.open {
+            display: block;
+        }
+
+        .menu-panel {
+            min-width: 200px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .menu-panel label {
+            font-size: 12px;
+            color: var(--muted);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .menu-panel select,
+        .menu-panel button {
+            width: 100%;
+        }
+
+        .menu-panel button {
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            padding: 6px 10px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .ratio-grid {
+            display: flex;
+            gap: 4px;
+        }
+
+        .ratio-grid button {
+            flex: 1;
+        }
+
+        .menu-trigger {
+            position: relative;
+        }
+
+        .context-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.25);
+            display: none;
+            z-index: 40;
+        }
+
+        .context-menu.open {
+            display: block;
+        }
+
+        .menu-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 12px;
+        }
+
+        .menu-panel label {
+            font-size: 11px;
+            color: #475569;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .menu-panel select,
+        .menu-panel button {
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            padding: 6px 8px;
+            font-size: 12px;
+            background: var(--surface-soft);
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .ratio-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .ratio-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 4px;
+        }
+
+        .ratio-grid button {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .menu-trigger {
+            position: relative;
+        }
+
+        .context-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.2);
+            display: none;
+            z-index: 40;
+        }
+
+        .context-menu.open {
+            display: block;
+        }
+
+        .context-menu .menu-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 12px;
+            min-width: 220px;
+            position: relative;
+            left: -10px;
+        }
+
+        .ratio-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .ratio-grid {
+            display: flex;
+            gap: 6px;
+        }
+
+        .ratio-grid button {
+            flex: 1;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--surface-soft);
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .menu-trigger {
+            position: relative;
+        }
+
+        .context-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            box-shadow: 0 14px 40px rgba(15, 23, 42, 0.25);
+            padding: 12px;
+            display: none;
+            width: 220px;
+            z-index: 40;
+        }
+
+        .context-menu.open {
+            display: block;
+        }
+
+        .context-menu label {
+            font-size: 12px;
+            color: #475569;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+
+        .context-menu select {
+            border-radius: 8px;
+            border: 1px solid rgba(15, 23, 42, 0.2);
+            padding: 6px 8px;
+            font-size: 12px;
+            background: #f8fafc;
+            font-family: inherit;
+        }
+
+        .context-menu .ratio-options {
+            display: flex;
+            gap: 6px;
+        }
+
+        .context-menu .ratio-options button {
+            border-radius: 999px;
+            border: 1px solid rgba(15, 23, 42, 0.2);
+            background: #f3f4f6;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
         }
 
         .header-actions {
@@ -212,6 +529,41 @@
 
         .header-actions button {
             align-self: flex-start;
+        }
+
+        .menu-trigger {
+            position: relative;
+            display: inline-flex;
+        }
+
+        .context-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: var(--surface);
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.2);
+            display: none;
+            min-width: 220px;
+            z-index: 40;
+        }
+
+        .context-menu.open {
+            display: block;
+        }
+
+        .menu-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 12px;
+        }
+
+        .context-menu label,
+        .context-menu button {
+            font-size: 13px;
+            color: var(--text);
         }
 
         .modal-overlay {
@@ -268,7 +620,7 @@
             flex-wrap: wrap;
             gap: 6px;
             align-items: center;
-            margin-top: 4px;
+            margin-bottom: 8px;
         }
 
         .btn-group {
@@ -347,7 +699,7 @@
 
         /* vis.js styling */
         .vis-labelset .vis-label {
-            font-size: 11px;
+            font-size: var(--global-font-size);
             color: var(--muted);
         }
 
@@ -359,7 +711,7 @@
         .vis-item {
             border-radius: var(--radius-sm);
             border-width: 1px;
-            font-size: 11px;
+            font-size: var(--global-font-size);
             line-height: 1.2;
             padding-inline: 6px;
             cursor: pointer;
@@ -378,6 +730,16 @@
             padding-bottom: 4px;
         }
 
+        .vis-item.vis-range.type-training.vis-editable {
+            padding-inline: 4px;
+            padding-top: 2px;
+            padding-bottom: 2px;
+        }
+
+        .vis-item.vis-range.type-training.vis-editable .vis-item-content {
+            padding: 2px;
+        }
+
         .vis-item:hover {
             background: #dbeafe;
             border-color: var(--primary);
@@ -387,6 +749,12 @@
             background: rgba(37, 99, 235, 0.14);
             border-color: var(--primary-strong);
             color: #111827;
+        }
+
+        .vis-item.milestone-class {
+            background: transparent;
+            border-color: transparent;
+            box-shadow: none;
         }
 
         .type-feature {
@@ -457,13 +825,74 @@
 
 <body>
     <div class="app">
+        <div class="app-header">
+            <div class="tabs-actions">
+                <div id="viewTabs" class="tabs"></div>
+
+                <div class="tab-actions">
+                    <button class="tab-btn-add" id="addViewBtn" type="button" aria-label="Ajouter une vue">➕</button>
+                    <button class="tab-btn-delete" id="deleteViewBtn" type="button"
+                        aria-label="Supprimer la vue active">🗑️</button>
+                </div>
+                <div class="app-actions">
+                    <button class="btn" id="openIaModal" aria-label="Ouvrir l'IA">✨</button>
+                    <div class="menu-trigger">
+                        <button class="btn" id="optionsBtn" aria-label="Options d'affichage">🖌️</button>
+                        <div class="context-menu" id="optionsMenu">
+                            <div class="menu-panel">
+                                <label>
+                                    Police
+                                    <select id="fontSelect">
+                                        <option value="Inter">Inter</option>
+                                        <option value="Nunito">Nunito</option>
+                                        <option value="Source Sans Pro">Source Sans Pro</option>
+                                        <option value="Roboto">Roboto</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    Taille (px)
+                                    <select id="fontSizeInput">
+                                        <option value="9">9</option>
+                                        <option value="10">10</option>
+                                        <option value="11">11</option>
+                                        <option value="12">12</option>
+                                        <option value="13">13</option>
+                                        <option value="14">14</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    Fond
+                                    <select id="backgroundSelector">
+                                        <option value="#f7f7f7">Gris clair</option>
+                                        <option value="#ffffff">Blanc</option>
+                                        <option value="transparent">Transparent</option>
+                                        <option value="#f3f7ff">Bleu clair</option>
+                                        <option value="#0f172a">Sombre</option>
+                                    </select>
+                                </label>
+                                <div class="ratio-wrapper">
+                                    <div class="ratio-label">Ratio</div>
+                                    <div class="ratio-grid" id="ratioGrid">
+                                        <button type="button" data-ratio="4:3">4:3</button>
+                                        <button type="button" data-ratio="16:9">16:9</button>
+                                        <button type="button" data-ratio="3:2">3:2</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- TIMELINE + TOOLBAR -->
         <div class="timeline-card">
             <div class="timeline-header">
                 <div class="header-text">
                     <h1>Outil de planning · OpenAI ready</h1>
                 </div>
-                <button class="btn" id="openIaModal" aria-label="Ouvrir l'IA">✨</button>
+                <div class="header-buttons">
+
+                </div>
             </div>
 
             <div class="toolbar">
@@ -519,6 +948,7 @@
             </div>
         </div>
 
+        <input type="file" id="importJsonInput" accept="application/json" style="display:none">
         <script>
             // ============================================================
             // 1. Schema JSON · planning-v1 (doc développeur)
@@ -571,6 +1001,12 @@
 
             var groups = new DataSet();
             var items = new DataSet();
+            items.on("add", persistCurrentPlanning);
+            items.on("update", persistCurrentPlanning);
+            items.on("remove", persistCurrentPlanning);
+            groups.on("add", persistCurrentPlanning);
+            groups.on("update", persistCurrentPlanning);
+            groups.on("remove", persistCurrentPlanning);
 
             var now = new Date();
             var oneDay = 24 * 60 * 60 * 1000;
@@ -580,10 +1016,65 @@
             var typeFilterState = {};
             var typeFilterChips = document.getElementById("typeFilterChips");
             var timeline = null;
+            var OPENAI_PROXY_URL = "https://openai.tranxq.workers.dev/v1/chat/completions";
+            var OPENAI_MODEL = "gpt-5-nano";
+            var OPENAI_TEMPERATURE = 1;
             var LOCAL_STORAGE_KEY = "timeline-planning-state";
             var typeStyleElement = document.createElement("style");
             typeStyleElement.id = "timeline-type-styles";
             document.head.appendChild(typeStyleElement);
+            var persistenceLocked = false;
+
+            function sanitizeTypeId(raw) {
+                var id = (raw || "").toLowerCase().trim();
+                if (!id) return "feature";
+                return id.replace(/[^a-z0-9_-]/g, "-");
+            }
+
+            function rebuildTypeStyles() {
+                var rules = Object.keys(typeDefinitions).map(function (key) {
+                    var def = typeDefinitions[key];
+                    return [
+                        ".vis-item.type-" + def.id + " {",
+                        "  background: " + def.background + ";",
+                        "  border-color: " + def.border + ";",
+                        "  color: " + def.color + ";",
+                        "}"
+                    ].join("\n");
+                });
+                typeStyleElement.textContent = rules.join("\n");
+            }
+
+            function ensureTypeDefinition(def) {
+                var base = def || {};
+                var id = sanitizeTypeId(base.id || base.name || base.kind);
+                var colors = def && def.colors ? def.colors : {};
+                typeDefinitions[id] = {
+                    id: id,
+                    label: base.label || base.name || id,
+                    background: colors.background || base.background || "rgba(229, 231, 235, 0.9)",
+                    border: colors.border || base.border || "rgba(156, 163, 175, 0.9)",
+                    color: colors.text || base.color || "#111827"
+                };
+                if (!Object.prototype.hasOwnProperty.call(typeFilterState, id)) {
+                    typeFilterState[id] = true;
+                }
+                rebuildTypeStyles();
+                return id;
+            }
+
+            function applyTypeDefinitions(defs) {
+                if (!Array.isArray(defs)) return;
+                defs.forEach(function (def) {
+                    ensureTypeDefinition({
+                        id: def.id,
+                        label: def.label,
+                        background: def.background,
+                        border: def.border,
+                        color: def.color
+                    });
+                });
+            }
 
             function persistPlanningState(planning) {
                 if (!planning) return;
@@ -603,6 +1094,11 @@
                     console.warn("Impossible de lire le planning sauvegardé", err);
                     return null;
                 }
+            }
+
+            function persistCurrentPlanning() {
+                if (persistenceLocked) return;
+                persistPlanningState(exportPlanningToJson());
             }
 
             function getActiveTypeIds() {
@@ -649,6 +1145,56 @@
                 });
             }
 
+            var options = {
+                stack: true,
+                orientation: "top",
+                groupHeightMode: "auto",
+                editable: {
+                    add: true,
+                    updateTime: true,
+                    updateGroup: true,
+                    remove: false
+                },
+                selectable: true,
+                multiselect: false,
+                margin: { item: 8, axis: 10 },
+                snap: function (date) {
+                    var d = new Date(date);
+                    if (snapMode === "day") {
+                        d.setHours(0, 0, 0, 0);
+                        return d;
+                    }
+                    if (snapMode === "month") {
+                        d.setDate(1);
+                        d.setHours(0, 0, 0, 0);
+                        return d;
+                    }
+                    var day = d.getDay();
+                    var diff = (day + 6) % 7;
+                    d.setDate(d.getDate() - diff);
+                    d.setHours(0, 0, 0, 0);
+                    return d;
+                },
+                template: function (item) {
+                    if (item.kind === "milestone") {
+                        var text = (item.content || "").trim() || "Jalon";
+                        return (
+                            '<div class="ms-pill">' +
+                            '<span class="diamond"></span>' +
+                            "<span>" + text + "</span>" +
+                            "</div>"
+                        );
+                    }
+                    return item.content || "";
+                },
+                timeAxis: {
+                    scale: "week",
+                    step: 1
+                }
+            };
+
+            timeline = new Timeline(container, items, groups, options);
+
             var iaModalOverlay = document.getElementById("iaModalOverlay");
             var iaModalButton = document.getElementById("openIaModal");
             var iaModalClose = document.getElementById("iaModalClose");
@@ -675,131 +1221,225 @@
                 });
             }
 
-            var OPENAI_MODEL = "gpt-5-nano";
-            var OPENAI_PROXY_URL = "https://openai.tranxq.workers.dev/v1/chat/completions";
-            var OPENAI_TEMPERATURE = 1;
-            function sanitizeTypeId(raw) {
-                var id = (raw || "").toLowerCase().trim();
-                if (!id) return "feature";
-                return id.replace(/[^a-z0-9_-]/g, "-");
-            }
-
-            function ensureTypeDefinition(def) {
-                var base = def || {};
-                var id = sanitizeTypeId(base.id || base.name || base.kind);
-                var colors = def && def.colors ? def.colors : {};
-                typeDefinitions[id] = {
-                    id: id,
-                    label: base.label || base.name || id,
-                    background: colors.background || base.background || "rgba(229, 231, 235, 0.9)",
-                    border: colors.border || base.border || "rgba(156, 163, 175, 0.9)",
-                    color: colors.text || base.color || "#111827"
-                };
-                if (!Object.prototype.hasOwnProperty.call(typeFilterState, id)) {
-                    typeFilterState[id] = true;
-                }
-                rebuildTypeStyles();
-                return id;
-            }
-
-            function rebuildTypeStyles() {
-                var rules = Object.keys(typeDefinitions).map(function (key) {
-                    var def = typeDefinitions[key];
-                    return [
-                        ".vis-item.type-" + def.id + " {",
-                        "  background: " + def.background + ";",
-                        "  border-color: " + def.border + ";",
-                        "  color: " + def.color + ";",
-                        "}"
-                    ].join("\n");
-                });
-                typeStyleElement.textContent = rules.join("\n");
-            }
-
-            function applyTypeDefinitions(defs) {
-                if (!Array.isArray(defs)) return;
-                defs.forEach(function (def) {
-                    ensureTypeDefinition({
-                        id: def.id,
-                        label: def.label,
-                        background: def.background,
-                        border: def.border,
-                        color: def.color
-                    });
-                });
-            }
-
             var CREATE_SYSTEM_TEMPLATE =
-                "Tu es un assistant qui va générer un planning à partir des instructions suivantes {{(contenu du id=\"prompt\") }}\n\n" +
-                "Réponds toujours avec un JSON qui contient :\n" +
-                "- `types` : un tableau d’objets `{ id, label, background, border, color }` pour décrire des types d'actions différentes (nb types = nombres d'actions divisé /3. non redondant avec les groupes). Ajouter un type spécifique aux milestones. Ajouter des couleurs attractives différentes par type. \n" +
-                "- `timeline` : `{ start, end }` au format ISO (YYYY-MM-DD).\n" +
-                "- `groups` : chaque groupe d'actions. Mettre au moins (nombre d'actions total que tu proposes / 3) groupes). Ajouter un groupe spécifique aux items ponctuels `id: \"milestone\"` : { id, label }.\n" +
-                "- `items` : chaque item { id, groupId, label, kind, start?, end?, date? }. Tous les événements ponctuels avec une seule date sont des `kind: \"milestone\"` et des `groupId :\"milestone\"` avec `date`; les autres ont `start`/`end`. Les `kind` doivent correspondre aux `types` que tu auras défini.\n" +
-                "- Donne des dates réalistes avec les éléments du contexte ci-dessus.\n" +
+                "Tu es un assistant qui va générer un planning à partir des instructions suivantes {{(contenu du id=\"prompt\") }}\\n\\n" +
+                "Réponds toujours avec un JSON qui contient :\\n" +
+                "- `types` : un tableau d’objets `{ id, label, background, border, color }` pour décrire des types d'actions différentes. Ajouter un type spécifique aux milestones.\\n" +
+                "- `timeline` : `{ start, end }` au format ISO (YYYY-MM-DD).\\n" +
+                "- `groups` : chaque groupe d'actions avec { id, label }.\\n" +
+                "- `items` : chaque item { id, groupId, label, kind, start?, end?, date? }. Les jalons sont des `kind: \"milestone\"`.\\n" +
+                "- Donne des couleurs différentes par type.\\n" +
                 "- Sors uniquement le JSON, sans explication ni texte additionnel.";
 
             var MODIFY_SYSTEM_TEMPLATE =
-                "Tu es un assistant qui modifie à partir du contexte suivant {{(contenu du id=\"prompt\") }}\n\n" +
-                "le planning de départ suivant en conservant les ids existants : {{(contenu au format JSON du planning existant)}}\n\n" +
-                "Réponds toujours avec un JSON qui contient :\n" +
-                "- `types` : un tableau d’objets `{ id, label, background, border, color }` pour décrire des types d'actions différentes (nb types = nombres d'actions divisé /3. non redondant avec les groupes). Ajouter un type spécifique aux milestones. Ajouter des couleurs attractives différentes par type. \n" +
-                "- `timeline` : `{ start, end }` au format ISO (YYYY-MM-DD).\n" +
-                "- `groups` : chaque groupe d'actions. Mettre au moins (nombre d'actions divisé par 3) groupes) : { id, label }.\n" +
-                "- `items` : chaque item { id, groupId, label, kind, start?, end?, date? }. Les items ponctuels sont des `kind: \"milestone\"` et des `groupId :\"milestone\"` avec `date`; les autres ont `start`/`end`. Les `kind` doivent correspondre aux `types` que tu auras défini.\n" +
-                "- Donne des dates réalistes avec les éléments du contexte ci-dessus.\n" +
-                "- Sors uniquement le JSON, sans explication ni texte additionnel.";
+                "Tu es un assistant qui modifie à partir du contexte suivant {{(contenu du id=\"prompt\") }}\\n\\n" +
+                "le planning de départ suivant en conservant les ids existants : {{(contenu au format JSON du planning existant)}}\\n\\n" +
+                "Réponds toujours avec un JSON qui contient :\\n" +
+                "- `types` : un tableau d’objets `{ id, label, background, border, color }` pour décrire des types d'actions différentes.\\n" +
+                "- `timeline` : `{ start, end }` au format ISO (YYYY-MM-DD).\\n" +
+                "- `groups` : chaque groupe d'actions avec { id, label }.\\n" +
+                "- `items` : chaque item { id, groupId, label, kind, start?, end?, date? }.\\n" +
+                "- Les items ponctuels sont des `kind: \"milestone\"` et `groupId: \"milestones\"`.\\n" +
+                "- Sors seulement le JSON.";
 
-            var options = {
-                groupHeightMode: "auto",
-                stack: true,
-                orientation: "top",
-                editable: {
-                    add: true,
-                    updateTime: true,
-                    updateGroup: true,
-                    remove: false
-                },
-                selectable: true,
-                multiselect: false,
-                margin: { item: 8, axis: 10 },
-                snap: function (date) {
-                    var d = new Date(date);
-                    if (snapMode === "day") {
-                        d.setHours(0, 0, 0, 0);
-                        return d;
-                    }
-                    if (snapMode === "month") {
-                        d.setDate(1);
-                        d.setHours(0, 0, 0, 0);
-                        return d;
-                    }
-                    var day = d.getDay();
-                    var diff = (day + 6) % 7; // lundi
-                    d.setDate(d.getDate() - diff);
-                    d.setHours(0, 0, 0, 0);
-                    return d;
-                },
-                template: function (item) {
-                    if (item.kind === "milestone") {
-                        var text = (item.content || "").trim() || "Jalon";
-                        return (
-                            '<div class="ms-pill">' +
-                            '<span class="diamond"></span>' +
-                            "<span>" + text + "</span>" +
-                            "</div>"
-                        );
-                    }
-                    return item.content || "";
-                },
-                timeAxis: {
-                    scale: "week",
-                    step: 1
+            var optionsBtn = document.getElementById("optionsBtn");
+            var optionsMenu = document.getElementById("optionsMenu");
+            var fontSelect = document.getElementById("fontSelect");
+            var fontSizeInput = document.getElementById("fontSizeInput");
+            var backgroundSelector = document.getElementById("backgroundSelector");
+            var ratioGrid = document.getElementById("ratioGrid");
+            var timelineCard = document.querySelector(".timeline-card");
+            var fontChoices = [
+                "Inter",
+                "Nunito",
+                "Source Sans Pro",
+                "Roboto"
+            ];
+            var fontSizeChoices = [9, 10, 11, 12, 13, 14, 15, 16];
+
+            function renderFontOptions() {
+                if (!fontSelect) return;
+                fontSelect.innerHTML = "";
+                fontChoices.forEach(function (choice) {
+                    var option = document.createElement("option");
+                    option.value = choice;
+                    option.textContent = choice + " · Aa Bb";
+                    option.style.fontFamily = choice;
+                    fontSelect.appendChild(option);
+                });
+            }
+
+            function renderFontSizeOptions() {
+                if (!fontSizeInput) return;
+                fontSizeInput.innerHTML = "";
+                fontSizeChoices.forEach(function (size) {
+                    var option = document.createElement("option");
+                    option.value = size;
+                    option.textContent = size + " px";
+                    option.style.fontSize = size + "px";
+                    fontSizeInput.appendChild(option);
+                });
+            }
+
+            function closeContextMenus() {
+                if (optionsMenu) optionsMenu.classList.remove("open");
+            }
+
+            if (optionsBtn && optionsMenu) {
+                optionsBtn.addEventListener("click", function (event) {
+                    event.stopPropagation();
+                    closeContextMenus();
+                    syncFontControls();
+                    optionsMenu.classList.toggle("open");
+                });
+            }
+
+            document.addEventListener("click", function (event) {
+                if (optionsMenu && !optionsMenu.contains(event.target) && optionsBtn !== event.target) {
+                    optionsMenu.classList.remove("open");
                 }
-            };
+            });
 
-            timeline = new Timeline(container, items, groups, options);
+            function applyFont(font) {
+                document.documentElement.style.setProperty("--app-font", font);
+            }
 
+            function updateFontSize(size) {
+                var normalized = parseInt(size, 10);
+                if (isNaN(normalized)) {
+                    normalized = 14;
+                }
+                var value = normalized + "px";
+                document.documentElement.style.setProperty("--global-font-size", value);
+                document.body.style.fontSize = value;
+                if (timelineCard) timelineCard.style.fontSize = value;
+                if (container) container.style.fontSize = value;
+            }
+
+            function syncFontControls() {
+                var computed = getComputedStyle(document.documentElement);
+                if (fontSelect) {
+                    var rawFont = (computed.getPropertyValue("--app-font") || "").split(",")[0].trim();
+                    rawFont = rawFont.replace(/^["']|["']$/g, "");
+                    if (rawFont) {
+                        fontSelect.value = rawFont;
+                    }
+                }
+                if (fontSizeInput) {
+                    var rawSize = computed.getPropertyValue("--global-font-size").trim();
+                    var calculated = parseInt(rawSize, 10);
+                    if (isNaN(calculated)) {
+                        calculated = parseInt(window.getComputedStyle(document.body).fontSize, 10);
+                    }
+                    if (!isNaN(calculated)) {
+                        fontSizeInput.value = calculated;
+                    }
+                }
+            }
+
+            function applyBackground(value) {
+                var bodyValue = "#f7f7f7";
+                var cardValue = "";
+                if (value === "#f7f7f7") {
+                    bodyValue = "#f7f7f7";
+                    cardValue = "var(--surface)";
+                } else if (value === "transparent") {
+                    bodyValue = "#f7f7f7";
+                    cardValue = "rgba(255, 255, 255, 0.6)";
+                } else if (value === "#ffffff") {
+                    bodyValue = "#ffffff";
+                    cardValue = "#ffffff";
+                } else if (value === "#f3f7ff") {
+                    bodyValue = "radial-gradient(circle at top left, #cce1ff, #f3f7ff)";
+                    cardValue = "#f3f7ff";
+                } else if (value === "#0f172a") {
+                    bodyValue = "radial-gradient(circle at top left, #172554, #0f172a)";
+                    cardValue = "#0f172a";
+                }
+                document.body.style.background = bodyValue;
+                if (timelineCard) {
+                    timelineCard.style.background = cardValue || "var(--surface)";
+                }
+            }
+
+            function updateTimelineAspect(ratio) {
+                if (!timelineCard || !ratio) return;
+                var value = ratio.replace(":", " / ");
+                timelineCard.dataset.ratio = ratio;
+                timelineCard.style.setProperty("--timeline-aspect-ratio", value);
+                timelineCard.style.aspectRatio = value;
+            }
+
+            function applyRatio(ratio) {
+                updateTimelineAspect(ratio);
+            }
+
+            renderFontOptions();
+            renderFontSizeOptions();
+
+            if (fontSelect) fontSelect.addEventListener("change", function () {
+                applyFont(this.value);
+            });
+            if (fontSizeInput) fontSizeInput.addEventListener("change", function () {
+                updateFontSize(this.value);
+            });
+            if (backgroundSelector) backgroundSelector.addEventListener("change", function () {
+                applyBackground(this.value);
+            });
+            if (ratioGrid) {
+                ratioGrid.addEventListener("click", function (event) {
+                    var ratio = event.target.dataset.ratio;
+                    if (ratio) applyRatio(ratio);
+                });
+            }
+
+            applyRatio("16:9");
+
+            if (backgroundSelector) {
+                applyBackground(backgroundSelector.value);
+            }
+
+            syncFontControls();
+
+            var viewTabs = document.getElementById("viewTabs");
+            var addViewBtn = document.getElementById("addViewBtn");
+            var deleteViewBtn = document.getElementById("deleteViewBtn");
+            var views = ["Vue 1"];
+            var activeViewIndex = 0;
+
+            function renderViewTabs() {
+                if (!viewTabs) return;
+                viewTabs.innerHTML = "";
+                views.forEach(function (view, index) {
+                    var btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "tab" + (index === activeViewIndex ? " active" : "");
+                    btn.textContent = view;
+                    btn.dataset.index = index;
+                    btn.addEventListener("click", function () {
+                        activeViewIndex = Number(this.dataset.index);
+                        renderViewTabs();
+                    });
+                    viewTabs.appendChild(btn);
+                });
+            }
+
+            function addView() {
+                views.push("Vue " + (views.length + 1));
+                activeViewIndex = views.length - 1;
+                renderViewTabs();
+            }
+
+            function deleteView() {
+                if (views.length <= 1) return;
+                views.splice(activeViewIndex, 1);
+                activeViewIndex = Math.min(activeViewIndex, views.length - 1);
+                renderViewTabs();
+            }
+
+            addViewBtn && addViewBtn.addEventListener("click", addView);
+            deleteViewBtn && deleteViewBtn.addEventListener("click", deleteView);
+            renderViewTabs();
             // ============================================================
             // 3. Inline labeling via prompt (double-clic)
             // ============================================================
@@ -842,7 +1482,7 @@
                             start: start,
                             type: "point",
                             kind: "milestone",
-                            className: "type-milestone"
+                            className: "type-milestone milestone-class"
                         };
                     } else {
                         id = "it-" + Date.now();
@@ -878,7 +1518,7 @@
                         start: start,
                         type: "point",
                         kind: "milestone",
-                        className: "type-milestone"
+                        className: "type-milestone milestone-class"
                     };
                 } else {
                     id = "it-" + Date.now();
@@ -928,6 +1568,18 @@
                 return isNaN(d.getTime()) ? null : d;
             }
 
+            function toDate(iso) {
+                var d = isoToDate(iso);
+                if (d) return d;
+                var fallback = new Date(iso);
+                return isNaN(fallback.getTime()) ? new Date() : fallback;
+            }
+
+            function daysBetween(start, end) {
+                if (!start || !end) return 0;
+                return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+            }
+
             function dateToIso(d) {
                 if (!d) return null;
                 return new Date(d).toISOString().slice(0, 10);
@@ -936,59 +1588,64 @@
             function applyPlanningFromJson(planning) {
                 if (!planning) return;
 
-                applyTypeDefinitions(planning.types);
-                // groups
-                if (Array.isArray(planning.groups)) {
-                    groups.clear();
-                    planning.groups.forEach(function (g, idx) {
-                        groups.add({
-                            id: g.id,
-                            content: g.label || g.id || ("Group " + (idx + 1))
+                persistenceLocked = true;
+                try {
+                    applyTypeDefinitions(planning.types);
+                    // groups
+                    if (Array.isArray(planning.groups)) {
+                        groups.clear();
+                        planning.groups.forEach(function (g, idx) {
+                            groups.add({
+                                id: g.id,
+                                content: g.label || g.id || ("Group " + (idx + 1))
+                            });
                         });
-                    });
+                    }
+
+                    // items
+                    if (Array.isArray(planning.items)) {
+                        items.clear();
+                        planning.items.forEach(function (it) {
+                            var kind = sanitizeTypeId(it.type || it.kind || "feature");
+                            var base = {
+                                id: it.id || ("it-" + Date.now() + Math.random()),
+                                group: it.groupId,
+                                content: it.label || "",
+                                kind: kind
+                            };
+                            ensureTypeDefinition({ id: kind });
+
+                            if (base.kind === "milestone") {
+                                base.start = isoToDate(it.date || it.start);
+                                base.type = "point";
+                                base.className = "type-milestone milestone-class";
+                            } else {
+                                base.start = isoToDate(it.start);
+                                base.end = isoToDate(it.end) || new Date(base.start.getTime() + oneWeek);
+                                base.className = "type-" + base.kind;
+                            }
+                            items.add(base);
+                        });
+                    }
+
+                    // timeline range
+                    var rangeStart = planning.timeline && planning.timeline.start
+                        ? isoToDate(planning.timeline.start)
+                        : null;
+                    var rangeEnd = planning.timeline && planning.timeline.end
+                        ? isoToDate(planning.timeline.end)
+                        : null;
+
+                    if (rangeStart && rangeEnd) {
+                        timeline.setWindow(rangeStart, rangeEnd, { animation: false });
+                    } else {
+                        timeline.fit({ animation: false });
+                    }
+                    refreshTypeFilterUI();
+                    updateTimelineFilter();
+                } finally {
+                    persistenceLocked = false;
                 }
-
-                // items
-                if (Array.isArray(planning.items)) {
-                    items.clear();
-                    planning.items.forEach(function (it) {
-                        var kind = sanitizeTypeId(it.type || it.kind || "feature");
-                        var base = {
-                            id: it.id || ("it-" + Date.now() + Math.random()),
-                            group: it.groupId,
-                            content: it.label || "",
-                            kind: kind
-                        };
-                        ensureTypeDefinition({ id: kind });
-
-                        if (base.kind === "milestone") {
-                            base.start = isoToDate(it.date || it.start);
-                            base.type = "point";
-                            base.className = "type-milestone";
-                        } else {
-                            base.start = isoToDate(it.start);
-                            base.end = isoToDate(it.end) || new Date(base.start.getTime() + oneWeek);
-                            base.className = "type-" + base.kind;
-                        }
-                        items.add(base);
-                    });
-                }
-
-                // timeline range
-                var rangeStart = planning.timeline && planning.timeline.start
-                    ? isoToDate(planning.timeline.start)
-                    : null;
-                var rangeEnd = planning.timeline && planning.timeline.end
-                    ? isoToDate(planning.timeline.end)
-                    : null;
-
-                if (rangeStart && rangeEnd) {
-                    timeline.setWindow(rangeStart, rangeEnd, { animation: false });
-                } else {
-                    timeline.fit({ animation: false });
-                }
-                refreshTypeFilterUI();
-                updateTimelineFilter();
                 persistPlanningState(planning);
             }
 
@@ -1054,6 +1711,12 @@
                 };
 
                 return planning;
+            }
+
+            function formatColorForType(typeId) {
+                var def = typeDefinitions[typeId];
+                if (def && def.background) return def.border || def.background;
+                return "    ";
             }
 
             // ============================================================
@@ -1142,17 +1805,20 @@
             var txtPrompt = document.getElementById("prompt");
             var selectMode = document.getElementById("mode");
             var btnCall = document.getElementById("btn-call");
-            var btnCallLabel = btnCall.querySelector("span");
-            var btnCallDefaultLabel = btnCallLabel ? btnCallLabel.textContent : "✨ Envoyer";
             var waitingTimerId = null;
             var waitingCounter = 60;
+            var iaModalButtonDefaultLabel = iaModalButton
+                ? iaModalButton.textContent.trim()
+                : "✨";
 
-            function updateCallButtonLabel(isLoading, counter) {
-                if (!btnCallLabel) return;
+            function updateIaButtonLabel(isLoading, counter) {
+                if (!iaModalButton) return;
                 if (isLoading) {
-                    btnCallLabel.textContent = "⏳ Attente " + (typeof counter === "number" ? counter : waitingCounter) + "s";
+                    var baseLabel = iaModalButtonDefaultLabel ? iaModalButtonDefaultLabel + " " : "";
+                    var displayCounter = typeof counter === "number" ? counter : waitingCounter;
+                    iaModalButton.textContent = baseLabel + "⏳ Attente " + displayCounter + "s";
                 } else {
-                    btnCallLabel.textContent = btnCallDefaultLabel;
+                    iaModalButton.textContent = iaModalButtonDefaultLabel;
                 }
             }
 
@@ -1161,19 +1827,19 @@
                     clearInterval(waitingTimerId);
                     waitingTimerId = null;
                 }
-                updateCallButtonLabel(false);
+                updateIaButtonLabel(false);
             }
 
             function startWaitingTimer() {
                 stopWaitingTimer();
                 waitingCounter = 60;
-                updateCallButtonLabel(true, waitingCounter);
+                updateIaButtonLabel(true, waitingCounter);
                 waitingTimerId = setInterval(function () {
                     waitingCounter--;
                     if (waitingCounter < 0) {
                         waitingCounter = 60;
                     }
-                    updateCallButtonLabel(true, waitingCounter);
+                    updateIaButtonLabel(true, waitingCounter);
                 }, 1000);
             }
 
@@ -1258,6 +1924,7 @@
 
                 startWaitingTimer();
                 btnCall.disabled = true;
+                closeIaModal();
                 try {
                     var aiResponse = await callOpenAI(messages);
                     if (!aiResponse) return;
