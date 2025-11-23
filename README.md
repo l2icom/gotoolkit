@@ -1,51 +1,49 @@
 # Go-Toolkit
 
-Go-Toolkit regroupe deux outils statiques pensés pour les consultants : **Go-Slides** (présentation structurée) et **Go-Timeline** (planning visuel). Chaque expérience tourne entièrement dans le navigateur, sans backend (à part un proxy OpenAI facultatif), et se pilote directement depuis les fichiers présents dans `public/`.
+Go-Toolkit combine deux expériences pensées pour les consultants : **Go-Slides** (pour créer des planches claires et structurées) et **Go-Timeline** (pour visualiser et ajuster un planning). Chaque outil s’utilise en ouvrant directement son fichier dans un navigateur.
 
 ## Go-Slides (public/index.html)
 
-1. **Choisis un template** parmi les trois modèles (“Go-Roadmap”, “Go-Design”, “Go-Solve”). Chaque template expose des colonnes dédiées (Now / Next / Later, objectifs, indicateurs,…) et des sections personnalisables.
-2. **Navigue via les onglets** pour passer d’une page à l’autre, renommer chaque onglet, ou en ajouter/supprimer à tout moment grâce aux boutons `+` / `🗑️`.
-3. **Structure ton contenu** : chaque colonne propose des labels et des textarea pour les sections. Le bouton `✨` à côté de chaque champ invoque l’assistant IA (avec un compte à rebours visible) pour reformuler, enrichir ou générer un texte contextualisé.
-4. **Personnalise les styles** (police, taille, ratio, fond, palette) dans le menu “Files” pour adapter les cartes à la charte client.
-5. **Décris ton contexte** dans la modale “Contexte & prompts”, sauvegarde ta clé OpenAI (facultative), ajuste les prompts par section et active les modes IA (Express, Apprenti, Expérimental) pour choisir le niveau de guidage.
-6. **Sers-toi de l’info-bulle et du tour guidé** qui apparaissent au chargement pour comprendre les principales actions et découvrir l’interface sans l’aide d’un manuel.
-7. **Exporte facilement** :
-   - `PNG` : capture une slide propre (textarea remplacés par du texte statique).
-   - `PPTX` : génère un PowerPoint avec un tableau par slide en respectant le ratio sélectionné.
-   - `JSON` : sauvegarde/importe l’état complet (slides + réglages) pour copier-coller entre sessions ou partage d’équipe.
+1. **Choisis ton modèle** (“Go-Roadmap”, “Go-Design” ou “Go-Solve”) pour afficher des colonnes, des sections et des idées déjà structurées.
+2. **Change de page** avec les onglets : renomme-les, ajoute une nouvelle page ou supprime une ancienne sans perdre ton travail.
+3. **Rédige librement** : chaque colonne contient des labels et des blocs de texte. Le bouton `✨` à côté d’un champ lance l’assistant IA pour reformuler ou enrichir ton contenu à partir de ce que tu as déjà écrit.
+4. **Ajuste le rendu** dans le menu “Files” (polices, tailles, proportions, couleurs, palettes) pour correspondre à ta charte ou ton client.
+5. **Décris ton contexte** dans la fenêtre “Contexte & prompts”, précise ta clé OpenAI si tu en as une et choisis un mode IA (Express, Apprenti ou Expérimental) pour définir ton degré d’accompagnement.
+6. **Suis le tour guidé** et l’info-bulle qui s’ouvrent au démarrage pour découvrir les actions clés sans devoir lire de documentation.
+7. **Export en un clic** :
+   - `PNG` pour capturer une slide propre,
+   - `PPTX` pour convertir tes tableaux en diapositives,
+   - `JSON` pour copier la version complète vers un autre poste ou un collègue.
 
-> Astuce : les modifications sont persistées dans `localStorage`, donc tu peux recharger la page sans perdre ton travail.
+> Tous tes changements sont sauvegardés dans le navigateur, tu peux donc recharger la page sans perdu.
 
 ## Go-Timeline (public/timeline.html)
 
-1. **Lance l’interface** depuis `public/timeline.html` pour accéder au planning visuel complémentaire.
-2. **Génère ou modifie un planning** en proposant une demande IA depuis la modal `✨`. Choisis le mode (“créer” vs “modifier”) pour lui fournir un prompt et (si besoin) le JSON existant du planning affiché.
-3. **Navigue, zoome, ajuste** :
-   - Barre d’outils : boutons de zoom, ajustement de la fenêtre visible et adaptation automatique de l’échelle (jour / semaine / mois).
-   - Drag & drop : déplace, redimensionne ou supprime les éléments directement sur la timeline.
-4. **Chronologie avec catégories** : les items peuvent porter des couleurs métier (fonctions, jalons, bugs, etc.). Le panneau latéral permet de paramétrer l’axe temporel, le snap et le mode d’affichage.
-5. **Exports multi-format** : bouton “Fichier” pour récupérer le planning au format texte, image (capturée avec `html2canvas`) ou Excel (`xlsx`).
-6. **Tour guidé dédié** présente les zones clés (outil IA, barre d’outils, export) pour prendre en main l’éditeur à la première visite.
+1. **Lance l’interface planning** depuis `public/timeline.html`.
+2. **Demande de l’aide IA** avec le bouton `✨`, choisis le mode “créer” ou “modifier” et décris ta demande pour générer un planning cohérent.
+3. **Déplace et ajuste** les éléments directement sur la timeline : zoom, glisser-déposer et modification des durées.
+4. **Utilise les catégories** colorées pour distinguer les fonctions, jalons, risques, bugs, etc.
+5. **Exporte ton planning** en texte, image (capture) ou Excel pour le partager rapidement.
+6. **Profite du tour guidé** pour comprendre les outils IA, la barre d’outils et les exports dès ta première visite.
 
-## Débuter rapidement
+## Pour commencer
 
-1. Ouvre `public/index.html` et `public/timeline.html` directement dans un navigateur moderne (Chrome, Edge, Safari) ou via un serveur statique (`npx live-server public` / `http-server public` si tu veux un accès HTTP).
-2. Les dépendances (`html2canvas`, `PptxGenJS`, `vis-timeline`, `html2canvas`, `xlsx`) sont chargées depuis des CDN. Il n’y a pas de `npm install`.
-3. Pour déployer, utilise `firebase deploy` depuis la racine si tu veux mettre `public/` en ligne (configuration `firebase.json` incluse).
+1. Ouvre les fichiers `public/index.html` et `public/timeline.html` dans ton navigateur préféré (Chrome, Firefox, Edge, Safari…).
+2. Tu n’as rien à installer : l’interface utilise uniquement des ressources accessibles en ligne.
+3. Si tu veux diffuser une version en ligne, dépose le dossier `public/` sur ton hébergeur habituel ou sur la plateforme que tu utilises.
 
-## Conseils utilisateur
+## Conseils pratiques
 
-- **Prépare ton contexte** avant d’activer l’IA (description du client, objectifs, contraintes) pour que les prompts génèrent des réponses précises.
-- **Sers-toi des styles et palettes** pour harmoniser tes slides : chaque colonne peut avoir sa couleur, et les sections s’adaptent automatiquement à la police/ratio choisis.
-- **Teste les prompts personnalisés** en mode “Apprenti” si tu veux superviser l’IA section par section, ou reste en “Express” pour des suggestions rapides.
-- **Sauvegarde JSON puis importe** pour cloner un livrable validé vers un autre template ou une autre session.
-- **Utilise les exports image/PPTX** pour intégrer les contenus dans des dossiers partageables (OneDrive, Notion, Confluence).
+- Prépare ton contexte (client, objectifs, contraintes) avant d’activer l’IA pour obtenir des réponses pertinentes.
+- Harmonise les colonnes avec les styles et palettes pour coller à ta charte.
+- Essaie le mode “Apprenti” si tu veux guider section par section, ou reste en “Express” pour aller plus vite.
+- Sauvegarde et réimporte les fichiers JSON pour reproduire un livrable validé sur une autre session ou un autre modèle.
+- Utilise les exports image/PPTX pour partager tes supports dans OneDrive, Notion, Confluence ou directement avec tes clients.
 
-## À venir
+## Pistes
 
-- Centraliser les exports JSON/PPTX vers un espace de stockage partagé.
-- Ajouter une couche de profils pour partager les prompts et palettes entre équipes.
-- Proposer du suivi proactif (suggestions IA en fonction du contexte client).
+- Centraliser les exports pour les retrouver facilement dans un espace partagé.
+- Partager les prompts et palettes avec les autres membres de ton équipe.
+- Proposer des suggestions proactives en fonction du contexte de ton client.
 
 Bonne préparation !
