@@ -118,6 +118,28 @@
             background: rgba(42, 122, 87, 0.08);
         }
 
+        .toast {
+            position: fixed;
+            bottom: 18px;
+            right: 18px;
+            background: rgba(15, 23, 42, 0.92);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-size: 13px;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.3);
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            z-index: 90;
+        }
+
+        .toast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
 
         .modal-header {
             display: flex;
@@ -1149,6 +1171,7 @@
                             <button id="importJsonBtn" type="button" class="menu-panel-btn">📂 Ouvrir</button>
                             <button id="exportJsonBtn" type="button" class="menu-panel-btn">💾 Enregistrer</button>
                             <button id="exportPptxBtn" type="button" class="menu-panel-btn">📊 Powerpoint</button>
+                            <button id="exportTextBtn" type="button" class="menu-panel-btn">📋 Texte</button>
                             <button id="exportPngBtn" type="button" class="menu-panel-btn">🖼️ Image</button>
                             <button id="infoButton" type="button" class="menu-panel-btn">ℹ️ À propos</button>
                         </div>
@@ -1184,6 +1207,7 @@
             </div>
             <button id="tourSkipBtn" class="tour-skip" type="button">×</button>
         </div>
+        <div id="copyToast" class="toast" aria-live="polite" aria-atomic="true"></div>
     </div>
 
     <div class="modal-overlay" id="contextModal">
@@ -1459,6 +1483,7 @@
         const deleteTabBtn = document.getElementById("deleteTabBtn");
         const exportBtn = document.getElementById("exportPngBtn");
         const exportPptxBtn = document.getElementById("exportPptxBtn");
+        const exportTextBtn = document.getElementById("exportTextBtn");
         const textStyleBtn = document.getElementById("textStyleBtn");
         const templateSelect = document.getElementById("templateSelect");
         const fileMenuBtn = document.getElementById("fileMenuBtn");
@@ -1483,6 +1508,8 @@
         const iaModeButtons = Array.from(iaModeToggle?.querySelectorAll("[data-ia-mode]") ?? []);
         const promptCustomizationArea = document.getElementById("promptCustomizationArea");
         const applyPromptToAllBtn = document.getElementById("applyPromptToAllBtn");
+        const copyToast = document.getElementById("copyToast");
+        let copyToastTimer = null;
 
         const STORAGE_KEY = "go-roadmap-state";
 
@@ -2611,6 +2638,82 @@
             return { wrapper, clone };
         }
 
+        function buildSlideTextContent(slide) {
+            const lines = [];
+            const title = slide.querySelector(".slide-title-input")?.value.trim();
+            if (title) {
+                lines.push(title);
+            }
+            const subtitle = slide.querySelector(".slide-subtitle-input")?.value.trim();
+            if (subtitle) {
+                if (lines.length) {
+                    lines.push("");
+                }
+                lines.push(subtitle);
+            }
+
+            Array.from(slide.querySelectorAll(".column")).forEach(column => {
+                const columnLines = [];
+                const columnTitle = column.querySelector(".column-title")?.textContent.trim();
+                if (columnTitle) {
+                    columnLines.push(columnTitle);
+                }
+                Array.from(column.querySelectorAll(".section")).forEach(section => {
+                    const label = section.querySelector(".section-label")?.textContent.trim() || "Section";
+                    const textarea = section.querySelector("textarea");
+                    const placeholder = textarea?.dataset.placeholder?.trim() || "";
+                    const value = textarea?.value?.trim() || "";
+                    const content = value || placeholder;
+                    columnLines.push(`${label}:`);
+                    columnLines.push(content || "(vide)");
+                });
+                if (columnLines.length) {
+                    if (lines.length) {
+                        lines.push("");
+                    }
+                    lines.push(...columnLines);
+                }
+            });
+
+            return lines.join("\n");
+        }
+
+        function copyTextToClipboard(text) {
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+                return navigator.clipboard.writeText(text);
+            }
+            return new Promise((resolve, reject) => {
+                const textarea = document.createElement("textarea");
+                textarea.value = text;
+                textarea.setAttribute("readonly", "");
+                textarea.style.position = "absolute";
+                textarea.style.left = "-9999px";
+                document.body.appendChild(textarea);
+                textarea.select();
+                textarea.setSelectionRange(0, textarea.value.length);
+                const success = document.execCommand("copy");
+                document.body.removeChild(textarea);
+                if (success) {
+                    resolve();
+                } else {
+                    reject(new Error("Fallback copy failed"));
+                }
+            });
+        }
+
+        function showCopyToast(message) {
+            if (!copyToast) return;
+            copyToast.textContent = message;
+            copyToast.classList.add("visible");
+            if (copyToastTimer) {
+                clearTimeout(copyToastTimer);
+            }
+            copyToastTimer = setTimeout(() => {
+                copyToast.classList.remove("visible");
+                copyToastTimer = null;
+            }, 2200);
+        }
+
         exportBtn.addEventListener("click", async () => {
             closeContextMenus();
             const slide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
@@ -2637,6 +2740,25 @@
             } finally {
                 exportBtn.textContent = oldText;
                 exportBtn.disabled = false;
+            }
+        });
+
+        exportTextBtn?.addEventListener("click", async () => {
+            if (!exportTextBtn) return;
+            closeContextMenus();
+            exportTextBtn.disabled = true;
+            try {
+                const slide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
+                if (!slide) return;
+                const textContent = buildSlideTextContent(slide);
+                const payload = textContent || "(Aucun contenu)";
+                await copyTextToClipboard(payload);
+                showCopyToast("Texte copié dans le presse-papier");
+            } catch (err) {
+                console.error("Copie texte impossible", err);
+                alert("Impossible de copier le texte. Tu peux réessayer.");
+            } finally {
+                exportTextBtn.disabled = false;
             }
         });
 
@@ -2967,7 +3089,7 @@
             },
             {
                 title: "Exports",
-                description: "Le bouton 📄 permet d'exporter en Image (courant) ou en PowerPoint (texte) pour l'intégrer dans tes livrables.",
+                description: "Le bouton 📄 permet d'exporter en texte ou image (courant) ou en PowerPoint (texte) pour l'intégrer dans tes livrables.",
                 selector: "#fileMenuTrigger"
             },
             {

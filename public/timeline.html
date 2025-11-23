@@ -790,6 +790,28 @@
             color: var(--text);
         }
 
+        .toast {
+            position: fixed;
+            bottom: 18px;
+            right: 18px;
+            background: rgba(15, 23, 42, 0.92);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-size: 13px;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.3);
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            z-index: 90;
+        }
+
+        .toast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -1112,6 +1134,7 @@
                             <div class="menu-panel" style="transform: translateX(10px);">
                                 <button id="importJsonBtn" type="button" class="menu-panel-btn">📂 Open</button>
                                 <button id="exportJsonBtn" type="button" class="menu-panel-btn">💾 Save</button>
+                                <button id="exportTextBtn" type="button" class="menu-panel-btn">📋 Texte</button>
                                 <button id="exportImageBtn" type="button" class="menu-panel-btn">🖼️ Image</button>
                                 <button id="exportExcelBtn" type="button" class="menu-panel-btn">📊 Excel</button>
                                 <button id="aboutTimelineBtn" type="button" class="menu-panel-btn">ℹ️ À propos</button>
@@ -1219,6 +1242,8 @@
             </div>
             <button id="timelineTourSkipBtn" class="tour-skip" type="button">×</button>
         </div>
+
+        <div id="copyToast" class="toast" aria-live="polite" aria-atomic="true"></div>
 
         <input type="file" id="importJsonInput" accept="application/json" style="display:none">
         <script>
@@ -1745,6 +1770,7 @@
             var fileMenu = document.getElementById("fileMenu");
             var importJsonBtn = document.getElementById("importJsonBtn");
             var exportJsonBtn = document.getElementById("exportJsonBtn");
+            var exportTextBtn = document.getElementById("exportTextBtn");
             var exportImageBtn = document.getElementById("exportImageBtn");
             var exportExcelBtn = document.getElementById("exportExcelBtn");
             var aboutTimelineBtn = document.getElementById("aboutTimelineBtn");
@@ -1752,6 +1778,8 @@
             var headerTitleElement = document.querySelector(".header-text h1");
             var infoPopup = document.getElementById("timelineInfoPopup");
             var infoCloseBtn = infoPopup ? infoPopup.querySelector(".info-close") : null;
+            var copyToast = document.getElementById("copyToast");
+            var copyToastTimer = null;
             var timelineCard = document.querySelector(".timeline-card");
             var switchToIndexBtn = document.getElementById("switchToIndex");
             var fontSizeChoices = [9, 10, 11, 12, 13, 14, 15, 16];
@@ -1876,6 +1904,23 @@
                 });
             }
 
+            function computeDaySpan(start, end) {
+                if (!start || !end) {
+                    return null;
+                }
+                var startDate = new Date(start);
+                var endDate = new Date(end);
+                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                    return null;
+                }
+                var msPerDay = 1000 * 60 * 60 * 24;
+                var diff = Math.round((endDate - startDate) / msPerDay);
+                if (diff < 0) {
+                    return null;
+                }
+                return diff + 1; // include both endpoints
+            }
+
             function exportTimelineExcel() {
                 if (!exportExcelBtn) return;
                 closeContextMenus();
@@ -1903,6 +1948,127 @@
                 } finally {
                     exportExcelBtn.textContent = initialLabel;
                     exportExcelBtn.disabled = false;
+                }
+            }
+
+            function buildTextExport(planning, viewTitle) {
+                var lines = [];
+                if (viewTitle) {
+                    lines.push("Vue : " + viewTitle);
+                }
+                if (planning && planning.timeline) {
+                    var start = planning.timeline.start || "";
+                    var end = planning.timeline.end || "";
+                    var rangeParts = [];
+                    if (start) rangeParts.push(start);
+                    if (end) rangeParts.push(end);
+                    if (rangeParts.length) {
+                        lines.push("Période : " + rangeParts.join(" → "));
+                    }
+                }
+                var groupMap = {};
+                (planning && Array.isArray(planning.groups) ? planning.groups : []).forEach(function (group) {
+                    if (group && group.id) {
+                        var label = group.label || group.name || group.id;
+                        groupMap[group.id] = label.trim() || group.id;
+                    }
+                });
+                var groupLabels = Object.keys(groupMap).map(function (id) {
+                    return groupMap[id];
+                }).filter(Boolean);
+                if (groupLabels.length) {
+                    lines.push("Groupes : " + groupLabels.join(", "));
+                }
+                var items = planning && Array.isArray(planning.items) ? planning.items : [];
+                if (items.length) {
+                    lines.push("");
+                    lines.push("Éléments :");
+                    items.forEach(function (item, index) {
+                        if (index) {
+                            lines.push("");
+                        }
+                        var label = item.label || "Sans titre";
+                        lines.push(label);
+                        if (item.kind === "milestone") {
+                            if (item.date) {
+                                lines.push("Date: " + item.date);
+                            }
+                        } else {
+                            if (item.start || item.end) {
+                                var span = (item.start || "") + (item.start && item.end ? " → " : "") + (item.end || "");
+                                if (span) {
+                                    var days = computeDaySpan(item.start, item.end);
+                                    lines.push("Date: " + span + (days ? " (" + days + " jours)" : ""));
+                                }
+                            }
+                        }
+                        var groupLabel = groupMap[item.groupId] || item.groupId;
+                        if (groupLabel) {
+                            lines.push("Groupe: " + groupLabel);
+                        }
+                        if (item.kind) {
+                            lines.push("Type: " + item.kind);
+                        }
+                    });
+                } else {
+                    lines.push("");
+                    lines.push("Aucun élément à exporter pour l’instant.");
+                }
+                return lines.join("\n");
+            }
+
+            function copyTextToClipboard(text) {
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+                    return navigator.clipboard.writeText(text);
+                }
+                return new Promise(function (resolve, reject) {
+                    var textarea = document.createElement("textarea");
+                    textarea.value = text;
+                    textarea.setAttribute("readonly", "");
+                    textarea.style.position = "absolute";
+                    textarea.style.left = "-9999px";
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    textarea.setSelectionRange(0, textarea.value.length);
+                    var success = document.execCommand("copy");
+                    document.body.removeChild(textarea);
+                    if (success) {
+                        resolve();
+                    } else {
+                        reject(new Error("Fallback copy failed"));
+                    }
+                });
+            }
+
+            function showCopyToast(message) {
+                if (!copyToast) return;
+                copyToast.textContent = message;
+                copyToast.classList.add("visible");
+                if (copyToastTimer) {
+                    clearTimeout(copyToastTimer);
+                }
+                copyToastTimer = setTimeout(function () {
+                    copyToast.classList.remove("visible");
+                    copyToastTimer = null;
+                }, 2200);
+            }
+
+            async function exportTimelineText() {
+                if (!exportTextBtn) return;
+                closeContextMenus();
+                exportTextBtn.disabled = true;
+                try {
+                    persistCurrentPlanning();
+                    var currentView = views[activeViewIndex];
+                    var planning = (currentView && currentView.planning) || exportPlanningToJson();
+                    var text = buildTextExport(planning, currentView && currentView.title);
+                    await copyTextToClipboard(text);
+                    showCopyToast("Texte copié dans le presse-papier");
+                } catch (err) {
+                    console.error("Copie texte impossible", err);
+                    alert("Impossible de copier le texte. Réessaie.");
+                } finally {
+                    exportTextBtn.disabled = false;
                 }
             }
 
@@ -1979,6 +2145,9 @@
             }
             if (exportExcelBtn) {
                 exportExcelBtn.addEventListener("click", exportTimelineExcel);
+            }
+            if (exportTextBtn) {
+                exportTextBtn.addEventListener("click", exportTimelineText);
             }
             function showTimelineAbout() {
                 if (!infoPopup) return;
@@ -2915,8 +3084,8 @@
                     selectors: [".toolbar .item-actions"]
                 },
                 {
-                    title: "Exporte en image ou Excel",
-                    description: "Le menu 📄 permet de télécharger la vue courante en image ou en Excel pour la partager rapidement.",
+                    title: "Exporte ta timeline",
+                    description: "Le menu 📄 permet de télécharger la vue courante en texte, image ou Excel pour la partager rapidement.",
                     selectors: ["#fileMenuBtn"]
                 }
             ];
