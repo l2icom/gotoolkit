@@ -1,61 +1,51 @@
 # Go-Toolkit
 
-Go-Toolkit est une application statique packagée dans `public/index.html`. Elle permet aux consultants de générer des planches structurées (Now / Next / Later, Go-Design, Go-Solve) et d’activer un assistant IA pour peupler des champs métier. L’interface s’exécute entièrement dans le navigateur ; il n’y a pas de serveur backend autre qu’un proxy OpenAI optionnel.
+Go-Toolkit regroupe deux outils statiques pensés pour les consultants : **Go-Slides** (présentation structurée) et **Go-Timeline** (planning visuel). Chaque expérience tourne entièrement dans le navigateur, sans backend (à part un proxy OpenAI facultatif), et se pilote directement depuis les fichiers présents dans `public/`.
 
-## Architecture technique
+## Go-Slides (public/index.html)
 
-- **Stack** : HTML + CSS + Vanilla JavaScript. Les dépendances externes (`html2canvas` et `PptxGenJS`) sont chargées depuis des CDN.
-- **Décomposition** : toute la logique vit dans un `<script>` en bas de `public/index.html`. Le DOM est généré dynamiquement à partir d’une configuration `templates`, des styles (`textStyles`, `ratioOptions`) et d’un état (`templateSlides`, `promptLibrary`).
-- **Templates** : chaque template (`go-roadmap`, `go-design`, `go-solve`) déclare des colonnes (`stage`, `label`) et des sections (`Objectifs`, `Moyens`, `Indicateurs`, etc.) avec des icônes et des exemples. Les slides sont créées via `createSlide` et `createColumn`, qui injectent la structure DOM par template et seed.
-- **Gestion d’état** :
-  - `templateSlides` stocke la liste de slides indexées par template.
-  - `collectAllSlides()` extrait les titres, colonnes, sections et styles depuis le DOM pour sérialiser l’état.
-  - `schedulePersist()` tamponne les appels à `persistState()` pour limiter les écritures.
-  - `persistState()` enregistre `slides` et `settings` (`ratioIndex`, `textStyleIndex`, `fontSize`, clé OpenAI, contexte, prompts, templates) sous `localStorage["go-roadmap-state"]`.
-  - `loadSavedState()` restaure le payload, recrée `templateSlides` et applique les settings (ratio, police, prompts, sélection par défaut).
-- **Navigation / onglets** : `renderSlidesForTemplate` reconstruit les slides, `refreshTabs` reconstruit les boutons d’onglet et `setActiveTab` masque/affiche les slides. L’utilisateur peut renommer les onglets, ajouter (`+`) ou supprimer (`🗑️`).
-- **Personnalisation visuelle** :
-  - `textStyles` et `fontSizeInput` changent la police et la taille via `applyTextStyleToSlide`.
-  - `ratioOptions` ajustent `--slide-aspect-ratio` et sont exposés dans un menu.
-  - `backgroundSelector` applique la couleur de fond, met à jour les variables CSS et choisit une couleur de texte adaptée (`getTextColorForBackground`).
-  - `stageColors` et `selectColumnForPalette` permettent de colorer chaque colonne avec une palette glissante.
-- **Interaction dans les sections** :
-  - Chaque section comporte un label (`contenteditable`) et un textarea éditable.
-  - `monitorTextareaOverflow` signale quand le contenu dépasse, formate les listes à puces (`normalizeBullets`) et gère l’insertion automatique de `•`.
-  - Les boutons `✨` activent `handleFieldAi` pour générer du contenu.
-- **IA & prompts** :
-  - `contextModal` contient `contextField`, les prompts par section (`promptLibrary`) et un champ pour la clé OpenAI (`apiKeyInput`).
-  - `defaultPromptTemplate` est interpolé avec `contextField`, `columnTitle`, `sectionTitle` et le texte courant.
-  - `callOpenAI` poste vers `https://api.openai.com/v1/chat/completions` (ou `https://openai.tranxq.workers.dev/v1/chat/completions` si pas de clé) avec `gpt-5-nano`, `temperature=1`, `max_tokens=800`.
-  - `promptLibrary` conserve un prompt par template/section et est persistant dans `localStorage`.
-- **Exports** :
-  - Export PNG : `prepareSlideForExport` clone la slide, remplace les textarea par des `div` statiques puis `html2canvas` rasterise l’aperçu.
-  - Export PPTX : `exportPptxFromSlides` transforme chaque slide en tableau (`addTable`) en respectant le ratio sélectionné (`ratioOptions[].pptx`).
-  - Import/Export JSON (`importJsonBtn`, `exportJsonBtn`) lit/écrit un objet `{ slides, settings }`.
-- **Onboarding & aide** :
-  - `tourSteps` orchestre un guidage visuel (mise en surbrillance + modale) contrôlé par le `tourOverlay`.
-  - `infoPopup` expose la version 0.11.22, l’auteur et un bouton “Tour guidé”.
+1. **Choisis un template** parmi les trois modèles (“Go-Roadmap”, “Go-Design”, “Go-Solve”). Chaque template expose des colonnes dédiées (Now / Next / Later, objectifs, indicateurs,…) et des sections personnalisables.
+2. **Navigue via les onglets** pour passer d’une page à l’autre, renommer chaque onglet, ou en ajouter/supprimer à tout moment grâce aux boutons `+` / `🗑️`.
+3. **Structure ton contenu** : chaque colonne propose des labels et des textarea pour les sections. Le bouton `✨` à côté de chaque champ invoque l’assistant IA (avec un compte à rebours visible) pour reformuler, enrichir ou générer un texte contextualisé.
+4. **Personnalise les styles** (police, taille, ratio, fond, palette) dans le menu “Files” pour adapter les cartes à la charte client.
+5. **Décris ton contexte** dans la modale “Contexte & prompts”, sauvegarde ta clé OpenAI (facultative), ajuste les prompts par section et active les modes IA (Express, Apprenti, Expérimental) pour choisir le niveau de guidage.
+6. **Sers-toi de l’info-bulle et du tour guidé** qui apparaissent au chargement pour comprendre les principales actions et découvrir l’interface sans l’aide d’un manuel.
+7. **Exporte facilement** :
+   - `PNG` : capture une slide propre (textarea remplacés par du texte statique).
+   - `PPTX` : génère un PowerPoint avec un tableau par slide en respectant le ratio sélectionné.
+   - `JSON` : sauvegarde/importe l’état complet (slides + réglages) pour copier-coller entre sessions ou partage d’équipe.
 
-## Développement local & déploiement
+> Astuce : les modifications sont persistées dans `localStorage`, donc tu peux recharger la page sans perdre ton travail.
 
-1. Cloner le dépôt et ouvrir `public/index.html` directement dans un navigateur moderne ou servir `public/` avec `npx live-server public`/`http-server public`.
-2. Mettre à jour les templates, prompts ou styles à même `public/index.html`. Il n’y a pas de compilation.
-3. Déploiement : la configuration Firebase est déjà présente dans `firebase.json`; depuis la racine du dépôt `firebase deploy` publie `public`.
+## Go-Timeline (public/timeline.html)
 
-Les dépendances tierces sont chargées via CDN, il n’y a donc pas de `npm install`.
+1. **Lance l’interface** depuis `public/timeline.html` pour accéder au planning visuel complémentaire.
+2. **Génère ou modifie un planning** en proposant une demande IA depuis la modal `✨`. Choisis le mode (“créer” vs “modifier”) pour lui fournir un prompt et (si besoin) le JSON existant du planning affiché.
+3. **Navigue, zoome, ajuste** :
+   - Barre d’outils : boutons de zoom, ajustement de la fenêtre visible et adaptation automatique de l’échelle (jour / semaine / mois).
+   - Drag & drop : déplace, redimensionne ou supprime les éléments directement sur la timeline.
+4. **Chronologie avec catégories** : les items peuvent porter des couleurs métier (fonctions, jalons, bugs, etc.). Le panneau latéral permet de paramétrer l’axe temporel, le snap et le mode d’affichage.
+5. **Exports multi-format** : bouton “Fichier” pour récupérer le planning au format texte, image (capturée avec `html2canvas`) ou Excel (`xlsx`).
+6. **Tour guidé dédié** présente les zones clés (outil IA, barre d’outils, export) pour prendre en main l’éditeur à la première visite.
 
-## Extension & maintenance
+## Débuter rapidement
 
-- **Ajouter un template** : ajouter un objet dans `templates` avec `id`, `emoji`, `columns` et `sections`, puis l’inclure via `populateTemplateSelectors`.
-- **Mettre à jour les prompts** : modifier `promptLibrary` ou les valeurs par défaut `defaultPromptTemplate`, puis utiliser `resetPromptsBtn` ou `import JSON`.
-- **Modes IA** : la modal IA propose trois modes (⚡ Express par défaut, 💡 Apprenti, 🧪 Expérimental) qui masquent ou affichent l’éditeur de prompts et appliquent respectivement le prompt par défaut, le prompt coach ou la saisie personnalisée.
-- **Adapter les exports** : la fonction `buildTableDataForSlide` icône les colonnes et sections. Vous pouvez y injecter d’autres formats (Markdown, CSV, API interne).
-- **Tour & onboarding** : enrichir `tourSteps` pour guider les nouvelles fonctionnalités.
-- **Proxy IA** : le proxy `https://openai.tranxq.workers.dev` est utilisé dès que l’utilisateur n’a pas sa clé OpenAI pour garantir un fallback limité.
+1. Ouvre `public/index.html` et `public/timeline.html` directement dans un navigateur moderne (Chrome, Edge, Safari) ou via un serveur statique (`npx live-server public` / `http-server public` si tu veux un accès HTTP).
+2. Les dépendances (`html2canvas`, `PptxGenJS`, `vis-timeline`, `html2canvas`, `xlsx`) sont chargées depuis des CDN. Il n’y a pas de `npm install`.
+3. Pour déployer, utilise `firebase deploy` depuis la racine si tu veux mettre `public/` en ligne (configuration `firebase.json` incluse).
 
-## Pistes d’amélioration métier
+## Conseils utilisateur
 
-1. **Capitaliser les livrables** : proposer une synchronisation avec un repo interne (Google Drive, Notion, Confluence) pour stocker les exports JSON/PPTX et recharger les templates validées.
-2. **Multiples équipes & droits** : intégrer une couche d’authentification (SSO Savane) et de profils pour partager des contextes, prompts et palettes métiers entre équipes.
-3. **Assistant IA contextuel** : suivre les modifications de contexte et proposer des suggestions proactives (modèle fine-tuning ou embeddings) par rapport aux grands comptes ou aux clients stratégiques.
-4. **Metrics & scoring** : enrichir chaque slide avec des métadonnées (risques, effort, priorité) et générer un reporting généré automatiquement pour alerter sur les écarts par rapport aux roadmaps clients antérieures.
+- **Prépare ton contexte** avant d’activer l’IA (description du client, objectifs, contraintes) pour que les prompts génèrent des réponses précises.
+- **Sers-toi des styles et palettes** pour harmoniser tes slides : chaque colonne peut avoir sa couleur, et les sections s’adaptent automatiquement à la police/ratio choisis.
+- **Teste les prompts personnalisés** en mode “Apprenti” si tu veux superviser l’IA section par section, ou reste en “Express” pour des suggestions rapides.
+- **Sauvegarde JSON puis importe** pour cloner un livrable validé vers un autre template ou une autre session.
+- **Utilise les exports image/PPTX** pour intégrer les contenus dans des dossiers partageables (OneDrive, Notion, Confluence).
+
+## À venir
+
+- Centraliser les exports JSON/PPTX vers un espace de stockage partagé.
+- Ajouter une couche de profils pour partager les prompts et palettes entre équipes.
+- Proposer du suivi proactif (suggestions IA en fonction du contexte client).
+
+Bonne préparation !
