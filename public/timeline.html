@@ -65,15 +65,20 @@
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 12px;
             align-items: stretch;
             min-height: calc(100vh - 32px);
         }
 
         .app-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            width: 100%;
+            max-width: 1180px;
+            margin: 4px 0 auto;
             padding: 0;
             border-radius: 0;
             border: none;
@@ -99,8 +104,9 @@
         .tabs-actions {
             display: flex;
             align-items: center;
-            gap: 0;
-            width: 100%;
+            gap: 8px;
+            flex: 1;
+            flex-wrap: wrap;
         }
 
         .ia-header-actions {
@@ -139,8 +145,9 @@
         .header-actions {
             margin-left: auto;
             display: flex;
-            gap: 6px;
+            gap: 8px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .tab-btn-add,
@@ -233,7 +240,14 @@
             border-color: #2a7a57;
             background: #fff;
             color: #2a7a57;
-            box-shadow: 0 6px 18px rgba(42, 122, 87, 0.25);
+            box-shadow: none;
+        }
+
+        #switchToIndex:hover,
+        #switchToIndex:focus-visible {
+            color: #0f172a;
+            border-color: #2a7a57;
+            box-shadow: none;
         }
 
         .btn-ghost {
@@ -244,6 +258,10 @@
 
         .btn:hover {
             box-shadow: 0 6px 18px rgba(42, 122, 87, 0.32);
+        }
+
+        #switchToIndex:hover {
+            box-shadow: none;
         }
 
         .btn-ghost:hover {
@@ -2662,16 +2680,18 @@
 
             updateSelectionButtons();
 
-            btnDeleteSelected.addEventListener("click", function () {
-                if (!selectedItemId) return;
-                var it = items.get(selectedItemId);
-                var label = (it && it.content) ? it.content : selectedItemId;
-                if (confirm("Supprimer « " + label + " » ?")) {
-                    items.remove(selectedItemId);
-                    selectedItemId = null;
-                    updateSelectionButtons();
-                }
-            });
+            if (btnDeleteSelected) {
+                btnDeleteSelected.addEventListener("click", function () {
+                    if (!selectedItemId) return;
+                    var it = items.get(selectedItemId);
+                    var label = (it && it.content) ? it.content : selectedItemId;
+                    if (confirm("Supprimer « " + label + " » ?")) {
+                        items.remove(selectedItemId);
+                        selectedItemId = null;
+                        updateSelectionButtons();
+                    }
+                });
+            }
 
             // ============================================================
             // 5. Fonctions JSON <-> vis-timeline
