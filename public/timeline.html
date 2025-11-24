@@ -53,11 +53,16 @@
         .vis-item .vis-item-content {
             white-space: normal !important;
             word-break: break-word;
+            overflow-wrap: anywhere;
+            padding: 2px 4px;
         }
 
-
         .type-milestone .vis-item-content {
-            margin-left: 10 px;
+            padding: 6px 15px;
+        }
+
+        .vis-item.type-milestone .vis-item-content {
+            margin-left: -20px;
         }
 
 
@@ -1011,41 +1016,53 @@
             overflow: hidden;
         }
 
-        .type-filter {
+        .header-buttons .type-filter-panel {
             display: flex;
+            gap: 6px;
             flex-wrap: wrap;
             align-items: center;
-            gap: 6px;
-            margin: 12px 0 6px;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--muted);
+            justify-content: flex-end;
+            min-width: 220px;
         }
 
-        .type-filter span {
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-size: 11px;
-        }
-
-        .type-filter-chips {
-            display: flex;
+        .type-filter-panel {
             flex-wrap: wrap;
-            gap: 6px;
+            justify-content: flex-end;
         }
 
-        .type-filter-chip {
+        .type-filter-option {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
             border-radius: 999px;
-            border: 1px solid transparent;
+            border: 1px solid rgba(15, 23, 42, 0.12);
             padding: 4px 10px;
             font-size: 11px;
             cursor: pointer;
-            transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
-            background: transparent;
+            transition: border-color 0.2s ease;
+            overflow: hidden;
+            background: #ffffff;
         }
 
-        .type-filter-chip:hover {
-            box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.2);
+        .type-filter-option input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .type-filter-option .type-filter-label {
+            font-size: 11px;
+            white-space: nowrap;
+            text-transform: capitalize;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .type-filter-option.active {
+            transform: none;
+            box-shadow: none;
         }
 
         .btn-small {
@@ -1180,21 +1197,20 @@
         .vis-item.vis-dot {
             border: none;
             background: transparent;
-            padding: 0;
-            margin-left: 5px;
         }
 
         .vis-item.vis-dot::before {
             content: "";
             position: absolute;
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             top: 50%;
             left: 50%;
             transform: translate(calc(-50% + 2.5px), -50%) rotate(45deg);
             border-radius: 0;
             background: var(--milestone-selected-background, rgba(37, 99, 235, 0.14));
             box-shadow: 0 0 0 1px transparent;
+
         }
 
 
@@ -1204,6 +1220,7 @@
             background: transparent;
             border-color: var(--milestone-selected-border, rgba(37, 99, 235, 0.8));
             border-style: solid;
+            border-radius: 4px
         }
 
         .vis-time-axis .vis-text {
@@ -1241,7 +1258,7 @@
                 <div class="header-actions">
                     <button class="btn" id="openIaModal" aria-label="Ouvrir l'IA">✨</button>
                     <div class="menu-trigger">
-                        <button class="btn" id="optionsBtn" aria-label="Options d'affichage">🎨</button>
+                        <button class="btn" id="optionsBtn" aria-label="Options d'affichage">🔡</button>
                         <div class="context-menu" id="optionsMenu">
                             <div class="menu-panel">
                                 <label>
@@ -1283,14 +1300,7 @@
         </div>
         <!-- TIMELINE + TOOLBAR -->
         <div class="timeline-card">
-            <div class="timeline-header">
-                <div class="header-text">
-                    <h1>Outil de planning · OpenAI ready</h1>
-                </div>
-                <div class="header-buttons">
 
-                </div>
-            </div>
 
             <div class="toolbar">
                 <div class="btn-group">
@@ -1327,7 +1337,15 @@
                         aria-label="Personnaliser les couleurs">🎨</button>
                 </div>
             </div>
-
+            <div class="timeline-header">
+                <div class="header-text">
+                    <h1>Vue 1</h1>
+                </div>
+                <div class="header-buttons">
+                    <div class="type-filter-panel" id="typeFilterPanel" role="group" aria-label="Filtrer par type">
+                    </div>
+                </div>
+            </div>
             <div id="timeline"></div>
         </div>
 
@@ -1463,6 +1481,11 @@
             groups.on("add", persistCurrentPlanning);
             groups.on("update", persistCurrentPlanning);
             groups.on("remove", persistCurrentPlanning);
+            var itemsView = new vis.DataView(items, {
+                filter: function (item) {
+                    return matchesFilters(item, filterState);
+                }
+            });
 
             var now = new Date();
             var oneDay = 24 * 60 * 60 * 1000;
@@ -1470,8 +1493,8 @@
             var snapMode = "week";
             var currentScaleMode = "week";
             var typeDefinitions = {};
-            var typeFilterState = {};
-            var typeFilterChips = document.getElementById("typeFilterChips");
+            var filterState = { kinds: {} };
+            var typeFilterPanel = document.getElementById("typeFilterPanel");
             var timeline = null;
             var OPENAI_PROXY_URL = "https://openai.tranxq.workers.dev/v1/chat/completions";
             var OPENAI_MODEL = "gpt-5-nano";
@@ -1485,6 +1508,18 @@
             function deepClone(value) {
                 if (value === undefined || value === null) return value;
                 return JSON.parse(JSON.stringify(value));
+            }
+            function matchesFilters(item, state) {
+                if (!item || !state) return true;
+                var kind = sanitizeTypeId(item.kind || item.type || "");
+                if (!kind) return true;
+                return state.kinds[kind] !== false;
+            }
+            function ensureKindFilter(kind) {
+                if (!kind) return;
+                if (!Object.prototype.hasOwnProperty.call(filterState.kinds, kind)) {
+                    filterState.kinds[kind] = true;
+                }
             }
             var DEMO_STATE = {
                 views: [
@@ -1791,9 +1826,7 @@
                     border: border,
                     color: textColor
                 };
-                if (!Object.prototype.hasOwnProperty.call(typeFilterState, id)) {
-                    typeFilterState[id] = true;
-                }
+                ensureKindFilter(id);
                 rebuildTypeStyles();
                 return id;
             }
@@ -1886,6 +1919,7 @@
             if (!views.length) {
                 views = [{ name: "Vue 1", title: "Vue 1", planning: null }];
             }
+            views.forEach(ensureViewFilterState);
 
             function persistCurrentPlanning() {
                 if (persistenceLocked) return;
@@ -1895,47 +1929,63 @@
             }
 
             function getActiveTypeIds() {
-                return Object.keys(typeFilterState).filter(function (key) {
-                    return !!typeFilterState[key];
+                return Object.keys(filterState.kinds).filter(function (key) {
+                    return !!filterState.kinds[key];
                 });
             }
 
-            function refreshTypeFilterUI() {
-                if (!typeFilterChips) return;
-                typeFilterChips.innerHTML = "";
-                Object.keys(typeDefinitions).forEach(function (key) {
+            function setKindEnabled(kind, enabled) {
+                filterState.kinds[kind] = enabled;
+                refreshTypeFilterUI(getVisibleViewTypeIds());
+                updateTimelineFilter();
+            }
+
+            function refreshTypeFilterUI(typeIds) {
+                if (!typeFilterPanel) return;
+                typeFilterPanel.innerHTML = "";
+                var orderedIds = getOrderedTypeIds(typeIds);
+                orderedIds.forEach(function (key) {
                     var def = typeDefinitions[key];
                     if (!def) return;
-                    var isActive = !!typeFilterState[key];
-                    var chip = document.createElement("button");
-                    chip.type = "button";
-                    chip.className = "type-filter-chip" + (isActive ? " active" : "");
-                    chip.textContent = def.label;
-                    chip.dataset.typeId = key;
-                    chip.setAttribute("aria-pressed", isActive ? "true" : "false");
-                    chip.style.borderColor = def.border;
-                    chip.style.background = isActive ? def.background : "transparent";
-                    chip.style.color = isActive ? def.color : "var(--muted)";
-                    chip.addEventListener("click", function () {
-                        typeFilterState[key] = !typeFilterState[key];
-                        refreshTypeFilterUI();
-                        updateTimelineFilter();
+                    ensureKindFilter(key);
+                    var isActive = filterState.kinds[key] !== false;
+                    var option = document.createElement("label");
+                    option.className = "type-filter-option" + (isActive ? " active" : "");
+                    var checkbox = document.createElement("input");
+                    checkbox.type = "checkbox";
+                    checkbox.checked = isActive;
+                    checkbox.dataset.kind = key;
+                    var baseColor = def.background && def.background !== "transparent"
+                        ? def.background
+                        : "rgba(15, 23, 42, 0.08)";
+                    var backgroundColor = isActive ? baseColor : "#ffffff";
+                    var borderColor = isActive ? (def.border || "rgba(15, 23, 42, 0.25)") : "rgba(15, 23, 42, 0.15)";
+                    var textColor = isActive ? (def.color || "#0f172a") : "var(--text)";
+                    option.style.background = backgroundColor;
+                    option.style.borderColor = borderColor;
+                    option.style.color = textColor;
+                    var labelText = document.createElement("span");
+                    labelText.className = "type-filter-label";
+                    labelText.textContent = def.label || key;
+
+                    checkbox.addEventListener("change", function () {
+                        var enabled = checkbox.checked;
+                        setKindEnabled(key, enabled);
                     });
-                    typeFilterChips.appendChild(chip);
+
+                    option.appendChild(checkbox);
+                    option.appendChild(labelText);
+                    typeFilterPanel.appendChild(option);
                 });
             }
 
             function updateTimelineFilter() {
-                var activeTypes = getActiveTypeIds();
-                var allowAll = activeTypes.length === 0;
-                items.get().forEach(function (item) {
-                    var kind = sanitizeTypeId(item.kind || item.type || "");
-                    if (!kind) return;
-                    var shouldBeVisible = allowAll || activeTypes.indexOf(kind) >= 0;
-                    var isHidden = !!item.hidden;
-                    if (isHidden === !shouldBeVisible) return;
-                    items.update({ id: item.id, hidden: !shouldBeVisible });
-                });
+                if (itemsView && typeof itemsView.refresh === "function") {
+                    itemsView.refresh();
+                }
+                if (timeline && typeof timeline.redraw === "function") {
+                    timeline.redraw();
+                }
             }
 
             var options = {
@@ -1986,7 +2036,7 @@
                 }
             };
 
-            timeline = new Timeline(container, items, groups, options);
+            timeline = new Timeline(container, itemsView, groups, options);
 
             var iaModalOverlay = document.getElementById("iaModalOverlay");
             var iaModalButton = document.getElementById("openIaModal");
@@ -2112,17 +2162,60 @@
                 }
             });
 
-            function getOrderedTypeIds() {
-                return Object.keys(typeDefinitions).sort(function (a, b) {
+            function getOrderedTypeIds(typeIds) {
+                var ids = Array.isArray(typeIds) ? typeIds : Object.keys(typeDefinitions);
+                var unique = {};
+                ids.forEach(function (id) {
+                    if (id && typeDefinitions[id]) {
+                        unique[id] = true;
+                    }
+                });
+                var result = Object.keys(unique);
+                return result.sort(function (a, b) {
                     var labelA = (typeDefinitions[a] && typeDefinitions[a].label) || a;
                     var labelB = (typeDefinitions[b] && typeDefinitions[b].label) || b;
                     return labelA.localeCompare(labelB);
                 });
             }
 
+            function getVisibleViewTypeIds() {
+                var seen = {};
+                if (items && typeof items.get === "function") {
+                    items.get().forEach(function (item) {
+                        var kind = sanitizeTypeId(item.kind || item.type || "");
+                        if (kind) {
+                            seen[kind] = true;
+                        }
+                    });
+                }
+                if (!seen["milestone"]) {
+                    seen["milestone"] = true;
+                }
+                return Object.keys(seen);
+            }
+
+            function ensureViewFilterState(view) {
+                if (!view) return null;
+                if (!view.filterState) {
+                    view.filterState = { kinds: {} };
+                }
+                return view.filterState;
+            }
+
+            function syncFiltersForActiveView(typeIds) {
+                var view = views[activeViewIndex];
+                if (!view) return;
+                var state = ensureViewFilterState(view);
+                if (state) {
+                    filterState = state;
+                }
+                refreshTypeFilterUI(typeIds || getVisibleViewTypeIds());
+            }
+
             function captureColorPreferencesState() {
                 colorModalState.types = {};
-                var typeIds = getOrderedTypeIds();
+                var typeIds = getVisibleViewTypeIds();
+                colorModalState.typeIds = typeIds;
                 typeIds.forEach(function (typeId) {
                     var def = typeDefinitions[typeId];
                     if (!def) return;
@@ -2160,7 +2253,10 @@
             function renderColorModalContent() {
                 if (!colorTypeList) return;
                 colorTypeList.innerHTML = "";
-                var typeIds = getOrderedTypeIds();
+                var targetTypeIds = Array.isArray(colorModalState.typeIds) && colorModalState.typeIds.length
+                    ? colorModalState.typeIds
+                    : getVisibleViewTypeIds();
+                var typeIds = getOrderedTypeIds(targetTypeIds);
                 typeIds.forEach(function (typeId) {
                     var def = typeDefinitions[typeId];
                     if (!def) return;
@@ -2225,7 +2321,7 @@
                     def.background = background;
                 });
                 rebuildTypeStyles();
-                refreshTypeFilterUI();
+                syncFiltersForActiveView(getVisibleViewTypeIds());
                 if (colorModalState.timeline) {
                     applyBackground(colorModalState.timeline);
                 }
@@ -2252,7 +2348,7 @@
             }
             if (randomizeColorsBtn) {
                 randomizeColorsBtn.addEventListener("click", function () {
-                    var typeIds = getOrderedTypeIds();
+                    var typeIds = colorModalState.typeIds || getVisibleViewTypeIds();
                     if (!typeIds.length) return;
                     var palette = generateRainbowPalette(typeIds.length);
                     typeIds.forEach(function (typeId, index) {
@@ -2762,7 +2858,7 @@
                     new Date(now.getTime() + 6 * oneWeek),
                     { animation: false }
                 );
-                refreshTypeFilterUI();
+                syncFiltersForActiveView(getVisibleViewTypeIds());
                 updateTimelineFilter();
                 persistCurrentPlanning();
             }
@@ -2774,6 +2870,10 @@
                 }
                 activeViewIndex = index;
                 var view = views[index];
+                ensureViewFilterState(view);
+                if (view && view.filterState) {
+                    filterState = view.filterState;
+                }
                 if (view && view.planning) {
                     applyPlanningFromJson(view.planning);
                 } else {
@@ -2823,7 +2923,9 @@
             function addView() {
                 persistCurrentPlanning();
                 var label = "Vue " + (views.length + 1);
-                views.push({ name: label, title: label, planning: null });
+                var newView = { name: label, title: label, planning: null };
+                ensureViewFilterState(newView);
+                views.push(newView);
                 persistTimelineState();
                 activateView(views.length - 1, true);
             }
@@ -3210,7 +3312,7 @@
                     } else {
                         timeline.fit({ animation: false });
                     }
-                    refreshTypeFilterUI();
+                    syncFiltersForActiveView(getVisibleViewTypeIds());
                     updateTimelineFilter();
                 } finally {
                     persistenceLocked = false;
