@@ -949,6 +949,22 @@
             width: 100%;
         }
 
+        .ia-prompt-fields {
+            width: 100%;
+            position: relative;
+        }
+
+        .ia-prompt-field {
+            display: none;
+            width: 100%;
+            min-height: 300px;
+            resize: vertical;
+        }
+
+        .ia-prompt-field.active {
+            display: block;
+        }
+
         .header-actions textarea {
             max-height: 30px;
             font-size: 14px;
@@ -1536,12 +1552,12 @@
                                 </label>
                                 <label>
                                     Afficher les durées
-                                <select id="itemDurationSelect">
-                                    <option value="none">Masquer</option>
-                                    <option value="days">Afficher (jours)</option>
-                                    <option value="weeks">Afficher (semaines)</option>
-                                </select>
-                            </label>
+                                    <select id="itemDurationSelect">
+                                        <option value="none">Masquer</option>
+                                        <option value="days">Afficher (jours)</option>
+                                        <option value="weeks">Afficher (semaines)</option>
+                                    </select>
+                                </label>
                                 <label>
                                     Afficher les week-ends
                                     <select id="weekendVisibilitySelect">
@@ -1647,16 +1663,19 @@
                 </div>
                 <div class="ia-actions">
                     <div class="header-row  ia-header-actions">
-                        <label for="mode">Mode d'action</label>
+                        <label for="mode">Mode de saisie</label>
                         <select id="mode">
-                            <option value="create">🆕 Créer un planning</option>
-                            <option value="modify">✏️ Modifier le planning</option>
+                            <option value="create">🤖 Magique</option>
+                            <option value="modify">✍️ Guidé</option>
                         </select>
                     </div>
                     <div class="header-row ia-header-actions">
-                        <label for="prompt">Demande</label>
-                        <textarea id="prompt" rows="30"
-                            placeholder="Élaborer un planning opérationnel pour une demande de maintenance moteur.&#10;&#10;Objectifs :&#10;- Période : janvier–mars 2025&#10;- Segments : Préparation opérationnelle, Inspection technique, Actions correctives&#10;- Natures : diagnostic, intervention, contrôle qualité, jalon&#10;- Générer 6 interventions datées (début/fin) avec logique métier&#10;- Ajouter 2 jalons clés (Feu vert inspection, Clôture technique)&#10;- Libellés courts et professionnels"></textarea>
+                        <label for="promptCreate">Demande</label>
+                        <div class="ia-prompt-fields">
+                            <textarea id="promptCreate" class="ia-prompt-field active" rows="30"
+                                placeholder="Élaborer un planning opérationnel pour une demande de maintenance moteur.&#10;&#10;Objectifs :&#10;- Période : janvier–mars 2025&#10;- Segments : Préparation opérationnelle, Inspection technique, Actions correctives&#10;- Natures : diagnostic, intervention, contrôle qualité, jalon&#10;- Générer 6 interventions datées (début/fin) avec logique métier&#10;- Ajouter 2 jalons clés (Feu vert inspection, Clôture technique)&#10;- Libellés courts et professionnels"></textarea>
+                            <textarea id="promptModify" class="ia-prompt-field" rows="30" aria-hidden="true"></textarea>
+                        </div>
                     </div>
                     <button class="btn" id="btn-call">
                         <span>✨ Envoyer</span>
@@ -2542,6 +2561,11 @@
             var iaModalClose = document.getElementById("iaModalClose");
 
             function openIaModal() {
+                var defaultMode = hasTimelineData() ? "modify" : "create";
+                if (selectMode) {
+                    selectMode.value = defaultMode;
+                    updatePromptForMode(defaultMode);
+                }
                 if (iaModalOverlay) iaModalOverlay.classList.add("open");
             }
 
@@ -2574,6 +2598,7 @@
 
             var CREATE_SYSTEM_TEMPLATE =
                 "Tu es un assistant qui va générer un planning à partir des instructions suivantes {{(contenu du id=\"prompt\") }}\\n\\n" +
+                "Le planning de départ est le suivant (conserve les ids existants) : {{(contenu au format JSON du planning existant)}}\\n\\n" +
                 "Réponds toujours avec un JSON qui contient :\\n" +
                 "- `types` : un tableau d’objets `{ id, label}` pour décrire des types d'actions différentes. Ajouter un type spécifique aux milestones.\\n" +
                 "- `timeline` : `{ start, end }` au format ISO (YYYY-MM-DD).\\n" +
@@ -2584,7 +2609,7 @@
 
             var MODIFY_SYSTEM_TEMPLATE =
                 "Tu es un assistant qui modifie à partir du contexte suivant {{(contenu du id=\"prompt\") }}\\n\\n" +
-                "le planning de départ suivant en conservant les ids existants : {{(contenu au format JSON du planning existant)}}\\n\\n" +
+                "Le planning de départ est le suivant (conserve les ids existants) : {{(contenu au format JSON du planning existant)}}\\n\\n" +
                 "Réponds toujours avec un JSON qui contient :\\n" +
                 "- `types` : un tableau d’objets `{ id, label}` pour décrire des types d'actions différentes.\\n" +
                 "- `timeline` : `{ start, end }` au format ISO (YYYY-MM-DD).\\n" +
@@ -4254,7 +4279,8 @@
             // ============================================================
             // 7. Panneau OpenAI
             // ============================================================
-            var txtPrompt = document.getElementById("prompt");
+            var txtPromptCreate = document.getElementById("promptCreate");
+            var txtPromptModify = document.getElementById("promptModify");
             var selectMode = document.getElementById("mode");
             var btnCall = document.getElementById("btn-call");
             var waitingTimerId = null;
@@ -4262,6 +4288,76 @@
             var iaModalButtonDefaultLabel = iaModalButton
                 ? iaModalButton.textContent.trim()
                 : "✨";
+            var EMPTY_MODIFY_PROMPT_TEXT =
+                "Page : Planning 2026\n" +
+                "\n" +
+                "Éléments :\n" +
+                "\n" +
+                "Action 1 \n" +
+                "Date: 2026-01-01 → 2027-01-01\n" +
+                "Groupe: Phase 1\n" +
+                "Type:  Catégorie 1\n" +
+                "\n" +
+                "\n" +
+                "Repère 1 \n" +
+                "Date: 2025-03-22\n" +
+                "Groupe: Phase 2\n" +
+                "Type: milestone\n" +
+                "\n" +
+                "Action 2\n" +
+                "Date: 2026-03-01 → 2026-07-01 \n" +
+                "Groupe: Groupe 2\n" +
+                "Type:  Catégorie 2";
+
+            function hasTimelineData() {
+                if (!items || typeof items.get !== "function") {
+                    return false;
+                }
+                return items.get().length > 0;
+            }
+
+            function getModifyPromptContent() {
+                if (!items || typeof items.get !== "function" || !hasTimelineData()) {
+                    return EMPTY_MODIFY_PROMPT_TEXT;
+                }
+                persistCurrentPlanning();
+                var currentView = views[activeViewIndex];
+                var planning = exportPlanningToJson();
+                var title =
+                    currentView && (currentView.title || currentView.name)
+                        ? currentView.title || currentView.name
+                        : "";
+                return buildTextExport(planning, title);
+            }
+
+            function getPromptFieldByMode(mode) {
+                if (mode === "modify") {
+                    return txtPromptModify;
+                }
+                return txtPromptCreate;
+            }
+
+            function updatePromptForMode(mode) {
+                if (!txtPromptCreate || !txtPromptModify) {
+                    return;
+                }
+                var isModify = mode === "modify";
+                txtPromptCreate.classList.toggle("active", !isModify);
+                txtPromptModify.classList.toggle("active", isModify);
+                txtPromptCreate.setAttribute("aria-hidden", isModify);
+                txtPromptModify.setAttribute("aria-hidden", !isModify);
+                if (isModify) {
+                    txtPromptModify.value = getModifyPromptContent();
+                } else {
+                    txtPromptCreate.value = "";
+                }
+            }
+
+            if (selectMode) {
+                selectMode.addEventListener("change", function () {
+                    updatePromptForMode(this.value);
+                });
+            }
 
             function updateIaButtonLabel(isLoading, counter) {
                 if (!iaModalButton) return;
@@ -4297,8 +4393,11 @@
 
             function fillPromptTemplate(template, instructions, planningJson) {
                 var text = template.replace("{{(contenu du id=\"prompt\") }}", instructions || "");
-                if (template.indexOf("{{(contenu au format JSON du planning existant)}}") >= 0) {
-                    text = text.replace("{{(contenu au format JSON du planning existant)}}", planningJson || "");
+                var placeholder = "{{(contenu au format JSON du planning existant)}}";
+                if (template.indexOf(placeholder) >= 0) {
+                    var planningContent =
+                        planningJson && planningJson.trim() ? planningJson : "(aucun planning existant)";
+                    text = text.replace(placeholder, planningContent);
                 }
                 return text;
             }
@@ -4341,19 +4440,22 @@
 
             btnCall.addEventListener("click", async function () {
                 var mode = selectMode.value;
-                var promptText = txtPrompt.value.trim();
+                var promptField = getPromptFieldByMode(mode);
+                var promptText = (promptField && promptField.value ? promptField.value.trim() : "");
 
                 if (!promptText) {
                     alert("Ajoute un prompt avant d'appeler OpenAI 🙂");
-                    txtPrompt.focus();
+                    promptField && promptField.focus();
                     return;
                 }
 
                 var currentPlanning = null;
                 var planningJson = "";
                 if (mode === "modify") {
-                    currentPlanning = exportPlanningToJson();
-                    planningJson = JSON.stringify(currentPlanning, null, 2);
+                    if (hasTimelineData()) {
+                        currentPlanning = exportPlanningToJson();
+                        planningJson = JSON.stringify(currentPlanning, null, 2);
+                    }
                 }
 
                 var systemContent = fillPromptTemplate(
@@ -4608,7 +4710,9 @@
             }
 
             setScale("week");
-            txtPrompt.focus();
+            if (txtPromptCreate) {
+                txtPromptCreate.focus();
+            }
         </script>
 </body>
 
