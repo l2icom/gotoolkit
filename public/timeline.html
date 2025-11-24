@@ -329,20 +329,35 @@
             flex-wrap: wrap;
         }
 
-        #weekSeparatorOverlay {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
+        #timeline {
+            position: relative;
             z-index: 0;
-            background-image: linear-gradient(
-                90deg,
-                rgba(15, 23, 42, 0.35) 0,
-                rgba(15, 23, 42, 0.35) 1px,
-                rgba(15, 23, 42, 0) 1px,
-                rgba(15, 23, 42, 0) 100%
-            );
-            background-size: 0 100%;
-            transition: background-size 0.2s ease;
+            background: var(--timeline-background, var(--surface));
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            height: 100%;
+            padding: 6px;
+        }
+
+        .edit-tooltip {
+            position: absolute;
+            pointer-events: none;
+            top: 0;
+            left: 50%;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            background: rgba(15, 23, 42, 0.92);
+            color: #fff;
+            opacity: 0;
+            transform: translate(-50%, -120%);
+            white-space: nowrap;
+            transition: opacity 0.1s ease;
+            z-index: 3;
+        }
+
+        .edit-tooltip.visible {
+            opacity: 1;
         }
 
         .header-buttons {
@@ -1152,20 +1167,11 @@
             cursor: not-allowed;
         }
 
-        #timeline {
-            position: relative;
-            z-index: 1;
-            background: var(--timeline-background, var(--surface));
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            height: 100%;
-            padding: 6px;
-        }
-
         /* vis.js styling */
         .vis-labelset .vis-label {
             font-size: var(--global-font-size);
             color: var(--muted);
+            font-weight: 600;
         }
 
 
@@ -1289,6 +1295,7 @@
         .vis-time-axis .vis-text {
             font-size: 10px;
             color: var(--muted);
+            font-weight: 600;
         }
 
         .vis-panel.vis-center,
@@ -1340,6 +1347,13 @@
                                     <select id="backgroundSelector">
                                         <option value="#ffffff">Blanc</option>
                                         <option value="transparent">Transparent</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    Durée des éléments
+                                    <select id="itemDurationSelect">
+                                        <option value="none">Masquer</option>
+                                        <option value="append">Afficher</option>
                                     </select>
                                 </label>
                             </div>
@@ -1418,7 +1432,6 @@
             </div>
             <div class="timeline-wrapper">
                 <div id="timeline"></div>
-                <div id="weekSeparatorOverlay" aria-hidden="true"></div>
             </div>
         </div>
 
@@ -1545,7 +1558,24 @@
             var Timeline = vis.Timeline;
 
             var container = document.getElementById("timeline");
-            var weekSeparatorOverlay = document.getElementById("weekSeparatorOverlay");
+            var timelineCard = document.querySelector(".timeline-card");
+            var timelineWrapper = document.querySelector(".timeline-wrapper");
+            var itemDurationSelect = document.getElementById("itemDurationSelect");
+            var editTooltip = document.createElement("div");
+            editTooltip.className = "edit-tooltip";
+            if (timelineWrapper) {
+                timelineWrapper.appendChild(editTooltip);
+            }
+            var lastPointerPosition = { x: null, y: null };
+            if (timelineWrapper) {
+                timelineWrapper.addEventListener("mousemove", function (event) {
+                    lastPointerPosition.x = event.clientX;
+                    lastPointerPosition.y = event.clientY;
+                    if (editTooltip.classList.contains("visible")) {
+                        positionEditTooltip(event.clientX, event.clientY);
+                    }
+                });
+            }
 
             var groups = new DataSet();
             var items = new DataSet();
@@ -1955,7 +1985,8 @@
                 font: "Inter",
                 fontSize: 14,
                 background: "transparent",
-                ratio: "16:9"
+                ratio: "16:9",
+                showItemDurations: false
             };
             var colorModalState = {
                 types: {},
@@ -2064,6 +2095,79 @@
                 }
             }
 
+            function getItemDurationInDays(item) {
+                if (!item) return null;
+                var start = toDate(item.start || item.date);
+                if (!start) return null;
+                var end = toDate(item.end || item.start || item.date) || start;
+                var diffMs = end.getTime() - start.getTime();
+                var diffDays = Math.round(diffMs / oneDay);
+                var total = Math.max(1, diffDays + 1);
+                return total;
+            }
+
+            function formatItemDurationSuffix(item) {
+                var days = getItemDurationInDays(item);
+                if (!days) return null;
+                return "(" + days + "j)";
+            }
+
+            function appendDurationToContent(content, item) {
+                if (!displayPreferences.showItemDurations) return content || "";
+                var suffix = formatItemDurationSuffix(item);
+                if (!suffix) return content || "";
+                var trimmed = (content || "").trim();
+                return trimmed ? trimmed + " " + suffix : suffix;
+            }
+
+            function formatTooltipDate(value) {
+                var date = toDate(value);
+                if (!date) return "";
+                var day = date.getDate();
+                var month = date.getMonth() + 1;
+                var paddedDay = day < 10 ? "0" + day : day;
+                var paddedMonth = month < 10 ? "0" + month : month;
+                return paddedDay + "/" + paddedMonth;
+            }
+
+            function buildTooltipText(item) {
+                var startDate = formatTooltipDate(item.start || item.date);
+                var endDate = formatTooltipDate(item.end || item.start || item.date);
+                if (!startDate || !endDate) return null;
+                var days = getItemDurationInDays(item);
+                var durationText = days ? " (" + days + "j)" : "";
+                return startDate + " → " + endDate + durationText;
+            }
+
+            function positionEditTooltip(clientX, clientY) {
+                if (!timelineWrapper) return;
+                var rect = timelineWrapper.getBoundingClientRect();
+                var left = clientX - rect.left;
+                var top = clientY - rect.top;
+                left = Math.max(8, Math.min(rect.width - 8, left));
+                top = Math.max(8, top - 20);
+                editTooltip.style.left = left + "px";
+                editTooltip.style.top = top + "px";
+            }
+
+            function showEditTooltip(text) {
+                if (!editTooltip || !text) return;
+                editTooltip.textContent = text;
+                editTooltip.classList.add("visible");
+                if (lastPointerPosition.x !== null && lastPointerPosition.y !== null) {
+                    positionEditTooltip(lastPointerPosition.x, lastPointerPosition.y);
+                } else if (timelineWrapper) {
+                    var rect = timelineWrapper.getBoundingClientRect();
+                    editTooltip.style.left = rect.width / 2 + "px";
+                    editTooltip.style.top = "10px";
+                }
+            }
+
+            function hideEditTooltip() {
+                if (!editTooltip) return;
+                editTooltip.classList.remove("visible");
+            }
+
             var options = {
                 stack: true,
                 orientation: "top",
@@ -2104,20 +2208,35 @@
                             "</div>"
                         );
                     }
-                    return item.content || "";
+                    return appendDurationToContent(item.content || "", item);
                 },
                 timeAxis: {
                     scale: "week",
                     step: 1
+                },
+                onMoving: function (item, callback) {
+                    if (typeof callback === "function") {
+                        callback(item);
+                    }
+                    var tooltipText = buildTooltipText(item);
+                    if (tooltipText) {
+                        showEditTooltip(tooltipText);
+                    } else {
+                        hideEditTooltip();
+                    }
+                },
+                onMove: function (item, callback) {
+                    if (typeof callback === "function") {
+                        callback(item);
+                    }
+                    hideEditTooltip();
                 }
             };
 
             timeline = new Timeline(container, itemsView, groups, options);
-            updateWeekSeparatorOverlay(timeline.getWindow().start, timeline.getWindow().end);
             window.addEventListener("resize", function () {
                 if (!timeline) return;
                 var currentRange = timeline.getWindow();
-                updateWeekSeparatorOverlay(currentRange.start, currentRange.end);
             });
 
             var iaModalOverlay = document.getElementById("iaModalOverlay");
@@ -2185,7 +2304,6 @@
             var infoCloseBtn = infoPopup ? infoPopup.querySelector(".info-close") : null;
             var copyToast = document.getElementById("copyToast");
             var copyToastTimer = null;
-            var timelineCard = document.querySelector(".timeline-card");
             var switchToIndexBtn = document.getElementById("switchToIndex");
             var colorModalOverlay = document.getElementById("colorModalOverlay");
             var colorModalClose = document.getElementById("colorModalClose");
@@ -3013,6 +3131,20 @@
                 }
             }
 
+            function setItemDurationMode(mode, shouldPersist) {
+                var show = mode === "append";
+                displayPreferences.showItemDurations = show;
+                if (itemDurationSelect) {
+                    itemDurationSelect.value = show ? "append" : "none";
+                }
+                if (shouldPersist) {
+                    persistTimelineState();
+                }
+                if (timeline && typeof timeline.redraw === "function") {
+                    timeline.redraw();
+                }
+            }
+
             renderFontSizeOptions();
 
             if (fontSizeInput) fontSizeInput.addEventListener("change", function () {
@@ -3025,6 +3157,12 @@
                     applyBackground(this.value);
                 });
             }
+            if (itemDurationSelect) {
+                itemDurationSelect.addEventListener("change", function () {
+                    setItemDurationMode(this.value, true);
+                });
+            }
+            setItemDurationMode(displayPreferences.showItemDurations ? "append" : "none", false);
 
             var viewTabs = document.getElementById("viewTabs");
             var addViewBtn = document.getElementById("addViewBtn");
@@ -3682,34 +3820,12 @@
                 var pixelsPerDay = viewportWidth > 0 && days > 0 ? viewportWidth / days : 0;
 
                 // Prefer a finer scale when there is enough pixel budget per day.
-                if (pixelsPerDay >= 17) return "day";
-                if (pixelsPerDay >= 7) return "week";
+                if (pixelsPerDay >= 12) return "day";
+                if (pixelsPerDay >= 4) return "week";
 
                 if (days <= 7) return "day";
                 if (days <= 14) return "week";
                 return "month";
-            }
-
-            function updateWeekSeparatorOverlay(start, end) {
-                if (!weekSeparatorOverlay) return;
-                if (!start || !end) {
-                    weekSeparatorOverlay.style.backgroundSize = "0 100%";
-                    return;
-                }
-                var diff = end.getTime() - start.getTime();
-                if (diff <= 0) {
-                    weekSeparatorOverlay.style.backgroundSize = "0 100%";
-                    return;
-                }
-                var days = diff / oneDay;
-                var viewportWidth = container ? container.clientWidth : 0;
-                var widthPerDay = days > 0 && viewportWidth > 0 ? viewportWidth / days : 0;
-                var weekWidth = widthPerDay * 7;
-                if (!isFinite(weekWidth) || weekWidth <= 0) {
-                    weekSeparatorOverlay.style.backgroundSize = "0 100%";
-                    return;
-                }
-                weekSeparatorOverlay.style.backgroundSize = weekWidth + "px 100%";
             }
 
             timeline.on("rangechanged", function (props) {
@@ -3717,7 +3833,6 @@
                 if (autoMode && autoMode !== currentScaleMode) {
                     setScale(autoMode);
                 }
-                updateWeekSeparatorOverlay(props.start, props.end);
             });
 
             // ============================================================
