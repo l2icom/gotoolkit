@@ -27,7 +27,7 @@
             --primary-strong: #1f4f3d;
 
             --text: #111827;
-            --muted: #8b8173;
+            --muted: rgba(57, 76, 89, .85);
 
             --radius-lg: 16px;
             --radius-md: 999px;
@@ -462,9 +462,8 @@
         #timeline {
             position: relative;
             z-index: 0;
-            background: var(--timeline-background, var(--surface));
+            background: var(--timeline-background);
             border-radius: 12px;
-            border: 1px solid var(--border);
             height: 100%;
             padding: 6px;
         }
@@ -1536,17 +1535,18 @@
                                     </select>
                                 </label>
                                 <label>
-                                    Durée des éléments
-                                    <select id="itemDurationSelect">
-                                        <option value="none">Masquer</option>
-                                        <option value="append">Afficher</option>
-                                    </select>
-                                </label>
+                                    Afficher les durées
+                                <select id="itemDurationSelect">
+                                    <option value="none">Masquer</option>
+                                    <option value="days">Afficher (jours)</option>
+                                    <option value="weeks">Afficher (semaines)</option>
+                                </select>
+                            </label>
                                 <label>
-                                    Week-ends
+                                    Afficher les week-ends
                                     <select id="weekendVisibilitySelect">
-                                        <option value="show">Afficher</option>
-                                        <option value="hide">Masquer samedi &amp; dimanche</option>
+                                        <option value="show">Oui</option>
+                                        <option value="hide">Non</option>
                                     </select>
                                 </label>
                             </div>
@@ -1594,8 +1594,11 @@
                     <button class="btn-small" id="btn-rename-selected" aria-label="Renommer l’élément sélectionné">
                         ✏️
                     </button>
+                    <button class="btn-small" id="btn-delete-selected" aria-label="Supprimer l’élément sélectionné">
+                        ❌
+                    </button>
                     <div class="type-selector" aria-label="Type d’action" role="group">
-                        <span class="type-selector-icon" aria-hidden="true"></span>
+                        <span class="type-selector-icon" aria-hidden="true">🏷️</span>
                         <select id="itemTypeSelect" aria-label="Changer le type d’action">
                             <option value="">Type d'action</option>
                         </select>
@@ -2198,7 +2201,7 @@
                 fontSize: 14,
                 background: "transparent",
                 ratio: "full",
-                showItemDurations: false,
+                itemDurationMode: "none",
                 spacing: "dense",
                 hideWeekends: false
             };
@@ -2355,25 +2358,58 @@
                 }
             }
 
+            function normalizeToDay(value) {
+                if (!value) return null;
+                var clone = new Date(value);
+                clone.setHours(0, 0, 0, 0);
+                return clone;
+            }
+
+            function countDaysBetween(startDate, endDate, excludeWeekends) {
+                var start = normalizeToDay(startDate);
+                var end = normalizeToDay(endDate);
+                if (!start || !end) return 0;
+                if (start > end) {
+                    var swap = start;
+                    start = end;
+                    end = swap;
+                }
+                var count = 0;
+                var cursor = new Date(start);
+                while (cursor <= end) {
+                    var day = cursor.getDay();
+                    if (!excludeWeekends || (day !== 0 && day !== 6)) {
+                        count++;
+                    }
+                    cursor.setDate(cursor.getDate() + 1);
+                }
+                return count;
+            }
+
             function getItemDurationInDays(item) {
                 if (!item) return null;
                 var start = toDate(item.start || item.date);
                 if (!start) return null;
                 var end = toDate(item.end || item.start || item.date) || start;
-                var diffMs = end.getTime() - start.getTime();
-                var diffDays = Math.round(diffMs / oneDay);
-                var total = Math.max(1, diffDays + 1);
-                return total;
+                var excludeWeekends = !!displayPreferences.hideWeekends;
+                var totalDays = countDaysBetween(start, end, excludeWeekends);
+                return totalDays || 1;
             }
 
             function formatItemDurationSuffix(item) {
                 var days = getItemDurationInDays(item);
                 if (!days) return null;
-                return "-" + days + " j";
+                var mode = displayPreferences.itemDurationMode || "none";
+                if (mode === "weeks") {
+                    var weeks = Math.max(1, Math.ceil(days / 7));
+                    return "- " + weeks + " sem.";
+                }
+                return "- " + days + " j";
             }
 
             function appendDurationToContent(content, item) {
-                if (!displayPreferences.showItemDurations) return content || "";
+                var mode = displayPreferences.itemDurationMode || "none";
+                if (mode === "none") return content || "";
                 var suffix = formatItemDurationSuffix(item);
                 if (!suffix) return content || "";
                 var trimmed = (content || "").trim();
@@ -3347,6 +3383,10 @@
                 clearTimelineStorageAndReload();
             }
 
+            function hideTimelineAbout() {
+                closeTimelineInfoPopup();
+            }
+
             if (aboutTimelineBtn) {
                 aboutTimelineBtn.addEventListener("click", toggleTimelineInfoPopup);
             }
@@ -3504,10 +3544,14 @@
             }
 
             function setItemDurationMode(mode, shouldPersist) {
-                var show = mode === "append";
-                displayPreferences.showItemDurations = show;
+                var normalized = typeof mode === "string" ? mode : "none";
+                var allowed = ["none", "days", "weeks"];
+                if (allowed.indexOf(normalized) === -1) {
+                    normalized = "none";
+                }
+                displayPreferences.itemDurationMode = normalized;
                 if (itemDurationSelect) {
-                    itemDurationSelect.value = show ? "append" : "none";
+                    itemDurationSelect.value = normalized;
                 }
                 if (shouldPersist) {
                     persistTimelineState();
@@ -3550,7 +3594,7 @@
                     applyWeekendVisibilityPreference(true);
                 });
             }
-            setItemDurationMode(displayPreferences.showItemDurations ? "append" : "none", false);
+            setItemDurationMode(displayPreferences.itemDurationMode || "none", false);
 
             var viewTabs = document.getElementById("viewTabs");
             var addViewBtn = document.getElementById("addViewBtn");
@@ -3717,7 +3761,7 @@
                 groups.update({ id: groupId, content: label, label: label });
             }
 
-            // Double-clic : éditer ou créer
+            // Double-clic : éditer un groupe ou un élément
             timeline.on("doubleClick", function (props) {
                 if (props.what === "group-label" && props.group) {
                     editGroupLabel(props.group);
@@ -3725,41 +3769,6 @@
                 }
                 if (props.item) {
                     editItemLabel(props.item);
-                    return;
-                }
-
-                if (props.time && props.group) {
-                    var start = new Date(props.time);
-                    var end = new Date(start.getTime() + oneWeek);
-                    var id;
-                    var newItem;
-
-                    if (props.group === "milestones") {
-                        id = "ms-" + Date.now();
-                        newItem = {
-                            id: id,
-                            group: "milestones",
-                            content: "",
-                            start: start,
-                            type: "point",
-                            kind: "milestone",
-                            className: "type-milestone milestone-class"
-                        };
-                    } else {
-                        id = "it-" + Date.now();
-                        newItem = {
-                            id: id,
-                            group: props.group,
-                            content: "",
-                            start: start,
-                            end: end,
-                            kind: "feature",
-                            className: "type-feature"
-                        };
-                    }
-
-                    items.add(newItem);
-                    setTimeout(function () { editItemLabel(id); }, 30);
                 }
             });
 
@@ -3950,16 +3959,32 @@
 
             if (btnDeleteSelected) {
                 btnDeleteSelected.addEventListener("click", function () {
-                    if (!selectedItemId) return;
-                    var it = items.get(selectedItemId);
-                    var label = (it && it.content) ? it.content : selectedItemId;
-                    if (confirm("Supprimer « " + label + " » ?")) {
-                        items.remove(selectedItemId);
-                        selectedItemId = null;
-                        updateSelectionButtons();
-                        renderTypeSwitcherOptions();
-                    }
+                    deleteSelectedItemWithConfirmation();
                 });
+            }
+
+            document.addEventListener("keydown", function (event) {
+                if (!selectedItemId) return;
+                var tag = (event.target && event.target.tagName) ? event.target.tagName.toLowerCase() : "";
+                if (tag === "input" || tag === "textarea" || (event.target && event.target.isContentEditable)) {
+                    return;
+                }
+                if (event.key === "Delete" || event.key === "Backspace") {
+                    event.preventDefault();
+                    deleteSelectedItemWithConfirmation();
+                }
+            });
+
+            function deleteSelectedItemWithConfirmation() {
+                if (!selectedItemId) return;
+                var it = items.get(selectedItemId);
+                var label = (it && it.content) ? it.content : selectedItemId;
+                if (confirm("Supprimer « " + label + " » ?")) {
+                    items.remove(selectedItemId);
+                    selectedItemId = null;
+                    updateSelectionButtons();
+                    renderTypeSwitcherOptions();
+                }
             }
 
             // ============================================================
@@ -4376,7 +4401,7 @@
                 {
                     title: "Go-Timeline, ton copilote planning",
                     description: "Go-Timeline aide les consultants à générer des plannings de projet clairs et rapides pour cadrer leurs prochaines étapes.",
-                    selectors: [".timeline-header"]
+                    selectors: ["#timeline"]
                 },
                 {
                     title: "Démarre par la modal IA ✨",
