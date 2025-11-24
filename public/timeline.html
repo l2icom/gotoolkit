@@ -505,6 +505,25 @@
             font-size: 14px;
         }
 
+        .header-actions .btn,
+        .header-actions .info-button {
+            background: #ffffff;
+            border-radius: 999px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            padding: 0 10px;
+            min-height: 32px;
+            color: #0f172a;
+            font-size: 12px;
+            line-height: 32px;
+        }
+
+        .header-actions .btn:hover,
+        .header-actions .info-button:hover,
+        .header-actions .btn:focus-visible,
+        .header-actions .info-button:focus-visible {
+            box-shadow: 0 6px 18px rgba(42, 122, 87, 0.32);
+        }
+
         .menu-trigger {
             position: relative;
         }
@@ -553,6 +572,80 @@
             padding: 6px 10px;
             font-size: 13px;
             cursor: pointer;
+        }
+
+        .info-button {
+            border-radius: 999px;
+            border: 1px solid #ebe0d1;
+            background: #fff;
+            padding: 6px 12px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .menu-header {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .context-menu.share-menu {
+            right: 0;
+            left: auto;
+            min-width: 260px;
+        }
+
+        .context-menu.share-menu .menu-panel {
+            padding: 12px;
+            gap: 8px;
+        }
+
+        .context-menu.share-menu button {
+            border-radius: 10px;
+        }
+
+        .context-menu.share-menu button:hover,
+        .context-menu.share-menu button:focus {
+            border-radius: 10px;
+        }
+
+        .share-link-field {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid #d0c3ad;
+            padding: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            background: #fbf8f2;
+        }
+
+        .share-link-line {
+            display: flex;
+        }
+
+        .share-menu-status {
+            font-size: 12px;
+            color: var(--muted);
+            margin: 0;
+        }
+
+        .share-menu-status.error {
+            color: #b00020;
+        }
+
+        .share-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+            gap: 6px;
+        }
+
+        .share-actions .menu-panel-btn {
+            width: 100%;
+        }
+
+        .share-actions .menu-panel-btn.primary {
+            border: none;
+            background: var(--primary);
+            color: #fff;
         }
 
         .ratio-grid {
@@ -1175,11 +1268,17 @@
             background: transparent;
             color: inherit;
             transition: border-color 120ms ease;
+            cursor: pointer;
         }
 
         .color-row-label-input:focus {
             outline: none;
             border-color: var(--muted);
+            cursor: text;
+        }
+
+        .color-row-label-input:not(:read-only) {
+            cursor: text;
         }
 
         .color-row-label-input:disabled {
@@ -1600,6 +1699,26 @@
                             </div>
                         </div>
                     </div>
+                    <div class="menu-trigger">
+                        <button id="shareBtn" class="info-button" type="button" aria-label="Partager"
+                            title="Lien de partage">🔗 Partage</button>
+                        <div class="context-menu share-menu" id="shareMenu">
+                            <div class="menu-panel">
+                                <div class="menu-header">Lien de partage</div>
+                                <div class="share-link-line">
+                                    <input id="shareLinkField" class="share-link-field" type="text" readonly
+                                        placeholder="Appuie sur Créer pour générer un lien privé.">
+                                </div>
+                                <div class="share-actions">
+                                    <button id="shareUpdateBtn" type="button" class="menu-panel-btn">🔄️
+                                        Actualiser</button>
+                                    <button id="shareCreateBtn" type="button" class="menu-panel-btn primary">🔗
+                                        Nouveau</button>
+                                </div>
+                                <p class="share-menu-status" id="shareMenuStatus"></p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1751,6 +1870,9 @@
         <div id="copyToast" class="toast" aria-live="polite" aria-atomic="true"></div>
 
         <input type="file" id="importJsonInput" accept="application/json" style="display:none">
+        <script src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
+        <script src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
+        <script src="/__/firebase/init.js"></script>
         <script>
             // ============================================================
             // 1. Schema JSON · planning-v1 (doc développeur)
@@ -2036,7 +2158,9 @@
                     fontSize: 14,
                     background: "#f7f7f7",
                     ratio: "full",
-                    spacing: "dense"
+                    spacing: "dense",
+                    itemDurationMode: "days",
+                    hideWeekends: true
                 }
             };
             function sanitizeTypeId(raw) {
@@ -2203,18 +2327,39 @@
                 });
             }
 
+            function snapshotTypeDefinitions() {
+                return Object.keys(typeDefinitions)
+                    .map(function (key) {
+                        var def = typeDefinitions[key];
+                        if (!def) return null;
+                        return {
+                            id: def.id,
+                            label: def.label,
+                            background: def.background,
+                            border: def.border,
+                            color: def.color
+                        };
+                    })
+                    .filter(Boolean);
+            }
+
+            function buildTimelineStatePayload() {
+                return {
+                    views: views.map(function (view) {
+                        return {
+                            name: view.name,
+                            title: view.title,
+                            planning: view.planning
+                        };
+                    }),
+                    displayPreferences: Object.assign({}, displayPreferences),
+                    types: snapshotTypeDefinitions()
+                };
+            }
+
             function persistTimelineState() {
                 try {
-                    var payload = {
-                        views: views.map(function (view) {
-                            return {
-                                name: view.name,
-                                title: view.title,
-                                planning: view.planning
-                            };
-                        }),
-                        displayPreferences: Object.assign({}, displayPreferences)
-                    };
+                    var payload = buildTimelineStatePayload();
                     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
                 } catch (err) {
                     console.warn("Impossible de sauvegarder le planning", err);
@@ -2239,9 +2384,9 @@
                 fontSize: 14,
                 background: "transparent",
                 ratio: "full",
-                itemDurationMode: "none",
+                itemDurationMode: "days",
                 spacing: "dense",
-                hideWeekends: false
+                hideWeekends: true
             };
             var colorModalState = {
                 types: {},
@@ -2307,6 +2452,9 @@
                 }
                 if (persistedState.displayPreferences) {
                     Object.assign(displayPreferences, persistedState.displayPreferences);
+                }
+                if (Array.isArray(persistedState.types)) {
+                    applyTypeDefinitions(persistedState.types);
                 }
             } else {
                 if (Array.isArray(DEMO_STATE.views) && DEMO_STATE.views.length) {
@@ -2658,6 +2806,21 @@
             var timelineUpdateBtn = document.getElementById("timelineUpdateBtn");
             var copyToast = document.getElementById("copyToast");
             var copyToastTimer = null;
+            var shareMenu = document.getElementById("shareMenu");
+            var shareBtn = document.getElementById("shareBtn");
+            var shareLinkField = document.getElementById("shareLinkField");
+            var shareMenuStatus = document.getElementById("shareMenuStatus");
+            var shareCreateBtn = document.getElementById("shareCreateBtn");
+            var shareUpdateBtn = document.getElementById("shareUpdateBtn");
+            var FIRESTORE_COLLECTION = "timelines";
+            var SHARE_QUERY_PARAM = "share";
+            var firestoreCollection = null;
+            var currentShareToken = null;
+            var shareLoadedFromRemote = false;
+            var shareStatusMessage = "";
+            var shareStatusType = "";
+            var shareRequestInProgress = false;
+            var shareLastUpdatedAt = null;
             var switchToIndexBtn = document.getElementById("switchToIndex");
             var colorModalOverlay = document.getElementById("colorModalOverlay");
             var colorModalClose = document.getElementById("colorModalClose");
@@ -2688,6 +2851,7 @@
             function closeContextMenus() {
                 if (optionsMenu) optionsMenu.classList.remove("open");
                 if (fileMenu) fileMenu.classList.remove("open");
+                if (shareMenu) shareMenu.classList.remove("open");
             }
 
             if (optionsBtn && optionsMenu) {
@@ -2707,12 +2871,24 @@
                 });
             }
 
+            if (shareBtn && shareMenu) {
+                shareBtn.addEventListener("click", function (event) {
+                    event.stopPropagation();
+                    closeContextMenus();
+                    shareMenu.classList.toggle("open");
+                    updateShareMenuUI();
+                });
+            }
+
             document.addEventListener("click", function (event) {
                 if (optionsMenu && !optionsMenu.contains(event.target) && optionsBtn !== event.target) {
                     optionsMenu.classList.remove("open");
                 }
                 if (fileMenu && !fileMenu.contains(event.target) && fileMenuBtn !== event.target) {
                     fileMenu.classList.remove("open");
+                }
+                if (shareMenu && !shareMenu.contains(event.target) && shareBtn !== event.target) {
+                    shareMenu.classList.remove("open");
                 }
             });
 
@@ -2943,6 +3119,19 @@
                     labelInput.value = labelValue;
                     labelInput.placeholder = typeId;
                     labelInput.setAttribute("aria-label", "Nom du type " + (def.label || typeId));
+                    labelInput.readOnly = true;
+                    labelInput.addEventListener("dblclick", function (event) {
+                        if (labelInput.disabled) return;
+                        event.stopPropagation();
+                        labelInput.readOnly = false;
+                        labelInput.focus();
+                        if (labelInput.select) {
+                            labelInput.select();
+                        }
+                    });
+                    labelInput.addEventListener("blur", function () {
+                        labelInput.readOnly = true;
+                    });
                     if (typeId === "milestone") {
                         labelInput.disabled = true;
                         labelInput.title = "Nom du jalon non modifiable";
@@ -2998,23 +3187,120 @@
             }
 
             function applyColorModalChanges() {
+                var renameCandidates = [];
                 Object.keys(colorModalState.types).forEach(function (typeId) {
                     var def = typeDefinitions[typeId];
-                    var background = colorModalState.types[typeId];
                     if (!def) return;
+                    var background = colorModalState.types[typeId];
                     if (background) {
                         def.background = background;
                     }
-                    if (typeId !== "milestone") {
-                        var updatedLabel = colorModalState.labels[typeId];
-                        if (typeof updatedLabel === "string") {
-                            var normalizedLabel = updatedLabel.trim();
-                            if (normalizedLabel) {
-                                def.label = normalizedLabel;
+                    if (typeId === "milestone") return;
+                    var updatedLabel = colorModalState.labels[typeId];
+                    if (typeof updatedLabel !== "string") return;
+                    var normalizedLabel = updatedLabel.trim();
+                    if (!normalizedLabel) return;
+                    colorModalState.labels[typeId] = normalizedLabel;
+                    var candidateId = sanitizeTypeId(normalizedLabel);
+                    if (!candidateId) return;
+                    if (candidateId === typeId) {
+                        def.label = normalizedLabel;
+                        return;
+                    }
+                    renameCandidates.push({
+                        from: typeId,
+                        label: normalizedLabel,
+                        baseId: candidateId
+                    });
+                });
+
+                var finalIdMap = {};
+                if (renameCandidates.length) {
+                    var lockedIds = Object.keys(typeDefinitions).filter(function (id) {
+                        return renameCandidates.every(function (task) {
+                            return task.from !== id;
+                        });
+                    });
+                    var reserved = {};
+                    lockedIds.forEach(function (id) {
+                        reserved[id] = true;
+                    });
+                    reserved["milestone"] = true;
+                    renameCandidates.forEach(function (task) {
+                        var baseId = task.baseId || task.from;
+                        var candidate = baseId;
+                        var counter = 1;
+                        while (reserved[candidate]) {
+                            candidate = baseId + "-" + counter;
+                            counter++;
+                            if (counter > 100) {
+                                candidate = task.from;
+                                break;
                             }
                         }
+                        finalIdMap[task.from] = candidate || task.from;
+                        reserved[finalIdMap[task.from]] = true;
+                    });
+                }
+
+                renameCandidates.forEach(function (task) {
+                    var def = typeDefinitions[task.from];
+                    if (!def) return;
+                    var desiredId = finalIdMap[task.from];
+                    if (!desiredId || desiredId === task.from) {
+                        def.label = task.label;
+                        return;
+                    }
+                    var preserved = {
+                        id: desiredId,
+                        label: task.label,
+                        background: def.background,
+                        border: def.border,
+                        color: def.color
+                    };
+                    delete typeDefinitions[task.from];
+                    typeDefinitions[desiredId] = preserved;
+                    if (Array.isArray(colorModalState.typeIds)) {
+                        colorModalState.typeIds = colorModalState.typeIds.map(function (id) {
+                            return id === task.from ? desiredId : id;
+                        });
+                    }
+                    var storedColor = colorModalState.types[task.from];
+                    if (typeof storedColor !== "undefined") {
+                        colorModalState.types[desiredId] = storedColor;
+                        delete colorModalState.types[task.from];
+                    }
+                    colorModalState.labels[desiredId] = task.label;
+                    delete colorModalState.labels[task.from];
+                    views.forEach(function (view) {
+                        if (!view.filterState || !view.filterState.kinds) return;
+                        if (Object.prototype.hasOwnProperty.call(view.filterState.kinds, task.from)) {
+                            view.filterState.kinds[desiredId] = view.filterState.kinds[task.from];
+                            delete view.filterState.kinds[task.from];
+                        }
+                    });
+                    if (filterState && filterState.kinds && Object.prototype.hasOwnProperty.call(filterState.kinds, task.from)) {
+                        filterState.kinds[desiredId] = filterState.kinds[task.from];
+                        delete filterState.kinds[task.from];
+                    }
+                    var updates = [];
+                    items.get().forEach(function (item) {
+                        var currentKind = sanitizeTypeId(item.kind || item.type || "");
+                        if (!currentKind || currentKind !== task.from) return;
+                        updates.push({
+                            id: item.id,
+                            kind: desiredId,
+                            className:
+                                desiredId === "milestone"
+                                    ? "type-milestone milestone-class"
+                                    : "type-" + desiredId
+                        });
+                    });
+                    if (updates.length) {
+                        items.update(updates);
                     }
                 });
+
                 rebuildTypeStyles();
                 syncFiltersForActiveView(getVisibleViewTypeIds());
                 if (colorModalState.timeline) {
@@ -3086,16 +3372,7 @@
 
             function gatherExportState() {
                 persistCurrentPlanning();
-                return {
-                    views: views.map(function (view) {
-                        return {
-                            name: view.name,
-                            title: view.title,
-                            planning: view.planning
-                        };
-                    }),
-                    displayPreferences: Object.assign({}, displayPreferences)
-                };
+                return buildTimelineStatePayload();
             }
 
             function exportTimelineState() {
@@ -3312,8 +3589,9 @@
                 }
             }
 
-            function applyImportedState(state) {
-                if (!state) return;
+            function applyImportedState(state, options) {
+                if (!state) return false;
+                options = options || {};
                 var importedViews = [];
                 if (Array.isArray(state.views) && state.views.length) {
                     importedViews = state.views.map(function (view, index) {
@@ -3329,10 +3607,15 @@
                     importedViews = [{ name: label, title: label, planning: state }];
                 }
                 if (!importedViews.length) {
-                    alert("Aucune vue valide à importer.");
-                    return;
+                    if (options.alertOnEmpty !== false) {
+                        alert("Aucune vue valide à importer.");
+                    }
+                    return false;
                 }
                 views = importedViews;
+                if (Array.isArray(state.types)) {
+                    applyTypeDefinitions(state.types);
+                }
                 if (state.displayPreferences) {
                     Object.assign(displayPreferences, state.displayPreferences);
                 }
@@ -3342,6 +3625,267 @@
                 renderViewTabs();
                 activateView(0, true);
                 persistTimelineState();
+                return true;
+            }
+
+            function initShareFirestore() {
+                if (typeof firebase === "undefined" || typeof firebase.firestore !== "function") {
+                    return;
+                }
+                try {
+                    var db = firebase.firestore();
+                    firestoreCollection = db.collection(FIRESTORE_COLLECTION);
+                } catch (err) {
+                    console.error("Impossible d'initialiser Firestore pour le partage :", err);
+                }
+            }
+
+            function setShareStatus(message, type) {
+                shareStatusMessage = message || "";
+                shareStatusType = type || "";
+            }
+
+            function formatRelativeTime(isoString) {
+                if (!isoString) return "";
+                var value = new Date(isoString).getTime();
+                if (Number.isNaN(value)) return "";
+                var deltaSeconds = Math.max(0, Math.floor((Date.now() - value) / 1000));
+                if (deltaSeconds < 60) {
+                    return "Mis à jour à l'instant";
+                }
+                var deltaMinutes = Math.floor(deltaSeconds / 60);
+                if (deltaMinutes < 60) {
+                    return "Mis à jour il y a " + deltaMinutes + " minute" + (deltaMinutes > 1 ? "s" : "");
+                }
+                var deltaHours = Math.floor(deltaMinutes / 60);
+                if (deltaHours < 24) {
+                    return "Mis à jour il y a " + deltaHours + " heure" + (deltaHours > 1 ? "s" : "");
+                }
+                var deltaDays = Math.floor(deltaHours / 24);
+                return "Mis à jour il y a " + deltaDays + " jour" + (deltaDays > 1 ? "s" : "");
+            }
+
+            function getShareTokenFromUrl() {
+                var params = new URLSearchParams(window.location.search);
+                var value = params.get(SHARE_QUERY_PARAM);
+                return value ? value.trim() : null;
+            }
+
+            function buildShareUrl(token) {
+                if (!token) {
+                    return "";
+                }
+                var url = new URL(window.location.href);
+                url.searchParams.set(SHARE_QUERY_PARAM, token);
+                return url.toString();
+            }
+
+            function updateUrlWithShareToken(token) {
+                var url = new URL(window.location.href);
+                if (token) {
+                    url.searchParams.set(SHARE_QUERY_PARAM, token);
+                } else {
+                    url.searchParams.delete(SHARE_QUERY_PARAM);
+                }
+                history.replaceState(null, "", url.toString());
+            }
+
+            function createShareToken() {
+                if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+                    return crypto.randomUUID();
+                }
+                var bytes = new Uint8Array(16);
+                if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+                    crypto.getRandomValues(bytes);
+                } else {
+                    for (var i = 0; i < bytes.length; i++) {
+                        bytes[i] = Math.floor(Math.random() * 256);
+                    }
+                }
+                return Array.from(bytes)
+                    .map(function (byte) {
+                        return byte.toString(16).padStart(2, "0");
+                    })
+                    .join("");
+            }
+
+            async function fetchSharePayload(token) {
+                if (!firestoreCollection) {
+                    throw new Error("Firestore non initialisée");
+                }
+                var doc = await firestoreCollection.doc(token).get();
+                return doc.exists ? doc.data() : null;
+            }
+
+            async function tryLoadSharedStateFromUrl() {
+                var token = getShareTokenFromUrl();
+                if (!token) {
+                    return false;
+                }
+                if (!firestoreCollection) {
+                    setShareStatus("Le partage privé nécessite Firebase (hébergement officiel).", "error");
+                    return false;
+                }
+                try {
+                    var payload = await fetchSharePayload(token);
+                    if (!payload) {
+                        setShareStatus("Lien de partage introuvable.", "error");
+                        return false;
+                    }
+                    var imported = applyImportedState(payload, { alertOnEmpty: false });
+                    if (!imported) {
+                        setShareStatus("Lien de partage introuvable.", "error");
+                        return false;
+                    }
+                    currentShareToken = token;
+                    shareLoadedFromRemote = true;
+                    shareLastUpdatedAt = (payload.meta && payload.meta.updatedAt) || new Date().toISOString();
+                    setShareStatus(formatRelativeTime(shareLastUpdatedAt));
+                    updateShareMenuUI();
+                    return true;
+                } catch (err) {
+                    console.error("Erreur de chargement du lien partagé :", err);
+                    setShareStatus("Impossible de charger le lien partagé.", "error");
+                    updateShareMenuUI();
+                    return false;
+                }
+            }
+
+            async function saveSharePayload(token, payload) {
+                if (!firestoreCollection) {
+                    throw new Error("Firestore non initialisée");
+                }
+                var now = new Date().toISOString();
+                var doc = Object.assign({}, payload, {
+                    meta: {
+                        updatedAt: now
+                    }
+                });
+                await firestoreCollection.doc(token).set(doc);
+                return now;
+            }
+
+            function getShareDefaultStatusText() {
+                if (!firestoreCollection) {
+                    return "Le partage privé nécessite Firebase (hébergement officiel).";
+                }
+                if (shareLastUpdatedAt) {
+                    return formatRelativeTime(shareLastUpdatedAt);
+                }
+                if (shareLoadedFromRemote && currentShareToken) {
+                    return "Ce lien charge la version enregistrée dans Firestore.";
+                }
+                if (currentShareToken) {
+                    return "Un lien privé existe déjà pour cette session.";
+                }
+                return "Crée un lien d’édition privée pour le partager.";
+            }
+
+            function updateShareMenuUI() {
+                if (shareLinkField) {
+                    var hasToken = Boolean(currentShareToken);
+                    shareLinkField.value = hasToken ? buildShareUrl(currentShareToken) : "";
+                    shareLinkField.placeholder = hasToken ? "" : "Appuie sur Créer pour générer un lien privé.";
+                }
+                if (shareUpdateBtn) {
+                    var hasToken = Boolean(currentShareToken);
+                    shareUpdateBtn.hidden = !hasToken;
+                    shareUpdateBtn.disabled = shareRequestInProgress || !hasToken || !firestoreCollection;
+                }
+                if (shareCreateBtn) {
+                    shareCreateBtn.disabled = shareRequestInProgress || !firestoreCollection;
+                    if (!currentShareToken) {
+                        shareCreateBtn.classList.add("primary");
+                    } else {
+                        shareCreateBtn.classList.remove("primary");
+                    }
+                }
+                if (shareMenuStatus) {
+                    var text = shareStatusMessage || getShareDefaultStatusText();
+                    shareMenuStatus.textContent = text;
+                    var isError = (shareStatusType === "error" && Boolean(text)) || (!firestoreCollection && !shareStatusMessage);
+                    shareMenuStatus.classList.toggle("error", isError);
+                }
+                if (shareUpdateBtn) {
+                    if (currentShareToken) {
+                        shareUpdateBtn.classList.add("primary");
+                    } else {
+                        shareUpdateBtn.classList.remove("primary");
+                    }
+                }
+            }
+
+            async function copyCurrentShareLinkToClipboard() {
+                if (!currentShareToken) return false;
+                var link = buildShareUrl(currentShareToken);
+                if (!link) return false;
+                try {
+                    await copyTextToClipboard(link);
+                    showCopyToast("Lien privé copié");
+                    return true;
+                } catch (err) {
+                    console.error("Copie du lien privé impossible", err);
+                    return false;
+                }
+            }
+
+            async function handleShareCreateClick() {
+                if (!firestoreCollection) {
+                    setShareStatus("Le partage privé nécessite Firebase (hébergement officiel).", "error");
+                    updateShareMenuUI();
+                    return;
+                }
+                if (shareRequestInProgress) return;
+                shareRequestInProgress = true;
+                updateShareMenuUI();
+                try {
+                    persistCurrentPlanning();
+                    var token = createShareToken();
+                    var payload = buildTimelineStatePayload();
+                    var updatedAt = await saveSharePayload(token, payload);
+                    currentShareToken = token;
+                    shareLoadedFromRemote = true;
+                    shareLastUpdatedAt = updatedAt;
+                    updateUrlWithShareToken(token);
+                    setShareStatus(formatRelativeTime(updatedAt));
+                    updateShareMenuUI();
+                    await copyCurrentShareLinkToClipboard();
+                } catch (err) {
+                    console.error("Erreur lors de la création du lien partagé :", err);
+                    setShareStatus("Impossible de créer le lien partagé.", "error");
+                    updateShareMenuUI();
+                } finally {
+                    shareRequestInProgress = false;
+                    updateShareMenuUI();
+                }
+            }
+
+            async function handleShareUpdateClick() {
+                if (!firestoreCollection || !currentShareToken) {
+                    setShareStatus("Pas de lien privé à mettre à jour.", "error");
+                    updateShareMenuUI();
+                    return;
+                }
+                if (shareRequestInProgress) return;
+                shareRequestInProgress = true;
+                updateShareMenuUI();
+                try {
+                    persistCurrentPlanning();
+                    var payload = buildTimelineStatePayload();
+                    var updatedAt = await saveSharePayload(currentShareToken, payload);
+                    shareLoadedFromRemote = true;
+                    shareLastUpdatedAt = updatedAt;
+                    setShareStatus(formatRelativeTime(updatedAt));
+                    updateShareMenuUI();
+                    await copyCurrentShareLinkToClipboard();
+                } catch (err) {
+                    console.error("Erreur lors de la mise à jour du lien partagé :", err);
+                    setShareStatus("Impossible de mettre à jour le lien partagé.", "error");
+                    updateShareMenuUI();
+                } finally {
+                    shareRequestInProgress = false;
+                    updateShareMenuUI();
+                }
             }
 
             function triggerImportJson() {
@@ -3388,6 +3932,26 @@
             }
             if (exportTextBtn) {
                 exportTextBtn.addEventListener("click", exportTimelineText);
+            }
+            if (shareCreateBtn) {
+                shareCreateBtn.addEventListener("click", function (event) {
+                    event.stopPropagation();
+                    handleShareCreateClick();
+                });
+            }
+            if (shareUpdateBtn) {
+                shareUpdateBtn.addEventListener("click", function (event) {
+                    event.stopPropagation();
+                    handleShareUpdateClick();
+                });
+            }
+            if (shareLinkField) {
+                shareLinkField.addEventListener("focus", function () {
+                    this.select();
+                });
+                shareLinkField.addEventListener("click", function () {
+                    this.select();
+                });
             }
 
             function closeTimelineInfoPopup() {
@@ -4751,11 +5315,20 @@
             });
 
             var timelineTourSeen = window.localStorage && window.localStorage.getItem(timelineTourStorageKey);
-            if (!timelineTourSeen) {
+            var timelineTourSkipAfterUpdateValue =
+                window.sessionStorage && window.sessionStorage.getItem(timelineTourSkipFlag);
+            if (timelineTourSkipAfterUpdateValue && window.sessionStorage) {
+                window.sessionStorage.removeItem(timelineTourSkipFlag);
+            }
+            if (!timelineTourSeen && !timelineTourSkipAfterUpdateValue) {
                 setTimeout(function () {
                     openTimelineTour(0);
                 }, 200);
             }
+
+            initShareFirestore();
+            updateShareMenuUI();
+            tryLoadSharedStateFromUrl();
 
             setScale("week");
             if (txtPromptCreate) {

@@ -71,6 +71,15 @@
             gap: 8px;
         }
 
+        .context-menu.share-menu button {
+            border-radius: 10px;
+        }
+
+        .context-menu.share-menu button:hover,
+        .context-menu.share-menu button:focus {
+            border-radius: 10px;
+        }
+
         .menu-panel {
             display: flex;
             flex-direction: column;
@@ -224,30 +233,13 @@
         }
 
         .share-actions {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
             gap: 6px;
         }
 
-        .share-menu .menu-panel-btn {
-            border-radius: 10px;
-            border: 1px solid rgba(42, 122, 87, 0.3);
-            background: #f3f1eb;
+        .share-actions .menu-panel-btn {
             width: 100%;
-            padding: 10px 0;
-            text-align: center;
-            font-size: 13px;
-            transition: none;
-        }
-
-        .share-menu .menu-panel-btn.primary {
-            background: #2a7a57;
-            color: #fff;
-            border-color: #2a7a57;
-        }
-
-        .share-menu .menu-panel-btn:hover {
-            background: inherit;
         }
 
         .prompt-template-select {
@@ -437,13 +429,17 @@
         }
 
         .global-actions button,
+        .global-actions .info-button,
         .reset-prompts-btn {
             border-radius: 999px;
             border: 1px solid #ebe0d1;
             background: #fff;
-            padding: 6px 12px;
+            padding: 0 10px;
+            min-height: 32px;
+            font-size: 12px;
+            line-height: 32px;
             cursor: pointer;
-            font-size: 13px;
+            box-shadow: none;
         }
 
         .global-actions button.primary {
@@ -452,13 +448,13 @@
             color: #fff;
         }
 
-        .info-button {
-            border-radius: 999px;
-            border: 1px solid #ebe0d1;
-            background: #fff;
-            padding: 6px 12px;
-            font-size: 13px;
-            cursor: pointer;
+        .global-actions button:hover,
+        .global-actions button:focus-visible,
+        .global-actions .info-button:hover,
+        .global-actions .info-button:focus-visible,
+        .reset-prompts-btn:hover,
+        .reset-prompts-btn:focus-visible {
+            box-shadow: 0 6px 18px rgba(42, 122, 87, 0.32);
         }
 
         .info-popup {
@@ -1250,10 +1246,10 @@
                 <button class="tab-btn-delete" id="deleteTabBtn" type="button">🗑️</button>
             </div>
             <div class="global-actions">
-                <button id="contextBtn" type="button" aria-label="AI Assistant">✨</button>
+                <button id="contextBtn" type="button" aria-label="AI Assistant">✨ Assistant IA</button>
 
                 <div class="menu-trigger" id="settingsMenuTrigger">
-                    <button id="textStyleBtn" type="button" aria-label="Options d'affichage">📐</button>
+                    <button id="textStyleBtn" type="button" aria-label="Options d'affichage">📐 Affichage</button>
                     <div class="context-menu" id="settingsMenu">
                         <div class="menu-panel">
                             <label>
@@ -1288,7 +1284,7 @@
                     </div>
                 </div>
                 <div class="menu-trigger" id="fileMenuTrigger">
-                    <button id="fileMenuBtn" type="button" aria-label="Fichier">📄</button>
+                    <button id="fileMenuBtn" type="button" aria-label="Fichier">📄 Fichier</button>
                     <div class="context-menu" id="fileMenu">
                         <div class="menu-panel">
                             <button id="importJsonBtn" type="button" class="menu-panel-btn">📂 Ouvrir</button>
@@ -1302,7 +1298,7 @@
                 </div>
                 <div class="menu-trigger" id="shareMenuTrigger">
                     <button id="shareBtn" class="info-button" type="button" aria-label="Partager"
-                        title="Lien de partage">🔗</button>
+                        title="Lien de partage">🔗 Partage</button>
                     <div class="context-menu share-menu" id="shareMenu">
                         <div class="menu-panel">
                             <div class="menu-header">Lien de partage</div>
@@ -1773,6 +1769,7 @@
         let shareStatusMessage = "";
         let shareStatusType = "";
         let shareRequestInProgress = false;
+        let shareLastUpdatedAt = null;
 
         function initShareFirestore() {
             if (typeof firebase === "undefined" || typeof firebase.firestore !== "function") {
@@ -1789,6 +1786,26 @@
         function setShareStatus(message, type = "") {
             shareStatusMessage = message;
             shareStatusType = type;
+        }
+
+        function formatRelativeTime(isoString) {
+            if (!isoString) return "";
+            const value = new Date(isoString).getTime();
+            if (Number.isNaN(value)) return "";
+            const deltaSeconds = Math.max(0, Math.floor((Date.now() - value) / 1000));
+            if (deltaSeconds < 60) {
+                return "Mis à jour à l'instant";
+            }
+            const deltaMinutes = Math.floor(deltaSeconds / 60);
+            if (deltaMinutes < 60) {
+                return `Mis à jour il y a ${deltaMinutes} minute${deltaMinutes > 1 ? "s" : ""}`;
+            }
+            const deltaHours = Math.floor(deltaMinutes / 60);
+            if (deltaHours < 24) {
+                return `Mis à jour il y a ${deltaHours} heure${deltaHours > 1 ? "s" : ""}`;
+            }
+            const deltaDays = Math.floor(deltaHours / 24);
+            return `Mis à jour il y a ${deltaDays} jour${deltaDays > 1 ? "s" : ""}`;
         }
 
         function getShareTokenFromUrl() {
@@ -1849,14 +1866,15 @@
             try {
                 const payload = await fetchSharePayload(token);
                 if (!payload || !Array.isArray(payload.slides)) {
-                    setShareStatus("Lien privé introuvable.", "error");
+                    setShareStatus("Lien de partage introuvable.", "error");
                     return false;
                 }
                 initializeTemplateSlides(payload.slides);
                 applySettingsFromPayload(payload.settings || {});
                 currentShareToken = token;
                 shareLoadedFromRemote = true;
-                setShareStatus("Planning chargé depuis Firestore.");
+                shareLastUpdatedAt = payload.meta?.updatedAt || new Date().toISOString();
+                setShareStatus(formatRelativeTime(shareLastUpdatedAt));
                 return true;
             } catch (err) {
                 console.error("Erreur de chargement du lien partagé :", err);
@@ -1876,6 +1894,7 @@
                     updatedAt: now
                 }
             });
+            return now;
         }
 
         const importInput = document.createElement("input");
@@ -3452,6 +3471,9 @@
             if (!firestoreCollection) {
                 return "Le partage privé nécessite Firebase (hébergement officiel).";
             }
+            if (shareLastUpdatedAt) {
+                return formatRelativeTime(shareLastUpdatedAt);
+            }
             if (shareLoadedFromRemote && currentShareToken) {
                 return "Ce lien charge la version enregistrée dans Firestore.";
             }
@@ -3523,11 +3545,12 @@
             updateShareMenuUI();
             try {
                 const token = createShareToken();
-                await saveSharePayload(token, buildStatePayload());
+                const updatedAt = await saveSharePayload(token, buildStatePayload());
                 currentShareToken = token;
                 shareLoadedFromRemote = true;
+                shareLastUpdatedAt = updatedAt;
                 updateUrlWithShareToken(token);
-                setShareStatus("Lien privé créé, copie l’URL dans ton presse-papier.");
+                setShareStatus(formatRelativeTime(updatedAt));
                 updateShareMenuUI();
                 await copyCurrentShareLinkToClipboard();
             } catch (err) {
@@ -3549,9 +3572,10 @@
             shareRequestInProgress = true;
             updateShareMenuUI();
             try {
-                await saveSharePayload(currentShareToken, buildStatePayload());
+                const updatedAt = await saveSharePayload(currentShareToken, buildStatePayload());
                 shareLoadedFromRemote = true;
-                setShareStatus("Lien privé mis à jour, copie l’URL dans ton presse-papier.");
+                shareLastUpdatedAt = updatedAt;
+                setShareStatus(formatRelativeTime(updatedAt));
                 updateShareMenuUI();
                 await copyCurrentShareLinkToClipboard();
             } catch (err) {
