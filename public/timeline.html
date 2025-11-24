@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Go-Toolkit - Go-Timeline</title>
+    <title>Go-Timeline</title>
 
     <!-- Vis Timeline -->
     <link rel="stylesheet" href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css"
@@ -1004,6 +1004,45 @@
             margin-bottom: 8px;
         }
 
+        .type-selector {
+            border-radius: 0px;
+            border-left: 1px solid rgba(15, 23, 42, 0.15);
+            background: transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            font-size: 11px;
+        }
+
+        .type-selector-icon {
+            font-size: 12px;
+            line-height: 1;
+        }
+
+        .type-selector select {
+            border: none;
+            background: transparent;
+            font-size: 12px;
+            padding: 0;
+            min-width: 120px;
+            font-weight: 600;
+            font-family: inherit;
+            color: var(--text);
+            cursor: pointer;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        .type-selector select:disabled {
+            opacity: 0.6;
+        }
+
+        .type-selector.disabled .type-selector-icon {
+            color: rgba(15, 23, 42, 0.45);
+        }
+
         .toolbar .item-actions {
             margin-left: auto;
         }
@@ -1034,7 +1073,7 @@
             position: relative;
             display: inline-flex;
             align-items: center;
-            border-radius: 999px;
+            border-radius: 6px;
             border: 1px solid rgba(15, 23, 42, 0.12);
             padding: 4px 10px;
             font-size: 11px;
@@ -1324,13 +1363,20 @@
                     <button class="btn-small" id="btn-rename-selected" aria-label="Renommer l’élément sélectionné">
                         ✏️
                     </button>
+                    <div class="type-selector" aria-label="Type d’action" role="group">
+                        <span class="type-selector-icon" aria-hidden="true"></span>
+                        <select id="itemTypeSelect" aria-label="Changer le type d’action">
+                            <option value="">Type d'action</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="btn-group">
                     <button class="btn-small" id="btn-add-milestone" aria-label="Ajouter un jalon">
                         + Repère
                     </button>
                     <button class="btn-small" id="btn-add-item" aria-label="Ajouter un élément">
                         + Action
                     </button>
-
                 </div>
                 <div class="btn-group">
                     <button class="btn-small" id="openColorPaletteBtn"
@@ -1398,7 +1444,7 @@
                 <button class="info-close" type="button" aria-label="Fermer">×</button>
                 <img src="logo.gif" alt="Logo Go-Toolkit">
                 <strong>Go-Toolkit</strong>
-                <span>Version 0.11.23</span>
+                <span>Version 0.11.24</span>
                 <span>Développé par Quang TRAN.</span>
                 <span>Usage réservé à Savane Consulting.</span>
                 <button id="timelineTourReplayBtn" type="button" class="btn">Tour guidé</button>
@@ -1495,6 +1541,8 @@
             var typeDefinitions = {};
             var filterState = { kinds: {} };
             var typeFilterPanel = document.getElementById("typeFilterPanel");
+            var itemTypeSelect = document.getElementById("itemTypeSelect");
+            var typeSelectorControl = document.querySelector(".type-selector");
             var timeline = null;
             var OPENAI_PROXY_URL = "https://openai.tranxq.workers.dev/v1/chat/completions";
             var OPENAI_MODEL = "gpt-5-nano";
@@ -2194,6 +2242,118 @@
                 return Object.keys(seen);
             }
 
+            function getFocusedItemKind() {
+                if (!selectedItemId) return "";
+                var focused = items.get(selectedItemId);
+                if (!focused) return "";
+                return sanitizeTypeId(focused.kind || focused.type || "");
+            }
+
+            function syncTypeSelectorDisabledState() {
+                if (!typeSelectorControl || !itemTypeSelect) return;
+                typeSelectorControl.classList.toggle("disabled", itemTypeSelect.disabled);
+            }
+
+            function renderTypeSwitcherOptions() {
+                if (!itemTypeSelect) return;
+                var focusedKind = getFocusedItemKind();
+                var typeIds = getVisibleViewTypeIds();
+                if (focusedKind && typeIds.indexOf(focusedKind) === -1) {
+                    typeIds.push(focusedKind);
+                }
+                typeIds.forEach(function (typeId) {
+                    if (!typeDefinitions[typeId]) {
+                        ensureTypeDefinition({ id: typeId });
+                    }
+                });
+                var orderedIds = getOrderedTypeIds(typeIds);
+                itemTypeSelect.innerHTML = "";
+
+                if (!orderedIds.length) {
+                    var emptyOption = document.createElement("option");
+                    emptyOption.value = "";
+                    emptyOption.textContent = "Pas de type défini";
+                    emptyOption.disabled = true;
+                    emptyOption.selected = true;
+                    itemTypeSelect.appendChild(emptyOption);
+                    itemTypeSelect.disabled = true;
+                    syncTypeSelectorDisabledState();
+                    return;
+                }
+
+                if (!selectedItemId) {
+                    var placeholder = document.createElement("option");
+                    placeholder.value = "";
+                    placeholder.textContent = "-";
+                    placeholder.disabled = true;
+                    placeholder.selected = true;
+                    itemTypeSelect.appendChild(placeholder);
+                }
+
+                orderedIds.forEach(function (typeId) {
+                    var def = typeDefinitions[typeId];
+                    if (!def) return;
+                    var option = document.createElement("option");
+                    option.value = def.id;
+                    option.textContent = def.label || def.id;
+                    itemTypeSelect.appendChild(option);
+                });
+
+                if (selectedItemId) {
+                    var targetValue =
+                        focusedKind && orderedIds.indexOf(focusedKind) !== -1
+                            ? focusedKind
+                            : orderedIds[0];
+                    itemTypeSelect.value = targetValue;
+                    itemTypeSelect.disabled = false;
+                } else {
+                    itemTypeSelect.disabled = true;
+                }
+                syncTypeSelectorDisabledState();
+            }
+
+            function applyTypeToSelectedItem(kindId) {
+                if (!selectedItemId) return;
+                var desiredKind = sanitizeTypeId(kindId);
+                if (!desiredKind) return;
+                var current = items.get(selectedItemId);
+                if (!current) return;
+                var currentKind = sanitizeTypeId(current.kind || current.type || "");
+                if (currentKind === desiredKind) return;
+
+                ensureTypeDefinition({ id: desiredKind });
+                ensureKindFilter(desiredKind);
+
+                var updatePayload = {
+                    id: selectedItemId,
+                    kind: desiredKind,
+                    className:
+                        desiredKind === "milestone"
+                            ? "type-milestone milestone-class"
+                            : "type-" + desiredKind,
+                    type: desiredKind === "milestone" ? "point" : null
+                };
+
+                if (desiredKind === "milestone") {
+                    updatePayload.end = null;
+                    if (!current.start) {
+                        updatePayload.start = getTimelineCenter();
+                    }
+                } else {
+                    if (!current.start) {
+                        updatePayload.start = getTimelineCenter();
+                    }
+                    if (!current.end) {
+                        updatePayload.end = computeDefaultEnd(current.start || updatePayload.start);
+                    }
+                }
+
+                items.update(updatePayload);
+                refreshTypeFilterUI(getVisibleViewTypeIds());
+                renderTypeSwitcherOptions();
+                updateTimelineFilter();
+            }
+
             function ensureViewFilterState(view) {
                 if (!view) return null;
                 if (!view.filterState) {
@@ -2210,6 +2370,7 @@
                     filterState = state;
                 }
                 refreshTypeFilterUI(typeIds || getVisibleViewTypeIds());
+                renderTypeSwitcherOptions();
             }
 
             function captureColorPreferencesState() {
@@ -3186,6 +3347,7 @@
             timeline.on("select", function (props) {
                 selectedItemId = (props.items && props.items.length) ? props.items[0] : null;
                 updateSelectionButtons();
+                renderTypeSwitcherOptions();
             });
 
             if (btnAddMilestone) {
@@ -3205,6 +3367,12 @@
                 });
             }
 
+            if (itemTypeSelect) {
+                itemTypeSelect.addEventListener("change", function () {
+                    applyTypeToSelectedItem(itemTypeSelect.value);
+                });
+            }
+
             function updateSelectionButtons() {
                 var hasSelection = !!selectedItemId;
                 if (btnDeleteSelected) {
@@ -3216,6 +3384,7 @@
             }
 
             updateSelectionButtons();
+            renderTypeSwitcherOptions();
 
             if (btnDeleteSelected) {
                 btnDeleteSelected.addEventListener("click", function () {
@@ -3226,6 +3395,7 @@
                         items.remove(selectedItemId);
                         selectedItemId = null;
                         updateSelectionButtons();
+                        renderTypeSwitcherOptions();
                     }
                 });
             }
