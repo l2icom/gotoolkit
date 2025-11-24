@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Go-Toolkit - Go-Slides</title>
+    <title>Go-Slides</title>
     <style>
         * {
             box-sizing: border-box;
@@ -428,12 +428,32 @@
 
         .info-popup button {
             border-radius: 8px;
-            border: none;
-            background: #2a7a57;
-            color: #fff;
+            border: 1px solid rgba(15, 23, 42, 0.15);
+            background: #fff;
+            color: #0f172a;
             padding: 6px 10px;
             font-size: 12px;
             cursor: pointer;
+            min-width: 110px;
+        }
+
+        .info-popup button.update-btn {
+            background: #2a7a57;
+            border-color: #2a7a57;
+            color: #fff;
+        }
+
+        .info-popup button.secondary {
+            background: #fff;
+            border-color: rgba(15, 23, 42, 0.15);
+            color: #0f172a;
+        }
+
+        .info-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         .tour-overlay {
@@ -621,6 +641,43 @@
             justify-content: center;
             align-items: flex-start;
             overflow: hidden;
+        }
+
+        .slide-empty-state {
+            position: absolute;
+            inset: 40px 40px 20px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 24px;
+            border: 1px dashed rgba(15, 23, 42, 0.25);
+            color: var(--text-main);
+            padding: 24px;
+            gap: 12px;
+            z-index: 2;
+        }
+
+        .slide-empty-state.visible {
+            display: flex;
+        }
+
+        .slide-empty-state p {
+            margin: 0;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .slide-empty-state button {
+            border-radius: 14px;
+            border: 1px solid rgba(15, 23, 42, 0.2);
+            background: #fff;
+            color: #2a7a57;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 13px;
         }
 
         .slide-wrapper {
@@ -1181,13 +1238,22 @@
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
             <strong>Go-Toolkit</strong>
-            <span>Version 0.11.23</span>
+            <span>Version 0.11.24</span>
             <span>Développé par Quang TRAN.</span>
             <span>Usage réservé à Savane Consulting.</span>
-            <button id="tourReplayBtn" type="button">Tour guidé</button>
+            <div class="info-actions">
+                <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
+                <button id="tourReplayBtn" type="button" class="secondary">Tour guidé</button>
+            </div>
         </div>
 
         <div class="slides-container">
+            <div class="slide-empty-state" id="slideEmptyState">
+                <p>
+                    Cette page est vide. Renseigne les intitulés des colonnes et le contexte avant de lancer l’IA ✨.
+                </p>
+                <button id="slideContextLink" type="button">✨ Ouvrir l’IA contexte</button>
+            </div>
             <div id="slides" class="slide-wrapper"></div>
         </div>
 
@@ -1267,6 +1333,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
+    <script src="demo.js"></script>
     <script>
         const stageColors = {
             "first-col": getComputedStyle(document.documentElement).getPropertyValue("--now-color").trim(),
@@ -1498,6 +1565,8 @@
 
         const slidesContainer = document.getElementById("slides");
         const tabsContainer = document.getElementById("tabs");
+        const slideEmptyState = document.getElementById("slideEmptyState");
+        const slideContextLink = document.getElementById("slideContextLink");
         const addTabBtn = document.getElementById("addTabBtn");
         const deleteTabBtn = document.getElementById("deleteTabBtn");
         const exportBtn = document.getElementById("exportPngBtn");
@@ -1572,11 +1641,20 @@
             }
         }
 
+        function getDemoSlides() {
+            const demo = window.GO_INDEX_DEMO_DATA;
+            if (!demo || !Array.isArray(demo.slides)) {
+                return [];
+            }
+            return demo.slides.map(slide => ({ ...slide }));
+        }
+
         function loadSavedState() {
             const stored = localStorage.getItem(STORAGE_KEY);
             if (!stored) {
-                initializeTemplateSlides();
-                return false;
+                const demoSlides = getDemoSlides();
+                initializeTemplateSlides(demoSlides);
+                return demoSlides.length > 0;
             }
             try {
                 const parsed = JSON.parse(stored);
@@ -1663,7 +1741,16 @@
                 promptTemplateSelect.value = activePromptTemplateId;
             }
             apiKeyInput.value = payload.apiKey || "";
-            contextField.value = payload.context || "";
+            const fallbackContext = payload.context || "";
+            if (fallbackContext) {
+                Object.values(templateSlides).forEach(slides => {
+                    slides.forEach(slide => {
+                        if (!slide.context) {
+                            slide.context = fallbackContext;
+                        }
+                    });
+                });
+            }
             if (typeof payload.ratioIndex === "number") {
                 currentRatioIndex = Math.max(0, Math.min(ratioOptions.length - 1, payload.ratioIndex));
                 applyRatio(currentRatioIndex);
@@ -1847,12 +1934,17 @@
                 updatePromptTooltip(textarea);
             });
         });
-        contextField?.addEventListener("input", () => refreshPromptUI());
+        contextField?.addEventListener("input", () => {
+            setActiveSlideContext(contextField.value);
+            refreshPromptUI();
+            schedulePersist();
+        });
         document.addEventListener("input", event => {
             const target = event.target;
             if (target instanceof Element && target.matches(".column-title, .section-label, .section-text-row textarea")) {
                 refreshPromptUI();
             }
+            updateSlideEmptyState();
         });
 
         iaModeButtons.forEach(button => {
@@ -2148,7 +2240,8 @@
                     bgColor: slide.dataset.bgColor || "transparent",
                     textStyleIndex: parseStyleIndex(slide.dataset.textStyleIndex),
                     fontSize: Number.isNaN(fontSizeValue) ? currentFontSize : fontSizeValue,
-                    columns
+                    columns,
+                    context: slide.dataset.context || ""
                 };
             });
         }
@@ -2256,6 +2349,7 @@
             const subtitleValue = (seed.subtitle || defaultSubtitle).replace(/"/g, '&quot;');
             slide.dataset.templateId = templateId;
             slide.dataset.tabLabel = seed.tabLabel || `Page ${index + 1}`;
+            slide.dataset.context = seed.context || "";
             slide.innerHTML = `
   <div class="slide-header">
     <div class="slide-title-row">
@@ -2344,6 +2438,50 @@
             updateDeleteButtonState();
         }
 
+        function getActiveSlideContext(targetSlide) {
+            const slide = targetSlide || getActiveSlideElement();
+            return slide ? slide.dataset.context || "" : "";
+        }
+
+        function setActiveSlideContext(value) {
+            const slide = getActiveSlideElement();
+            if (!slide) return;
+            slide.dataset.context = value || "";
+        }
+
+        function syncContextFieldWithActiveSlide() {
+            if (!contextField) return;
+            const contextValue = getActiveSlideContext();
+            if (contextField.value !== contextValue) {
+                contextField.value = contextValue;
+            }
+            refreshPromptUI();
+        }
+
+        function isSlideEmpty(slide) {
+            if (!slide) return true;
+            const columns = slide.querySelectorAll(".column");
+            if (!columns.length) return true;
+            for (const column of columns) {
+                const title = column.querySelector(".column-title")?.textContent.trim();
+                if (title) return false;
+                const textareas = column.querySelectorAll("textarea");
+                for (const textarea of textareas) {
+                    if (textarea.value.trim()) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function updateSlideEmptyState() {
+            if (!slideEmptyState) return;
+            const activeSlide = getActiveSlideElement();
+            const shouldShow = isSlideEmpty(activeSlide);
+            slideEmptyState.classList.toggle("visible", shouldShow);
+        }
+
         function setActiveTab(index) {
             closeContextMenus();
             activeIndex = index;
@@ -2370,6 +2508,8 @@
                     templateSelect.value = currentTemplateId;
                 }
             }
+            syncContextFieldWithActiveSlide();
+            updateSlideEmptyState();
         }
 
         function buildColumnSeeds(slide, options = {}) {
@@ -2960,6 +3100,13 @@
             });
         });
 
+        function openContextModalForEmptyState() {
+            if (!contextModal) return;
+            switchModalTab("context");
+            openModal(contextModal);
+            contextField?.focus();
+        }
+
         function handleSettingsSave() {
             schedulePersist();
             closeModal(contextModal);
@@ -3069,21 +3216,83 @@
             }
         });
         switchModalTab("context");
+        slideContextLink?.addEventListener("click", event => {
+            event.stopPropagation();
+            openContextModalForEmptyState();
+        });
         loadSavedState();
         renderSlidesForTemplate(currentTemplateId);
         applyRatio(currentRatioIndex);
 
         const infoButton = document.getElementById("infoButton");
         const infoPopup = document.getElementById("infoPopup");
+        const updateAppBtn = document.getElementById("updateAppBtn");
 
         function closeInfoPopup() {
             infoPopup?.classList.remove("open");
+        }
+
+        function clearAppCacheAndReload() {
+            try {
+                localStorage.clear();
+            } catch (err) {
+                console.warn("Impossible de vider localStorage", err);
+            }
+            try {
+                sessionStorage.clear();
+            } catch (err) {
+                console.warn("Impossible de vider sessionStorage", err);
+            }
+            try {
+                sessionStorage.setItem(tourSkipFlag, "1");
+            } catch (err) {
+                console.warn("Impossible de préparer l'indicateur de mise à jour", err);
+            }
+            (document.cookie || "")
+                .split(";")
+                .forEach(function (cookie) {
+                    var eqPos = cookie.indexOf("=");
+                    var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+                    name = name.trim();
+                    if (!name) return;
+                    document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+                });
+            var reload = function () {
+                window.location.reload();
+            };
+            if (window.caches && typeof window.caches.keys === "function") {
+                window.caches
+                    .keys()
+                    .then(function (keys) {
+                        return Promise.all(
+                            keys.map(function (key) {
+                                return window.caches.delete(key);
+                            })
+                        );
+                    })
+                    .catch(function () { })
+                    .finally(reload);
+            } else {
+                reload();
+            }
+        }
+
+        function promptManualUpdate() {
+            var warning =
+                "La mise à jour effacera les données locales (cache, cookies, préférences). Continuer ?";
+            if (!confirm(warning)) return;
+            closeInfoPopup();
+            clearAppCacheAndReload();
         }
 
         infoButton?.addEventListener("click", event => {
             event.stopPropagation();
             closeContextMenus();
             infoPopup?.classList.toggle("open");
+        });
+        updateAppBtn?.addEventListener("click", event => {
+            event.stopPropagation();
+            promptManualUpdate();
         });
         document.addEventListener("click", event => {
             if (!infoPopup?.contains(event.target) && event.target !== infoButton) {
@@ -3136,6 +3345,7 @@
         const tourSkipBtn = document.getElementById("tourSkipBtn");
         const tourReplayBtn = document.getElementById("tourReplayBtn");
         const tourStorageKey = "goToolkitTourCompleted";
+        const tourSkipFlag = "goToolkitTourSkipAfterUpdate";
         let currentTourIndex = 0;
 
         function getSelectorsFromStep(step) {
@@ -3304,6 +3514,11 @@
             renderTourStep();
         });
 
+        const tourSkipOnReload = window.sessionStorage?.getItem(tourSkipFlag);
+        if (tourSkipOnReload) {
+            window.localStorage?.setItem(tourStorageKey, "1");
+            window.sessionStorage?.removeItem(tourSkipFlag);
+        }
         const tourSeen = window.localStorage?.getItem(tourStorageKey);
         if (!tourSeen) {
             setTimeout(() => openTour(0), 200);

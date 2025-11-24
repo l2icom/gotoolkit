@@ -405,6 +405,52 @@
             min-height: 0;
         }
 
+        .timeline-empty-state {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 24px;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 12px;
+            border: 1px dashed rgba(15, 23, 42, 0.3);
+            color: var(--text);
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            z-index: 1;
+        }
+
+        .timeline-empty-state.visible {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .timeline-empty-text {
+            margin: 0;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        .timeline-empty-link {
+            font-weight: 600;
+            color: var(--primary);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+        }
+
+        .timeline-empty-link:hover,
+        .timeline-empty-link:focus-visible {
+            text-decoration: underline;
+            border-bottom-color: rgba(42, 122, 87, 0.6);
+        }
+
         .timeline-header {
             display: flex;
             justify-content: space-between;
@@ -619,12 +665,18 @@
         }
 
         .info-popup {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
+            position: absolute;
+            top: 56px;
+            right: 12px;
+            width: 280px;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 15px;
             display: none;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 12px;
             z-index: 60;
         }
 
@@ -632,28 +684,39 @@
             display: flex;
         }
 
-        .info-card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 20px;
-            max-width: 320px;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        .info-popup img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            align-self: center;
         }
 
-        .info-card strong {
-            font-size: 18px;
-        }
-
-        .info-close {
-            align-self: flex-end;
-            border: none;
-            background: transparent;
-            font-size: 18px;
+        .info-popup button {
+            border-radius: 8px;
+            border: 1px solid rgba(15, 23, 42, 0.15);
+            padding: 6px 12px;
+            font-size: 12px;
             cursor: pointer;
+            min-width: 110px;
+        }
+
+        .info-popup button.secondary {
+            background: #fff;
+            border: 1px solid rgba(15, 23, 42, 0.15);
+            color: var(--text);
+        }
+
+        .info-popup button.update-btn {
+            background: #2a7a57;
+            border-color: #2a7a57;
+            color: #fff;
+        }
+
+        .info-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         .tour-overlay {
@@ -1538,7 +1601,7 @@
             </div>
             <div class="timeline-header">
                 <div class="header-text">
-                    <h1>Vue 1</h1>
+                    <h1>Page 1</h1>
                 </div>
                 <div class="header-buttons">
                     <div class="type-filter-panel" id="typeFilterPanel" role="group" aria-label="Filtrer par type">
@@ -1547,6 +1610,14 @@
             </div>
             <div class="timeline-wrapper">
                 <div id="timeline"></div>
+                <div class="timeline-empty-state" id="timelineEmptyState" role="status" aria-live="polite">
+                    <p class="timeline-empty-text">
+                        Cette page est vide. Lance l’assistant IA pour générer un planning clair en quelques secondes.
+                    </p>
+                    <a href="#openIaModal" role="button" class="timeline-empty-link" id="timelineEmptyAction">
+                        ✨ Ouvrir l’Assistant IA
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -1595,14 +1666,14 @@
         </div>
 
         <div id="timelineInfoPopup" class="info-popup" role="dialog" aria-live="polite">
-            <div class="info-card">
-                <button class="info-close" type="button" aria-label="Fermer">×</button>
-                <img src="logo.gif" alt="Logo Go-Toolkit">
-                <strong>Go-Toolkit</strong>
-                <span>Version 0.11.24</span>
-                <span>Développé par Quang TRAN.</span>
-                <span>Usage réservé à Savane Consulting.</span>
-                <button id="timelineTourReplayBtn" type="button" class="btn">Tour guidé</button>
+            <img src="logo.gif" alt="Logo Go-Toolkit">
+            <strong>Go-Toolkit</strong>
+            <span>Version 0.11.24</span>
+            <span>Développé par Quang TRAN.</span>
+            <span>Usage réservé à Savane Consulting.</span>
+            <div class="info-actions">
+                <button id="timelineUpdateBtn" type="button" class="update-btn">Mettre à jour</button>
+                <button id="timelineTourReplayBtn" type="button" class="secondary">Tour guidé</button>
             </div>
         </div>
 
@@ -1697,12 +1768,16 @@
 
             var groups = new DataSet();
             var items = new DataSet();
-            items.on("add", persistCurrentPlanning);
-            items.on("update", persistCurrentPlanning);
-            items.on("remove", persistCurrentPlanning);
-            groups.on("add", persistCurrentPlanning);
-            groups.on("update", persistCurrentPlanning);
-            groups.on("remove", persistCurrentPlanning);
+            function handleDataMutation() {
+                persistCurrentPlanning();
+                updateEmptyViewMessage();
+            }
+            items.on("add", handleDataMutation);
+            items.on("update", handleDataMutation);
+            items.on("remove", handleDataMutation);
+            groups.on("add", handleDataMutation);
+            groups.on("update", handleDataMutation);
+            groups.on("remove", handleDataMutation);
             var itemsView = new vis.DataView(items, {
                 filter: function (item) {
                     return matchesFilters(item, filterState);
@@ -1720,6 +1795,8 @@
             var itemTypeSelect = document.getElementById("itemTypeSelect");
             var typeSelectorControl = document.querySelector(".type-selector");
             var timeline = null;
+            var emptyStateElement = document.getElementById("timelineEmptyState");
+            var emptyStateAction = document.getElementById("timelineEmptyAction");
             var OPENAI_PROXY_URL = "https://openai.tranxq.workers.dev/v1/chat/completions";
             var OPENAI_MODEL = "gpt-5-nano";
             var OPENAI_TEMPERATURE = 1;
@@ -1748,8 +1825,8 @@
             var DEMO_STATE = {
                 views: [
                     {
-                        name: "Vue 1",
-                        title: "Vue 1",
+                        name: "Page 1",
+                        title: "Page 1",
                         planning: {
                             timeline: {
                                 start: "2025-11-30",
@@ -1885,8 +1962,8 @@
                         }
                     },
                     {
-                        name: "Vue 2",
-                        title: "Vue 2",
+                        name: "Page 2",
+                        title: "Page 2",
                         planning: {
                             timeline: {
                                 start: "2025-11-23",
@@ -2117,13 +2194,13 @@
                 if (Array.isArray(persistedState.views) && persistedState.views.length) {
                     views = persistedState.views.map(function (view, index) {
                         return {
-                            name: view.name || view.title || ("Vue " + (index + 1)),
-                            title: view.title || view.name || ("Vue " + (index + 1)),
+                            name: view.name || view.title || ("Page " + (index + 1)),
+                            title: view.title || view.name || ("Page " + (index + 1)),
                             planning: view.planning || null
                         };
                     });
                 } else if (persistedState.groups) {
-                    var defaultLabel = persistedState.label || persistedState.name || "Vue 1";
+                    var defaultLabel = persistedState.label || persistedState.name || "Page 1";
                     views = [{
                         name: defaultLabel,
                         title: defaultLabel,
@@ -2144,7 +2221,7 @@
                 }
             }
             if (!views.length) {
-                views = [{ name: "Vue 1", title: "Vue 1", planning: null }];
+                views = [{ name: "Page 1", title: "Page 1", planning: null }];
             }
             views.forEach(ensureViewFilterState);
 
@@ -2153,6 +2230,13 @@
                 if (!views[activeViewIndex]) return;
                 views[activeViewIndex].planning = exportPlanningToJson();
                 persistTimelineState();
+            }
+
+            function updateEmptyViewMessage() {
+                if (!emptyStateElement || !items || typeof items.get !== "function") return;
+                var isEmpty = items.get().length === 0;
+                emptyStateElement.classList.toggle("visible", isEmpty);
+                emptyStateElement.setAttribute("aria-hidden", isEmpty ? "false" : "true");
             }
 
             function getActiveTypeIds() {
@@ -2385,6 +2469,15 @@
                     }
                 });
             }
+            if (emptyStateAction) {
+                emptyStateAction.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    openIaModal();
+                    if (iaModalButton) {
+                        iaModalButton.focus();
+                    }
+                });
+            }
 
             var CREATE_SYSTEM_TEMPLATE =
                 "Tu es un assistant qui va générer un planning à partir des instructions suivantes {{(contenu du id=\"prompt\") }}\\n\\n" +
@@ -2424,7 +2517,7 @@
             var importJsonInput = document.getElementById("importJsonInput");
             var headerTitleElement = document.querySelector(".header-text h1");
             var infoPopup = document.getElementById("timelineInfoPopup");
-            var infoCloseBtn = infoPopup ? infoPopup.querySelector(".info-close") : null;
+            var timelineUpdateBtn = document.getElementById("timelineUpdateBtn");
             var copyToast = document.getElementById("copyToast");
             var copyToastTimer = null;
             var switchToIndexBtn = document.getElementById("switchToIndex");
@@ -2935,7 +3028,7 @@
             function buildTextExport(planning, viewTitle) {
                 var lines = [];
                 if (viewTitle) {
-                    lines.push("Vue : " + viewTitle);
+                    lines.push("Page : " + viewTitle);
                 }
                 if (planning && planning.timeline) {
                     var start = planning.timeline.start || "";
@@ -3058,7 +3151,7 @@
                 var importedViews = [];
                 if (Array.isArray(state.views) && state.views.length) {
                     importedViews = state.views.map(function (view, index) {
-                        var label = view.name || view.title || ("Vue " + (index + 1));
+                        var label = view.name || view.title || ("Page " + (index + 1));
                         return {
                             name: label,
                             title: view.title || view.name || label,
@@ -3066,7 +3159,7 @@
                         };
                     });
                 } else if (state.groups) {
-                    var label = state.label || state.name || "Vue 1";
+                    var label = state.label || state.name || "Page 1";
                     importedViews = [{ name: label, title: label, planning: state }];
                 }
                 if (!importedViews.length) {
@@ -3130,32 +3223,90 @@
             if (exportTextBtn) {
                 exportTextBtn.addEventListener("click", exportTimelineText);
             }
-            function showTimelineAbout() {
-                if (!infoPopup) return;
-                infoPopup.classList.add("open");
-            }
-            function hideTimelineAbout() {
+
+            function closeTimelineInfoPopup() {
                 if (!infoPopup) return;
                 infoPopup.classList.remove("open");
             }
-            if (aboutTimelineBtn) {
-                aboutTimelineBtn.addEventListener("click", function () {
-                    showTimelineAbout();
-                    closeContextMenus();
-                });
+
+            function toggleTimelineInfoPopup(event) {
+                if (!infoPopup) return;
+                event.stopPropagation();
+                closeContextMenus();
+                infoPopup.classList.toggle("open");
             }
-            if (infoCloseBtn) {
-                infoCloseBtn.addEventListener("click", function () {
-                    hideTimelineAbout();
-                });
-            }
-            if (infoPopup) {
-                infoPopup.addEventListener("click", function (event) {
-                    if (event.target === infoPopup) {
-                        hideTimelineAbout();
+
+            function clearTimelineStorageAndReload() {
+                try {
+                    localStorage.clear();
+                } catch (err) {
+                    console.warn("Impossible de vider localStorage", err);
+                }
+                try {
+                    sessionStorage.clear();
+                } catch (err) {
+                    console.warn("Impossible de vider sessionStorage", err);
+                }
+                try {
+                    if (window.sessionStorage) {
+                        window.sessionStorage.setItem(timelineTourSkipFlag, "1");
                     }
+                } catch (err) {
+                    console.warn("Impossible de préparer l'indicateur de mise à jour", err);
+                }
+                var cookies = (document.cookie || "").split(";");
+                cookies.forEach(function (cookie) {
+                    var eqPos = cookie.indexOf("=");
+                    var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+                    name = name.trim();
+                    if (!name) return;
+                    document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+                });
+                var reload = function () {
+                    window.location.reload();
+                };
+                if (window.caches && typeof window.caches.keys === "function") {
+                    window.caches
+                        .keys()
+                        .then(function (keys) {
+                            return Promise.all(
+                                keys.map(function (key) {
+                                    return window.caches.delete(key);
+                                })
+                            );
+                        })
+                        .catch(function () { })
+                        .finally(reload);
+                } else {
+                    reload();
+                }
+            }
+
+            function promptTimelineUpdate() {
+                var warning =
+                    "La mise à jour effacera les données locales (cache, cookies, préférences). Continuer ?";
+                if (!confirm(warning)) return;
+                closeTimelineInfoPopup();
+                clearTimelineStorageAndReload();
+            }
+
+            if (aboutTimelineBtn) {
+                aboutTimelineBtn.addEventListener("click", toggleTimelineInfoPopup);
+            }
+
+            if (timelineUpdateBtn) {
+                timelineUpdateBtn.addEventListener("click", function (event) {
+                    event.stopPropagation();
+                    promptTimelineUpdate();
                 });
             }
+
+            document.addEventListener("click", function (event) {
+                if (!infoPopup || infoPopup.contains(event.target) || event.target === aboutTimelineBtn) {
+                    return;
+                }
+                closeTimelineInfoPopup();
+            });
             if (switchToIndexBtn) {
                 switchToIndexBtn.addEventListener("click", function () {
                     window.location.href = "index.html";
@@ -3329,8 +3480,8 @@
 
             function ensureViewName(index) {
                 var view = views[index];
-                if (!view) return "Vue " + (index + 1);
-                return view.name || view.title || ("Vue " + (index + 1));
+                if (!view) return "Page " + (index + 1);
+                return view.name || view.title || ("Page " + (index + 1));
             }
 
             function refreshHeaderText() {
@@ -3353,6 +3504,7 @@
                 syncFiltersForActiveView(getVisibleViewTypeIds());
                 updateTimelineFilter();
                 persistCurrentPlanning();
+                updateEmptyViewMessage();
             }
 
             function activateView(index, skipSave) {
@@ -3373,6 +3525,7 @@
                 }
                 refreshHeaderText();
                 renderViewTabs();
+                updateEmptyViewMessage();
             }
 
             if (headerTitleElement) {
@@ -3414,7 +3567,7 @@
 
             function addView() {
                 persistCurrentPlanning();
-                var label = "Vue " + (views.length + 1);
+                var label = "Page " + (views.length + 1);
                 var newView = { name: label, title: label, planning: null };
                 ensureViewFilterState(newView);
                 views.push(newView);
@@ -3819,6 +3972,7 @@
                     persistenceLocked = false;
                 }
                 persistCurrentPlanning();
+                updateEmptyViewMessage();
             }
 
             function exportPlanningToJson() {
@@ -4183,6 +4337,7 @@
             var timelineTourSkipBtn = document.getElementById("timelineTourSkipBtn");
             var timelineTourReplayBtn = document.getElementById("timelineTourReplayBtn");
             var timelineTourStorageKey = "goTimelineTourSeen";
+            var timelineTourSkipFlag = "goTimelineTourSkipAfterUpdate";
             var timelineCurrentTourIndex = 0;
 
             function getSelectorsFromStep(step) {
@@ -4342,6 +4497,14 @@
                 renderTimelineTourStep();
             });
 
+            var timelineTourSkipOnReload =
+                window.sessionStorage && window.sessionStorage.getItem(timelineTourSkipFlag);
+            if (timelineTourSkipOnReload) {
+                if (window.localStorage) {
+                    window.localStorage.setItem(timelineTourStorageKey, "1");
+                }
+                window.sessionStorage.removeItem(timelineTourSkipFlag);
+            }
             var timelineTourSeen = window.localStorage && window.localStorage.getItem(timelineTourStorageKey);
             if (!timelineTourSeen) {
                 setTimeout(function () {
