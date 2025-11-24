@@ -1154,6 +1154,7 @@
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
+            text-transform: capitalize;
         }
 
         .type-selector select:disabled {
@@ -1390,7 +1391,7 @@
         }
 
         .vis-time-axis .vis-text {
-            font-size: 10px;
+            font-size: var(--global-font-size);
             color: var(--muted);
             font-weight: 600;
         }
@@ -1425,7 +1426,7 @@
                 <div class="header-actions">
                     <button class="btn" id="openIaModal" aria-label="Ouvrir l'IA">✨</button>
                     <div class="menu-trigger">
-                        <button class="btn" id="optionsBtn" aria-label="Options d'affichage">🔡</button>
+                        <button class="btn" id="optionsBtn" aria-label="Options d'affichage">📐</button>
                         <div class="context-menu" id="optionsMenu">
                             <div class="menu-panel">
                                 <label>
@@ -2228,7 +2229,7 @@
             function formatItemDurationSuffix(item) {
                 var days = getItemDurationInDays(item);
                 if (!days) return null;
-                return "(" + days + "j)";
+                return "-" + days + " j";
             }
 
             function appendDurationToContent(content, item) {
