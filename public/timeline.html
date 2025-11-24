@@ -1035,6 +1035,25 @@
             width: 100%;
         }
 
+        .ia-key-row label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .ia-key-row input {
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 10px 12px;
+            font-size: 13px;
+            background: var(--surface-soft);
+            color: var(--text);
+            font-family: inherit;
+        }
+
         .header-actions .header-row label,
         .header-actions .header-row textarea,
         .header-actions .header-row select,
@@ -1814,6 +1833,12 @@
                                 placeholder="Élaborer un planning opérationnel pour une demande de maintenance moteur.&#10;&#10;Objectifs :&#10;- Période : janvier–mars 2025&#10;- Segments : Préparation opérationnelle, Inspection technique, Actions correctives&#10;- Natures : diagnostic, intervention, contrôle qualité, jalon&#10;- Générer 6 interventions datées (début/fin) avec logique métier&#10;- Ajouter 2 jalons clés (Feu vert inspection, Clôture technique)&#10;- Libellés courts et professionnels"></textarea>
                             <textarea id="promptModify" class="ia-prompt-field" rows="30" aria-hidden="true"></textarea>
                         </div>
+                    </div>
+                    <div class="header-row ia-header-actions ia-key-row">
+                        <label>
+                            <a href="https://platform.openai.com/settings/organization/api-keys" target="_blank" rel="noreferrer">OpenAI API key</a>
+                            <input type="password" id="iaApiKeyInput" autocomplete="off" placeholder="sk-...">
+                        </label>
                     </div>
                     <button class="btn" id="btn-call">
                         <span>✨ Envoyer</span>
@@ -4895,6 +4920,46 @@
             var txtPromptModify = document.getElementById("promptModify");
             var selectMode = document.getElementById("mode");
             var btnCall = document.getElementById("btn-call");
+            var IA_API_KEY_STORAGE_KEY = "go-toolkit-api-key";
+            var iaApiKeyInput = document.getElementById("iaApiKeyInput");
+
+            function readSharedTimelineApiKey() {
+                if (typeof window === "undefined" || !window.localStorage) {
+                    return "";
+                }
+                try {
+                    return localStorage.getItem(IA_API_KEY_STORAGE_KEY) || "";
+                } catch (err) {
+                    console.warn("Impossible de lire la clé OpenAI stockée localement", err);
+                    return "";
+                }
+            }
+
+            function persistSharedTimelineApiKey(value) {
+                if (typeof window === "undefined" || !window.localStorage) {
+                    return;
+                }
+                try {
+                    if (value) {
+                        localStorage.setItem(IA_API_KEY_STORAGE_KEY, value);
+                    } else {
+                        localStorage.removeItem(IA_API_KEY_STORAGE_KEY);
+                    }
+                } catch (err) {
+                    console.warn("Impossible de sauvegarder la clé OpenAI localement", err);
+                }
+            }
+
+            var storedApiKey = readSharedTimelineApiKey();
+            if (iaApiKeyInput && storedApiKey) {
+                iaApiKeyInput.value = storedApiKey;
+            }
+
+            if (iaApiKeyInput) {
+                iaApiKeyInput.addEventListener("input", function () {
+                    persistSharedTimelineApiKey(iaApiKeyInput.value.trim());
+                });
+            }
             var waitingTimerId = null;
             var waitingCounter = 60;
             var iaModalButtonDefaultLabel = iaModalButton
@@ -5015,9 +5080,21 @@
             }
 
             async function callOpenAI(messages) {
+                var apiKey = "";
+                if (iaApiKeyInput && iaApiKeyInput.value) {
+                    apiKey = iaApiKeyInput.value.trim();
+                }
+                if (!apiKey) {
+                    apiKey = readSharedTimelineApiKey();
+                }
+                var useProxy = !apiKey;
                 var headers = {
                     "Content-Type": "application/json"
                 };
+                if (apiKey) {
+                    headers.Authorization = "Bearer " + apiKey;
+                }
+                var endpoint = useProxy ? OPENAI_PROXY_URL : "https://api.openai.com/v1/chat/completions";
                 try {
                     console.log(
                         "OpenAI request content",
@@ -5025,7 +5102,7 @@
                             return "[" + m.role + "] " + (m.content || "");
                         })
                     );
-                    var response = await fetch(OPENAI_PROXY_URL, {
+                    var response = await fetch(endpoint, {
                         method: "POST",
                         headers: headers,
                         body: JSON.stringify({
