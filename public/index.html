@@ -295,6 +295,7 @@
             --radius: 10px;
             --shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.05);
             --slide-aspect-ratio: 16 / 9;
+            --slide-width: min(1400px, 100%);
         }
 
         html,
@@ -311,20 +312,21 @@
             display: flex;
             justify-content: center;
             align-items: flex-start;
+            overflow: hidden;
         }
 
         .app {
-            max-width: 1320px;
+            width: 100%;
+            max-width: none;
             margin: 0 auto;
-            padding: 4px 4px 4px;
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            min-height: calc(100vh - 24px);
-            width: 100%;
-            position: relative;
-            background: transparent;
+            gap: 12px;
+            align-items: stretch;
+            min-height: 100vh;
+            padding: 12px;
         }
+
 
         .app::after {
             content: "";
@@ -345,6 +347,12 @@
             justify-content: space-between;
             gap: 12px;
             flex-wrap: wrap;
+            width: 100%;
+            margin: 4px 0 auto;
+            padding: 0;
+            border-radius: 0;
+            border: none;
+            box-shadow: none;
         }
 
         .tabs-actions {
@@ -598,7 +606,7 @@
             background: #fff;
             padding: 4px 12px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 12px;
             color: var(--text-main);
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
             text-decoration: none;
@@ -616,10 +624,10 @@
         .slides-container {
             position: relative;
             flex: 1;
-            min-height: calc(100vh - 200px);
+            min-height: calc(100vh - 50px);
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             overflow: hidden;
         }
 
@@ -627,6 +635,7 @@
             margin-top: 4px;
             display: flex;
             justify-content: center;
+            align-items: flex-start;
             width: 100%;
         }
 
@@ -640,9 +649,8 @@
             flex-direction: column;
             gap: 8px;
             aspect-ratio: var(--slide-aspect-ratio, 16 / 9);
-            width: min(1180px, 100%);
-            height: auto;
-            max-height: none;
+            width: var(--slide-width, min(1480px, 100%));
+            height: 100vh;
         }
 
         .slide,
@@ -1291,9 +1299,30 @@
         ];
 
         const ratioOptions = [
-            { name: "16:9", css: "16 / 9", pptx: { width: 10, height: 5.625 } },
-            { name: "4:3", css: "4 / 3", pptx: { width: 10, height: 7.5 } },
-            { name: "A4", css: "297 / 210", pptx: { width: 11.69, height: 8.27 } }
+            {
+                name: "Full",
+                css: "16 / 9",
+                width: "100%",
+                pptx: { width: 10, height: 5.625 }
+            },
+            {
+                name: "16:9",
+                css: "16 / 9",
+                width: "min(1400px, 100%)",
+                pptx: { width: 10, height: 5.625 }
+            },
+            {
+                name: "4:3",
+                css: "4 / 3",
+                width: "min(960px, 100%)",
+                pptx: { width: 10, height: 7.5 }
+            },
+            {
+                name: "A4",
+                css: "297 / 210",
+                width: "min(820px, 100%)",
+                pptx: { width: 11.69, height: 8.27 }
+            }
         ];
 
         const sectionKeys = ["first-section", "second-section", "third-section"];
@@ -2090,6 +2119,7 @@
             const ratio = ratioOptions[index] || ratioOptions[0];
             currentRatioIndex = index;
             document.documentElement.style.setProperty("--slide-aspect-ratio", ratio.css);
+            document.documentElement.style.setProperty("--slide-width", ratio.width || "min(1180px, 100%)");
             updateRatioButtons();
             schedulePersist();
         }

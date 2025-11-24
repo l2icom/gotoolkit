@@ -11,6 +11,7 @@
     <script src="https://unpkg.com/vis-timeline@latest/standalone/umd/vis-timeline-graph2d.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment-with-locales.min.js"></script>
 
     <style>
         :root {
@@ -44,11 +45,13 @@
 
         body {
             margin: 0;
-            padding: 4px;
+            padding: 0;
+            min-height: 100vh;
+            height: 100vh;
             background: #f7f7f7;
             color: var(--text);
             font-family: var(--app-font, "Inter");
-            min-height: 100vh;
+            overflow: hidden;
         }
 
         .vis-item .vis-item-content {
@@ -76,7 +79,25 @@
             gap: 12px;
             align-items: stretch;
             min-height: 100vh;
+            height: 100vh;
+            padding: 12px;
         }
+
+        .app::after {
+            content: "";
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            width: 120px;
+            height: 120px;
+            background: url("logo.gif") no-repeat center/contain;
+            opacity: 0.25;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+
+
 
         .app-header {
             display: flex;
@@ -85,7 +106,6 @@
             gap: 12px;
             flex-wrap: wrap;
             width: 100%;
-            max-width: 1180px;
             margin: 4px 0 auto;
             padding: 0;
             border-radius: 0;
@@ -94,7 +114,7 @@
         }
 
         .tabs {
-            flex: 1;
+            flex: 0 1 auto;
             min-width: 0;
             display: flex;
             gap: 6px;
@@ -301,6 +321,11 @@
 
         /* Timeline + toolbar */
         .timeline-card {
+            --vis-item-padding-vertical: 4px;
+            --vis-item-padding-horizontal: 6px;
+            --vis-group-label-padding-vertical: 4px;
+            --vis-group-label-padding-horizontal: 10px;
+            --vis-row-padding-vertical: 4px;
             background: var(--timeline-background);
             border-radius: var(--radius-lg);
             border: 1px solid var(--border);
@@ -310,11 +335,66 @@
             gap: 2px;
             flex: 1 1 auto;
             min-height: 0;
-            height: auto;
+            height: 100%;
             width: 100%;
             max-width: none;
             font-size: var(--global-font-size, 14px);
             aspect-ratio: auto;
+        }
+
+        .timeline-card[data-spacing="dense"] {
+            --vis-item-padding-vertical: 4px;
+            --vis-item-padding-horizontal: 6px;
+            --vis-group-label-padding-vertical: 2px;
+            --vis-group-label-padding-horizontal: 8px;
+            --vis-row-padding-vertical: 4px;
+        }
+
+        .timeline-card[data-spacing="normal"] {
+            --vis-item-padding-vertical: 6px;
+            --vis-item-padding-horizontal: 10px;
+            --vis-group-label-padding-vertical: 4px;
+            --vis-group-label-padding-horizontal: 10px;
+            --vis-row-padding-vertical: 6px;
+        }
+
+        .timeline-card[data-spacing="comfortable"] {
+            --vis-item-padding-vertical: 10px;
+            --vis-item-padding-horizontal: 16px;
+            --vis-group-label-padding-vertical: 6px;
+            --vis-group-label-padding-horizontal: 12px;
+            --vis-row-padding-vertical: 10px;
+        }
+
+        .timeline-card[data-ratio="full"],
+        .timeline-card:not([data-ratio]) {
+            flex: 1 1 auto;
+            aspect-ratio: auto;
+            width: 100%;
+            margin-inline: 0;
+            max-width: none;
+        }
+
+        .timeline-card[data-ratio="16:9"],
+        .timeline-card[data-ratio="4:3"],
+        .timeline-card[data-ratio="a4"] {
+            flex: 0 0 auto;
+            aspect-ratio: auto;
+            width: auto;
+            max-width: 100%;
+            margin-inline: auto;
+        }
+
+        .timeline-card[data-ratio="16:9"] {
+            aspect-ratio: 16 / 9;
+        }
+
+        .timeline-card[data-ratio="4:3"] {
+            aspect-ratio: 4 / 3;
+        }
+
+        .timeline-card[data-ratio="a4"] {
+            aspect-ratio: 297 / 210;
         }
 
         .timeline-wrapper {
@@ -1184,7 +1264,8 @@
             border-width: 1px;
             font-size: var(--global-font-size);
             line-height: 1.2;
-            padding-inline: 6px;
+            padding-block: var(--vis-item-padding-vertical, 6px);
+            padding-inline: var(--vis-item-padding-horizontal, 10px);
             cursor: pointer;
             background: #e5e7eb;
             border-color: #d1d5db;
@@ -1197,6 +1278,18 @@
                 color 120ms ease;
             white-space: normal;
             word-break: break-word;
+        }
+
+        #timeline .vis-labelset .vis-label {
+            padding-block: var(--vis-group-label-padding-vertical, 4px);
+            padding-inline: var(--vis-group-label-padding-horizontal, 10px);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        #timeline .vis-body .vis-row {
+            padding-block: var(--vis-row-padding-vertical, 6px);
         }
 
 
@@ -1350,7 +1443,24 @@
                                     Fond
                                     <select id="backgroundSelector">
                                         <option value="#ffffff">Blanc</option>
-                                        <option value="transparent">Transparent</option>
+                                        <option value="transparent" selected>Transparent</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    Largeur
+                                    <select id="widthSelect">
+                                        <option value="full">Plein écran</option>
+                                        <option value="16:9">16/9</option>
+                                        <option value="4:3">4/3</option>
+                                        <option value="a4">A4</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    Espacement
+                                    <select id="spacingSelect">
+                                        <option value="dense">Dense (actuel)</option>
+                                        <option value="normal">Normal</option>
+                                        <option value="comfortable">Confortable</option>
                                     </select>
                                 </label>
                                 <label>
@@ -1380,7 +1490,7 @@
             </div>
         </div>
         <!-- TIMELINE + TOOLBAR -->
-        <div class="timeline-card">
+        <div class="timeline-card" data-spacing="dense" data-ratio="full">
 
 
             <div class="toolbar">
@@ -1560,6 +1670,9 @@
             // ============================================================
             var DataSet = vis.DataSet;
             var Timeline = vis.Timeline;
+            if (window.moment && typeof moment.locale === "function") {
+                moment.locale("fr");
+            }
 
             var container = document.getElementById("timeline");
             var timelineCard = document.querySelector(".timeline-card");
@@ -1787,7 +1900,8 @@
                     font: "Inter",
                     fontSize: 14,
                     background: "#f7f7f7",
-                    ratio: "16:9"
+                    ratio: "full",
+                    spacing: "dense"
                 }
             };
             function sanitizeTypeId(raw) {
@@ -1989,8 +2103,9 @@
                 font: "Inter",
                 fontSize: 14,
                 background: "transparent",
-                ratio: "16:9",
-                showItemDurations: false
+                ratio: "full",
+                showItemDurations: false,
+                spacing: "dense"
             };
             var colorModalState = {
                 types: {},
@@ -2185,6 +2300,7 @@
                 selectable: true,
                 multiselect: false,
                 margin: { item: 8, axis: 10 },
+                locale: "fr",
                 snap: function (date) {
                     var d = new Date(date);
                     if (snapMode === "day") {
@@ -2294,6 +2410,8 @@
             var optionsMenu = document.getElementById("optionsMenu");
             var fontSizeInput = document.getElementById("fontSizeInput");
             var backgroundSelector = document.getElementById("backgroundSelector");
+            var widthSelect = document.getElementById("widthSelect");
+            var spacingSelect = document.getElementById("spacingSelect");
             var fileMenuBtn = document.getElementById("fileMenuBtn");
             var fileMenu = document.getElementById("fileMenu");
             var importJsonBtn = document.getElementById("importJsonBtn");
@@ -3112,9 +3230,39 @@
                 timelineCard.dataset.ratio = ratio;
             }
 
-            function applyRatio(ratio) {
-                displayPreferences.ratio = ratio;
-                updateTimelineAspect(ratio);
+            function applySpacingMode(mode, shouldPersist) {
+                if (!timelineCard) return;
+                var normalized = typeof mode === "string" ? mode.trim().toLowerCase() : "";
+                if (!normalized) normalized = "dense";
+                var allowed = ["dense", "normal", "comfortable"];
+                if (allowed.indexOf(normalized) === -1) {
+                    normalized = "dense";
+                }
+                timelineCard.dataset.spacing = normalized;
+                displayPreferences.spacing = normalized;
+                if (spacingSelect) {
+                    spacingSelect.value = normalized;
+                }
+                if (shouldPersist) {
+                    persistTimelineState();
+                }
+            }
+
+            function applyRatio(ratio, shouldPersist) {
+                if (!timelineCard) return;
+                var normalized = typeof ratio === "string" ? ratio.trim() : "";
+                var allowed = ["full", "16:9", "4:3", "a4"];
+                if (!normalized || allowed.indexOf(normalized) === -1) {
+                    normalized = "full";
+                }
+                displayPreferences.ratio = normalized;
+                updateTimelineAspect(normalized);
+                if (widthSelect) {
+                    widthSelect.value = normalized;
+                }
+                if (shouldPersist) {
+                    persistTimelineState();
+                }
             }
 
             function applyDisplayPreferences() {
@@ -3127,9 +3275,8 @@
                 }
                 var backgroundValue = displayPreferences.background || "#ffffff";
                 applyBackground(backgroundValue);
-                if (displayPreferences.ratio) {
-                    applyRatio(displayPreferences.ratio);
-                }
+                applyRatio(displayPreferences.ratio || "full");
+                applySpacingMode(displayPreferences.spacing || "dense");
             }
 
             function setItemDurationMode(mode, shouldPersist) {
@@ -3161,6 +3308,16 @@
             if (itemDurationSelect) {
                 itemDurationSelect.addEventListener("change", function () {
                     setItemDurationMode(this.value, true);
+                });
+            }
+            if (widthSelect) {
+                widthSelect.addEventListener("change", function () {
+                    applyRatio(this.value, true);
+                });
+            }
+            if (spacingSelect) {
+                spacingSelect.addEventListener("change", function () {
+                    applySpacingMode(this.value, true);
                 });
             }
             setItemDurationMode(displayPreferences.showItemDurations ? "append" : "none", false);
