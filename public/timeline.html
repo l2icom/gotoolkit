@@ -315,12 +315,34 @@
             aspect-ratio: var(--timeline-aspect-ratio, 16 / 9);
         }
 
+        .timeline-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
         .timeline-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
             gap: 16px;
             flex-wrap: wrap;
+        }
+
+        #weekSeparatorOverlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image: linear-gradient(
+                90deg,
+                rgba(15, 23, 42, 0.35) 0,
+                rgba(15, 23, 42, 0.35) 1px,
+                rgba(15, 23, 42, 0) 1px,
+                rgba(15, 23, 42, 0) 100%
+            );
+            background-size: 0 100%;
+            transition: background-size 0.2s ease;
         }
 
         .header-buttons {
@@ -1131,6 +1153,8 @@
         }
 
         #timeline {
+            position: relative;
+            z-index: 1;
             background: var(--timeline-background, var(--surface));
             border-radius: 12px;
             border: 1px solid var(--border);
@@ -1392,7 +1416,10 @@
                     </div>
                 </div>
             </div>
-            <div id="timeline"></div>
+            <div class="timeline-wrapper">
+                <div id="timeline"></div>
+                <div id="weekSeparatorOverlay" aria-hidden="true"></div>
+            </div>
         </div>
 
         <div class="modal-overlay" id="iaModalOverlay" role="dialog" aria-modal="true" aria-labelledby="iaModalTitle">
@@ -1518,6 +1545,7 @@
             var Timeline = vis.Timeline;
 
             var container = document.getElementById("timeline");
+            var weekSeparatorOverlay = document.getElementById("weekSeparatorOverlay");
 
             var groups = new DataSet();
             var items = new DataSet();
@@ -2085,6 +2113,12 @@
             };
 
             timeline = new Timeline(container, itemsView, groups, options);
+            updateWeekSeparatorOverlay(timeline.getWindow().start, timeline.getWindow().end);
+            window.addEventListener("resize", function () {
+                if (!timeline) return;
+                var currentRange = timeline.getWindow();
+                updateWeekSeparatorOverlay(currentRange.start, currentRange.end);
+            });
 
             var iaModalOverlay = document.getElementById("iaModalOverlay");
             var iaModalButton = document.getElementById("openIaModal");
@@ -3643,9 +3677,39 @@
                 var diff = end.getTime() - start.getTime();
                 if (diff <= 0) return null;
                 var days = diff / oneDay;
-                if (days <= 21) return "day";
-                if (days <= 90) return "week";
+
+                var viewportWidth = container ? container.clientWidth : 0;
+                var pixelsPerDay = viewportWidth > 0 && days > 0 ? viewportWidth / days : 0;
+
+                // Prefer a finer scale when there is enough pixel budget per day.
+                if (pixelsPerDay >= 17) return "day";
+                if (pixelsPerDay >= 7) return "week";
+
+                if (days <= 7) return "day";
+                if (days <= 14) return "week";
                 return "month";
+            }
+
+            function updateWeekSeparatorOverlay(start, end) {
+                if (!weekSeparatorOverlay) return;
+                if (!start || !end) {
+                    weekSeparatorOverlay.style.backgroundSize = "0 100%";
+                    return;
+                }
+                var diff = end.getTime() - start.getTime();
+                if (diff <= 0) {
+                    weekSeparatorOverlay.style.backgroundSize = "0 100%";
+                    return;
+                }
+                var days = diff / oneDay;
+                var viewportWidth = container ? container.clientWidth : 0;
+                var widthPerDay = days > 0 && viewportWidth > 0 ? viewportWidth / days : 0;
+                var weekWidth = widthPerDay * 7;
+                if (!isFinite(weekWidth) || weekWidth <= 0) {
+                    weekSeparatorOverlay.style.backgroundSize = "0 100%";
+                    return;
+                }
+                weekSeparatorOverlay.style.backgroundSize = weekWidth + "px 100%";
             }
 
             timeline.on("rangechanged", function (props) {
@@ -3653,6 +3717,7 @@
                 if (autoMode && autoMode !== currentScaleMode) {
                     setScale(autoMode);
                 }
+                updateWeekSeparatorOverlay(props.start, props.end);
             });
 
             // ============================================================
