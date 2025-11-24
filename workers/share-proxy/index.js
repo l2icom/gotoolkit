@@ -80,6 +80,37 @@ function notFoundResponse(request, env) {
   return errorResponse("Ressource introuvable", 404, request, env);
 }
 
+function getClientIp(request) {
+  return (
+    request.headers.get("CF-Connecting-IP") ||
+    request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() ||
+    "unknown"
+  );
+}
+
+async function enforceWriteRateLimit(request, env) {
+  if (!env?.RATE_LIMIT) {
+    return null;
+  }
+  const key = `share-write:${getClientIp(request)}`;
+  try {
+    const outcome = await env.RATE_LIMIT.limit({ key });
+    if (outcome?.success) {
+      return null;
+    }
+    console.warn("Write rate limit reached", { key });
+    return errorResponse(
+      "Trop de requêtes d'écriture, réessayez dans un instant",
+      429,
+      request,
+      env
+    );
+  } catch (err) {
+    console.error("Rate limit check échoué", err);
+    return null;
+  }
+}
+
 function getDocumentUrl(env, collection, documentId) {
   const baseUrl = getFirestoreBaseUrl(env);
   const encodedId = encodeURIComponent(documentId);
@@ -344,7 +375,11 @@ async function handleRequest(request, env) {
     }
     return jsonResponse({ payload: doc.payload, meta: doc.meta }, 200, request, env);
   }
-  if (request.method === "PUT") {
+  if (request.method === "PUT" || request.method === "POST") {
+    const rateLimitResponse = await enforceWriteRateLimit(request, env);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
     let body = null;
     try {
       body = await request.json();
@@ -357,7 +392,7 @@ async function handleRequest(request, env) {
     const result = await upsertShareDocument(env, path.collection, path.documentId, body.payload, request);
     return jsonResponse(result, 200, request, env);
   }
-  const headers = Object.assign({ Allow: "GET, PUT" }, corsHeaders(request, env));
+  const headers = Object.assign({ Allow: "GET,PUT,POST" }, corsHeaders(request, env));
   return errorResponse("Méthode non autorisée", 405, request, env, headers);
 }
 
