@@ -1,4 +1,4 @@
-name = "gotoolkit-share"
+name = "gotoolkit"
 main = "index.js"
 compatibility_date = "2024-12-01"
 workers_dev = true
