@@ -60,6 +60,17 @@
             display: block;
         }
 
+        .context-menu.share-menu {
+            right: 0;
+            left: auto;
+            min-width: 260px;
+        }
+
+        .context-menu.share-menu .menu-panel {
+            padding: 12px;
+            gap: 8px;
+        }
+
         .menu-panel {
             display: flex;
             flex-direction: column;
@@ -181,11 +192,13 @@
             min-height: 80px;
             height: 80px;
         }
+
         .modal-description {
             font-size: 13px;
             color: var(--muted);
             margin: 0;
         }
+
         .share-link-field {
             width: 100%;
             border-radius: 8px;
@@ -195,17 +208,46 @@
             font-family: inherit;
             background: #fbf8f2;
         }
-        .share-modal-status {
+
+        .share-link-line {
+            display: flex;
+        }
+
+        .share-menu-status {
             font-size: 12px;
             color: var(--muted);
             margin: 0;
         }
-        .share-modal-status.error {
+
+        .share-menu-status.error {
             color: #b00020;
         }
-        .share-modal-footer {
-            flex-wrap: wrap;
+
+        .share-actions {
+            display: flex;
+            flex-direction: column;
             gap: 6px;
+        }
+
+        .share-menu .menu-panel-btn {
+            border-radius: 10px;
+            border: 1px solid rgba(42, 122, 87, 0.3);
+            background: #f3f1eb;
+            width: 100%;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 13px;
+            transition: none;
+        }
+
+        .share-menu .menu-panel-btn.primary {
+            background: #2a7a57;
+            color: #fff;
+            border-color: #2a7a57;
+        }
+
+        .share-menu .menu-panel-btn:hover {
+            background: inherit;
         }
 
         .prompt-template-select {
@@ -1258,7 +1300,25 @@
                         </div>
                     </div>
                 </div>
-                <button id="shareBtn" class="info-button" type="button" aria-label="Partager" title="Lien d’édition privée">🔗</button>
+                <div class="menu-trigger" id="shareMenuTrigger">
+                    <button id="shareBtn" class="info-button" type="button" aria-label="Partager"
+                        title="Lien de partage">🔗</button>
+                    <div class="context-menu share-menu" id="shareMenu">
+                        <div class="menu-panel">
+                            <div class="menu-header">Lien de partage</div>
+                            <div class="share-link-line">
+                                <input id="shareLinkField" class="share-link-field" type="text" readonly
+                                    placeholder="Créer un lien ">
+                            </div>
+                            <div class="share-actions">
+                                <button id="shareUpdateBtn" type="button" class="menu-panel-btn">🔄️ Actualiser</button>
+                                <button id="shareCreateBtn" type="button" class="menu-panel-btn primary">🔗
+                                    Nouveau</button>
+                            </div>
+                            <p class="share-menu-status" id="shareMenuStatus"></p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1354,27 +1414,6 @@
                     <button id="applyPromptToAllBtn" type="button" class="reset-prompts-btn">Tout appliquer</button>
                     <button id="resetPromptsBtn" type="button" class="reset-prompts-btn">Réinitialiser</button>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="shareModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>Lien d’édition privée</h3>
-                <button class="modal-close" data-close="shareModal">×</button>
-            </div>
-            <p class="modal-description">
-                Crée un lien sécurisé pour partager ton planning complet avec une personne disposant uniquement de cette URL.
-            </p>
-            <label>
-                Lien d’édition
-                <input id="shareLinkField" class="share-link-field" type="text" readonly>
-            </label>
-            <p class="share-modal-status" id="shareModalStatus"></p>
-            <div class="modal-footer share-modal-footer">
-                <button class="primary" id="shareUpdateBtn" type="button">Mettre à jour</button>
-                <button id="shareCreateBtn" type="button">Créer</button>
             </div>
         </div>
     </div>
@@ -1635,6 +1674,7 @@
         const contextModalPanels = contextModal.querySelectorAll(".modal-panel");
         const settingsMenu = document.getElementById("settingsMenu");
         const fileMenu = document.getElementById("fileMenu");
+        const shareMenu = document.getElementById("shareMenu");
         const apiKeyInput = document.getElementById("apiKeyInput");
         const promptTemplateSelect = document.getElementById("promptTemplateSelect");
         const promptInputs = Array.from(document.querySelectorAll(".prompt-input"));
@@ -2909,7 +2949,7 @@
         }
 
         function closeContextMenus() {
-            [settingsMenu, fileMenu].forEach(menu => menu?.classList.remove("open"));
+            [settingsMenu, fileMenu, shareMenu].forEach(menu => menu?.classList.remove("open"));
         }
 
         function withExportMode(action) {
@@ -3403,9 +3443,8 @@
         initializeAppState();
 
         const shareBtn = document.getElementById("shareBtn");
-        const shareModal = document.getElementById("shareModal");
         const shareLinkField = document.getElementById("shareLinkField");
-        const shareModalStatus = document.getElementById("shareModalStatus");
+        const shareMenuStatus = document.getElementById("shareMenuStatus");
         const shareCreateBtn = document.getElementById("shareCreateBtn");
         const shareUpdateBtn = document.getElementById("shareUpdateBtn");
 
@@ -3422,7 +3461,7 @@
             return "Crée un lien d’édition privée pour le partager.";
         }
 
-        function updateShareModalUI() {
+        function updateShareMenuUI() {
             if (shareLinkField) {
                 const hasToken = Boolean(currentShareToken);
                 shareLinkField.value = hasToken ? buildShareUrl(currentShareToken) : "";
@@ -3436,74 +3475,98 @@
             }
             if (shareCreateBtn) {
                 shareCreateBtn.disabled = shareRequestInProgress || !firestoreCollection;
+                if (!currentShareToken) {
+                    shareCreateBtn.classList.add("primary");
+                } else {
+                    shareCreateBtn.classList.remove("primary");
+                }
             }
-            if (shareModalStatus) {
+            if (shareMenuStatus) {
                 const text = shareStatusMessage || getShareDefaultStatusText();
-                shareModalStatus.textContent = text;
+                shareMenuStatus.textContent = text;
                 const isError =
                     (shareStatusType === "error" && Boolean(text)) ||
                     (!firestoreCollection && !shareStatusMessage);
-                shareModalStatus.classList.toggle("error", isError);
+                shareMenuStatus.classList.toggle("error", isError);
+            }
+            if (shareUpdateBtn) {
+                if (currentShareToken) {
+                    shareUpdateBtn.classList.add("primary");
+                } else {
+                    shareUpdateBtn.classList.remove("primary");
+                }
+            }
+        }
+
+        async function copyCurrentShareLinkToClipboard() {
+            if (!currentShareToken) return false;
+            const link = buildShareUrl(currentShareToken);
+            if (!link) return false;
+            try {
+                await copyTextToClipboard(link);
+                showCopyToast("Lien privé copié");
+                return true;
+            } catch (err) {
+                console.error("Copie du lien privé impossible", err);
+                return false;
             }
         }
 
         async function handleShareCreateClick() {
             if (!firestoreCollection) {
                 setShareStatus("Le partage privé nécessite Firebase (hébergement officiel).", "error");
-                updateShareModalUI();
+                updateShareMenuUI();
                 return;
             }
             if (shareRequestInProgress) return;
             shareRequestInProgress = true;
-            updateShareModalUI();
+            updateShareMenuUI();
             try {
                 const token = createShareToken();
                 await saveSharePayload(token, buildStatePayload());
                 currentShareToken = token;
                 shareLoadedFromRemote = true;
                 updateUrlWithShareToken(token);
-                setShareStatus("Lien privé créé, partage l’URL.");
+                setShareStatus("Lien privé créé, copie l’URL dans ton presse-papier.");
+                updateShareMenuUI();
+                await copyCurrentShareLinkToClipboard();
             } catch (err) {
                 console.error("Erreur lors de la création du lien partagé :", err);
                 setShareStatus("Impossible de créer le lien partagé.", "error");
             } finally {
                 shareRequestInProgress = false;
-                updateShareModalUI();
+                updateShareMenuUI();
             }
         }
 
         async function handleShareUpdateClick() {
             if (!firestoreCollection || !currentShareToken) {
                 setShareStatus("Pas de lien privé à mettre à jour.", "error");
-                updateShareModalUI();
+                updateShareMenuUI();
                 return;
             }
             if (shareRequestInProgress) return;
             shareRequestInProgress = true;
-            updateShareModalUI();
+            updateShareMenuUI();
             try {
                 await saveSharePayload(currentShareToken, buildStatePayload());
                 shareLoadedFromRemote = true;
-                setShareStatus("Lien privé mis à jour.");
+                setShareStatus("Lien privé mis à jour, copie l’URL dans ton presse-papier.");
+                updateShareMenuUI();
+                await copyCurrentShareLinkToClipboard();
             } catch (err) {
                 console.error("Erreur lors de la mise à jour du lien partagé :", err);
                 setShareStatus("Impossible de mettre à jour le lien partagé.", "error");
             } finally {
                 shareRequestInProgress = false;
-                updateShareModalUI();
+                updateShareMenuUI();
             }
         }
 
         shareBtn?.addEventListener("click", event => {
             event.stopPropagation();
-            closeContextMenus();
-            updateShareModalUI();
-            openModal(shareModal);
-        });
-        shareModal?.addEventListener("click", event => {
-            if (event.target === shareModal) {
-                closeModal(shareModal);
-            }
+            toggleMenu(shareMenu);
+            updateShareMenuUI();
         });
         shareCreateBtn?.addEventListener("click", handleShareCreateClick);
         shareUpdateBtn?.addEventListener("click", handleShareUpdateClick);
