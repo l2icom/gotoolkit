@@ -2235,6 +2235,92 @@
                 return "#" + toHex(red) + toHex(green) + toHex(blue);
             }
 
+            function clampColorValue(value) {
+                if (typeof value !== "number" || isNaN(value)) {
+                    return 0;
+                }
+                return Math.max(0, Math.min(255, Math.round(value)));
+            }
+
+            function parseRgbColor(value) {
+                if (!value || typeof value !== "string") {
+                    return null;
+                }
+                var input = value.trim().toLowerCase();
+                if (!input || input === "transparent") {
+                    return null;
+                }
+                var hexMatch = input.match(/^#([a-f0-9]{3}|[a-f0-9]{6})$/i);
+                if (hexMatch) {
+                    var hex = hexMatch[1];
+                    if (hex.length === 3) {
+                        return {
+                            r: clampColorValue(parseInt(hex[0] + hex[0], 16)),
+                            g: clampColorValue(parseInt(hex[1] + hex[1], 16)),
+                            b: clampColorValue(parseInt(hex[2] + hex[2], 16)),
+                            a: 1
+                        };
+                    }
+                    return {
+                        r: clampColorValue(parseInt(hex.slice(0, 2), 16)),
+                        g: clampColorValue(parseInt(hex.slice(2, 4), 16)),
+                        b: clampColorValue(parseInt(hex.slice(4, 6), 16)),
+                        a: 1
+                    };
+                }
+                var rgbMatch = input.match(/^rgba?\(([^)]+)\)$/);
+                if (rgbMatch) {
+                    var parts = rgbMatch[1].split(",").map(function (part) {
+                        return part.trim();
+                    });
+                    if (parts.length < 3) {
+                        return null;
+                    }
+                    var r = parseInt(parts[0], 10);
+                    var g = parseInt(parts[1], 10);
+                    var b = parseInt(parts[2], 10);
+                    var alpha = parts.length === 4 ? parseFloat(parts[3]) : 1;
+                    return {
+                        r: clampColorValue(r),
+                        g: clampColorValue(g),
+                        b: clampColorValue(b),
+                        a: Math.max(0, Math.min(1, isNaN(alpha) ? 1 : alpha))
+                    };
+                }
+                return null;
+            }
+
+            function rgbaToCss(components) {
+                if (!components) return null;
+                if (components.a === undefined || components.a === null || components.a >= 1) {
+                    return "rgb(" + components.r + ", " + components.g + ", " + components.b + ")";
+                }
+                return (
+                    "rgba(" +
+                    components.r +
+                    ", " +
+                    components.g +
+                    ", " +
+                    components.b +
+                    ", " +
+                    components.a +
+                    ")"
+                );
+            }
+
+            function getDarkerColor(source, amount) {
+                var parsed = parseRgbColor(source);
+                if (!parsed) return source;
+                var factor = Math.max(0, Math.min(1, amount || 0));
+                var darkened = {
+                    r: clampColorValue(parsed.r * (1 - factor)),
+                    g: clampColorValue(parsed.g * (1 - factor)),
+                    b: clampColorValue(parsed.b * (1 - factor)),
+                    a: parsed.a
+                };
+                return rgbaToCss(darkened) || source;
+            }
+
             function getRainbowColor() {
                 var hue = Math.random() * 360;
                 var saturation = 65 + Math.random() * 15;
@@ -2296,11 +2382,13 @@
                     if (key === "milestone") {
                         background = "transparent";
                     }
+                    var effectiveBorder = def.darkBorder || def.border;
+                    var effectiveColor = def.darkText || def.color;
                     return [
                         ".vis-item.type-" + def.id + " {",
                         "  background: " + background + ";",
-                        "  border-color: " + def.border + ";",
-                        "  color: " + def.color + ";",
+                        "  border-color: " + effectiveBorder + ";",
+                        "  color: " + effectiveColor + ";",
                         "}"
                     ].join("\n");
                 });
@@ -2329,12 +2417,21 @@
                 var border = colors.border || base.border || existing.border || "rgba(156, 163, 175, 0.9)";
                 var textColor = colors.text || base.color || existing.color || "#111827";
                 var label = base.label || base.name || existing.label || id;
+                var accentBase = border || textColor || background || "#0f172a";
+                var darkBorderColor = getDarkerColor(accentBase, 0.28);
+                var textSource =
+                    textColor && textColor !== "transparent"
+                        ? textColor
+                        : accentBase;
+                var darkTextColor = getDarkerColor(textSource, 0.45);
                 typeDefinitions[id] = {
                     id: id,
                     label: label,
                     background: background,
                     border: border,
-                    color: textColor
+                    color: textColor,
+                    darkBorder: darkBorderColor,
+                    darkText: darkTextColor
                 };
                 ensureKindFilter(id);
                 rebuildTypeStyles();
@@ -2543,8 +2640,10 @@
                         ? def.background
                         : "rgba(15, 23, 42, 0.08)";
                     var backgroundColor = isActive ? baseColor : "#ffffff";
-                    var borderColor = isActive ? (def.border || "rgba(15, 23, 42, 0.25)") : "rgba(15, 23, 42, 0.15)";
-                    var textColor = isActive ? (def.color || "#0f172a") : "var(--text)";
+                    var typeBorderColor = def.darkBorder || def.border || "rgba(15, 23, 42, 0.25)";
+                    var typeTextColor = def.darkText || def.color || "#0f172a";
+                    var borderColor = isActive ? typeBorderColor : "rgba(15, 23, 42, 0.15)";
+                    var textColor = isActive ? typeTextColor : "var(--text)";
                     option.style.background = backgroundColor;
                     option.style.borderColor = borderColor;
                     option.style.color = textColor;
