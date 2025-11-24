@@ -181,6 +181,32 @@
             min-height: 80px;
             height: 80px;
         }
+        .modal-description {
+            font-size: 13px;
+            color: var(--muted);
+            margin: 0;
+        }
+        .share-link-field {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid #d0c3ad;
+            padding: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            background: #fbf8f2;
+        }
+        .share-modal-status {
+            font-size: 12px;
+            color: var(--muted);
+            margin: 0;
+        }
+        .share-modal-status.error {
+            color: #b00020;
+        }
+        .share-modal-footer {
+            flex-wrap: wrap;
+            gap: 6px;
+        }
 
         .prompt-template-select {
             border-radius: 8px;
@@ -1232,6 +1258,7 @@
                         </div>
                     </div>
                 </div>
+                <button id="shareBtn" class="info-button" type="button" aria-label="Partager" title="Lien d’édition privée">🔗</button>
             </div>
         </div>
 
@@ -1331,9 +1358,33 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="shareModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Lien d’édition privée</h3>
+                <button class="modal-close" data-close="shareModal">×</button>
+            </div>
+            <p class="modal-description">
+                Crée un lien sécurisé pour partager ton planning complet avec une personne disposant uniquement de cette URL.
+            </p>
+            <label>
+                Lien d’édition
+                <input id="shareLinkField" class="share-link-field" type="text" readonly>
+            </label>
+            <p class="share-modal-status" id="shareModalStatus"></p>
+            <div class="modal-footer share-modal-footer">
+                <button class="primary" id="shareUpdateBtn" type="button">Mettre à jour</button>
+                <button id="shareCreateBtn" type="button">Créer</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
     <script src="demo.js"></script>
+    <script src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
+    <script src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="/__/firebase/init.js"></script>
     <script>
         const stageColors = {
             "first-col": getComputedStyle(document.documentElement).getPropertyValue("--now-color").trim(),
@@ -1618,9 +1669,9 @@
             return all;
         }
 
-        function persistState() {
+        function buildStatePayload() {
             storeCurrentSlides();
-            const payload = {
+            return {
                 slides: collectAllSlides(),
                 settings: {
                     ratioIndex: currentRatioIndex,
@@ -1634,6 +1685,10 @@
                     defaultTemplateId: currentTemplateId
                 }
             };
+        }
+
+        function persistState() {
+            const payload = buildStatePayload();
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
             } catch (err) {
@@ -1668,6 +1723,119 @@
                 setPromptFieldsForTemplate(activePromptTemplateId);
                 return false;
             }
+        }
+
+        const FIRESTORE_COLLECTION = "slides";
+        const SHARE_QUERY_PARAM = "share";
+        let firestoreCollection = null;
+        let currentShareToken = null;
+        let shareLoadedFromRemote = false;
+        let shareStatusMessage = "";
+        let shareStatusType = "";
+        let shareRequestInProgress = false;
+
+        function initShareFirestore() {
+            if (typeof firebase === "undefined" || typeof firebase.firestore !== "function") {
+                return;
+            }
+            try {
+                const db = firebase.firestore();
+                firestoreCollection = db.collection(FIRESTORE_COLLECTION);
+            } catch (err) {
+                console.error("Impossible d'initialiser Firestore pour le partage :", err);
+            }
+        }
+
+        function setShareStatus(message, type = "") {
+            shareStatusMessage = message;
+            shareStatusType = type;
+        }
+
+        function getShareTokenFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            const value = params.get(SHARE_QUERY_PARAM);
+            return value ? value.trim() : null;
+        }
+
+        function buildShareUrl(token) {
+            if (!token) {
+                return "";
+            }
+            const url = new URL(window.location.href);
+            url.searchParams.set(SHARE_QUERY_PARAM, token);
+            return url.toString();
+        }
+
+        function updateUrlWithShareToken(token) {
+            const url = new URL(window.location.href);
+            if (token) {
+                url.searchParams.set(SHARE_QUERY_PARAM, token);
+            } else {
+                url.searchParams.delete(SHARE_QUERY_PARAM);
+            }
+            history.replaceState(null, "", url.toString());
+        }
+
+        function createShareToken() {
+            if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+                return crypto.randomUUID();
+            }
+            const bytes = new Uint8Array(16);
+            if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+                crypto.getRandomValues(bytes);
+            } else {
+                for (let i = 0; i < bytes.length; i++) {
+                    bytes[i] = Math.floor(Math.random() * 256);
+                }
+            }
+            return Array.from(bytes)
+                .map(byte => byte.toString(16).padStart(2, "0"))
+                .join("");
+        }
+
+        async function fetchSharePayload(token) {
+            if (!firestoreCollection) {
+                throw new Error("Firestore non initialisée");
+            }
+            const doc = await firestoreCollection.doc(token).get();
+            return doc.exists ? doc.data() : null;
+        }
+
+        async function tryLoadSharedStateFromUrl() {
+            const token = getShareTokenFromUrl();
+            if (!token) {
+                return false;
+            }
+            try {
+                const payload = await fetchSharePayload(token);
+                if (!payload || !Array.isArray(payload.slides)) {
+                    setShareStatus("Lien privé introuvable.", "error");
+                    return false;
+                }
+                initializeTemplateSlides(payload.slides);
+                applySettingsFromPayload(payload.settings || {});
+                currentShareToken = token;
+                shareLoadedFromRemote = true;
+                setShareStatus("Planning chargé depuis Firestore.");
+                return true;
+            } catch (err) {
+                console.error("Erreur de chargement du lien partagé :", err);
+                setShareStatus("Impossible de charger le lien partagé.", "error");
+                return false;
+            }
+        }
+
+        async function saveSharePayload(token, payload) {
+            if (!firestoreCollection) {
+                throw new Error("Firestore non initialisée");
+            }
+            const now = new Date().toISOString();
+            await firestoreCollection.doc(token).set({
+                ...payload,
+                meta: {
+                    updatedAt: now
+                }
+            });
         }
 
         const importInput = document.createElement("input");
@@ -3220,9 +3388,131 @@
             event.stopPropagation();
             openContextModalForEmptyState();
         });
-        loadSavedState();
-        renderSlidesForTemplate(currentTemplateId);
-        applyRatio(currentRatioIndex);
+        async function initializeAppState() {
+            initShareFirestore();
+            const sharedLoaded = await tryLoadSharedStateFromUrl();
+            if (!sharedLoaded) {
+                loadSavedState();
+            }
+            renderSlidesForTemplate(currentTemplateId);
+            applyRatio(currentRatioIndex);
+            if (sharedLoaded) {
+                persistState();
+            }
+        }
+        initializeAppState();
+
+        const shareBtn = document.getElementById("shareBtn");
+        const shareModal = document.getElementById("shareModal");
+        const shareLinkField = document.getElementById("shareLinkField");
+        const shareModalStatus = document.getElementById("shareModalStatus");
+        const shareCreateBtn = document.getElementById("shareCreateBtn");
+        const shareUpdateBtn = document.getElementById("shareUpdateBtn");
+
+        function getShareDefaultStatusText() {
+            if (!firestoreCollection) {
+                return "Le partage privé nécessite Firebase (hébergement officiel).";
+            }
+            if (shareLoadedFromRemote && currentShareToken) {
+                return "Ce lien charge la version enregistrée dans Firestore.";
+            }
+            if (currentShareToken) {
+                return "Un lien privé existe déjà pour cette session.";
+            }
+            return "Crée un lien d’édition privée pour le partager.";
+        }
+
+        function updateShareModalUI() {
+            if (shareLinkField) {
+                const hasToken = Boolean(currentShareToken);
+                shareLinkField.value = hasToken ? buildShareUrl(currentShareToken) : "";
+                shareLinkField.placeholder = hasToken ? "" : "Appuie sur Créer pour générer un lien privé.";
+            }
+            if (shareUpdateBtn) {
+                const hasToken = Boolean(currentShareToken);
+                shareUpdateBtn.hidden = !hasToken;
+                shareUpdateBtn.disabled =
+                    shareRequestInProgress || !hasToken || !firestoreCollection;
+            }
+            if (shareCreateBtn) {
+                shareCreateBtn.disabled = shareRequestInProgress || !firestoreCollection;
+            }
+            if (shareModalStatus) {
+                const text = shareStatusMessage || getShareDefaultStatusText();
+                shareModalStatus.textContent = text;
+                const isError =
+                    (shareStatusType === "error" && Boolean(text)) ||
+                    (!firestoreCollection && !shareStatusMessage);
+                shareModalStatus.classList.toggle("error", isError);
+            }
+        }
+
+        async function handleShareCreateClick() {
+            if (!firestoreCollection) {
+                setShareStatus("Le partage privé nécessite Firebase (hébergement officiel).", "error");
+                updateShareModalUI();
+                return;
+            }
+            if (shareRequestInProgress) return;
+            shareRequestInProgress = true;
+            updateShareModalUI();
+            try {
+                const token = createShareToken();
+                await saveSharePayload(token, buildStatePayload());
+                currentShareToken = token;
+                shareLoadedFromRemote = true;
+                updateUrlWithShareToken(token);
+                setShareStatus("Lien privé créé, partage l’URL.");
+            } catch (err) {
+                console.error("Erreur lors de la création du lien partagé :", err);
+                setShareStatus("Impossible de créer le lien partagé.", "error");
+            } finally {
+                shareRequestInProgress = false;
+                updateShareModalUI();
+            }
+        }
+
+        async function handleShareUpdateClick() {
+            if (!firestoreCollection || !currentShareToken) {
+                setShareStatus("Pas de lien privé à mettre à jour.", "error");
+                updateShareModalUI();
+                return;
+            }
+            if (shareRequestInProgress) return;
+            shareRequestInProgress = true;
+            updateShareModalUI();
+            try {
+                await saveSharePayload(currentShareToken, buildStatePayload());
+                shareLoadedFromRemote = true;
+                setShareStatus("Lien privé mis à jour.");
+            } catch (err) {
+                console.error("Erreur lors de la mise à jour du lien partagé :", err);
+                setShareStatus("Impossible de mettre à jour le lien partagé.", "error");
+            } finally {
+                shareRequestInProgress = false;
+                updateShareModalUI();
+            }
+        }
+
+        shareBtn?.addEventListener("click", event => {
+            event.stopPropagation();
+            closeContextMenus();
+            updateShareModalUI();
+            openModal(shareModal);
+        });
+        shareModal?.addEventListener("click", event => {
+            if (event.target === shareModal) {
+                closeModal(shareModal);
+            }
+        });
+        shareCreateBtn?.addEventListener("click", handleShareCreateClick);
+        shareUpdateBtn?.addEventListener("click", handleShareUpdateClick);
+        shareLinkField?.addEventListener("focus", () => {
+            shareLinkField.select();
+        });
+        shareLinkField?.addEventListener("click", () => {
+            shareLinkField.select();
+        });
 
         const infoButton = document.getElementById("infoButton");
         const infoPopup = document.getElementById("infoPopup");

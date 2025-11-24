@@ -1157,8 +1157,6 @@
         }
 
         .color-row-label {
-            font-size: 13px;
-            color: var(--muted);
             flex: 1;
         }
 
@@ -1166,6 +1164,27 @@
             display: flex;
             align-items: center;
             gap: 6px;
+        }
+
+        .color-row-label-input {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid var(--border-strong);
+            padding: 6px 8px;
+            font-size: 13px;
+            background: transparent;
+            color: inherit;
+            transition: border-color 120ms ease;
+        }
+
+        .color-row-label-input:focus {
+            outline: none;
+            border-color: var(--muted);
+        }
+
+        .color-row-label-input:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
         }
 
 
@@ -1510,9 +1529,9 @@
                     </div>
                 </div>
                 <div class="header-actions">
-                    <button class="btn" id="openIaModal" aria-label="Ouvrir l'IA">✨</button>
+                    <button class="btn" id="openIaModal" aria-label="Ouvrir l'IA">✨ Assistant IA</button>
                     <div class="menu-trigger">
-                        <button class="btn" id="optionsBtn" aria-label="Options d'affichage">📐</button>
+                        <button class="btn" id="optionsBtn" aria-label="Options d'affichage">📐 Affichage</button>
                         <div class="context-menu" id="optionsMenu">
                             <div class="menu-panel">
                                 <label>
@@ -1569,7 +1588,7 @@
                         </div>
                     </div>
                     <div class="menu-trigger">
-                        <button class="btn" id="fileMenuBtn" aria-label="Fichier">📄</button>
+                        <button class="btn" id="fileMenuBtn" aria-label="Fichier">Fichier 📄</button>
                         <div class="context-menu file-menu" id="fileMenu">
                             <div class="menu-panel" style="transform: translateX(10px);">
                                 <button id="importJsonBtn" type="button" class="menu-panel-btn">📂 Open</button>
@@ -1629,8 +1648,8 @@
                     </button>
                 </div>
                 <div class="btn-group">
-                    <button class="btn-small" id="openColorPaletteBtn"
-                        aria-label="Personnaliser les couleurs">🎨</button>
+                    <button class="btn-small" id="openColorPaletteBtn" aria-label="Personnaliser les couleurs">🎨
+                        Personnalisation</button>
                 </div>
             </div>
             <div class="timeline-header">
@@ -1688,7 +1707,7 @@
             aria-labelledby="colorModalTitle">
             <div class="color-modal">
                 <div class="modal-header">
-                    <h3 id="colorModalTitle">Palette de couleurs</h3>
+                    <h3 id="colorModalTitle">Personalisation</h3>
                     <button class="modal-close" id="colorModalClose" type="button"
                         aria-label="Fermer la palette">×</button>
                 </div>
@@ -2226,6 +2245,7 @@
             };
             var colorModalState = {
                 types: {},
+                labels: {},
                 timeline: displayPreferences.background || "#ffffff"
             };
             function padTwoDigits(value) {
@@ -2861,12 +2881,14 @@
 
             function captureColorPreferencesState() {
                 colorModalState.types = {};
+                colorModalState.labels = {};
                 var typeIds = getVisibleViewTypeIds();
                 colorModalState.typeIds = typeIds;
                 typeIds.forEach(function (typeId) {
                     var def = typeDefinitions[typeId];
                     if (!def) return;
                     colorModalState.types[typeId] = def.background || getRainbowColor();
+                    colorModalState.labels[typeId] = def.label || typeId;
                 });
                 colorModalState.timeline = displayPreferences.background || "#ffffff";
             }
@@ -2911,9 +2933,24 @@
                     colorModalState.types[typeId] = colorValue;
                     var row = document.createElement("div");
                     row.className = "color-row";
-                    var label = document.createElement("div");
-                    label.className = "color-row-label";
-                    label.textContent = def.label || typeId;
+                    var labelValue = colorModalState.labels[typeId] || def.label || typeId;
+                    colorModalState.labels[typeId] = labelValue;
+                    var labelWrapper = document.createElement("div");
+                    labelWrapper.className = "color-row-label";
+                    var labelInput = document.createElement("input");
+                    labelInput.type = "text";
+                    labelInput.className = "color-row-label-input";
+                    labelInput.value = labelValue;
+                    labelInput.placeholder = typeId;
+                    labelInput.setAttribute("aria-label", "Nom du type " + (def.label || typeId));
+                    if (typeId === "milestone") {
+                        labelInput.disabled = true;
+                        labelInput.title = "Nom du jalon non modifiable";
+                    }
+                    labelInput.addEventListener("input", function () {
+                        colorModalState.labels[typeId] = labelInput.value;
+                    });
+                    labelWrapper.appendChild(labelInput);
                     var controls = document.createElement("div");
                     controls.className = "color-row-controls";
                     var preview = document.createElement("span");
@@ -2939,7 +2976,7 @@
                     controls.appendChild(preview);
                     controls.appendChild(colorPicker);
                     controls.appendChild(hexInput);
-                    row.appendChild(label);
+                    row.appendChild(labelWrapper);
                     row.appendChild(controls);
                     colorTypeList.appendChild(row);
                 });
@@ -2964,8 +3001,19 @@
                 Object.keys(colorModalState.types).forEach(function (typeId) {
                     var def = typeDefinitions[typeId];
                     var background = colorModalState.types[typeId];
-                    if (!def || !background) return;
-                    def.background = background;
+                    if (!def) return;
+                    if (background) {
+                        def.background = background;
+                    }
+                    if (typeId !== "milestone") {
+                        var updatedLabel = colorModalState.labels[typeId];
+                        if (typeof updatedLabel === "string") {
+                            var normalizedLabel = updatedLabel.trim();
+                            if (normalizedLabel) {
+                                def.label = normalizedLabel;
+                            }
+                        }
+                    }
                 });
                 rebuildTypeStyles();
                 syncFiltersForActiveView(getVisibleViewTypeIds());
