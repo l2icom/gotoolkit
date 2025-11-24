@@ -57,7 +57,7 @@ Go-Toolkit combine deux expériences pensées pour les consultants : **Go-Slides
     3. (optionnel) `wrangler secret put SHARE_ALLOWED_ORIGINS "https://gotoolkit.app,https://ton-domaine"`
     4. `wrangler publish`
 
-- Le helper `public/js/share-worker-client.js` consomme ce worker. Il lit l’URL de base via `window.GO_TOOLKIT_SHARE_API_URL` (valuée par défaut à `https://gotoolkit-share.tranxq.workers.dev`, modifie-la si tu publies ailleurs) et masque toute logique Firestore côté client.
+- Le helper `public/js/share-worker-client.js` consomme ce worker. Il lit l’URL de base via `window.GO_TOOLKIT_SHARE_API_URL` (valuée par défaut à `https://gotoolkit.tranxq.workers.dev`, modifie-la si tu publies ailleurs) et masque toute logique Firestore côté client.
 - Au besoin, change le script inline `<script>window.GO_TOOLKIT_SHARE_API_URL = ...</script>` dans `public/index.html` et `public/timeline.html` pour pointer vers ton domaine Cloudflare.
 
 Bonne préparation !
