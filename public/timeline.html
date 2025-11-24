@@ -1459,6 +1459,14 @@
             font-weight: 600;
         }
 
+        #timeline .vis-time-axis .vis-grid.vis-vertical {
+            border-color: rgba(148, 163, 184, 0.15);
+        }
+
+        #timeline .vis-time-axis .vis-grid.vis-major {
+            border-left: 1px solid rgba(148, 163, 184, 0.6);
+        }
+
         .vis-panel.vis-center,
         .vis-panel.vis-left {
             border-color: var(--border);
@@ -1532,6 +1540,13 @@
                                     <select id="itemDurationSelect">
                                         <option value="none">Masquer</option>
                                         <option value="append">Afficher</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    Week-ends
+                                    <select id="weekendVisibilitySelect">
+                                        <option value="show">Afficher</option>
+                                        <option value="hide">Masquer samedi &amp; dimanche</option>
                                     </select>
                                 </label>
                             </div>
@@ -1612,10 +1627,10 @@
                 <div id="timeline"></div>
                 <div class="timeline-empty-state" id="timelineEmptyState" role="status" aria-live="polite">
                     <p class="timeline-empty-text">
-                        Cette page est vide. Lance l’assistant IA pour générer un planning clair en quelques secondes.
+                        Cette page est vide. Lance l’assistant IA ✨ pour générer un planning clair en quelques secondes.
                     </p>
                     <a href="#openIaModal" role="button" class="timeline-empty-link" id="timelineEmptyAction">
-                        ✨ Ouvrir l’Assistant IA
+                        ✨ Ouvrir l’IA
                     </a>
                 </div>
             </div>
@@ -1750,6 +1765,7 @@
             var timelineCard = document.querySelector(".timeline-card");
             var timelineWrapper = document.querySelector(".timeline-wrapper");
             var itemDurationSelect = document.getElementById("itemDurationSelect");
+            var weekendVisibilitySelect = document.getElementById("weekendVisibilitySelect");
             var editTooltip = document.createElement("div");
             editTooltip.className = "edit-tooltip";
             if (timelineWrapper) {
@@ -2183,12 +2199,52 @@
                 background: "transparent",
                 ratio: "full",
                 showItemDurations: false,
-                spacing: "dense"
+                spacing: "dense",
+                hideWeekends: false
             };
             var colorModalState = {
                 types: {},
                 timeline: displayPreferences.background || "#ffffff"
             };
+            function padTwoDigits(value) {
+                return value < 10 ? "0" + value : "" + value;
+            }
+
+            function formatHiddenWeekDate(date) {
+                return (
+                    date.getFullYear() +
+                    "-" +
+                    padTwoDigits(date.getMonth() + 1) +
+                    "-" +
+                    padTwoDigits(date.getDate()) +
+                    " " +
+                    padTwoDigits(date.getHours()) +
+                    ":" +
+                    padTwoDigits(date.getMinutes()) +
+                    ":" +
+                    padTwoDigits(date.getSeconds())
+                );
+            }
+
+            function buildWeekendHiddenDates() {
+                if (!displayPreferences.hideWeekends) {
+                    return [];
+                }
+                var saturday = new Date();
+                var day = saturday.getDay();
+                var offsetToSaturday = (6 - day + 7) % 7;
+                saturday.setDate(saturday.getDate() + offsetToSaturday);
+                saturday.setHours(0, 0, 0, 0);
+                var monday = new Date(saturday);
+                monday.setDate(monday.getDate() + 2);
+                return [
+                    {
+                        start: formatHiddenWeekDate(saturday),
+                        end: formatHiddenWeekDate(monday),
+                        repeat: "weekly"
+                    }
+                ];
+            }
             var persistedState = loadPersistedTimelineState();
             if (persistedState) {
                 if (Array.isArray(persistedState.views) && persistedState.views.length) {
@@ -2419,6 +2475,7 @@
                     scale: "week",
                     step: 1
                 },
+                hiddenDates: buildWeekendHiddenDates(),
                 onMoving: function (item, callback) {
                     if (typeof callback === "function") {
                         callback(item);
@@ -3429,6 +3486,21 @@
                 applyBackground(backgroundValue);
                 applyRatio(displayPreferences.ratio || "full");
                 applySpacingMode(displayPreferences.spacing || "dense");
+                applyWeekendVisibilityPreference(false);
+            }
+
+            function applyWeekendVisibilityPreference(shouldPersist) {
+                if (weekendVisibilitySelect) {
+                    weekendVisibilitySelect.value = displayPreferences.hideWeekends ? "hide" : "show";
+                }
+                if (timeline) {
+                    timeline.setOptions({
+                        hiddenDates: buildWeekendHiddenDates()
+                    });
+                }
+                if (shouldPersist) {
+                    persistTimelineState();
+                }
             }
 
             function setItemDurationMode(mode, shouldPersist) {
@@ -3470,6 +3542,12 @@
             if (spacingSelect) {
                 spacingSelect.addEventListener("change", function () {
                     applySpacingMode(this.value, true);
+                });
+            }
+            if (weekendVisibilitySelect) {
+                weekendVisibilitySelect.addEventListener("change", function () {
+                    displayPreferences.hideWeekends = this.value === "hide";
+                    applyWeekendVisibilityPreference(true);
                 });
             }
             setItemDurationMode(displayPreferences.showItemDurations ? "append" : "none", false);
@@ -4497,14 +4575,6 @@
                 renderTimelineTourStep();
             });
 
-            var timelineTourSkipOnReload =
-                window.sessionStorage && window.sessionStorage.getItem(timelineTourSkipFlag);
-            if (timelineTourSkipOnReload) {
-                if (window.localStorage) {
-                    window.localStorage.setItem(timelineTourStorageKey, "1");
-                }
-                window.sessionStorage.removeItem(timelineTourSkipFlag);
-            }
             var timelineTourSeen = window.localStorage && window.localStorage.getItem(timelineTourStorageKey);
             if (!timelineTourSeen) {
                 setTimeout(function () {
