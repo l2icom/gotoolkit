@@ -1,0 +1,9 @@
+name = "gotoolkit-share"
+main = "index.js"
+compatibility_date = "2024-12-01"
+type = "javascript"
+workers_dev = true
+# Add your Cloudflare account information before deploying (account_id, zone_id, routes)
+# account_id = "your-account-id"
+# zone_id = "your-zone-id"
+# route = "https://yourdomain.com/*"

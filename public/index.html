@@ -1417,9 +1417,11 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
     <script src="demo.js"></script>
-    <script src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
-    <script src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="/__/firebase/init.js"></script>
+    <script>
+      window.GO_TOOLKIT_SHARE_API_URL =
+        window.GO_TOOLKIT_SHARE_API_URL || "https://gotoolkit-share.tranxq.workers.dev";
+    </script>
+    <script src="js/share-worker-client.js"></script>
     <script>
         const stageColors = {
             "first-col": getComputedStyle(document.documentElement).getPropertyValue("--now-color").trim(),
@@ -1797,7 +1799,10 @@
 
         const FIRESTORE_COLLECTION = "slides";
         const SHARE_QUERY_PARAM = "share";
-        let firestoreCollection = null;
+        const SHARE_WORKER_UNAVAILABLE_MESSAGE =
+            "Le partage privé nécessite le worker Cloudflare lié à Go-Toolkit (go-toolkit-share).";
+        const shareWorkerService = window.goToolkitShareWorker;
+        let shareWorkerAvailable = Boolean(shareWorkerService?.isReady);
         let currentShareToken = null;
         let shareLoadedFromRemote = false;
         let shareStatusMessage = "";
@@ -1805,16 +1810,8 @@
         let shareRequestInProgress = false;
         let shareLastUpdatedAt = null;
 
-        function initShareFirestore() {
-            if (typeof firebase === "undefined" || typeof firebase.firestore !== "function") {
-                return;
-            }
-            try {
-                const db = firebase.firestore();
-                firestoreCollection = db.collection(FIRESTORE_COLLECTION);
-            } catch (err) {
-                console.error("Impossible d'initialiser Firestore pour le partage :", err);
-            }
+        function initShareWorkerService() {
+            shareWorkerAvailable = Boolean(window.goToolkitShareWorker?.isReady);
         }
 
         function setShareStatus(message, type = "") {
@@ -1885,11 +1882,10 @@
         }
 
         async function fetchSharePayload(token) {
-            if (!firestoreCollection) {
-                throw new Error("Firestore non initialisée");
+            if (!shareWorkerAvailable || !shareWorkerService) {
+                throw new Error(SHARE_WORKER_UNAVAILABLE_MESSAGE);
             }
-            const doc = await firestoreCollection.doc(token).get();
-            return doc.exists ? doc.data() : null;
+            return shareWorkerService.fetchSharePayload(FIRESTORE_COLLECTION, token);
         }
 
         async function tryLoadSharedStateFromUrl() {
@@ -1898,7 +1894,8 @@
                 return false;
             }
             try {
-                const payload = await fetchSharePayload(token);
+                const result = await fetchSharePayload(token);
+                const payload = result?.payload;
                 if (!payload || !Array.isArray(payload.slides)) {
                     setShareStatus("Lien de partage introuvable.", "error");
                     return false;
@@ -1907,7 +1904,8 @@
                 applySettingsFromPayload(payload.settings || {});
                 currentShareToken = token;
                 shareLoadedFromRemote = true;
-                shareLastUpdatedAt = payload.meta?.updatedAt || new Date().toISOString();
+                shareLastUpdatedAt =
+                    result?.meta?.updatedAt || new Date().toISOString();
                 setShareStatus(formatRelativeTime(shareLastUpdatedAt));
                 return true;
             } catch (err) {
@@ -1918,17 +1916,11 @@
         }
 
         async function saveSharePayload(token, payload) {
-            if (!firestoreCollection) {
-                throw new Error("Firestore non initialisée");
+            if (!shareWorkerAvailable || !shareWorkerService) {
+                throw new Error(SHARE_WORKER_UNAVAILABLE_MESSAGE);
             }
-            const now = new Date().toISOString();
-            await firestoreCollection.doc(token).set({
-                ...payload,
-                meta: {
-                    updatedAt: now
-                }
-            });
-            return now;
+            const meta = await shareWorkerService.saveSharePayload(FIRESTORE_COLLECTION, token, payload);
+            return meta?.updatedAt || new Date().toISOString();
         }
 
         const importInput = document.createElement("input");
@@ -3487,7 +3479,7 @@
             openContextModalForEmptyState();
         });
         async function initializeAppState() {
-            initShareFirestore();
+            initShareWorkerService();
             const sharedLoaded = await tryLoadSharedStateFromUrl();
             if (!sharedLoaded) {
                 loadSavedState();
@@ -3507,14 +3499,14 @@
         const shareUpdateBtn = document.getElementById("shareUpdateBtn");
 
         function getShareDefaultStatusText() {
-            if (!firestoreCollection) {
-                return "Le partage privé nécessite Firebase (hébergement officiel).";
+            if (!shareWorkerAvailable) {
+                return SHARE_WORKER_UNAVAILABLE_MESSAGE;
             }
             if (shareLastUpdatedAt) {
                 return formatRelativeTime(shareLastUpdatedAt);
             }
             if (shareLoadedFromRemote && currentShareToken) {
-                return "Ce lien charge la version enregistrée dans Firestore.";
+                return "Ce lien charge la version enregistrée via le worker Cloudflare.";
             }
             if (currentShareToken) {
                 return "Un lien privé existe déjà pour cette session.";
@@ -3532,10 +3524,10 @@
                 const hasToken = Boolean(currentShareToken);
                 shareUpdateBtn.hidden = !hasToken;
                 shareUpdateBtn.disabled =
-                    shareRequestInProgress || !hasToken || !firestoreCollection;
+                    shareRequestInProgress || !hasToken || !shareWorkerAvailable;
             }
             if (shareCreateBtn) {
-                shareCreateBtn.disabled = shareRequestInProgress || !firestoreCollection;
+                shareCreateBtn.disabled = shareRequestInProgress || !shareWorkerAvailable;
                 if (!currentShareToken) {
                     shareCreateBtn.classList.add("primary");
                 } else {
@@ -3547,7 +3539,7 @@
                 shareMenuStatus.textContent = text;
                 const isError =
                     (shareStatusType === "error" && Boolean(text)) ||
-                    (!firestoreCollection && !shareStatusMessage);
+                    (!shareWorkerAvailable && !shareStatusMessage);
                 shareMenuStatus.classList.toggle("error", isError);
             }
             if (shareUpdateBtn) {
@@ -3574,8 +3566,8 @@
         }
 
         async function handleShareCreateClick() {
-            if (!firestoreCollection) {
-                setShareStatus("Le partage privé nécessite Firebase (hébergement officiel).", "error");
+            if (!shareWorkerAvailable) {
+                setShareStatus(SHARE_WORKER_UNAVAILABLE_MESSAGE, "error");
                 updateShareMenuUI();
                 return;
             }
@@ -3602,7 +3594,12 @@
         }
 
         async function handleShareUpdateClick() {
-            if (!firestoreCollection || !currentShareToken) {
+            if (!shareWorkerAvailable) {
+                setShareStatus(SHARE_WORKER_UNAVAILABLE_MESSAGE, "error");
+                updateShareMenuUI();
+                return;
+            }
+            if (!currentShareToken) {
                 setShareStatus("Pas de lien privé à mettre à jour.", "error");
                 updateShareMenuUI();
                 return;

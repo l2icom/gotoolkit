@@ -46,4 +46,18 @@ Go-Toolkit combine deux expériences pensées pour les consultants : **Go-Slides
 - Partager les prompts et palettes avec les autres membres de ton équipe.
 - Proposer des suggestions proactives en fonction du contexte de ton client.
 
+## Partages sécurisés via Cloudflare Workers
+
+- Le worker `workers/share-proxy/index.js` est la seule passerelle autorisée vers les collections `slides` et `timelines` :
+  - Il tire un token OAuth2 Google avec la clé de service `FIREBASE_SERVICE_ACCOUNT` et écrit dans Firestore avec un compte privilégié.
+  - Les accès en lecture/écriture directs sont bloqués (`firestore.rules` n’autorise plus aucun `read` ni `write`), ce qui évite d’exposer la base au navigateur.
+  - Déploie-le avec `wrangler` depuis le dossier `workers/share-proxy`, puis configure les secrets :
+    1. `wrangler secret put FIREBASE_SERVICE_ACCOUNT "<JSON de la clé de service>"`
+    2. (optionnel) `wrangler secret put FIREBASE_PROJECT_ID "<ID du projet>"`
+    3. (optionnel) `wrangler secret put SHARE_ALLOWED_ORIGINS "https://gotoolkit.app,https://ton-domaine"`
+    4. `wrangler publish`
+
+- Le helper `public/js/share-worker-client.js` consomme ce worker. Il lit l’URL de base via `window.GO_TOOLKIT_SHARE_API_URL` (valuée par défaut à `https://gotoolkit-share.tranxq.workers.dev`, modifie-la si tu publies ailleurs) et masque toute logique Firestore côté client.
+- Au besoin, change le script inline `<script>window.GO_TOOLKIT_SHARE_API_URL = ...</script>` dans `public/index.html` et `public/timeline.html` pour pointer vers ton domaine Cloudflare.
+
 Bonne préparation !

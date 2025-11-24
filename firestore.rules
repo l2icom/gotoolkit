@@ -3,10 +3,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /slides/{documentId} {
-      allow read, write: if true;
+      // Les accès directs sont gérés par le worker Cloudflare qui utilise un compte de service.
+      allow read, write: if false;
     }
     match /timelines/{documentId} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
     match /{document=**} {
       allow read, write: if false;
