@@ -48,6 +48,7 @@
             background: #f7f7f7;
             color: var(--text);
             font-family: var(--app-font, "Inter");
+            min-height: 100vh;
         }
 
         .vis-item .vis-item-content {
@@ -67,13 +68,14 @@
 
 
         .app {
-            max-width: 1180px;
+            width: 100%;
+            max-width: none;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
             gap: 12px;
             align-items: stretch;
-            min-height: calc(100vh - 32px);
+            min-height: 100vh;
         }
 
         .app-header {
@@ -306,19 +308,21 @@
             display: flex;
             flex-direction: column;
             gap: 2px;
-            flex: 0 1 auto;
+            flex: 1 1 auto;
             min-height: 0;
             height: auto;
             width: 100%;
-            max-width: 100%;
+            max-width: none;
             font-size: var(--global-font-size, 14px);
-            aspect-ratio: var(--timeline-aspect-ratio, 16 / 9);
+            aspect-ratio: auto;
         }
 
         .timeline-wrapper {
             position: relative;
             width: 100%;
             height: 100%;
+            flex: 1;
+            min-height: 0;
         }
 
         .timeline-header {
@@ -3105,10 +3109,7 @@
 
             function updateTimelineAspect(ratio) {
                 if (!timelineCard || !ratio) return;
-                var value = ratio.replace(":", " / ");
                 timelineCard.dataset.ratio = ratio;
-                timelineCard.style.setProperty("--timeline-aspect-ratio", value);
-                timelineCard.style.aspectRatio = value;
             }
 
             function applyRatio(ratio) {
