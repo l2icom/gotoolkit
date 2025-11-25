@@ -354,11 +354,14 @@
             --shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.05);
             --slide-aspect-ratio: 16 / 9;
             --slide-width: min(1400px, 100%);
+            --slide-available-height: calc(100vh - 180px);
+            --slide-aspect-value: calc(16 / 9);
         }
 
         html,
         body {
             min-height: 100vh;
+            height: 100vh;
         }
 
         body {
@@ -382,7 +385,9 @@
             gap: 12px;
             align-items: stretch;
             min-height: 100vh;
+            height: 100vh;
             padding: 12px;
+            overflow: hidden;
         }
 
 
@@ -700,11 +705,13 @@
         .slides-container {
             position: relative;
             flex: 1;
-            min-height: calc(100vh - 50px);
+            min-height: 0;
+            max-height: 100%;
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            overflow: hidden;
+            overflow-y: auto;
+            width: 100%;
         }
 
         .slide-empty-state {
@@ -748,8 +755,9 @@
             margin-top: 4px;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
+            align-items: center;
             width: 100%;
+            height: 100%;
         }
 
         .slide {
@@ -762,8 +770,11 @@
             flex-direction: column;
             gap: 8px;
             aspect-ratio: var(--slide-aspect-ratio, 16 / 9);
-            width: var(--slide-width, min(1480px, 100%));
-            height: 100vh;
+            width: min(
+                var(--slide-width, min(1480px, 100%)),
+                calc(var(--slide-available-height, calc(100vh - 180px)) * var(--slide-aspect-value, calc(16 / 9)))
+            );
+            max-height: var(--slide-available-height, calc(100vh - 180px));
         }
 
         .slide,
@@ -1687,6 +1698,26 @@
         const applyPromptToAllBtn = document.getElementById("applyPromptToAllBtn");
         const copyToast = document.getElementById("copyToast");
         let copyToastTimer = null;
+        const slidesViewport = document.querySelector(".slides-container");
+
+        let slideClampRaf = null;
+
+        function updateSlideClamp() {
+            if (!slidesViewport) return;
+            const height = slidesViewport.clientHeight;
+            const safeHeight = Math.max(height - 12, 0);
+            document.documentElement.style.setProperty("--slide-available-height", `${safeHeight}px`);
+        }
+
+        function scheduleSlideClampUpdate() {
+            if (slideClampRaf !== null) return;
+            slideClampRaf = requestAnimationFrame(() => {
+                slideClampRaf = null;
+                updateSlideClamp();
+            });
+        }
+
+        window.addEventListener("resize", scheduleSlideClampUpdate);
 
         if (apiKeyInput) {
             apiKeyInput.addEventListener("input", () => {
@@ -2660,6 +2691,7 @@
             if (templateSelect) {
                 templateSelect.value = currentTemplateId;
             }
+            scheduleSlideClampUpdate();
         }
 
         function storeCurrentSlides() {
@@ -2694,6 +2726,7 @@
             });
             slideCount = slides.length;
             updateDeleteButtonState();
+            scheduleSlideClampUpdate();
         }
 
         function getActiveSlideContext(targetSlide) {
