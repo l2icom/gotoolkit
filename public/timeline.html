@@ -525,56 +525,6 @@
             box-shadow: 0 6px 18px rgba(42, 122, 87, 0.32);
         }
 
-        .menu-trigger {
-            position: relative;
-        }
-
-        .context-menu {
-            position: absolute;
-            top: calc(100% + 6px);
-            right: 0;
-            background: #fff;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            box-shadow: 0 12px 20px rgba(15, 23, 42, 0.2);
-            display: none;
-            z-index: 40;
-        }
-
-        .context-menu.open {
-            display: block;
-        }
-
-        .menu-panel {
-            min-width: 200px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .menu-panel label {
-            font-size: 12px;
-            color: var(--muted);
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .menu-panel select,
-        .menu-panel button {
-            width: 100%;
-        }
-
-        .menu-panel button {
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            background: #f8fafc;
-            padding: 6px 10px;
-            font-size: 13px;
-            cursor: pointer;
-        }
-
         .info-button {
             border-radius: 999px;
             border: 1px solid #ebe0d1;
@@ -647,109 +597,6 @@
             border: none;
             background: var(--primary);
             color: #fff;
-        }
-
-        .ratio-grid {
-            display: flex;
-            gap: 4px;
-        }
-
-        .ratio-grid button {
-            flex: 1;
-        }
-
-        .menu-trigger {
-            position: relative;
-        }
-
-        .context-menu {
-            position: absolute;
-            top: calc(100% + 6px);
-            right: 0;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.25);
-            display: none;
-            z-index: 40;
-        }
-
-        .context-menu.open {
-            display: block;
-        }
-
-        .menu-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            padding: 12px;
-        }
-
-        .menu-panel label {
-            font-size: 11px;
-            color: #475569;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .menu-panel select,
-        .menu-panel button {
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            padding: 6px 8px;
-            font-size: 12px;
-            background: var(--surface-soft);
-            cursor: pointer;
-            font-family: inherit;
-        }
-
-        .ratio-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .ratio-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 4px;
-        }
-
-        .ratio-grid button {
-            background: #f8fafc;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-        }
-
-        .menu-trigger {
-            position: relative;
-        }
-
-        .context-menu {
-            position: absolute;
-            top: calc(100% + 6px);
-            right: 0;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.2);
-            display: none;
-            z-index: 40;
-        }
-
-        .context-menu.open {
-            display: block;
-        }
-
-        .context-menu .menu-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding: 12px;
-            min-width: 220px;
-            position: relative;
-            left: -10px;
         }
 
         #fileMenu .menu-panel {
@@ -932,81 +779,6 @@
 
         .menu-panel-btn:hover {
             background: rgba(42, 122, 87, 0.08);
-        }
-
-        .ratio-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .ratio-grid {
-            display: flex;
-            gap: 6px;
-        }
-
-        .ratio-grid button {
-            flex: 1;
-            border-radius: 999px;
-            border: 1px solid var(--border);
-            background: var(--surface-soft);
-            padding: 4px 8px;
-            cursor: pointer;
-            font-size: 11px;
-        }
-
-        .menu-trigger {
-            position: relative;
-        }
-
-        .context-menu {
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            background: #fff;
-            border-radius: 12px;
-            border: 1px solid rgba(15, 23, 42, 0.1);
-            box-shadow: 0 14px 40px rgba(15, 23, 42, 0.25);
-            padding: 12px;
-            display: none;
-            width: 220px;
-            z-index: 40;
-        }
-
-        .context-menu.open {
-            display: block;
-        }
-
-        .context-menu label {
-            font-size: 12px;
-            color: #475569;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            margin-bottom: 10px;
-        }
-
-        .context-menu select {
-            border-radius: 8px;
-            border: 1px solid rgba(15, 23, 42, 0.2);
-            padding: 6px 8px;
-            font-size: 12px;
-            background: #f8fafc;
-            font-family: inherit;
-        }
-
-        .context-menu .ratio-options {
-            display: flex;
-            gap: 6px;
-        }
-
-        .context-menu .ratio-options button {
-            border-radius: 999px;
-            border: 1px solid rgba(15, 23, 42, 0.2);
-            background: #f3f4f6;
-            padding: 4px 8px;
-            font-size: 12px;
-            cursor: pointer;
         }
 
         .header-actions {
@@ -1643,11 +1415,11 @@
         }
 
         #timeline .vis-time-axis .vis-grid.vis-vertical {
-            border-color: var(--border-light);
+            border-left: 1px dotted var(--border-light) !important;
         }
 
         #timeline .vis-time-axis .vis-grid.vis-major {
-            border-left: 1px solid var(--border-light);
+            border-left: 1px dotted var(--border-light) !important;
         }
 
         .vis-panel.vis-center,
@@ -1713,7 +1485,7 @@
                                 <label>
                                     Espacement
                                     <select id="spacingSelect">
-                                        <option value="dense">Dense (actuel)</option>
+                                        <option value="dense">Compact</option>
                                         <option value="normal">Normal</option>
                                         <option value="comfortable">Confortable</option>
                                     </select>
@@ -3048,9 +2820,6 @@
             var colorModalClose = document.getElementById("colorModalClose");
             var openColorPaletteBtn = document.getElementById("openColorPaletteBtn");
             var colorTypeList = document.getElementById("colorTypeList");
-            var timelineBackgroundPreview = document.getElementById("timelineBackgroundPreview");
-            var timelineBackgroundColorPicker = document.getElementById("timelineBackgroundColorPicker");
-            var timelineBackgroundColorHex = document.getElementById("timelineBackgroundColorHex");
             var saveColorPreferencesBtn = document.getElementById("saveColorPreferencesBtn");
             var randomizeColorsBtn = document.getElementById("randomizeColorsBtn");
             var fontSizeChoices = [9, 10, 11, 12, 13, 14, 15, 16];
@@ -3297,20 +3066,6 @@
                 colorModalState.timeline = displayPreferences.background || "#ffffff";
             }
 
-            function syncTimelineBackgroundInputs(value) {
-                var normalized = value || "#ffffff";
-                colorModalState.timeline = normalized;
-                if (timelineBackgroundPreview) {
-                    setPreviewColor(timelineBackgroundPreview, normalized);
-                }
-                if (timelineBackgroundColorPicker) {
-                    timelineBackgroundColorPicker.value = normalized === "transparent" ? "#ffffff" : normalized;
-                }
-                if (timelineBackgroundColorHex) {
-                    timelineBackgroundColorHex.value = normalized;
-                }
-            }
-
             function updateTypeColorValue(typeId, normalized, preview, picker, hexInput) {
                 if (!normalized) return;
                 colorModalState.types[typeId] = normalized;
@@ -3397,7 +3152,6 @@
                     row.appendChild(controls);
                     colorTypeList.appendChild(row);
                 });
-                syncTimelineBackgroundInputs(colorModalState.timeline);
             }
 
             function openColorModal() {
@@ -3570,20 +3324,6 @@
             }
             if (saveColorPreferencesBtn) {
                 saveColorPreferencesBtn.addEventListener("click", applyColorModalChanges);
-            }
-            if (timelineBackgroundColorPicker) {
-                timelineBackgroundColorPicker.addEventListener("input", function () {
-                    var normalized = normalizeHexColor(timelineBackgroundColorPicker.value);
-                    if (!normalized) return;
-                    syncTimelineBackgroundInputs(normalized);
-                });
-            }
-            if (timelineBackgroundColorHex) {
-                timelineBackgroundColorHex.addEventListener("input", function () {
-                    var normalized = normalizeHexColor(timelineBackgroundColorHex.value);
-                    if (!normalized) return;
-                    syncTimelineBackgroundInputs(normalized);
-                });
             }
 
             function downloadJson(filename, payload) {
@@ -4325,13 +4065,6 @@
                         : allowedBackgroundValues[0];
                     backgroundSelector.value = selectorValue;
                 }
-                if (timelineBackgroundColorHex && normalized) {
-                    timelineBackgroundColorHex.value = normalized;
-                }
-                if (timelineBackgroundColorPicker && normalized) {
-                    timelineBackgroundColorPicker.value = normalized === "transparent" ? "#ffffff" : normalized;
-                }
-                syncTimelineBackgroundInputs(normalized);
             }
 
             function updateTimelineAspect(ratio) {
@@ -5079,12 +4812,6 @@
                 return planning;
             }
 
-            function formatColorForType(typeId) {
-                var def = typeDefinitions[typeId];
-                if (def && def.background) return def.border || def.background;
-                return "    ";
-            }
-
             // ============================================================
             // 6. Toolbar timeline
             // ============================================================
@@ -5157,7 +4884,7 @@
                 var pixelsPerDay = viewportWidth > 0 && days > 0 ? viewportWidth / days : 0;
 
                 // Prefer a finer scale when there is enough pixel budget per day.
-                if (pixelsPerDay >= 12) return "day";
+                if (pixelsPerDay >= 18) return "day";
                 if (pixelsPerDay >= 4) return "week";
 
                 if (days <= 7) return "day";
