@@ -7,16 +7,16 @@ export default {
 
     const origin = request.headers.get("Origin") || "";
 
-    // // 1) Vérifier l'origine autorisée
-    // if (!allowedOrigins.includes(origin)) {
-    //   return new Response("Forbidden", {
-    //     status: 403,
-    //     headers: {
-    //       "Access-Control-Allow-Origin": allowedOrigins[0],
-    //       "Vary": "Origin"
-    //     }
-    //   });
-    // }
+    // 1) Vérifier l'origine autorisée
+    if (!allowedOrigins.includes(origin)) {
+      return new Response("Forbidden", {
+        status: 403,
+        headers: {
+          "Access-Control-Allow-Origin": allowedOrigins[0],
+          "Vary": "Origin"
+        }
+      });
+    }
 
     // 2) Préflight CORS
     if (request.method === "OPTIONS") {
