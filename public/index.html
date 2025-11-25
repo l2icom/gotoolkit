@@ -637,23 +637,6 @@
             cursor: pointer;
         }
 
-        .template-select {
-            border-radius: 999px;
-            border: 1px solid #ebe0d1;
-            background: #fff;
-            padding: 4px 10px;
-            font-size: 12px;
-            cursor: pointer;
-            color: var(--text-main);
-            appearance: none;
-        }
-
-        .template-select:focus-visible {
-            outline: none;
-            border-color: #2a7a57;
-            box-shadow: 0 0 0 2px rgba(42, 122, 87, 0.4);
-        }
-
         #tabs {
             display: flex;
             align-items: center;
@@ -773,7 +756,6 @@
             border: 1px solid rgba(255, 255, 255, 0.7);
             display: flex;
             flex-direction: column;
-            gap: 8px;
             aspect-ratio: var(--slide-aspect-ratio, 16 / 9);
             width: min(var(--slide-width, min(1480px, 100%)),
                     calc(var(--slide-available-height, calc(100vh - 190px)) * var(--slide-aspect-value, calc(16 / 9))));
@@ -784,13 +766,36 @@
             width: 100%;
             display: flex;
             flex-direction: column;
-            gap: 20px;
             padding: 0px 12px;
+        }
+
+        .bottom-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2px;
+        }
+
+        .bottom-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        .slide-bottom-section .bottom-section-delete {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .slide-bottom-section.bottom-section-focused .bottom-section-delete {
+            opacity: 1;
+            pointer-events: auto;
+            color: #c62828;
         }
 
         .bottom-section-text {
             width: 100%;
-            min-height: 120px;
+            min-height: 80px;
             border-radius: 8px;
             border: 1px solid #dcd0c1;
             background: var(--slide-bg, transparent);
@@ -799,7 +804,6 @@
             font-size: var(--slide-font-size, 16px);
             margin: 4px 0px 4px 0px;
             line-height: 1.5;
-            max-height: 260px;
             resize: vertical;
             overflow: auto;
         }
@@ -822,14 +826,13 @@
             display: flex;
             flex-direction: column;
             gap: 2px;
-            margin-bottom: 4px;
         }
 
         .slide-title-row,
         .slide-subtitle-row {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 2px;
             justify-content: space-between;
         }
 
@@ -839,14 +842,16 @@
         }
 
         .slide-title-input {
-            border: none;
+            border: 1px solid transparent;
             background: transparent;
             font-size: 20px;
             font-weight: 650;
             margin: 4px 12px;
             color: var(--slide-text-color, var(--text-main));
             line-height: 1.2;
-            border-radius: 4px;
+            border-radius: 8px;
+            transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            padding: 2px 8px;
         }
 
         .slide-subtitle-input {
@@ -857,11 +862,6 @@
             padding: 0;
             margin: 0;
             line-height: 1.2;
-        }
-
-        .slide-header input:focus-visible {
-            outline: none;
-            box-shadow: inset 0 -2px 0 #d0c3ad;
         }
 
         .slide-header-main {
@@ -880,7 +880,7 @@
 
         .columns {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
             gap: 0px;
             flex: 1;
         }
@@ -923,33 +923,34 @@
             width: 100%;
         }
 
+        .column-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2px;
+            width: 100%;
+        }
+
         .column-title {
-            font-size: calc(var(--slide-font-size, 16px));
+            font-size: calc(var(--slide-font-size) + 3px);
             font-weight: 500;
             font-family: var(--slide-font-family, "Segoe UI", sans-serif);
-            letter-spacing: 0.08em;
-            padding: 8px 10px;
-            border-radius: 0px;
-            border: 0;
-            background: var(--slide-bg, transparent);
+            padding: 0px 10px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            background: transparent;
             cursor: text;
             width: 100%;
             text-align: left;
+            transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
         }
-
-        .column-title:focus-visible {
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(42, 122, 87, 0.5);
-        }
-
-
 
         .column-body {
-            padding: 4px 12px 4px;
+            padding: 0px 12px 0px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            font-size: 12px;
+            gap: 2px;
+            font-size: 10px;
             background: var(--slide-bg, transparent);
             border-radius: 0 0 4px 4px;
         }
@@ -967,9 +968,43 @@
             color: var(--slide-text-color, var(--muted));
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 0px;
             min-height: 22px;
             font-family: var(--slide-font-family, "Segoe UI", sans-serif);
+            border-radius: 8px;
+            border: 1px solid transparent;
+            padding: 2px 4px;
+            transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .column-delete-btn,
+        .section-delete-btn,
+        .bottom-section-delete {
+            border: none;
+            background: transparent;
+            font-size: 10px;
+            border-radius: 999px;
+            cursor: pointer;
+            color: #918b7f;
+            padding: 2px;
+            transition: color 0.2s ease, opacity 0.2s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .column-title-row:hover .column-delete-btn,
+        .section-label-row:hover .section-delete-btn {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .column-title:focus-visible~.column-delete-btn,
+        .section-label:focus-visible+.section-delete-btn,
+        .slide-title-input:focus-visible {
+            outline: none;
+            border-color: #2a7a57;
+            box-shadow: 0 0 0 3px rgba(42, 122, 87, 0.2);
+            background: rgba(42, 122, 87, 0.05);
         }
 
         .section-text-row {
@@ -1001,7 +1036,7 @@
         .section-text-row {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 2px;
             justify-content: space-between;
         }
 
@@ -1281,7 +1316,6 @@
             <div class="tabs-actions">
                 <a class="timeline-nav-btn" href="timeline.html" aria-label="Ouvrir la timeline"
                     title="Ouvrir la timeline">⇆ Go-Slides</a>
-                <select id="templateSelect" class="template-select" aria-label="Sélecteur de template"></select>
 
                 <div id="tabs"></div>
                 <button class="tab-btn-add" id="addTabBtn" type="button">➕</button>
@@ -1541,7 +1575,6 @@
         const templates = [
             {
                 id: "go-roadmap",
-                emoji: "🧭",
                 name: "GO-Roadmap",
                 defaultTitle: "GO-Roadmap",
                 columns: [
@@ -1552,30 +1585,26 @@
                 sections: [
                     {
                         key: "first-section",
-                        icon: "🧭",
                         label: "Objectifs",
                         examples:
-                            "Décrire ce que l’utilisateur ou l’entreprise gagne quand l’objectif est atteint. Exemples : \n• Réduire les erreurs de saisie de 20% \n• Accélérer l’accès aux indicateurs pour faciliter la décision \n• Simplifier le parcours utilisateur pour diminuer le temps d’action de 30%"
+                            "Décrire ce que l’utilisateur ou l’entreprise gagne quand l’objectif est atteint."
                     },
                     {
                         key: "second-section",
-                        icon: "🚀",
                         label: "Moyens",
                         examples:
-                            "Lister les actions, fonctionnalités ou livrables concrets. Exemples : \n• Développer un module de validation automatique \n• Produire un tableau de bord Power BI \n• Revoir l’UX (wireframes + tests utilisateurs) \n• Mettre en place une API d’import automatisé"
+                            "Lister les actions, fonctionnalités ou livrables concrets. "
                     },
                     {
                         key: "third-section",
-                        icon: "🔢",
                         label: "Indicateurs",
                         examples:
-                            "Décrire comment mesurer la réussite : chiffres, adoption, délais. Exemples : \n• K1 : 95% de données complètes et conformes \n• K2 : Temps moyen d’usage < 40s \n• K3 : 70% d’utilisateurs actifs hebdo \n• K4 : -30% de tickets support"
+                            "Décrire comment mesurer la réussite : chiffres, adoption, délais."
                     }
                 ]
             },
             {
                 id: "go-design",
-                emoji: "⭐",
                 name: "GO-Design",
                 defaultTitle: "Go-Design",
                 columns: [
@@ -1586,30 +1615,26 @@
                 sections: [
                     {
                         key: "first-section",
-                        icon: "👥",
                         label: "Personas",
                         examples:
-                            "Décrire les profils utilisateurs prioritaires, leurs motivations et frustrations. Exemples : \n• Responsable data qui manque d’indicateurs fiables \n• Analyste qui perd du temps à consolider \n• Support qui reçoit des tickets de saisie"
+                            "Décrire les profils utilisateurs prioritaires, leurs motivations et frustrations."
                     },
                     {
                         key: "second-section",
-                        icon: "❤️",
                         label: "Besoins",
                         examples:
-                            "Lister les besoins métier ou utilisateur prioritaires. Exemples : \n• Saisir une donnée en moins de 15s \n• Visualiser les tendances en un coup d’œil \n• Exporter automatiquement pour reporting"
+                            "Lister les besoins métier ou utilisateur prioritaires."
                     },
                     {
                         key: "third-section",
-                        icon: "⭐",
                         label: "Opportunités",
                         examples:
-                            "Identifier les opportunités de design, de différenciation ou d’impact. Exemples : \n• Automatiser la validation pour réduire les erreurs \n• Proposer des parcours contextualisés \n• Réconcilier les sources pour enrichir l’analyse"
+                            "Identifier les opportunités de design, de différenciation ou d’impact."
                     }
                 ]
             },
             {
                 id: "go-solve",
-                emoji: "🌱",
                 name: "GO-Solve",
                 defaultTitle: "Go-Solve",
                 columns: [
@@ -1620,21 +1645,18 @@
                 sections: [
                     {
                         key: "first-section",
-                        icon: "🌧️",
                         label: "Problèmes",
                         examples:
                             "Lister les problèmes, frictions ou irritants observés. Exemples : \n• Les utilisateurs abandonnent la saisie \n• Les données sont incohérentes \n• L’API manque d’observabilité"
                     },
                     {
                         key: "second-section",
-                        icon: "🍂",
                         label: "Causes",
                         examples:
                             "Identifier les causes profondes ou hypothèses. Exemples : \n• UI trop chargée \n• Schéma data non aligné \n• API non documentée"
                     },
                     {
                         key: "third-section",
-                        icon: "🌱",
                         label: "Solutions",
                         examples:
                             "Proposer des solutions rapides ou expérimentations. Exemples : \n• Prototyper un wizard de saisie \n• Ajouter des contrôles qualité data \n• Créer des endpoints documentés et versionnés"
@@ -1685,7 +1707,7 @@
 
         function getDefaultSectionLabel(templateId, sectionKey) {
             const section = getTemplateSection(templateId, sectionKey);
-            return section ? `${section.icon} ${section.label}` : sectionKey;
+            return section ? section.label : sectionKey;
         }
 
         function getTemplateColumns(templateId) {
@@ -1718,16 +1740,6 @@
             });
         }
 
-        function getTemplateSlidesList(templateId) {
-            if (!templateSlides[templateId]) {
-                templateSlides[templateId] = [];
-            }
-            if (!templateSlides[templateId].length) {
-                templateSlides[templateId].push({ templateId });
-            }
-            return templateSlides[templateId];
-        }
-
 
         const slidesContainer = document.getElementById("slides");
         const tabsContainer = document.getElementById("tabs");
@@ -1739,7 +1751,6 @@
         const exportPptxBtn = document.getElementById("exportPptxBtn");
         const exportTextBtn = document.getElementById("exportTextBtn");
         const textStyleBtn = document.getElementById("textStyleBtn");
-        const templateSelect = document.getElementById("templateSelect");
         const fileMenuBtn = document.getElementById("fileMenuBtn");
         const importJsonBtn = document.getElementById("importJsonBtn");
         const exportJsonBtn = document.getElementById("exportJsonBtn");
@@ -1839,13 +1850,7 @@
         }
 
         function collectAllSlides() {
-            const all = [];
-            Object.entries(templateSlides).forEach(([templateId, slides]) => {
-                slides.forEach(slide => {
-                    all.push({ ...slide, templateId });
-                });
-            });
-            return all;
+            return collectSlidesFromDOM();
         }
 
         function buildStatePayload() {
@@ -2058,23 +2063,18 @@
             return acc;
         }, {});
 
-        function populateTemplateSelectors() {
-            [templateSelect, promptTemplateSelect].forEach(select => {
-                if (!select) return;
-                select.innerHTML = "";
-                templates.forEach(template => {
-                    const option = document.createElement("option");
-                    option.value = template.id;
-                    option.textContent = `${template.emoji} ${template.name}`;
-                    select.appendChild(option);
-                });
+        function populatePromptTemplateSelect() {
+            if (!promptTemplateSelect) return;
+            promptTemplateSelect.innerHTML = "";
+            templates.forEach(template => {
+                const option = document.createElement("option");
+                option.value = template.id;
+                option.textContent = template.name;
+                promptTemplateSelect.appendChild(option);
             });
         }
 
-        populateTemplateSelectors();
-        if (templateSelect) {
-            templateSelect.value = currentTemplateId;
-        }
+        populatePromptTemplateSelect();
         if (promptTemplateSelect) {
             promptTemplateSelect.value = activePromptTemplateId;
         }
@@ -2095,9 +2095,6 @@
             }
             activePromptTemplateId = payload.promptTemplateId || activePromptTemplateId;
             currentTemplateId = payload.defaultTemplateId || currentTemplateId;
-            if (templateSelect) {
-                templateSelect.value = currentTemplateId;
-            }
             if (promptTemplateSelect) {
                 promptTemplateSelect.value = activePromptTemplateId;
             }
@@ -2278,17 +2275,6 @@
                 setActiveIaMode(button.dataset.iaMode);
                 schedulePersist();
             });
-        });
-
-        templateSelect?.addEventListener("change", () => {
-            const selected = templateSelect.value;
-            if (!selected || selected === currentTemplateId) {
-                return;
-            }
-            storeCurrentSlides();
-            currentTemplateId = selected;
-            renderSlidesForTemplate(currentTemplateId);
-            schedulePersist();
         });
 
         promptTemplateSelect?.addEventListener("change", () => {
@@ -2548,16 +2534,25 @@
                         title: columnTitle,
                         sections: {}
                     };
-                    getTemplateSections(templateId).forEach(section => {
-                        const label = column.querySelector(`.section-label[data-section="${section.key}"]`);
-                        const textarea = column.querySelector(`textarea[data-section="${section.key}"]`);
-                        columnData.sections[section.key] = {
-                            label: label ? label.textContent.trim() : getDefaultSectionLabel(templateId, section.key),
+                    column.querySelectorAll(".section").forEach(sectionEl => {
+                        const sectionKey = sectionEl.dataset.section;
+                        if (!sectionKey) {
+                            return;
+                        }
+                        const label = sectionEl.querySelector(".section-label");
+                        const textarea = sectionEl.querySelector("textarea");
+                        columnData.sections[sectionKey] = {
+                            label: label ? label.textContent.trim() : getDefaultSectionLabel(templateId, sectionKey),
                             text: textarea ? textarea.value : ""
                         };
                     });
                     return columnData;
                 });
+                const bottomSectionEl = slide.querySelector(".slide-bottom-section");
+                const bottomTextarea = bottomSectionEl?.querySelector(".bottom-section-text");
+                const bottomSectionData = bottomSectionEl
+                    ? { text: bottomTextarea?.value || "", deleted: false }
+                    : { text: "", deleted: true };
                 const titleEl = slide.querySelector(".slide-title-input");
                 const fontSizeValue = parseInt(slide.dataset.fontSize, 10);
                 return {
@@ -2568,9 +2563,7 @@
                     fontSize: Number.isNaN(fontSizeValue) ? currentFontSize : fontSizeValue,
                     columns,
                     pageContext: slide.dataset.pageContext || "",
-                    bottomSection: {
-                        text: slide.querySelector(".bottom-section-text")?.value || ""
-                    }
+                    bottomSection: bottomSectionData
                 };
             });
         }
@@ -2585,25 +2578,39 @@
             const stageColor = seed.stageColor || stageColors[columnConfig.stage] || "#ffffff";
             column.style.setProperty("--stage-color", stageColor);
 
-            const sectionsHtml = getTemplateSections(templateId)
-                .map(section => `
-        <div class="section">
+            const sectionSeeds = seed.sections || null;
+            const sectionKeys = sectionSeeds
+                ? Object.keys(sectionSeeds)
+                : getTemplateSections(templateId).map(section => section.key);
+            const sectionsHtml = sectionKeys
+                .map(sectionKey => {
+                    const sectionMeta = getTemplateSection(templateId, sectionKey) || { label: sectionKey, examples: "" };
+                    const placeholder = (sectionMeta.examples || "").replace(/"/g, '&quot;');
+                    const labelText = sectionMeta.label || sectionKey;
+                    return `
+        <div class="section" data-section="${sectionKey}">
           <div class="section-label-row">
-            <span class="section-label" data-section="${section.key}" contenteditable="true">${section.icon} ${section.label}</span>
+            <span class="section-label" data-section="${sectionKey}" contenteditable="true">${labelText}</span>
+            <button type="button" class="section-delete-btn" aria-label="Supprimer la section">🗑️</button>
           </div>
           <div class="section-text-row">
             <div class="textarea-wrapper">
-              <textarea class="editable" data-section="${section.key}" data-placeholder="${(section.examples || "").replace(/"/g, '&quot;')}"></textarea>
-              <button class="field-ai-btn inside" type="button" data-field="section-text" data-section="${section.key}" title="Générer le contenu" aria-label="Générer le contenu">✨</button>
+              <textarea class="editable" data-section="${sectionKey}" data-placeholder="${placeholder}"></textarea>
+              <button class="field-ai-btn inside" type="button" data-field="section-text" data-section="${sectionKey}" title="Générer le contenu" aria-label="Générer le contenu">✨</button>
             </div>
           </div>
         </div>
-      `).join("");
+      `;
+                })
+                .join("");
 
             column.innerHTML = `
       <div class="column-header">
         <div class="column-header-main">
-          <span class="column-title" contenteditable="true">${fallbackStage}</span>
+          <div class="column-title-row">
+            <span class="column-title" contenteditable="true">${fallbackStage}</span>
+            <button type="button" class="column-delete-btn" aria-label="Supprimer la colonne">🗑️</button>
+          </div>
         </div>
       </div>
       <div class="column-body">
@@ -2636,15 +2643,31 @@
 
             column.querySelectorAll(".section-label").forEach(bindSectionLabel);
 
-            getTemplateSections(templateId).forEach(section => {
-                const label = column.querySelector(`.section-label[data-section="${section.key}"]`);
-                const textarea = column.querySelector(`textarea[data-section="${section.key}"]`);
-                const sectionSeed = seed.sections && seed.sections[section.key];
-                if (sectionSeed) {
-                    label.textContent = sectionSeed.label || getDefaultSectionLabel(templateId, section.key);
-                    textarea.value = sectionSeed.text || "";
+            column.querySelectorAll(".section").forEach(sectionEl => {
+                const sectionKey = sectionEl.dataset.section;
+                const label = sectionEl.querySelector(".section-label");
+                const textarea = sectionEl.querySelector("textarea");
+                const sectionSeed = seed.sections && sectionKey ? seed.sections[sectionKey] : null;
+                if (label) {
+                    const defaultLabel = getDefaultSectionLabel(templateId, sectionKey);
+                    label.textContent = sectionSeed?.label || defaultLabel;
                 }
-                monitorTextareaOverflow(textarea);
+                if (textarea) {
+                    if (sectionSeed) {
+                        textarea.value = sectionSeed.text || "";
+                    }
+                    monitorTextareaOverflow(textarea);
+                }
+                const deleteBtn = sectionEl.querySelector(".section-delete-btn");
+                deleteBtn?.addEventListener("click", event => {
+                    event.stopPropagation();
+                    deleteSection(sectionEl);
+                });
+            });
+            const columnDeleteBtn = column.querySelector(".column-delete-btn");
+            columnDeleteBtn?.addEventListener("click", event => {
+                event.stopPropagation();
+                deleteColumn(column);
             });
 
             column.addEventListener("focusin", () => {
@@ -2669,6 +2692,55 @@
             return column;
         }
 
+        function deleteColumn(column) {
+            if (!column) return;
+            if (!confirm("Supprimer cette colonne ?")) {
+                return;
+            }
+            const nextColumn = column.nextElementSibling || column.previousElementSibling;
+            column.remove();
+            if (nextColumn) {
+                selectColumnForPalette(nextColumn);
+                nextColumn.querySelector(".column-title")?.focus();
+            } else {
+                selectColumnForPalette(null);
+            }
+            schedulePersist();
+        }
+
+        function deleteSection(sectionEl) {
+            if (!sectionEl) return;
+            if (!confirm("Supprimer cette section ?")) {
+                return;
+            }
+            const column = sectionEl.closest(".column");
+            const nextSection = sectionEl.nextElementSibling || sectionEl.previousElementSibling;
+            sectionEl.remove();
+            if (nextSection) {
+                nextSection.querySelector(".section-label")?.focus();
+            } else if (column) {
+                column.querySelector(".column-title")?.focus();
+            }
+            schedulePersist();
+        }
+
+        function setBottomSectionFocusState(slide, focused) {
+            const bottomSection = slide.querySelector(".slide-bottom-section");
+            if (!bottomSection) return;
+            bottomSection.classList.toggle("bottom-section-focused", Boolean(focused));
+        }
+
+        function deleteBottomSection(slide) {
+            if (!slide) return;
+            const bottomSection = slide.querySelector(".slide-bottom-section");
+            if (!bottomSection) return;
+            if (!confirm("Supprimer la synthèse ?")) {
+                return;
+            }
+            bottomSection.remove();
+            schedulePersist();
+        }
+
         function createSlide(index, seed = {}) {
             const slide = document.createElement("div");
             slide.className = "slide";
@@ -2679,6 +2751,21 @@
             slide.dataset.templateId = templateId;
             slide.dataset.tabLabel = seed.tabLabel || `Page ${index + 1}`;
             slide.dataset.pageContext = seed.pageContext ?? seed.context ?? "";
+            const hasBottomSection = !seed.bottomSection?.deleted;
+            const bottomSectionMarkup = hasBottomSection
+                ? `
+  <div class="slide-bottom-section">
+    <div class="bottom-section-header">
+      <span class="bottom-section-title"></span>
+      <button type="button" class="bottom-section-delete" aria-label="Supprimer la synthèse">🗑️</button>
+    </div>
+    <div class="textarea-wrapper">
+      <textarea class="editable bottom-section-text" rows="4"></textarea>
+      <button class="field-ai-btn inside" type="button" data-section="bottom-section" title="Générer la synthèse IA" aria-label="Synthèse IA">✨</button>
+    </div>
+  </div>
+  `
+                : "";
             slide.innerHTML = `
   <div class="slide-header">
     <div class="slide-title-row">
@@ -2688,12 +2775,7 @@
   <div class="slide-body">
     <div class="columns"></div>
   </div>
-  <div class="slide-bottom-section">
-    <div class="textarea-wrapper">
-      <textarea class="editable bottom-section-text" rows="4"></textarea>
-      <button class="field-ai-btn inside" type="button" data-section="bottom-section" title="Générer la synthèse IA" aria-label="Synthèse IA">✨</button>
-    </div>
-  </div>
+  ${bottomSectionMarkup}
 `;
             const columnsContainer = slide.querySelector(".columns");
             getTemplateColumns(templateId).forEach((_, columnIndex) => {
@@ -2721,6 +2803,13 @@
                 bindTextareaPlaceholder(bottomTextarea);
                 monitorTextareaOverflow(bottomTextarea);
                 bottomTextarea.addEventListener("input", () => schedulePersist());
+                bottomTextarea.addEventListener("focus", () => setBottomSectionFocusState(slide, true));
+                bottomTextarea.addEventListener("blur", () => setBottomSectionFocusState(slide, false));
+                const bottomDeleteBtn = slide.querySelector(".bottom-section-delete");
+                bottomDeleteBtn?.addEventListener("click", event => {
+                    event.stopPropagation();
+                    deleteBottomSection(slide);
+                });
             }
             const bgColor = seed.bgColor ?? "transparent";
             applyBackgroundToSlide(slide, bgColor);
@@ -2730,26 +2819,45 @@
             return slide;
         }
 
-        function renderSlidesForTemplate(templateId) {
-            currentTemplateId = templateId || currentTemplateId;
-            const slides = getTemplateSlidesList(currentTemplateId);
+        function renderSlides() {
             slidesContainer.innerHTML = "";
             slideCount = 0;
-            slides.forEach((slideData, index) => {
+            const slidesToRender = [];
+            templates.forEach(template => {
+                const slides = templateSlides[template.id] || [];
+                slides.forEach(slideData => {
+                    slidesToRender.push(slideData);
+                });
+            });
+            slidesToRender.forEach((slideData, index) => {
                 const slide = createSlide(index, slideData);
                 slidesContainer.appendChild(slide);
                 slideCount++;
             });
             refreshTabs();
             setActiveTab(0);
-            if (templateSelect) {
-                templateSelect.value = currentTemplateId;
-            }
             scheduleSlideClampUpdate();
         }
 
         function storeCurrentSlides() {
-            templateSlides[currentTemplateId] = collectSlidesFromDOM();
+            const slides = collectSlidesFromDOM();
+            const map = templates.reduce((acc, template) => {
+                acc[template.id] = [];
+                return acc;
+            }, {});
+            slides.forEach(slide => {
+                const templateId = slide.templateId || templates[0].id;
+                if (!map[templateId]) {
+                    map[templateId] = [];
+                }
+                map[templateId].push(slide);
+            });
+            templates.forEach(template => {
+                if (!map[template.id].length) {
+                    map[template.id].push({ templateId: template.id });
+                }
+            });
+            templateSlides = map;
         }
 
         function createTabButton(index) {
@@ -2852,9 +2960,6 @@
                 syncFontControls();
                 syncBackgroundSelector();
                 currentTemplateId = activeSlide.dataset.templateId || templates[0].id;
-                if (templateSelect) {
-                    templateSelect.value = currentTemplateId;
-                }
             }
             syncPageContextFieldWithActiveSlide();
             updateSlideEmptyState();
@@ -2864,18 +2969,23 @@
             if (!slide) {
                 return [];
             }
-            const templateId = slide.dataset.templateId || templates[0].id;
             const includeText = options.includeText !== false;
             return Array.from(slide.querySelectorAll(".column")).map(column => {
+                const templateId = slide.dataset.templateId || templates[0].id;
                 const columnTitleEl = column.querySelector(".column-title");
                 const stageLabel = columnTitleEl ? columnTitleEl.textContent.trim() : column.dataset.stage || "";
                 const stageColor = column.style.getPropertyValue("--stage-color").trim() || "#ffffff";
                 const sections = {};
-                getTemplateSections(templateId).forEach(section => {
-                    const label = column.querySelector(`.section-label[data-section="${section.key}"]`);
-                    const textarea = column.querySelector(`textarea[data-section="${section.key}"]`);
-                    sections[section.key] = {
-                        label: label ? (label.textContent.trim() || getDefaultSectionLabel(templateId, section.key)) : getDefaultSectionLabel(templateId, section.key),
+                column.querySelectorAll(".section").forEach(sectionEl => {
+                    const sectionKey = sectionEl.dataset.section;
+                    if (!sectionKey) {
+                        return;
+                    }
+                    const label = sectionEl.querySelector(".section-label");
+                    const textarea = sectionEl.querySelector("textarea");
+                    const fallbackLabel = getDefaultSectionLabel(templateId, sectionKey);
+                    sections[sectionKey] = {
+                        label: label ? (label.textContent.trim() || fallbackLabel) : fallbackLabel,
                         text: textarea ? (includeText ? textarea.value : "") : ""
                     };
                 });
@@ -2895,6 +3005,7 @@
             const fontSize = normalizeFontSize(slide.dataset.fontSize ?? currentFontSize);
             const columns = buildColumnSeeds(slide, { includeText: false });
             const templateId = slide.dataset.templateId || templates[0].id;
+            const bottomSectionEl = slide.querySelector(".slide-bottom-section");
             return {
                 title: titleEl?.value || getDefaultTitle(templateId),
                 subtitle: subtitleEl?.value || defaultSubtitle,
@@ -2904,7 +3015,8 @@
                 templateId,
                 columns,
                 bottomSection: {
-                    text: slide.querySelector(".bottom-section-text")?.value || ""
+                    text: bottomSectionEl?.querySelector(".bottom-section-text")?.value || "",
+                    deleted: !Boolean(bottomSectionEl)
                 }
             };
         }
@@ -2919,7 +3031,8 @@
                     textStyleIndex: currentTextStyleIndex,
                     fontSize: currentFontSize,
                     bottomSection: {
-                        text: ""
+                        text: "",
+                        deleted: false
                     }
                 };
             }
@@ -2949,7 +3062,8 @@
                 fontSize: normalizeFontSize(previousSlide.dataset.fontSize ?? currentFontSize),
                 columns: buildColumnSeeds(previousSlide, { includeText: false }),
                 bottomSection: {
-                    text: previousSlide.querySelector(".bottom-section-text")?.value || ""
+                    text: previousSlide.querySelector(".bottom-section-text")?.value || "",
+                    deleted: !Boolean(previousSlide.querySelector(".slide-bottom-section"))
                 }
             };
         }
@@ -3085,7 +3199,7 @@
             const slideList = Array.isArray(slidesData) ? slidesData : [];
             initializeTemplateSlides(slideList);
             applySettingsFromPayload(settings);
-            renderSlidesForTemplate(currentTemplateId);
+            renderSlides();
             schedulePersist();
         }
 
@@ -3712,7 +3826,7 @@
             if (!sharedLoaded) {
                 loadSavedState();
             }
-            renderSlidesForTemplate(currentTemplateId);
+            renderSlides();
             applyRatio(currentRatioIndex);
             if (sharedLoaded) {
                 persistState();
@@ -3948,9 +4062,9 @@
                 selector: null
             },
             {
-                title: "Choix de modèle de documents",
-                description: "Choisis parmi les trois modèles disponibles, navigue page par page via les onglets et utilise les icônes ➕/🗑️ pour ajouter, renommer ou supprimer une page à tout moment.",
-                selectors: ["#templateSelect", "#tabs", ".tab-btn-add", ".tab-btn-delete"]
+                title: "Navigation des pages",
+                description: "Navigue page par page via les onglets et utilise les icônes ➕/🗑️ pour ajouter, renommer ou supprimer une page à tout moment.",
+                selectors: ["#tabs", ".tab-btn-add", ".tab-btn-delete"]
             },
             {
                 title: "Structure entièrement personnalisable",
