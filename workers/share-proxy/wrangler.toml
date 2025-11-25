@@ -1,4 +1,4 @@
-name = "gotoolkit"
+name = "gotoolkit-share-proxy"
 main = "index.js"
 compatibility_date = "2024-12-01"
 workers_dev = true

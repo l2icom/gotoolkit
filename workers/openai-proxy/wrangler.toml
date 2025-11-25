@@ -1,0 +1,6 @@
+name = "gotoolkit-openai-proxy"
+main = "index.js"
+compatibility_date = "2024-12-01"
+workers_dev = true
+
+# Configure account_id, zone_id, and routes before deploying.
