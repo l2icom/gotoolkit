@@ -354,7 +354,7 @@
             --shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.05);
             --slide-aspect-ratio: 16 / 9;
             --slide-width: min(1400px, 100%);
-            --slide-available-height: calc(100vh - 180px);
+            --slide-available-height: calc(100vh - 190px);
             --slide-aspect-value: calc(16 / 9);
         }
 
@@ -362,6 +362,7 @@
         body {
             min-height: 100vh;
             height: 100vh;
+            overflow: hidden;
         }
 
         body {
@@ -752,7 +753,6 @@
         }
 
         .slide-wrapper {
-            margin-top: 4px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -770,11 +770,9 @@
             flex-direction: column;
             gap: 8px;
             aspect-ratio: var(--slide-aspect-ratio, 16 / 9);
-            width: min(
-                var(--slide-width, min(1480px, 100%)),
-                calc(var(--slide-available-height, calc(100vh - 180px)) * var(--slide-aspect-value, calc(16 / 9)))
-            );
-            max-height: var(--slide-available-height, calc(100vh - 180px));
+            width: min(var(--slide-width, min(1480px, 100%)),
+                    calc(var(--slide-available-height, calc(100vh - 190px)) * var(--slide-aspect-value, calc(16 / 9))));
+            max-height: var(--slide-available-height, calc(100vh - 190px));
         }
 
         .slide,
@@ -850,7 +848,7 @@
         .columns {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 14px;
+            gap: 10px;
             flex: 1;
         }
 
@@ -893,8 +891,8 @@
         }
 
         .column-title {
-            font-size: calc(var(--slide-font-size, 16px) + 3px);
-            font-weight: 700;
+            font-size: calc(var(--slide-font-size, 16px));
+            font-weight: 500;
             font-family: var(--slide-font-family, "Segoe UI", sans-serif);
             letter-spacing: 0.08em;
             padding: 8px 10px;
@@ -914,7 +912,7 @@
 
 
         .column-body {
-            padding: 10px 12px 8px;
+            padding: 4px 12px 4px;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -926,13 +924,13 @@
         .section {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 0px;
             flex: 1;
         }
 
         .section-label {
-            font-size: calc(var(--slide-label-size, 12px) + 3px);
-            font-weight: 700;
+            font-size: calc(var(--slide-font-size, 12px));
+            font-weight: 500;
             color: var(--slide-text-color, var(--muted));
             display: flex;
             align-items: center;
@@ -1429,8 +1427,8 @@
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
     <script src="demo.js"></script>
     <script>
-      window.GO_TOOLKIT_SHARE_API_URL =
-        window.GO_TOOLKIT_SHARE_API_URL || "https://gotoolkit.tranxq.workers.dev";
+        window.GO_TOOLKIT_SHARE_API_URL =
+            window.GO_TOOLKIT_SHARE_API_URL || "https://gotoolkit.tranxq.workers.dev";
     </script>
     <script src="js/share-worker-client.js"></script>
     <script>
