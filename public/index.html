@@ -198,8 +198,7 @@
         }
 
         .modal-panel textarea {
-            min-height: 80px;
-            height: 80px;
+            min-height: 100px;
         }
 
         .modal-description {
@@ -251,36 +250,44 @@
             font-family: inherit;
         }
 
-        #promptFields {
+        .prompt-mode-line {
             display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 12px;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
         }
 
-        .prompt-row label {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .prompt-label-text {
-            font-size: 13px;
+        .prompt-mode-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
             font-weight: 600;
-            text-decoration: underline dotted;
-            text-underline-offset: 4px;
-            text-decoration-thickness: 1px;
-            cursor: help;
         }
 
-        .prompt-input {
-            min-height: 80px;
+        .prompt-editor {
+            width: 100%;
             border-radius: 8px;
             border: 1px solid #d0c3ad;
-            padding: 8px;
+            padding: 10px 12px;
             font-size: 13px;
             font-family: inherit;
             resize: vertical;
+            min-height: 80px;
+            background: #fff;
+        }
+
+        .prompt-editor:focus-visible {
+            outline: none;
+            border-color: #2a7a57;
+            box-shadow: 0 0 0 2px rgba(42, 122, 87, 0.3);
+        }
+
+        .prompt-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
         }
 
         .modal-footer {
@@ -346,9 +353,7 @@
             --border-soft: #dfd5c7;
             --text-main: #2f2922;
             --muted: #8b8173;
-            --now-color: #e3f4ea;
-            --next-color: #fff6de;
-            --later-color: #e3f1ff;
+            --border-display: #d0c3ad;
             --radius-large: 16px;
             --radius: 10px;
             --shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.05);
@@ -775,6 +780,34 @@
             max-height: var(--slide-available-height, calc(100vh - 190px));
         }
 
+        .slide-bottom-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 0px 12px;
+        }
+
+        .bottom-section-text {
+            width: 100%;
+            min-height: 120px;
+            border-radius: 8px;
+            border: 1px solid #dcd0c1;
+            background: var(--slide-bg, transparent);
+            color: var(--slide-text-color, var(--text-main));
+            font-family: var(--slide-font-family, "Segoe UI", sans-serif);
+            font-size: var(--slide-font-size, 16px);
+            margin: 4px 0px 4px 0px;
+            line-height: 1.5;
+            max-height: 260px;
+            resize: vertical;
+            overflow: auto;
+        }
+
+        .slide-bottom-section .textarea-wrapper textarea {
+            padding-top: 10px;
+        }
+
         .slide,
         .slide-body,
         .column-body {
@@ -810,10 +843,10 @@
             background: transparent;
             font-size: 20px;
             font-weight: 650;
-            padding: 0;
-            margin: 0;
+            margin: 4px 12px;
             color: var(--slide-text-color, var(--text-main));
             line-height: 1.2;
+            border-radius: 4px;
         }
 
         .slide-subtitle-input {
@@ -848,14 +881,14 @@
         .columns {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
+            gap: 0px;
             flex: 1;
         }
 
         .column {
             border-radius: 4px;
             background: var(--slide-bg, transparent);
-            border: 1px solid #ebe0d1;
+            border: 1px solid transparent;
             display: flex;
             flex-direction: column;
             min-height: 420px;
@@ -865,7 +898,7 @@
 
         .column.palette-active {
             box-shadow: none;
-            border-color: #ebe0d1;
+            border-color: transparent;
         }
 
         :root {
@@ -1004,7 +1037,7 @@
             font-size: var(--slide-font-size, 16px);
             padding: 6px 8px;
             line-height: 1.4;
-            min-height: 140px;
+            min-height: 110px;
             resize: vertical;
             border: none;
             background: var(--slide-bg, transparent);
@@ -1193,13 +1226,13 @@
 
         /* états d’édition : bordures seulement au survol / focus */
         .editable {
-            border: 1px solid transparent;
+            border: 1px solid var(--border-display) !important;
             background: transparent;
             transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
         }
 
         .editable:hover {
-            border-color: #d0c3ad;
+            border-color: var(--border-display);
             background: #fffdf8;
         }
 
@@ -1256,6 +1289,8 @@
             </div>
             <div class="global-actions">
                 <button id="contextBtn" type="button" aria-label="AI Assistant">✨ Assistant IA</button>
+                <button id="contextEditorBtn" class="info-button" type="button"
+                    aria-label="Ouvrir le contexte">📝Contexte</button>
 
                 <div class="menu-trigger" id="settingsMenuTrigger">
                     <button id="textStyleBtn" type="button" aria-label="Options d'affichage">📐 Affichage</button>
@@ -1372,13 +1407,6 @@
                 <h3>IA & contexte</h3>
                 <button class="modal-close" data-close="contextModal">×</button>
             </div>
-            <div class="modal-panel" data-panel="context">
-
-                <label>
-                    Décris ton contexte et ta vision du produit
-                    <textarea id="contextField" rows="4" placeholder="Contexte..."></textarea>
-                </label>
-            </div>
             <div class="modal-panel hide" data-panel="settings">
                 <label>
                     <a href="https://platform.openai.com/settings/organization/api-keys" target="_blank"
@@ -1396,29 +1424,58 @@
                         Modèle de prompts
                         <select id="promptTemplateSelect" class="prompt-template-select"></select>
                     </label>
-                    <div id="promptFields">
-                        <div class="prompt-row" data-section="first-section">
-                            <label>
-                                <span class="prompt-label-text">Prompt - Section</span>
-                                <textarea class="prompt-input" data-section="first-section" rows="2"></textarea>
-                            </label>
-                        </div>
-                        <div class="prompt-row" data-section="second-section">
-                            <label>
-                                <span class="prompt-label-text">Prompt - Section</span>
-                                <textarea class="prompt-input" data-section="second-section" rows="2"></textarea>
-                            </label>
-                        </div>
-                        <div class="prompt-row" data-section="third-section">
-                            <label>
-                                <span class="prompt-label-text">Prompt - Section</span>
-                                <textarea class="prompt-input" data-section="third-section" rows="2"></textarea>
-                            </label>
-                        </div>
+                    <label>
+                        <span class="prompt-label-text">Prompt - Sections</span>
+                        <textarea id="mainPromptField" rows="5" class="prompt-editor"></textarea>
+                    </label>
+                    <label>
+                        <span class="prompt-label-text">Prompt - Synthèse</span>
+                        <textarea id="bottomPromptField" rows="4" class="prompt-editor"></textarea>
+                    </label>
+                    <div class="prompt-actions">
+                        <button id="applyPromptToAllBtn" type="button" class="reset-prompts-btn">Tout appliquer</button>
+                        <button id="resetPromptsBtn" type="button" class="reset-prompts-btn">Réinitialiser</button>
                     </div>
-                    <button id="applyPromptToAllBtn" type="button" class="reset-prompts-btn">Tout appliquer</button>
-                    <button id="resetPromptsBtn" type="button" class="reset-prompts-btn">Réinitialiser</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="contextEditorModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Contexte</h3>
+                <button class="modal-close" data-close="contextEditorModal">×</button>
+            </div>
+            <div class="modal-panel">
+                <label>
+                    <span>Contexte global</span>
+                    <textarea id="globalContextField" rows="10"
+                        placeholder="Décris ton contexte et ta vision du produit"></textarea>
+                </label>
+            </div>
+            <div class="modal-panel">
+                <label>
+                    <span>Contexte de la page</span>
+                    <textarea id="pageContextField" rows="10" placeholder="Contexte de la page..."></textarea>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="promptEditorModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Modifier le prompt</h3>
+                <button class="modal-close" data-close="promptEditorModal">×</button>
+            </div>
+            <label>
+                <span class="prompt-label-text">Prompt expérimental</span>
+                <textarea id="promptEditorTextarea" rows="5" class="prompt-editor"></textarea>
+            </label>
+            <div class="modal-footer">
+                <button type="button" class="secondary" id="promptEditorCancelBtn">Annuler</button>
+                <button type="button" class="primary" id="promptEditorSendBtn">Envoyer</button>
             </div>
         </div>
     </div>
@@ -1586,17 +1643,28 @@
             }
         ];
         const promptVariableDefinitions = {
-            contextField: "Contexte saisi dans la modal",
+            globalContext: "Contexte global saisi dans la modalité Contexte",
+            pageContext: "Contexte spécifique à la page active",
+            contextField: "Alias historique de {{globalContext}} pour la compatibilité",
             columnTitle: "Titre de la colonne concernée",
             fieldValue: "Valeur actuelle du champ",
-            sectionTitle: "Intitulé de la section ciblée"
+            sectionTitle: "Intitulé de la section ciblée",
+            slideTitle: "Titre de la slide",
+            columnSections: "Résumé des 9 éléments de toutes les sections"
         };
 
-        const defaultPromptTemplate = `Tu es un consultant product owner expérimenté, sur la base du contexte {{contextField}} et dans le cadre de {{columnTitle}}, reformuler {{fieldValue}} sous forme de 2 à 3 {{sectionTitle}} d'un point de vue business et utilisateur (un • de < 18 mots pour chaque) sans introduction préalable ni émoji`;
-        const apprentPromptTemplate = `Tu es un coach product owner expérimenté, sur la base du contexte {{contextField}} et dans le cadre de {{columnTitle}}, reprendre ({{fieldValue}}) en ignorant les éléments entre "[ ]" sous forme de 2 à 3 éléments synthétiques (un • de < 18 mots pour chaque) sans toucher au sens, puis en dessous, proposer 2 à 3 questions d'approfondissement pour l'aider à formuler des {{sectionTitle}} synthétiques et pertinents (< 20 mots pour chaque et entre "[ ]" ). Tout ça sans introduction préalable ni émoji`;
+        const defaultPromptTemplate = `Tu es un consultant product owner expérimenté, sur la base du contexte global {{globalContext}} et du contexte de la page {{pageContext}}, et dans le cadre de {{columnTitle}}, reformuler {{fieldValue}} sous forme de 2 à 3 {{sectionTitle}} d'un point de vue business et utilisateur (un • de < 18 mots pour chaque) sans introduction préalable ni émoji`;
+        const apprentPromptTemplate = `Tu es un coach product owner expérimenté, sur la base du contexte global {{globalContext}} et du contexte de la page {{pageContext}}, et dans le cadre de {{columnTitle}}, reprendre ({{fieldValue}}) en ignorant les éléments entre "[ ]" sous forme de 2 à 3 éléments synthétiques (un • de < 18 mots pour chaque) sans toucher au sens, puis en dessous, proposer 2 à 3 questions d'approfondissement pour l'aider à formuler des {{sectionTitle}} synthétiques et pertinents (< 20 mots pour chaque et entre "[ ]" ). Tout ça sans introduction préalable ni émoji`;
         const IA_MODE_EXPRESS = "express";
         const IA_MODE_APPRENTI = "apprenti";
         const IA_MODE_EXPERIMENTAL = "experimental";
+        const promptModeMap = {
+            [IA_MODE_EXPRESS]: "express",
+            [IA_MODE_APPRENTI]: "apprenti",
+            [IA_MODE_EXPERIMENTAL]: "lab"
+        };
+        const bottomSectionPlaceholderText = "Synthèse, décisions clés ou résumé rapide";
+        const bottomSectionDefaultPrompt = `Tu es un consultant product owner expérimenté, sur la base du contexte global {{globalContext}} et du contexte de la page {{pageContext}}, et avec {{columnSections}}, répond à la slide {{slideTitle}} en 2 phrases courtes (< 18 mots pour chaque).`;
 
         function getTemplateById(id) {
             return templates.find(template => template.id === id) || templates[0];
@@ -1640,6 +1708,7 @@
                 if (!templateSlides[templateId]) {
                     templateSlides[templateId] = [];
                 }
+                slide.pageContext = slide.pageContext ?? slide.context ?? "";
                 templateSlides[templateId].push(slide);
             });
             templates.forEach(template => {
@@ -1675,16 +1744,17 @@
         const importJsonBtn = document.getElementById("importJsonBtn");
         const exportJsonBtn = document.getElementById("exportJsonBtn");
         const contextBtn = document.getElementById("contextBtn");
+        const contextEditorBtn = document.getElementById("contextEditorBtn");
         const contextModal = document.getElementById("contextModal");
-        const contextField = document.getElementById("contextField");
-        const contextModalTabs = contextModal.querySelectorAll(".modal-tab");
-        const contextModalPanels = contextModal.querySelectorAll(".modal-panel");
+        const contextEditorModal = document.getElementById("contextEditorModal");
+        const globalContextField = document.getElementById("globalContextField");
+        const pageContextField = document.getElementById("pageContextField");
+        const contextModalTabs = contextModal?.querySelectorAll(".modal-tab") ?? [];
+        const contextModalPanels = contextModal?.querySelectorAll(".modal-panel") ?? [];
         const settingsMenu = document.getElementById("settingsMenu");
         const fileMenu = document.getElementById("fileMenu");
         const shareMenu = document.getElementById("shareMenu");
         const apiKeyInput = document.getElementById("apiKeyInput");
-        const promptTemplateSelect = document.getElementById("promptTemplateSelect");
-        const promptInputs = Array.from(document.querySelectorAll(".prompt-input"));
         const fontSelect = document.getElementById("fontSelect");
         const fontSizeInput = document.getElementById("fontSizeInput");
         const ratioGrid = document.getElementById("ratioGrid");
@@ -1695,6 +1765,14 @@
         const promptCustomizationArea = document.getElementById("promptCustomizationArea");
         const applyPromptToAllBtn = document.getElementById("applyPromptToAllBtn");
         const copyToast = document.getElementById("copyToast");
+        const mainPromptField = document.getElementById("mainPromptField");
+        const bottomPromptField = document.getElementById("bottomPromptField");
+        const promptModeLabel = document.getElementById("promptModeLabel");
+        const promptTemplateSelect = document.getElementById("promptTemplateSelect");
+        const promptEditorModal = document.getElementById("promptEditorModal");
+        const promptEditorTextarea = document.getElementById("promptEditorTextarea");
+        const promptEditorSendBtn = document.getElementById("promptEditorSendBtn");
+        const promptEditorCancelBtn = document.getElementById("promptEditorCancelBtn");
         let copyToastTimer = null;
         const slidesViewport = document.querySelector(".slides-container");
 
@@ -1772,6 +1850,7 @@
 
         function buildStatePayload() {
             storeCurrentSlides();
+            const globalContextValue = globalContextField?.value || "";
             return {
                 slides: collectAllSlides(),
                 settings: {
@@ -1779,7 +1858,8 @@
                     textStyleIndex: currentTextStyleIndex,
                     fontSize: currentFontSize,
                     apiKey: apiKeyInput.value,
-                    context: contextField.value,
+                    globalContext: globalContextValue,
+                    context: globalContextValue,
                     prompts: promptLibrary,
                     promptTemplateId: activePromptTemplateId,
                     iaMode: activeIaMode,
@@ -1969,10 +2049,12 @@
         let activeIaMode = IA_MODE_EXPRESS;
         let lastFocusedPromptTextarea = null;
         const promptLibrary = templates.reduce((acc, template) => {
-            acc[template.id] = sectionKeys.reduce((inner, key) => {
-                inner[key] = defaultPromptTemplate;
-                return inner;
-            }, {});
+            acc[template.id] = {
+                express: defaultPromptTemplate,
+                apprenti: apprentPromptTemplate,
+                lab: defaultPromptTemplate,
+                bottom: bottomSectionDefaultPrompt
+            };
             return acc;
         }, {});
 
@@ -2004,15 +2086,12 @@
             if (payload.prompts) {
                 Object.entries(payload.prompts).forEach(([templateId, prompts]) => {
                     if (!promptLibrary[templateId]) return;
-                    sectionKeys.forEach(sectionKey => {
-                        promptLibrary[templateId][sectionKey] = prompts[sectionKey] || defaultPromptTemplate;
-                    });
+                    const target = promptLibrary[templateId];
+                    target.express = prompts.express || defaultPromptTemplate;
+                    target.apprenti = prompts.apprenti || apprentPromptTemplate;
+                    target.lab = prompts.lab || defaultPromptTemplate;
+                    target.bottom = prompts.bottom || bottomSectionDefaultPrompt;
                 });
-            } else if (payload.objectivePrompt || payload.meansPrompt || payload.indicatorsPrompt) {
-                const templateId = templates[0].id;
-                promptLibrary[templateId]["first-section"] = payload.objectivePrompt || defaultPromptTemplate;
-                promptLibrary[templateId]["second-section"] = payload.meansPrompt || defaultPromptTemplate;
-                promptLibrary[templateId]["third-section"] = payload.indicatorsPrompt || defaultPromptTemplate;
             }
             activePromptTemplateId = payload.promptTemplateId || activePromptTemplateId;
             currentTemplateId = payload.defaultTemplateId || currentTemplateId;
@@ -2028,12 +2107,15 @@
                 apiKeyInput.value = apiKeyValue;
                 writeSharedApiKey(apiKeyInput.value.trim());
             }
-            const fallbackContext = payload.context || "";
-            if (fallbackContext) {
+            const globalContextValue = payload.globalContext ?? payload.context ?? "";
+            if (globalContextField) {
+                globalContextField.value = globalContextValue;
+            }
+            if (globalContextValue) {
                 Object.values(templateSlides).forEach(slides => {
                     slides.forEach(slide => {
-                        if (!slide.context) {
-                            slide.context = fallbackContext;
+                        if (!slide.pageContext) {
+                            slide.pageContext = globalContextValue;
                         }
                     });
                 });
@@ -2108,97 +2190,45 @@
             });
         }
 
-        function getPromptValue(templateId, sectionKey) {
-            const templatePrompts = promptLibrary[templateId] || promptLibrary[templates[0].id];
-            return templatePrompts[sectionKey] || defaultPromptTemplate;
+        function promptKeyFromMode(mode) {
+            return promptModeMap[mode] || "express";
         }
 
-        function updatePromptLabels(templateId) {
-            promptInputs.forEach(textarea => {
-                const sectionKey = textarea.dataset.section;
-                const sectionDef = getTemplateSection(templateId, sectionKey);
-                const labelEl = textarea.closest(".prompt-row")?.querySelector(".prompt-label-text");
-                if (labelEl) {
-                    const sectionLabel = sectionDef ? `${sectionDef.icon} ${sectionDef.label}` : sectionKey;
-                    labelEl.textContent = `Prompt - ${sectionLabel}`;
-                }
-            });
+        function getPromptLibraryForTemplate(templateId) {
+            return promptLibrary[templateId] || promptLibrary[templates[0].id];
         }
 
-        function getCurrentPromptVariableValues() {
-            const contextValue = contextField?.value.trim() || "non renseigné";
-            const activeSlide = getActiveSlideElement() || slidesContainer.querySelector(".slide");
-            const columnTitle = activeSlide?.querySelector(".column-title")?.textContent.trim() || "Colonne exemple";
-            const sectionTitle = activeSlide?.querySelector(".section-label")?.textContent.trim() || "Section exemple";
-            const firstField = activeSlide?.querySelector(".section-text-row textarea");
-            const fieldValue = firstField?.value.trim() || "(vide)";
-            return {
-                contextField: contextValue,
-                columnTitle,
-                sectionTitle,
-                fieldValue
-            };
-        }
-
-        function describePromptVariables(includeDefinition = false) {
-            const variables = getCurrentPromptVariableValues();
-            return Object.entries(variables)
-                .map(([key, value]) => {
-                    const parts = [`{{${key}}}=${value}`];
-                    if (includeDefinition && promptVariableDefinitions[key]) {
-                        parts.push(`(${promptVariableDefinitions[key]})`);
-                    }
-                    return parts.join(" ");
-                })
-                .join(" · ");
-        }
-
-        function renderPromptWithVariables(promptText) {
-            if (!promptText) {
-                return "";
+        function updatePromptFields() {
+            if (!mainPromptField || !bottomPromptField) return;
+            const library = getPromptLibraryForTemplate(activePromptTemplateId);
+            const modeKey = promptKeyFromMode(activeIaMode);
+            const fallbackTemplate = activeIaMode === IA_MODE_APPRENTI ? apprentPromptTemplate : defaultPromptTemplate;
+            mainPromptField.value = library[modeKey] || fallbackTemplate;
+            bottomPromptField.value = library.bottom || bottomSectionDefaultPrompt;
+            if (promptModeLabel) {
+                const modeName = activeIaMode === IA_MODE_APPRENTI
+                    ? "Apprenti"
+                    : activeIaMode === IA_MODE_EXPRESS
+                        ? "Express"
+                        : "Expérimental";
+                promptModeLabel.textContent = `Mode ${modeName}`;
             }
-            const variables = getCurrentPromptVariableValues();
-            return promptText.replace(/\{\{(\w+)\}\}/g, (_, key) => variables[key] ?? "");
-        }
-
-        function updatePromptTooltip(textarea) {
-            const labelEl = textarea.closest(".prompt-row")?.querySelector(".prompt-label-text");
-            if (!labelEl) return;
-            const matrixSection = textarea.dataset.section;
-            const storedPrompt = matrixSection ? getPromptValue(activePromptTemplateId, matrixSection) : "";
-            const promptValue = textarea.value || storedPrompt || "";
-            const filledPrompt = renderPromptWithVariables(promptValue);
-            labelEl.title = filledPrompt || "Prompt vide";
-        }
-
-        function updatePromptPlaceholders() {
-            const variableDescription = describePromptVariables(true);
-            promptInputs.forEach(textarea => {
-                textarea.placeholder = variableDescription;
-            });
-        }
-
-        function refreshPromptUI() {
-            updatePromptPlaceholders();
-            promptInputs.forEach(textarea => updatePromptTooltip(textarea));
         }
 
         function setPromptFieldsForTemplate(templateId) {
-            promptInputs.forEach(textarea => {
-                const sectionKey = textarea.dataset.section;
-                textarea.value = getPromptValue(templateId, sectionKey);
-            });
-            updatePromptLabels(templateId);
-            refreshPromptUI();
+            if (!templateId) return;
+            activePromptTemplateId = templateId;
+            if (promptTemplateSelect) {
+                promptTemplateSelect.value = templateId;
+            }
+            updatePromptFields();
         }
 
         function updateIaModeUI() {
             iaModeButtons.forEach(button => {
                 button.classList.toggle("active", button.dataset.iaMode === activeIaMode);
             });
-            if (promptCustomizationArea) {
-                promptCustomizationArea.classList.toggle("hidden", activeIaMode !== IA_MODE_EXPERIMENTAL);
-            }
+            updatePromptFields();
         }
 
         function setActiveIaMode(mode) {
@@ -2208,30 +2238,39 @@
             activeIaMode = mode;
             updateIaModeUI();
         }
-
-        promptInputs.forEach(textarea => {
-            textarea.addEventListener("focus", () => {
-                lastFocusedPromptTextarea = textarea;
+        if (mainPromptField) {
+            mainPromptField.addEventListener("focus", () => {
+                lastFocusedPromptTextarea = mainPromptField;
             });
-            textarea.addEventListener("input", () => {
-                const sectionKey = textarea.dataset.section;
-                if (!sectionKey) return;
-                promptLibrary[activePromptTemplateId][sectionKey] = textarea.value;
+            mainPromptField.addEventListener("input", () => {
+                const library = getPromptLibraryForTemplate(activePromptTemplateId);
+                const modeKey = promptKeyFromMode(activeIaMode);
+                library[modeKey] = mainPromptField.value || (activeIaMode === IA_MODE_APPRENTI ? apprentPromptTemplate : defaultPromptTemplate);
                 schedulePersist();
-                updatePromptTooltip(textarea);
             });
+        }
+        if (bottomPromptField) {
+            bottomPromptField.addEventListener("focus", () => {
+                lastFocusedPromptTextarea = bottomPromptField;
+            });
+            bottomPromptField.addEventListener("input", () => {
+                const library = getPromptLibraryForTemplate(activePromptTemplateId);
+                library.bottom = bottomPromptField.value || bottomSectionDefaultPrompt;
+                schedulePersist();
+            });
+        }
+        globalContextField?.addEventListener("input", () => {
+            schedulePersist();
         });
-        contextField?.addEventListener("input", () => {
-            setActiveSlideContext(contextField.value);
-            refreshPromptUI();
+        pageContextField?.addEventListener("input", () => {
+            setActivePageContext(pageContextField.value);
             schedulePersist();
         });
         document.addEventListener("input", event => {
             const target = event.target;
             if (target instanceof Element && target.matches(".column-title, .section-label, .section-text-row textarea")) {
-                refreshPromptUI();
+                updateSlideEmptyState();
             }
-            updateSlideEmptyState();
         });
 
         iaModeButtons.forEach(button => {
@@ -2528,7 +2567,10 @@
                     textStyleIndex: parseStyleIndex(slide.dataset.textStyleIndex),
                     fontSize: Number.isNaN(fontSizeValue) ? currentFontSize : fontSizeValue,
                     columns,
-                    context: slide.dataset.context || ""
+                    pageContext: slide.dataset.pageContext || "",
+                    bottomSection: {
+                        text: slide.querySelector(".bottom-section-text")?.value || ""
+                    }
                 };
             });
         }
@@ -2636,15 +2678,21 @@
             const subtitleValue = (seed.subtitle || defaultSubtitle).replace(/"/g, '&quot;');
             slide.dataset.templateId = templateId;
             slide.dataset.tabLabel = seed.tabLabel || `Page ${index + 1}`;
-            slide.dataset.context = seed.context || "";
+            slide.dataset.pageContext = seed.pageContext ?? seed.context ?? "";
             slide.innerHTML = `
   <div class="slide-header">
     <div class="slide-title-row">
-      <input class="slide-title-input editable" type="text" value="${titleValue}">
+      <input class="slide-title-input" type="text" value="${titleValue}">
     </div>
   </div>
   <div class="slide-body">
     <div class="columns"></div>
+  </div>
+  <div class="slide-bottom-section">
+    <div class="textarea-wrapper">
+      <textarea class="editable bottom-section-text" rows="4"></textarea>
+      <button class="field-ai-btn inside" type="button" data-section="bottom-section" title="Générer la synthèse IA" aria-label="Synthèse IA">✨</button>
+    </div>
   </div>
 `;
             const columnsContainer = slide.querySelector(".columns");
@@ -2666,6 +2714,14 @@
                     selectColumnForPalette(targetColumn);
                 }
             });
+            const bottomTextarea = slide.querySelector(".bottom-section-text");
+            if (bottomTextarea) {
+                bottomTextarea.value = (seed.bottomSection && seed.bottomSection.text) || "";
+                bottomTextarea.dataset.placeholder = bottomSectionPlaceholderText;
+                bindTextareaPlaceholder(bottomTextarea);
+                monitorTextareaOverflow(bottomTextarea);
+                bottomTextarea.addEventListener("input", () => schedulePersist());
+            }
             const bgColor = seed.bgColor ?? "transparent";
             applyBackgroundToSlide(slide, bgColor);
             const styleIndex = typeof seed.textStyleIndex === "number" ? seed.textStyleIndex : currentTextStyleIndex;
@@ -2727,24 +2783,27 @@
             scheduleSlideClampUpdate();
         }
 
-        function getActiveSlideContext(targetSlide) {
-            const slide = targetSlide || getActiveSlideElement();
-            return slide ? slide.dataset.context || "" : "";
+        function getSlidePageContext(slide) {
+            return slide?.dataset.pageContext || "";
         }
 
-        function setActiveSlideContext(value) {
+        function getActivePageContext(targetSlide) {
+            const slide = targetSlide || getActiveSlideElement();
+            return getSlidePageContext(slide);
+        }
+
+        function setActivePageContext(value) {
             const slide = getActiveSlideElement();
             if (!slide) return;
-            slide.dataset.context = value || "";
+            slide.dataset.pageContext = value || "";
         }
 
-        function syncContextFieldWithActiveSlide() {
-            if (!contextField) return;
-            const contextValue = getActiveSlideContext();
-            if (contextField.value !== contextValue) {
-                contextField.value = contextValue;
+        function syncPageContextFieldWithActiveSlide() {
+            if (!pageContextField) return;
+            const contextValue = getActivePageContext();
+            if (pageContextField.value !== contextValue) {
+                pageContextField.value = contextValue;
             }
-            refreshPromptUI();
         }
 
         function isSlideEmpty(slide) {
@@ -2797,7 +2856,7 @@
                     templateSelect.value = currentTemplateId;
                 }
             }
-            syncContextFieldWithActiveSlide();
+            syncPageContextFieldWithActiveSlide();
             updateSlideEmptyState();
         }
 
@@ -2843,7 +2902,10 @@
                 textStyleIndex,
                 fontSize,
                 templateId,
-                columns
+                columns,
+                bottomSection: {
+                    text: slide.querySelector(".bottom-section-text")?.value || ""
+                }
             };
         }
 
@@ -2855,7 +2917,10 @@
                     templateId: templates[0].id,
                     bgColor: "transparent",
                     textStyleIndex: currentTextStyleIndex,
-                    fontSize: currentFontSize
+                    fontSize: currentFontSize,
+                    bottomSection: {
+                        text: ""
+                    }
                 };
             }
             const previousSlide = slidesContainer.querySelector(`.slide[data-index="${slideCount - 1}"]`);
@@ -2866,7 +2931,10 @@
                     templateId: templates[0].id,
                     bgColor: "transparent",
                     textStyleIndex: currentTextStyleIndex,
-                    fontSize: currentFontSize
+                    fontSize: currentFontSize,
+                    bottomSection: {
+                        text: ""
+                    }
                 };
             }
             const prevTitleEl = previousSlide.querySelector(".slide-title-input");
@@ -2879,7 +2947,10 @@
                 bgColor: previousSlide.dataset.bgColor || "transparent",
                 textStyleIndex: parseStyleIndex(previousSlide.dataset.textStyleIndex),
                 fontSize: normalizeFontSize(previousSlide.dataset.fontSize ?? currentFontSize),
-                columns: buildColumnSeeds(previousSlide, { includeText: false })
+                columns: buildColumnSeeds(previousSlide, { includeText: false }),
+                bottomSection: {
+                    text: previousSlide.querySelector(".bottom-section-text")?.value || ""
+                }
             };
         }
 
@@ -2929,15 +3000,14 @@
 
         if (applyPromptToAllBtn) {
             applyPromptToAllBtn.addEventListener("click", () => {
-                const fallbackTextarea = promptInputs[0];
-                if (!fallbackTextarea) return;
-                const sourceValue = (lastFocusedPromptTextarea?.value ?? fallbackTextarea.value ?? "").trim();
+                const sourceValue = (lastFocusedPromptTextarea?.value ?? mainPromptField?.value ?? "").trim();
                 const promptValue = sourceValue || defaultPromptTemplate;
+                const bottomValue = bottomPromptField?.value || bottomSectionDefaultPrompt;
+                const modeKey = promptKeyFromMode(activeIaMode);
                 templates.forEach(template => {
                     const library = promptLibrary[template.id] || {};
-                    sectionKeys.forEach(sectionKey => {
-                        library[sectionKey] = promptValue;
-                    });
+                    library[modeKey] = promptValue;
+                    library.bottom = bottomValue;
                     promptLibrary[template.id] = library;
                 });
                 setPromptFieldsForTemplate(activePromptTemplateId);
@@ -2948,11 +3018,12 @@
         if (resetPromptsBtn) {
             resetPromptsBtn.addEventListener("click", () => {
                 templates.forEach(template => {
-                    const library = promptLibrary[template.id] || {};
-                    sectionKeys.forEach(sectionKey => {
-                        library[sectionKey] = defaultPromptTemplate;
-                    });
-                    promptLibrary[template.id] = library;
+                    promptLibrary[template.id] = {
+                        express: defaultPromptTemplate,
+                        apprenti: apprentPromptTemplate,
+                        lab: defaultPromptTemplate,
+                        bottom: bottomSectionDefaultPrompt
+                    };
                 });
                 setPromptFieldsForTemplate(activePromptTemplateId);
                 schedulePersist();
@@ -2985,6 +3056,7 @@
 
         exportJsonBtn.addEventListener("click", () => {
             const data = collectAllSlides();
+            const globalContextValue = globalContextField?.value || "";
             const payload = {
                 slides: data,
                 settings: {
@@ -2992,7 +3064,8 @@
                     textStyleIndex: currentTextStyleIndex,
                     fontSize: currentFontSize,
                     apiKey: apiKeyInput.value,
-                    context: contextField.value,
+                    globalContext: globalContextValue,
+                    context: globalContextValue,
                     prompts: promptLibrary,
                     promptTemplateId: activePromptTemplateId,
                     iaMode: activeIaMode,
@@ -3124,7 +3197,34 @@
                 }
             });
 
+            const bottomSectionText = slide.querySelector(".bottom-section-text")?.value.trim();
+            if (bottomSectionText) {
+                if (lines.length) {
+                    lines.push("");
+                }
+                lines.push(bottomSectionText);
+            }
+
             return lines.join("\n");
+        }
+
+        function gatherColumnSectionSummary(slide) {
+            if (!slide) {
+                return "";
+            }
+            const parts = [];
+            Array.from(slide.querySelectorAll(".column")).forEach(column => {
+                const columnTitle = column.querySelector(".column-title")?.textContent.trim();
+                Array.from(column.querySelectorAll(".section")).forEach(section => {
+                    const sectionLabel = section.querySelector(".section-label")?.textContent.trim() || "Section";
+                    const textarea = section.querySelector("textarea");
+                    const value = textarea?.value.trim() || textarea?.dataset.placeholder?.trim() || "";
+                    const content = value || "(vide)";
+                    const prefix = columnTitle ? `${columnTitle} — ${sectionLabel}` : sectionLabel;
+                    parts.push(`${prefix}: ${content}`);
+                });
+            });
+            return parts.join(" | ");
         }
 
         function copyTextToClipboard(text) {
@@ -3305,17 +3405,20 @@
         }
 
         function getPromptTemplateForSection(templateId, sectionKey) {
-            const sectionPrompts = promptLibrary[templateId] || promptLibrary[templates[0].id];
-            return sectionPrompts[sectionKey] || defaultPromptTemplate;
+            if (sectionKey === "bottom-section") {
+                return getPromptLibraryForTemplate(templateId).bottom || bottomSectionDefaultPrompt;
+            }
+            return getMainPromptTemplate(templateId);
+        }
+
+        function getMainPromptTemplate(templateId) {
+            const library = getPromptLibraryForTemplate(templateId);
+            const modeKey = promptKeyFromMode(activeIaMode);
+            const fallbackTemplate = activeIaMode === IA_MODE_APPRENTI ? apprentPromptTemplate : defaultPromptTemplate;
+            return library[modeKey] || fallbackTemplate;
         }
 
         function getPromptTemplateForMode(section, templateId) {
-            if (activeIaMode === IA_MODE_EXPRESS) {
-                return defaultPromptTemplate;
-            }
-            if (activeIaMode === IA_MODE_APPRENTI) {
-                return apprentPromptTemplate;
-            }
             return getPromptTemplateForSection(templateId, section);
         }
 
@@ -3371,7 +3474,7 @@
             }
         }
 
-        let activeModalTab = "context";
+        let activeModalTab = "settings";
 
         function switchModalTab(tabName) {
             activeModalTab = tabName;
@@ -3389,11 +3492,11 @@
             });
         });
 
-        function openContextModalForEmptyState() {
-            if (!contextModal) return;
-            switchModalTab("context");
-            openModal(contextModal);
-            contextField?.focus();
+        function openContextEditorModalForEmptyState() {
+            if (!contextEditorModal) return;
+            syncPageContextFieldWithActiveSlide();
+            openModal(contextEditorModal);
+            pageContextField?.focus();
         }
 
         function handleSettingsSave() {
@@ -3402,55 +3505,135 @@
         }
         ;
 
+        function buildBottomPromptContext(slide) {
+            const slideTitle = slide?.querySelector(".slide-title-input")?.value.trim() || "Slide";
+            const globalContextValue = globalContextField?.value.trim() || "";
+            const pageContextValue = getSlidePageContext(slide).trim();
+            return {
+                globalContext: globalContextValue,
+                contextField: globalContextValue,
+                pageContext: pageContextValue,
+                slideTitle,
+                columnSections: gatherColumnSectionSummary(slide)
+            };
+        }
+
+        let promptEditorResolve = null;
+
+        function finishPromptEditor(result) {
+            const resolver = promptEditorResolve;
+            if (!resolver) return;
+            promptEditorResolve = null;
+            closeModal(promptEditorModal, true);
+            resolver(result);
+        }
+
+        function openPromptEditor(initialTemplate) {
+            if (!promptEditorModal || !promptEditorTextarea) {
+                return Promise.resolve(initialTemplate);
+            }
+            promptEditorTextarea.value = initialTemplate;
+            openModal(promptEditorModal);
+            promptEditorTextarea.focus();
+            return new Promise(resolve => {
+                promptEditorResolve = result => resolve(result);
+            });
+        }
+
+        function executeAiRequest(button, textarea, messagesPromise) {
+            return (async () => {
+                const messages = await Promise.resolve(messagesPromise);
+                if (!messages || !messages.length) {
+                    return;
+                }
+                const countdownDuration = 30;
+                let remainingSeconds = countdownDuration;
+                let countdownInterval = null;
+                const updateCountdownLabel = () => {
+                    button.textContent = `⏳ ${remainingSeconds}s`;
+                };
+                updateCountdownLabel();
+                countdownInterval = setInterval(() => {
+                    remainingSeconds = Math.max(0, remainingSeconds - 1);
+                    updateCountdownLabel();
+                    if (remainingSeconds === 0) {
+                        clearInterval(countdownInterval);
+                    }
+                }, 1000);
+                button.disabled = true;
+                try {
+                    const aiText = await callOpenAI(messages);
+                    console.log("OpenAI field response", aiText);
+                    if (aiText == null) return;
+                    textarea.value = aiText.trim();
+                    updateTextareaOverflowState(textarea);
+                    schedulePersist();
+                } finally {
+                    if (countdownInterval) {
+                        clearInterval(countdownInterval);
+                    }
+                    button.textContent = "✨";
+                    button.disabled = false;
+                }
+            })();
+        }
+
+        promptEditorSendBtn?.addEventListener("click", () => {
+            finishPromptEditor(promptEditorTextarea?.value ?? "");
+        });
+        promptEditorCancelBtn?.addEventListener("click", () => {
+            finishPromptEditor(null);
+        });
+        promptEditorModal?.addEventListener("click", event => {
+            if (event.target === promptEditorModal) {
+                finishPromptEditor(null);
+            }
+        });
+
         async function handleFieldAi(button) {
             const section = button.dataset.section;
-            const textarea = button.closest(".section-text-row")?.querySelector("textarea");
+            const wrapper = button.closest(".textarea-wrapper");
+            const textarea = wrapper?.querySelector("textarea");
             if (!textarea || !section) return;
-            const column = button.closest(".column");
             const slide = button.closest(".slide");
+            const templateId = slide?.dataset.templateId || templates[0].id;
+            const column = button.closest(".column");
             const columnTitle = column?.querySelector(".column-title")?.textContent.trim() || "";
             const sectionLabel = column?.querySelector(`.section-label[data-section="${section}"]`)?.textContent.trim() || "";
-            const templateId = slide?.dataset.templateId || templates[0].id;
-            const promptContext = {
-                contextField: contextField.value.trim(),
-                columnTitle,
-                fieldValue: textarea.value.trim(),
-                sectionTitle: sectionLabel
-            };
-            const message = buildFieldPrompt(section, templateId, promptContext);
-            const messages = [
+            const globalContextValue = globalContextField?.value.trim() || "";
+            const promptContext = section === "bottom-section"
+                ? buildBottomPromptContext(slide)
+                : {
+                    globalContext: globalContextValue,
+                    contextField: globalContextValue,
+                    pageContext: getSlidePageContext(slide).trim(),
+                    columnTitle,
+                    fieldValue: textarea.value.trim(),
+                    sectionTitle: sectionLabel
+                };
+
+            const baseMessages = messageText => [
                 { role: "system", content: "Tu es un assistant produit." },
-                { role: "user", content: message }
+                { role: "user", content: messageText }
             ];
-            const countdownDuration = 30;
-            let remainingSeconds = countdownDuration;
-            let countdownInterval = null;
-            const updateCountdownLabel = () => {
-                button.textContent = `⏳ ${remainingSeconds}s`;
-            };
-            updateCountdownLabel();
-            countdownInterval = setInterval(() => {
-                remainingSeconds = Math.max(0, remainingSeconds - 1);
-                updateCountdownLabel();
-                if (remainingSeconds === 0) {
-                    clearInterval(countdownInterval);
-                }
-            }, 1000);
-            button.disabled = true;
-            try {
-                const aiText = await callOpenAI(messages);
-                console.log("OpenAI field response", aiText);
-                if (aiText == null) return;
-                textarea.value = aiText.trim();
-                updateTextareaOverflowState(textarea);
-                schedulePersist();
-            } finally {
-                if (countdownInterval) {
-                    clearInterval(countdownInterval);
-                }
-                button.textContent = "✨";
-                button.disabled = false;
+
+            if (section === "bottom-section") {
+                const message = buildFieldPrompt(section, templateId, promptContext);
+                await executeAiRequest(button, textarea, baseMessages(message));
+                return;
             }
+
+            if (activeIaMode === IA_MODE_EXPERIMENTAL) {
+                const templateText = getMainPromptTemplate(templateId);
+                const editedTemplate = await openPromptEditor(templateText);
+                if (!editedTemplate) return;
+                const message = fillTemplate(editedTemplate, promptContext);
+                await executeAiRequest(button, textarea, baseMessages(message));
+                return;
+            }
+
+            const message = buildFieldPrompt(section, templateId, promptContext);
+            await executeAiRequest(button, textarea, baseMessages(message));
         }
 
         document.addEventListener("click", event => {
@@ -3471,8 +3654,12 @@
             modal?.classList.add("open");
         }
 
-        function closeModal(modal) {
-            modal?.classList.remove("open");
+        function closeModal(modal, skipPromptEditor = false) {
+            if (modal === promptEditorModal && !skipPromptEditor) {
+                finishPromptEditor(null);
+                return;
+            }
+            modal?.classList?.remove("open");
         }
 
         document.querySelectorAll(".modal-close").forEach(btn => {
@@ -3496,7 +3683,7 @@
                 promptTemplateSelect.value = currentTemplateId;
             }
             setPromptFieldsForTemplate(activePromptTemplateId);
-            switchModalTab("context");
+            switchModalTab("settings");
             openModal(contextModal);
         });
         contextModal.addEventListener("click", event => {
@@ -3504,10 +3691,20 @@
                 closeModal(contextModal);
             }
         });
-        switchModalTab("context");
+        contextEditorBtn?.addEventListener("click", () => {
+            syncPageContextFieldWithActiveSlide();
+            openModal(contextEditorModal);
+            globalContextField?.focus();
+        });
+        contextEditorModal?.addEventListener("click", event => {
+            if (event.target === contextEditorModal) {
+                closeModal(contextEditorModal);
+            }
+        });
+        switchModalTab("settings");
         slideContextLink?.addEventListener("click", event => {
             event.stopPropagation();
-            openContextModalForEmptyState();
+            openContextEditorModalForEmptyState();
         });
         async function initializeAppState() {
             initShareWorkerService();
