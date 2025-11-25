@@ -2455,13 +2455,16 @@
                     }
                     var effectiveBorder = def.darkBorder || def.border;
                     var effectiveColor = def.contrastTextColor || def.darkText || def.color;
-                    return [
+                    var ruleLines = [
                         ".vis-item.type-" + def.id + " {",
                         "  background: " + background + ";",
-                        // "  border-color: " + effectiveBorder + ";",
-                        "  color: " + effectiveColor + ";",
-                        "}"
-                    ].join("\n");
+                        // "  border-color: " + effectiveBorder + ";"
+                    ];
+                    if (key !== "milestone") {
+                        ruleLines.push("  color: " + effectiveColor + ";");
+                    }
+                    ruleLines.push("}");
+                    return ruleLines.join("\n");
                 });
                 var milestoneDef = typeDefinitions["milestone"];
                 if (milestoneDef) {
@@ -2474,6 +2477,11 @@
                         "}"
                     ].join("\n");
                     rules.push(milestoneRule);
+                    rules.push([
+                        ".vis-item.type-milestone .vis-item-content {",
+                        "  color: var(--text);",
+                        "}"
+                    ].join("\n"));
                 }
                 typeStyleElement.textContent = rules.join("\n");
             }
