@@ -1567,7 +1567,7 @@
             height: 10px;
             top: 50%;
             left: 50%;
-            transform: translate(calc(-50% + 2.5px), -50%) rotate(45deg);
+            transform: translate(calc(-50% + 6px), -50%) rotate(45deg);
             border-radius: 0;
             background: var(--milestone-selected-background, rgba(37, 99, 235, 0.14));
             box-shadow: 0 0 0 1px transparent;
@@ -1595,9 +1595,7 @@
             /* pull the box left to cover the dot */
         }
 
-        .vis-item.vis-dot::before {
-            transform: translate(calc(-50% + 10px), -50%) rotate(45deg);
-        }
+
 
         .vis-item.type-milestone.vis-selected,
         .vis-item.milestone-class.vis-selected {
@@ -2351,6 +2349,20 @@
                 );
             }
 
+            function getContrastingTextColor(value) {
+                var parsed = parseRgbColor(value);
+                if (!parsed) return null;
+                var alpha = parsed.a === undefined || parsed.a === null ? 1 : parsed.a;
+                if (alpha <= 0) {
+                    return null;
+                }
+                if (alpha < 1) {
+                    return "#0f172a";
+                }
+                var luminance = (parsed.r * 299 + parsed.g * 587 + parsed.b * 114) / 1000;
+                return luminance >= 180 ? "#0f172a" : "#ffffff";
+            }
+
             function getDarkerColor(source, amount) {
                 var parsed = parseRgbColor(source);
                 if (!parsed) return source;
@@ -2375,6 +2387,9 @@
                 var textSource = def.color && def.color !== "transparent" ? def.color : accentBase;
                 def.darkBorder = getDarkerColor(borderSource, 0.28);
                 def.darkText = getDarkerColor(textSource, 0.45);
+                var contrastSource = accentBase;
+                var contrastColor = getContrastingTextColor(contrastSource);
+                def.contrastTextColor = contrastColor || def.darkText || def.color || "#0f172a";
             }
 
             function getRainbowColor() {
@@ -2439,7 +2454,7 @@
                         background = "transparent";
                     }
                     var effectiveBorder = def.darkBorder || def.border;
-                    var effectiveColor = def.darkText || def.color;
+                    var effectiveColor = def.contrastTextColor || def.darkText || def.color;
                     return [
                         ".vis-item.type-" + def.id + " {",
                         "  background: " + background + ";",
@@ -2691,7 +2706,7 @@
                         : "rgba(15, 23, 42, 0.08)";
                     var backgroundColor = isActive ? baseColor : "#ffffff";
                     var typeBorderColor = def.darkBorder || def.border || "#fff";
-                    var typeTextColor = def.darkText || def.color || "#0f172a";
+                    var typeTextColor = def.contrastTextColor || def.darkText || def.color || "#0f172a";
                     var borderColor = isActive ? typeBorderColor : "rgba(15, 23, 42, 0.15)";
                     var textColor = isActive ? typeTextColor : "var(--text)";
                     option.style.background = backgroundColor;
