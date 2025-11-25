@@ -19,6 +19,7 @@
             --surface: #ffffff;
             --surface-soft: #f7f7f7;
             --border: #e5e7eb;
+            --border-light: var(--border);
             --border-strong: #d1d5db;
             --timeline-background: #ffffff;
 
@@ -417,7 +418,7 @@
             gap: 12px;
             background: rgba(255, 255, 255, 0.92);
             border-radius: 12px;
-            border: 1px dashed rgba(15, 23, 42, 0.3);
+            border: 1px dashed var(--border-strong);
             color: var(--text);
             visibility: hidden;
             opacity: 0;
@@ -1411,7 +1412,6 @@
             display: inline-flex;
             align-items: center;
             border-radius: 6px;
-            border: 1px solid rgba(15, 23, 42, 0.12);
             padding: 4px 10px;
             font-size: 11px;
             cursor: pointer;
@@ -1429,10 +1429,9 @@
         }
 
         .type-filter-option .type-filter-label {
-            font-size: 11px;
+            font-size: 12px;
             white-space: nowrap;
             text-transform: capitalize;
-            font-weight: 600;
             letter-spacing: 0.02em;
         }
 
@@ -1506,6 +1505,12 @@
 
         #timeline .vis-body .vis-row {
             padding-block: var(--vis-row-padding-vertical, 6px);
+            border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+        }
+
+        #timeline .vis-body .vis-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
         }
 
 
@@ -1515,7 +1520,7 @@
         }
 
         .vis-item.vis-selected {
-            border-width: 3px;
+            border-width: 2px;
             border-style: solid;
             background: rgba(37, 99, 235, 0.14);
             border-color: var(--primary-strong);
@@ -1528,22 +1533,8 @@
             box-shadow: none;
         }
 
-        .type-feature {
-            background: rgba(37, 99, 235, 0.1);
-            border-color: rgba(37, 99, 235, 0.8);
-            color: #1d4ed8;
-        }
-
-        .type-enabler {
-            background: rgba(5, 150, 105, 0.1);
-            border-color: rgba(5, 150, 105, 0.8);
-            color: #047857;
-        }
-
-        .type-bug {
-            background: rgba(225, 29, 72, 0.1);
-            border-color: rgba(225, 29, 72, 0.85);
-            color: #b91c1c;
+        .vis-drag-center {
+            border-color: var(--primary-strong) !important;
         }
 
         .type-milestone {
@@ -1552,18 +1543,6 @@
             padding: 0;
             overflow: visible;
             min-width: 0;
-        }
-
-        .type-milestone .ms-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 10px;
-            padding: 2px 6px 2px 4px;
-            border-radius: 999px;
-            background: transparent;
-            color: #9a3412;
-            border: 1px solid rgba(249, 115, 22, 0.4);
         }
 
         .type-milestone .diamond {
@@ -1595,33 +1574,87 @@
 
         }
 
+        .vis-item.vis-dot {
+            background: transparent;
+            border: none;
+            color: transparent;
+            box-shadow: none;
+            width: 0;
+            height: 0;
+            padding: 0;
+            margin: 0;
+        }
+
+        .vis-item .vis-item-content {
+            padding: 4px 4px 4px 10px;
+            /* extra left padding */
+        }
+
+        .type-milestone .vis-item-content {
+            padding-left: 18px;
+            /* pull the box left to cover the dot */
+        }
+
+        .vis-item.vis-dot::before {
+            transform: translate(calc(-50% + 10px), -50%) rotate(45deg);
+        }
 
         .vis-item.type-milestone.vis-selected,
         .vis-item.milestone-class.vis-selected {
             border-width: 2px;
             background: transparent;
-            border-color: var(--milestone-selected-border, rgba(37, 99, 235, 0.8));
+            border-color: var(--primary-strong);
             border-style: solid;
-            border-radius: 4px
+            border-radius: 4px;
         }
+
+        #timeline.vis-timeline,
+        #timeline.vis-timeline .vis-panel {
+            border: var(--border-light) !important;
+            box-shadow: none;
+        }
+
+        #timeline .vis-timeline {
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Remove / soften group borders */
+        .vis-major,
+        .vis-panel {
+            border: var(--border-light) !important;
+            /* ou alors une ligne super douce : */
+            /* border-bottom: 1px solid rgba(0,0,0,0.06) !important; */
+        }
+
+        /* Option : rendre la ligne de séparation ultra discrète */
+        .vis-group-level-0 {
+            border: var(--border-light) !important;
+        }
+
+        .vis-group:not(:last-child) {
+            border-bottom: 1px dotted var(--border-light) !important;
+        }
+
 
         .vis-time-axis .vis-text {
             font-size: var(--global-font-size);
             color: var(--muted);
             font-weight: 600;
+            overflow: visible;
         }
 
         #timeline .vis-time-axis .vis-grid.vis-vertical {
-            border-color: rgba(148, 163, 184, 0.15);
+            border-color: var(--border-light);
         }
 
         #timeline .vis-time-axis .vis-grid.vis-major {
-            border-left: 1px solid rgba(148, 163, 184, 0.6);
+            border-left: 1px solid var(--border-light);
         }
 
         .vis-panel.vis-center,
         .vis-panel.vis-left {
-            border-color: var(--border);
+            border-color: var(--border-light);
         }
 
         @media (max-width: 900px) {
@@ -1688,6 +1721,14 @@
                                     </select>
                                 </label>
                                 <label>
+                                    Quadrillage
+                                    <select id="borderLightSelect">
+                                        <option value="blanc">Blanc</option>
+                                        <option value="clair">Clair</option>
+                                        <option value="sombre">Sombre</option>
+                                    </select>
+                                </label>
+                                <label>
                                     Afficher les durées
                                     <select id="itemDurationSelect">
                                         <option value="none">Masquer</option>
@@ -1702,6 +1743,7 @@
                                         <option value="hide">Non</option>
                                     </select>
                                 </label>
+
                             </div>
                         </div>
                     </div>
@@ -1836,7 +1878,8 @@
                     </div>
                     <div class="header-row ia-header-actions ia-key-row">
                         <label>
-                            <a href="https://platform.openai.com/settings/organization/api-keys" target="_blank" rel="noreferrer">OpenAI API key</a>
+                            <a href="https://platform.openai.com/settings/organization/api-keys" target="_blank"
+                                rel="noreferrer">OpenAI API key</a>
                             <input type="password" id="iaApiKeyInput" autocomplete="off" placeholder="sk-...">
                         </label>
                     </div>
@@ -2321,6 +2364,19 @@
                 return rgbaToCss(darkened) || source;
             }
 
+            function updateTypeShades(def) {
+                if (!def) return;
+                var accentBase = def.background && def.background !== "transparent"
+                    ? def.background
+                    : def.color && def.color !== "transparent"
+                        ? def.color
+                        : def.border || "#0f172a";
+                var borderSource = accentBase;
+                var textSource = def.color && def.color !== "transparent" ? def.color : accentBase;
+                def.darkBorder = getDarkerColor(borderSource, 0.28);
+                def.darkText = getDarkerColor(textSource, 0.45);
+            }
+
             function getRainbowColor() {
                 var hue = Math.random() * 360;
                 var saturation = 65 + Math.random() * 15;
@@ -2387,15 +2443,15 @@
                     return [
                         ".vis-item.type-" + def.id + " {",
                         "  background: " + background + ";",
-                        "  border-color: " + effectiveBorder + ";",
+                        // "  border-color: " + effectiveBorder + ";",
                         "  color: " + effectiveColor + ";",
                         "}"
                     ].join("\n");
                 });
                 var milestoneDef = typeDefinitions["milestone"];
                 if (milestoneDef) {
-                    var highlightBackground = milestoneDef.background || "rgba(37, 99, 235, 0.14)";
-                    var highlightBorder = milestoneDef.border || "rgba(37, 99, 235, 0.8)";
+                    var highlightBackground = milestoneDef.background || "var(--primary-color)";
+                    var highlightBorder = milestoneDef.border || "var(--primary-color)";
                     var milestoneRule = [
                         ":root {",
                         "  --milestone-selected-background: " + highlightBackground + ";",
@@ -2414,25 +2470,18 @@
                 var existing = typeDefinitions[id] || {};
                 var background =
                     colors.background || base.background || existing.background || getRainbowColor();
-                var border = colors.border || base.border || existing.border || "rgba(156, 163, 175, 0.9)";
+                var border = colors.border || base.border || existing.border || "var(--primary-color)";
                 var textColor = colors.text || base.color || existing.color || "#111827";
                 var label = base.label || base.name || existing.label || id;
-                var accentBase = border || textColor || background || "#0f172a";
-                var darkBorderColor = getDarkerColor(accentBase, 0.28);
-                var textSource =
-                    textColor && textColor !== "transparent"
-                        ? textColor
-                        : accentBase;
-                var darkTextColor = getDarkerColor(textSource, 0.45);
-                typeDefinitions[id] = {
+                var entry = {
                     id: id,
                     label: label,
                     background: background,
                     border: border,
-                    color: textColor,
-                    darkBorder: darkBorderColor,
-                    darkText: darkTextColor
+                    color: textColor
                 };
+                updateTypeShades(entry);
+                typeDefinitions[id] = entry;
                 ensureKindFilter(id);
                 rebuildTypeStyles();
                 return id;
@@ -2511,6 +2560,7 @@
                 itemDurationMode: "days",
                 spacing: "dense",
                 hideWeekends: true
+                , borderLightMode: DEFAULT_BORDER_LIGHT_MODE
             };
             var colorModalState = {
                 types: {},
@@ -2640,7 +2690,7 @@
                         ? def.background
                         : "rgba(15, 23, 42, 0.08)";
                     var backgroundColor = isActive ? baseColor : "#ffffff";
-                    var typeBorderColor = def.darkBorder || def.border || "rgba(15, 23, 42, 0.25)";
+                    var typeBorderColor = def.darkBorder || def.border || "#fff";
                     var typeTextColor = def.darkText || def.color || "#0f172a";
                     var borderColor = isActive ? typeBorderColor : "rgba(15, 23, 42, 0.15)";
                     var textColor = isActive ? typeTextColor : "var(--text)";
@@ -2744,7 +2794,7 @@
                 var endDate = formatTooltipDate(item.end || item.start || item.date);
                 if (!startDate || !endDate) return null;
                 var days = getItemDurationInDays(item);
-                var durationText = days ? " (" + days + "j)" : "";
+                var durationText = days ? " (" + days + " jours)" : "";
                 return startDate + " → " + endDate + durationText;
             }
 
@@ -2759,15 +2809,34 @@
                 editTooltip.style.top = top + "px";
             }
 
-            function showEditTooltip(text) {
+            function positionEditTooltipAtRect(rect) {
+                if (!timelineWrapper || !rect) return;
+                var wrapperRect = timelineWrapper.getBoundingClientRect();
+                var left = rect.left - wrapperRect.left + rect.width / 2;
+                var top = rect.top - wrapperRect.top;
+                left = Math.max(8, Math.min(wrapperRect.width - 8, left));
+                top = Math.max(8, top - 20);
+                editTooltip.style.left = left + "px";
+                editTooltip.style.top = top + "px";
+            }
+
+            function getTimelineItemRect(itemId) {
+                if (!timelineWrapper || !itemId) return null;
+                var element = timelineWrapper.querySelector('.vis-item[data-id="' + itemId + '"]');
+                return element ? element.getBoundingClientRect() : null;
+            }
+
+            function showEditTooltip(text, rect) {
                 if (!editTooltip || !text) return;
                 editTooltip.textContent = text;
                 editTooltip.classList.add("visible");
-                if (lastPointerPosition.x !== null && lastPointerPosition.y !== null) {
+                if (rect) {
+                    positionEditTooltipAtRect(rect);
+                } else if (lastPointerPosition.x !== null && lastPointerPosition.y !== null) {
                     positionEditTooltip(lastPointerPosition.x, lastPointerPosition.y);
                 } else if (timelineWrapper) {
-                    var rect = timelineWrapper.getBoundingClientRect();
-                    editTooltip.style.left = rect.width / 2 + "px";
+                    var wrapperRect = timelineWrapper.getBoundingClientRect();
+                    editTooltip.style.left = wrapperRect.width / 2 + "px";
                     editTooltip.style.top = "10px";
                 }
             }
@@ -2780,7 +2849,7 @@
             var options = {
                 stack: true,
                 orientation: "top",
-                groupHeightMode: "auto",
+                groupHeightMode: "spacing",
                 editable: {
                     add: true,
                     updateTime: true,
@@ -2918,6 +2987,7 @@
             var backgroundSelector = document.getElementById("backgroundSelector");
             var widthSelect = document.getElementById("widthSelect");
             var spacingSelect = document.getElementById("spacingSelect");
+            var borderLightSelect = document.getElementById("borderLightSelect");
             var fileMenuBtn = document.getElementById("fileMenuBtn");
             var fileMenu = document.getElementById("fileMenu");
             var importJsonBtn = document.getElementById("importJsonBtn");
@@ -2961,6 +3031,12 @@
             var saveColorPreferencesBtn = document.getElementById("saveColorPreferencesBtn");
             var randomizeColorsBtn = document.getElementById("randomizeColorsBtn");
             var fontSizeChoices = [9, 10, 11, 12, 13, 14, 15, 16];
+            var borderLightModes = {
+                blanc: "#ffffff",
+                clair: "var(--border)",
+                sombre: "var(--border-strong)"
+            };
+            var DEFAULT_BORDER_LIGHT_MODE = "clair";
 
             function renderFontSizeOptions() {
                 if (!fontSizeInput) return;
@@ -3323,6 +3399,7 @@
                     var background = colorModalState.types[typeId];
                     if (background) {
                         def.background = background;
+                        updateTypeShades(def);
                     }
                     if (typeId === "milestone") return;
                     var updatedLabel = colorModalState.labels[typeId];
@@ -3389,6 +3466,7 @@
                     };
                     delete typeDefinitions[task.from];
                     typeDefinitions[desiredId] = preserved;
+                    updateTypeShades(preserved);
                     if (Array.isArray(colorModalState.typeIds)) {
                         colorModalState.typeIds = colorModalState.typeIds.map(function (id) {
                             return id === task.from ? desiredId : id;
@@ -4256,6 +4334,21 @@
                 }
             }
 
+            function applyBorderLightMode(mode, shouldPersist) {
+                var normalized = typeof mode === "string" ? mode.trim() : "";
+                if (!normalized || !borderLightModes.hasOwnProperty(normalized)) {
+                    normalized = DEFAULT_BORDER_LIGHT_MODE;
+                }
+                document.documentElement.style.setProperty("--border-light", borderLightModes[normalized]);
+                displayPreferences.borderLightMode = normalized;
+                if (borderLightSelect) {
+                    borderLightSelect.value = normalized;
+                }
+                if (shouldPersist) {
+                    persistTimelineState();
+                }
+            }
+
             function applyRatio(ratio, shouldPersist) {
                 if (!timelineCard) return;
                 var normalized = typeof ratio === "string" ? ratio.trim() : "";
@@ -4285,6 +4378,7 @@
                 applyBackground(backgroundValue);
                 applyRatio(displayPreferences.ratio || "full");
                 applySpacingMode(displayPreferences.spacing || "dense");
+                applyBorderLightMode(displayPreferences.borderLightMode || DEFAULT_BORDER_LIGHT_MODE);
                 applyWeekendVisibilityPreference(false);
             }
 
@@ -4301,6 +4395,17 @@
                     persistTimelineState();
                 }
             }
+
+            function hideEmptyGroups() {
+                document.querySelectorAll("#timeline .vis-group").forEach((group) => {
+                    const hasItem = Boolean(group.querySelector(".vis-item"));
+                    group.style.display = hasItem ? "" : "none";
+                });
+            }
+            timeline.on("change", hideEmptyGroups);
+            timeline.on("rangechanged", hideEmptyGroups);
+            hideEmptyGroups(); // call once after initial render
+
 
             function setItemDurationMode(mode, shouldPersist) {
                 var normalized = typeof mode === "string" ? mode : "none";
@@ -4345,6 +4450,11 @@
             if (spacingSelect) {
                 spacingSelect.addEventListener("change", function () {
                     applySpacingMode(this.value, true);
+                });
+            }
+            if (borderLightSelect) {
+                borderLightSelect.addEventListener("change", function () {
+                    applyBorderLightMode(this.value, true);
                 });
             }
             if (weekendVisibilitySelect) {
@@ -4675,9 +4785,38 @@
             }
 
             timeline.on("select", function (props) {
-                selectedItemId = (props.items && props.items.length) ? props.items[0] : null;
+                var selectedId = (props.items && props.items.length) ? props.items[0] : null;
+                selectedItemId = selectedId;
+                if (selectedId) {
+                    var selectedItem = items.get(selectedId);
+                    var tooltipText = buildTooltipText(selectedItem);
+                    if (tooltipText) {
+                        var rect = getTimelineItemRect(selectedId);
+                        showEditTooltip(tooltipText, rect);
+                    } else {
+                        hideEditTooltip();
+                    }
+                } else {
+                    hideEditTooltip();
+                }
                 updateSelectionButtons();
                 renderTypeSwitcherOptions();
+            });
+
+            timeline.on("itemover", function (props) {
+                if (props.item !== selectedItemId) return;
+                var item = items.get(props.item);
+                var tooltipText = buildTooltipText(item);
+                if (tooltipText) {
+                    var rect = getTimelineItemRect(props.item);
+                    showEditTooltip(tooltipText, rect);
+                }
+            });
+
+            timeline.on("itemout", function (props) {
+                if (props.item === selectedItemId) {
+                    hideEditTooltip();
+                }
             });
 
             if (btnAddMilestone) {
@@ -5508,6 +5647,8 @@
             if (txtPromptCreate) {
                 txtPromptCreate.focus();
             }
+
+
         </script>
 </body>
 
