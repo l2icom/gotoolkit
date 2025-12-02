@@ -757,8 +757,16 @@
             display: flex;
             flex-direction: column;
             aspect-ratio: var(--slide-aspect-ratio, 16 / 9);
-            width: min(var(--slide-width, min(1480px, 100%)),
-                    calc(var(--slide-available-height, calc(100vh - 190px)) * var(--slide-aspect-value, calc(16 / 9))));
+            width: min(
+                var(--slide-width, min(1680px, 100%)),
+                var(
+                    --slide-height-width-limit,
+                    calc(
+                        var(--slide-available-height, calc(100vh - 190px)) *
+                            var(--slide-aspect-value, calc(16 / 9))
+                    )
+                )
+            );
             max-height: var(--slide-available-height, calc(100vh - 190px));
         }
 
@@ -766,7 +774,7 @@
             width: 100%;
             display: flex;
             flex-direction: column;
-            padding: 0px 12px;
+            padding: 0px 4px;
         }
 
         .bottom-section-header {
@@ -795,7 +803,7 @@
 
         .bottom-section-text {
             width: 100%;
-            min-height: 80px;
+            min-height: 60px;
             border-radius: 8px;
             border: 1px solid #dcd0c1;
             background: var(--slide-bg, transparent);
@@ -846,12 +854,12 @@
             background: transparent;
             font-size: 20px;
             font-weight: 650;
-            margin: 4px 12px;
+            margin: 4px 6px;
             color: var(--slide-text-color, var(--text-main));
             line-height: 1.2;
-            border-radius: 8px;
+            border-radius: 4px;
             transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-            padding: 2px 8px;
+            padding: 2px 4px;
         }
 
         .slide-subtitle-input {
@@ -935,8 +943,8 @@
             font-size: calc(var(--slide-font-size) + 3px);
             font-weight: 500;
             font-family: var(--slide-font-family, "Segoe UI", sans-serif);
-            padding: 0px 10px;
-            border-radius: 8px;
+            padding: 0px 4px;
+            border-radius: 4px;
             border: 1px solid transparent;
             background: transparent;
             cursor: text;
@@ -946,7 +954,7 @@
         }
 
         .column-body {
-            padding: 0px 12px 0px;
+            padding: 0px 4px 0px;
             display: flex;
             flex-direction: column;
             gap: 2px;
@@ -1071,8 +1079,9 @@
             border-radius: 4px;
             font-size: var(--slide-font-size, 16px);
             padding: 6px 8px;
-            line-height: 1.4;
-            min-height: 110px;
+            line-height: 1.3;
+            height: 140px;
+            min-height: 100px;
             resize: vertical;
             border: none;
             background: var(--slide-bg, transparent);
@@ -1548,6 +1557,7 @@
                 name: "Full",
                 css: "16 / 9",
                 width: "100%",
+                ignoreHeightLimit: true,
                 pptx: { width: 10, height: 5.625 }
             },
             {
@@ -2514,6 +2524,11 @@
             currentRatioIndex = index;
             document.documentElement.style.setProperty("--slide-aspect-ratio", ratio.css);
             document.documentElement.style.setProperty("--slide-width", ratio.width || "min(1180px, 100%)");
+            if (ratio.ignoreHeightLimit) {
+                document.documentElement.style.setProperty("--slide-height-width-limit", "10000px");
+            } else {
+                document.documentElement.style.removeProperty("--slide-height-width-limit");
+            }
             updateRatioButtons();
             schedulePersist();
         }
@@ -2760,7 +2775,7 @@
       <button type="button" class="bottom-section-delete" aria-label="Supprimer la synthèse">🗑️</button>
     </div>
     <div class="textarea-wrapper">
-      <textarea class="editable bottom-section-text" rows="4"></textarea>
+      <textarea class="editable bottom-section-text" rows="3"></textarea>
       <button class="field-ai-btn inside" type="button" data-section="bottom-section" title="Générer la synthèse IA" aria-label="Synthèse IA">✨</button>
     </div>
   </div>
