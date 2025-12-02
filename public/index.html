@@ -34,6 +34,9 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
+            max-height: 92vh;
+            min-height: 520px;
+            overflow-y: auto;
         }
 
         .menu-trigger {
@@ -160,6 +163,28 @@
             transform: translateY(0);
         }
 
+        .error-toast {
+            position: fixed;
+            top: 18px;
+            right: 18px;
+            background: #b00020;
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(-12px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            z-index: 95;
+        }
+
+        .error-toast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
 
         .modal-header {
             display: flex;
@@ -239,15 +264,6 @@
 
         .share-actions .menu-panel-btn {
             width: 100%;
-        }
-
-        .prompt-template-select {
-            border-radius: 8px;
-            border: 1px solid #d0c3ad;
-            background: #fff;
-            padding: 6px 10px;
-            font-size: 13px;
-            font-family: inherit;
         }
 
         .prompt-mode-line {
@@ -661,7 +677,9 @@
         }
 
         .tab-btn-add,
-        .tab-btn-delete {
+        .tab-btn-delete,
+        .tab-btn-reset,
+        .tab-btn-suggest {
             border-radius: 999px;
             border: 1px solid #ebe0d1;
             background: #fff;
@@ -983,6 +1001,38 @@
             border: 1px solid transparent;
             padding: 2px 4px;
             transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .section-label[data-suggestions] {
+            position: relative;
+        }
+
+        .section-label[data-suggestions]::after {
+            content: attr(data-suggestions);
+            position: absolute;
+            left: 0;
+            bottom: calc(100% + 6px);
+            background: rgba(31, 41, 55, 0.92);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            white-space: pre-line;
+            max-width: 260px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(6px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+            z-index: 60;
+        }
+
+        .section-label[data-suggestions]:hover::after,
+        .section-label[data-suggestions]:focus-visible::after {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
         }
 
         .column-delete-btn,
@@ -1328,12 +1378,16 @@
 
                 <div id="tabs"></div>
                 <button class="tab-btn-add" id="addTabBtn" type="button">➕</button>
+                <button class="tab-btn-reset" id="restoreStructureBtn" type="button"
+                    aria-label="Restaurer les colonnes et sections">🔄</button>
                 <button class="tab-btn-delete" id="deleteTabBtn" type="button">🗑️</button>
+                <button class="tab-btn-suggest" id="generatePlaceholdersBtn" type="button"
+                    aria-label="Générer des suggestions pour les sections">💡</button>
             </div>
             <div class="global-actions">
-                <button id="contextBtn" type="button" aria-label="AI Assistant">✨ Assistant IA</button>
                 <button id="contextEditorBtn" class="info-button" type="button"
                     aria-label="Ouvrir le contexte">📝Contexte</button>
+                <button id="contextBtn" type="button" aria-label="AI Assistant">✨ Assistant IA</button>
 
                 <div class="menu-trigger" id="settingsMenuTrigger">
                     <button id="textStyleBtn" type="button" aria-label="Options d'affichage">📐 Affichage</button>
@@ -1442,6 +1496,7 @@
             <button id="tourSkipBtn" class="tour-skip" type="button">×</button>
         </div>
         <div id="copyToast" class="toast" aria-live="polite" aria-atomic="true"></div>
+        <div id="errorToast" class="error-toast" role="status" aria-live="polite" aria-atomic="true"></div>
     </div>
 
     <div class="modal-overlay" id="contextModal">
@@ -1464,16 +1519,16 @@
                 </div>
                 <div id="promptCustomizationArea">
                     <label>
-                        Modèle de prompts
-                        <select id="promptTemplateSelect" class="prompt-template-select"></select>
-                    </label>
-                    <label>
                         <span class="prompt-label-text">Prompt - Sections</span>
                         <textarea id="mainPromptField" rows="5" class="prompt-editor"></textarea>
                     </label>
                     <label>
                         <span class="prompt-label-text">Prompt - Synthèse</span>
                         <textarea id="bottomPromptField" rows="4" class="prompt-editor"></textarea>
+                    </label>
+                    <label>
+                        <span class="prompt-label-text">Prompt - Suggestions</span>
+                        <textarea id="suggestionPromptField" rows="5" class="prompt-editor"></textarea>
                     </label>
                     <div class="prompt-actions">
                         <button id="applyPromptToAllBtn" type="button" class="reset-prompts-btn">Tout appliquer</button>
@@ -1697,6 +1752,7 @@
         };
         const bottomSectionPlaceholderText = "Synthèse, décisions clés ou résumé rapide";
         const bottomSectionDefaultPrompt = `Tu es un consultant product owner expérimenté, sur la base du contexte global {{globalContext}} et du contexte de la page {{pageContext}}, et avec {{columnSections}}, répond à la slide {{slideTitle}} en 2 phrases courtes (< 18 mots pour chaque).`;
+        const defaultSuggestionsPrompt = `Tu es un coach product owner expérimenté, sur la base du contexte global {{globalContext}} et du contexte de la page {{pageContext}} et du titre de la page {{pageTitle}}, et dans le cadre de {{columnTitle}}, formuler 3 questions concrètes pour aider à saisir des {{sectionTitle}} synthétiques et pertinents (< 20 mots pour chaque et en commençant chacune par un -). Tout ça sans introduction préalable ni émoji`;
 
         function getTemplateById(id) {
             return templates.find(template => template.id === id) || templates[0];
@@ -1757,6 +1813,8 @@
         const slideContextLink = document.getElementById("slideContextLink");
         const addTabBtn = document.getElementById("addTabBtn");
         const deleteTabBtn = document.getElementById("deleteTabBtn");
+        const restoreStructureBtn = document.getElementById("restoreStructureBtn");
+        const generatePlaceholdersBtn = document.getElementById("generatePlaceholdersBtn");
         const exportBtn = document.getElementById("exportPngBtn");
         const exportPptxBtn = document.getElementById("exportPptxBtn");
         const exportTextBtn = document.getElementById("exportTextBtn");
@@ -1786,15 +1844,17 @@
         const promptCustomizationArea = document.getElementById("promptCustomizationArea");
         const applyPromptToAllBtn = document.getElementById("applyPromptToAllBtn");
         const copyToast = document.getElementById("copyToast");
+        const errorToast = document.getElementById("errorToast");
         const mainPromptField = document.getElementById("mainPromptField");
         const bottomPromptField = document.getElementById("bottomPromptField");
+        const suggestionPromptField = document.getElementById("suggestionPromptField");
         const promptModeLabel = document.getElementById("promptModeLabel");
-        const promptTemplateSelect = document.getElementById("promptTemplateSelect");
         const promptEditorModal = document.getElementById("promptEditorModal");
         const promptEditorTextarea = document.getElementById("promptEditorTextarea");
         const promptEditorSendBtn = document.getElementById("promptEditorSendBtn");
         const promptEditorCancelBtn = document.getElementById("promptEditorCancelBtn");
         let copyToastTimer = null;
+        let errorToastTimer = null;
         const slidesViewport = document.querySelector(".slides-container");
 
         let slideClampRaf = null;
@@ -2068,26 +2128,15 @@
                 express: defaultPromptTemplate,
                 apprenti: apprentPromptTemplate,
                 lab: defaultPromptTemplate,
-                bottom: bottomSectionDefaultPrompt
+                bottom: bottomSectionDefaultPrompt,
+                suggestions: defaultSuggestionsPrompt
             };
             return acc;
         }, {});
+        const PLACEHOLDER_COOLDOWN_DURATION = 45;
+        let suggestionCooldownTimer = null;
+        let isGeneratingSuggestions = false;
 
-        function populatePromptTemplateSelect() {
-            if (!promptTemplateSelect) return;
-            promptTemplateSelect.innerHTML = "";
-            templates.forEach(template => {
-                const option = document.createElement("option");
-                option.value = template.id;
-                option.textContent = template.name;
-                promptTemplateSelect.appendChild(option);
-            });
-        }
-
-        populatePromptTemplateSelect();
-        if (promptTemplateSelect) {
-            promptTemplateSelect.value = activePromptTemplateId;
-        }
         setPromptFieldsForTemplate(activePromptTemplateId);
         setActiveIaMode(activeIaMode);
 
@@ -2101,13 +2150,11 @@
                     target.apprenti = prompts.apprenti || apprentPromptTemplate;
                     target.lab = prompts.lab || defaultPromptTemplate;
                     target.bottom = prompts.bottom || bottomSectionDefaultPrompt;
+                    target.suggestions = prompts.suggestions || defaultSuggestionsPrompt;
                 });
             }
             activePromptTemplateId = payload.promptTemplateId || activePromptTemplateId;
             currentTemplateId = payload.defaultTemplateId || currentTemplateId;
-            if (promptTemplateSelect) {
-                promptTemplateSelect.value = activePromptTemplateId;
-            }
             if (apiKeyInput) {
                 const hasSavedApiKey = Object.prototype.hasOwnProperty.call(payload, "apiKey");
                 const apiKeyValue = hasSavedApiKey ? payload.apiKey || "" : readSharedApiKey();
@@ -2206,12 +2253,18 @@
         }
 
         function updatePromptFields() {
-            if (!mainPromptField || !bottomPromptField) return;
             const library = getPromptLibraryForTemplate(activePromptTemplateId);
             const modeKey = promptKeyFromMode(activeIaMode);
             const fallbackTemplate = activeIaMode === IA_MODE_APPRENTI ? apprentPromptTemplate : defaultPromptTemplate;
-            mainPromptField.value = library[modeKey] || fallbackTemplate;
-            bottomPromptField.value = library.bottom || bottomSectionDefaultPrompt;
+            if (mainPromptField) {
+                mainPromptField.value = library[modeKey] || fallbackTemplate;
+            }
+            if (bottomPromptField) {
+                bottomPromptField.value = library.bottom || bottomSectionDefaultPrompt;
+            }
+            if (suggestionPromptField) {
+                suggestionPromptField.value = library.suggestions || defaultSuggestionsPrompt;
+            }
             if (promptModeLabel) {
                 const modeName = activeIaMode === IA_MODE_APPRENTI
                     ? "Apprenti"
@@ -2225,9 +2278,6 @@
         function setPromptFieldsForTemplate(templateId) {
             if (!templateId) return;
             activePromptTemplateId = templateId;
-            if (promptTemplateSelect) {
-                promptTemplateSelect.value = templateId;
-            }
             updatePromptFields();
         }
 
@@ -2266,6 +2316,16 @@
                 schedulePersist();
             });
         }
+        if (suggestionPromptField) {
+            suggestionPromptField.addEventListener("focus", () => {
+                lastFocusedPromptTextarea = suggestionPromptField;
+            });
+            suggestionPromptField.addEventListener("input", () => {
+                const library = getPromptLibraryForTemplate(activePromptTemplateId);
+                library.suggestions = suggestionPromptField.value || defaultSuggestionsPrompt;
+                schedulePersist();
+            });
+        }
         globalContextField?.addEventListener("input", () => {
             schedulePersist();
         });
@@ -2287,16 +2347,10 @@
             });
         });
 
-        promptTemplateSelect?.addEventListener("change", () => {
-            activePromptTemplateId = promptTemplateSelect.value;
-            setPromptFieldsForTemplate(activePromptTemplateId);
-            schedulePersist();
-        });
-
         function showColumnPlaceholders(column) {
             column.querySelectorAll("textarea").forEach(textarea => {
                 if (!textarea.value) {
-                    textarea.placeholder = textarea.dataset.placeholder || "";
+                    textarea.placeholder = textarea.dataset.suggestionPlaceholder || textarea.dataset.placeholder || "";
                 }
             });
         }
@@ -2342,6 +2396,109 @@
             textarea.addEventListener("blur", () => {
                 normalizeBullets(textarea);
             });
+        }
+
+        function updateGeneratePlaceholdersButton(remaining = 0) {
+            if (!generatePlaceholdersBtn) return;
+            if (remaining > 0) {
+                generatePlaceholdersBtn.disabled = true;
+                generatePlaceholdersBtn.textContent = `💡 ⏳${remaining}s`;
+            } else {
+                generatePlaceholdersBtn.disabled = false;
+                generatePlaceholdersBtn.textContent = "💡";
+            }
+        }
+
+        function startGeneratePlaceholdersCooldown(duration = PLACEHOLDER_COOLDOWN_DURATION) {
+            if (!generatePlaceholdersBtn) return;
+            if (suggestionCooldownTimer) {
+                clearInterval(suggestionCooldownTimer);
+            }
+            let remaining = duration;
+            updateGeneratePlaceholdersButton(remaining);
+            suggestionCooldownTimer = setInterval(() => {
+                remaining -= 1;
+                if (remaining <= 0) {
+                    clearInterval(suggestionCooldownTimer);
+                    suggestionCooldownTimer = null;
+                    updateGeneratePlaceholdersButton(0);
+                } else {
+                    updateGeneratePlaceholdersButton(remaining);
+                }
+            }, 1000);
+        }
+
+        async function generateSectionPlaceholders() {
+            if (!generatePlaceholdersBtn || isGeneratingSuggestions || suggestionCooldownTimer) {
+                return;
+            }
+            const slide = getActiveSlideElement();
+            if (!slide) return;
+            const sections = Array.from(slide.querySelectorAll(".section"));
+            if (!sections.length) {
+                showCopyToast("Aucune section détectée.");
+                return;
+            }
+            isGeneratingSuggestions = true;
+            generatePlaceholdersBtn.disabled = true;
+            const suggestionTemplate = getPromptLibraryForTemplate(activePromptTemplateId).suggestions || defaultSuggestionsPrompt;
+            const globalContextValue = globalContextField?.value.trim() || "";
+            const pageContextValue = getSlidePageContext(slide).trim();
+            const slideTitle = slide.querySelector(".slide-title-input")?.value.trim() || slide.dataset.tabLabel || "";
+            const templateId = slide.dataset.templateId || templates[0].id;
+            let generated = false;
+            try {
+                for (const sectionEl of sections) {
+                    const column = sectionEl.closest(".column");
+                    const columnTitle = column?.querySelector(".column-title")?.textContent.trim() || "";
+                    const sectionKey = sectionEl.dataset.section;
+                    const labelEl = sectionEl.querySelector(".section-label");
+                    const sectionLabel =
+                        labelEl?.textContent.trim() || getDefaultSectionLabel(templateId, sectionKey);
+                    const contextData = {
+                        globalContext: globalContextValue,
+                        contextField: globalContextValue,
+                        pageContext: pageContextValue,
+                        pageTitle: slideTitle,
+                        columnTitle,
+                        sectionTitle: sectionLabel
+                    };
+                    const promptText = fillTemplate(suggestionTemplate, contextData);
+                    const messages = [
+                        { role: "system", content: "Tu es un assistant produit." },
+                        { role: "user", content: promptText }
+                    ];
+                    const aiText = await callOpenAI(messages);
+                    if (!aiText) {
+                        continue;
+                    }
+                    const trimmed = aiText.trim();
+                    if (!trimmed) {
+                        continue;
+                    }
+                    generated = true;
+                    if (labelEl) {
+                        labelEl.dataset.suggestions = trimmed;
+                        labelEl.setAttribute("title", trimmed);
+                    }
+                    const textarea = sectionEl.querySelector("textarea");
+                    if (textarea) {
+                        textarea.dataset.suggestionPlaceholder = trimmed;
+                        if (!textarea.value.trim()) {
+                            textarea.placeholder = trimmed;
+                        }
+                    }
+                }
+            } finally {
+                isGeneratingSuggestions = false;
+            }
+            if (generated) {
+                schedulePersist();
+                showCopyToast("Suggestions générées pour cette page");
+            } else {
+                showCopyToast("Aucune suggestion générée.");
+            }
+            startGeneratePlaceholdersCooldown();
         }
 
 
@@ -2556,9 +2713,15 @@
                         }
                         const label = sectionEl.querySelector(".section-label");
                         const textarea = sectionEl.querySelector("textarea");
+                        const fallbackLabel = getDefaultSectionLabel(templateId, sectionKey);
+                        const suggestionHint =
+                            (label && (label.dataset.suggestions || label.title)) ||
+                            (textarea && textarea.dataset.suggestionPlaceholder) ||
+                            "";
                         columnData.sections[sectionKey] = {
-                            label: label ? label.textContent.trim() : getDefaultSectionLabel(templateId, sectionKey),
-                            text: textarea ? textarea.value : ""
+                            label: label ? label.textContent.trim() : fallbackLabel,
+                            text: textarea ? textarea.value : "",
+                            suggestions: suggestionHint
                         };
                     });
                     return columnData;
@@ -2587,10 +2750,11 @@
             const column = document.createElement("div");
             column.className = "column";
             const columnConfig = getTemplateColumn(templateId, columnIndex);
-            column.dataset.stage = columnConfig.stage;
+            const stage = seed.stage || columnConfig.stage;
+            column.dataset.stage = stage;
             const baseStageLabel = columnConfig.label;
             const fallbackStage = seed.stageLabel || baseStageLabel;
-            const stageColor = seed.stageColor || stageColors[columnConfig.stage] || "#ffffff";
+            const stageColor = seed.stageColor || stageColors[stage] || stageColors[columnConfig.stage] || "#ffffff";
             column.style.setProperty("--stage-color", stageColor);
 
             const sectionSeeds = seed.sections || null;
@@ -2670,6 +2834,18 @@
                 if (textarea) {
                     if (sectionSeed) {
                         textarea.value = sectionSeed.text || "";
+                        const suggestionValue = sectionSeed.suggestions || "";
+                        if (suggestionValue) {
+                            if (label) {
+                                label.classList.add("has-suggestion");
+                                label.dataset.suggestions = suggestionValue;
+                                label.setAttribute("title", suggestionValue);
+                            }
+                            textarea.dataset.suggestionPlaceholder = suggestionValue;
+                            if (!textarea.value.trim()) {
+                                textarea.placeholder = suggestionValue;
+                            }
+                        }
                     }
                     monitorTextareaOverflow(textarea);
                 }
@@ -2737,6 +2913,122 @@
                 column.querySelector(".column-title")?.focus();
             }
             schedulePersist();
+        }
+
+        function createSectionElement(templateId, sectionKey, seed = {}) {
+            const sectionMeta = getTemplateSection(templateId, sectionKey) || { label: sectionKey, examples: "" };
+            const placeholder = (sectionMeta.examples || "").replace(/"/g, '&quot;');
+            const labelText = seed.label || sectionMeta.label || sectionKey;
+
+            const section = document.createElement("div");
+            section.className = "section";
+            section.dataset.section = sectionKey;
+
+            const labelRow = document.createElement("div");
+            labelRow.className = "section-label-row";
+            const labelSpan = document.createElement("span");
+            labelSpan.className = "section-label";
+            labelSpan.dataset.section = sectionKey;
+            labelSpan.contentEditable = "true";
+            labelSpan.textContent = labelText;
+            const deleteBtn = document.createElement("button");
+            deleteBtn.type = "button";
+            deleteBtn.className = "section-delete-btn";
+            deleteBtn.setAttribute("aria-label", "Supprimer la section");
+            deleteBtn.textContent = "❌";
+            labelRow.append(labelSpan, deleteBtn);
+
+            const textRow = document.createElement("div");
+            textRow.className = "section-text-row";
+            const textareaWrapper = document.createElement("div");
+            textareaWrapper.className = "textarea-wrapper";
+            const textarea = document.createElement("textarea");
+            textarea.className = "editable";
+            textarea.dataset.section = sectionKey;
+            if (placeholder) {
+                textarea.dataset.placeholder = placeholder;
+            }
+            textarea.value = seed.text || "";
+            const suggestionValue = seed.suggestions || "";
+            if (suggestionValue) {
+                labelSpan.dataset.suggestions = suggestionValue;
+                labelSpan.setAttribute("title", suggestionValue);
+                textarea.dataset.suggestionPlaceholder = suggestionValue;
+                if (!textarea.value.trim()) {
+                    textarea.placeholder = suggestionValue;
+                }
+            }
+            const aiButton = document.createElement("button");
+            aiButton.type = "button";
+            aiButton.className = "field-ai-btn inside";
+            aiButton.dataset.field = "section-text";
+            aiButton.dataset.section = sectionKey;
+            aiButton.title = "Générer le contenu";
+            aiButton.setAttribute("aria-label", "Générer le contenu");
+            aiButton.textContent = "✨";
+            textareaWrapper.append(textarea, aiButton);
+            textRow.appendChild(textareaWrapper);
+
+            section.append(labelRow, textRow);
+
+            bindSectionLabel(labelSpan);
+            bindTextareaPlaceholder(textarea);
+            monitorTextareaOverflow(textarea);
+            deleteBtn.addEventListener("click", event => {
+                event.stopPropagation();
+                deleteSection(section);
+            });
+            return section;
+        }
+
+        function ensureColumnSections(column, templateId) {
+            if (!column) return;
+            const columnBody = column.querySelector(".column-body");
+            if (!columnBody) return;
+            const templateSections = getTemplateSections(templateId);
+            templateSections.forEach(sectionMeta => {
+                let sectionEl = columnBody.querySelector(`.section[data-section="${sectionMeta.key}"]`);
+                if (!sectionEl) {
+                    sectionEl = createSectionElement(templateId, sectionMeta.key);
+                    columnBody.appendChild(sectionEl);
+                }
+            });
+        }
+
+        function insertColumnAtOrder(columnsContainer, newColumn, templateColumns, columnIndex) {
+            const upcoming = templateColumns.slice(columnIndex + 1);
+            for (const nextConfig of upcoming) {
+                const nextColumn = columnsContainer.querySelector(`.column[data-stage="${nextConfig.stage}"]`);
+                if (nextColumn) {
+                    columnsContainer.insertBefore(newColumn, nextColumn);
+                    return;
+                }
+            }
+            columnsContainer.appendChild(newColumn);
+        }
+
+        function restoreColumnsAndSections() {
+            const slide = getActiveSlideElement();
+            if (!slide) return;
+            const templateId = slide.dataset.templateId || templates[0].id;
+            const columnsContainer = slide.querySelector(".columns");
+            if (!columnsContainer) return;
+            const templateColumns = getTemplateColumns(templateId);
+            templateColumns.forEach((columnConfig, columnIndex) => {
+                let column = columnsContainer.querySelector(`.column[data-stage="${columnConfig.stage}"]`);
+                if (!column) {
+                    const seed = {
+                        stage: columnConfig.stage,
+                        stageLabel: columnConfig.label,
+                        stageColor: stageColors[columnConfig.stage] || "#ffffff"
+                    };
+                    column = createColumn(templateId, columnIndex, seed);
+                    insertColumnAtOrder(columnsContainer, column, templateColumns, columnIndex);
+                }
+                ensureColumnSections(column, templateId);
+            });
+            schedulePersist();
+            updateSlideEmptyState();
         }
 
         function setBottomSectionFocusState(slide, focused) {
@@ -2976,6 +3268,7 @@
                 syncBackgroundSelector();
                 currentTemplateId = activeSlide.dataset.templateId || templates[0].id;
             }
+            setPromptFieldsForTemplate(currentTemplateId);
             syncPageContextFieldWithActiveSlide();
             updateSlideEmptyState();
         }
@@ -2985,10 +3278,11 @@
                 return [];
             }
             const includeText = options.includeText !== false;
-            return Array.from(slide.querySelectorAll(".column")).map(column => {
+            return Array.from(slide.querySelectorAll(".column")).map((column, columnIndex) => {
                 const templateId = slide.dataset.templateId || templates[0].id;
                 const columnTitleEl = column.querySelector(".column-title");
                 const stageLabel = columnTitleEl ? columnTitleEl.textContent.trim() : column.dataset.stage || "";
+                const columnStage = column.dataset.stage || getTemplateColumn(templateId, columnIndex).stage;
                 const stageColor = column.style.getPropertyValue("--stage-color").trim() || "#ffffff";
                 const sections = {};
                 column.querySelectorAll(".section").forEach(sectionEl => {
@@ -2999,12 +3293,14 @@
                     const label = sectionEl.querySelector(".section-label");
                     const textarea = sectionEl.querySelector("textarea");
                     const fallbackLabel = getDefaultSectionLabel(templateId, sectionKey);
+                    const suggestionHint = label?.dataset.suggestions || label?.title || textarea?.dataset.suggestionPlaceholder || "";
                     sections[sectionKey] = {
                         label: label ? (label.textContent.trim() || fallbackLabel) : fallbackLabel,
-                        text: textarea ? (includeText ? textarea.value : "") : ""
+                        text: textarea ? (includeText ? textarea.value : "") : "",
+                        suggestions: suggestionHint
                     };
                 });
-                return { stageLabel, stageColor, sections };
+                return { stage: columnStage, stageLabel, stageColor, sections };
             });
         }
 
@@ -3100,6 +3396,12 @@
         }
 
         addTabBtn.addEventListener("click", addTab);
+        restoreStructureBtn?.addEventListener("click", () => {
+            restoreColumnsAndSections();
+        });
+        generatePlaceholdersBtn?.addEventListener("click", () => {
+            generateSectionPlaceholders();
+        });
 
 
         deleteTabBtn.addEventListener("click", () => {
@@ -3132,11 +3434,13 @@
                 const sourceValue = (lastFocusedPromptTextarea?.value ?? mainPromptField?.value ?? "").trim();
                 const promptValue = sourceValue || defaultPromptTemplate;
                 const bottomValue = bottomPromptField?.value || bottomSectionDefaultPrompt;
+                const suggestionValue = suggestionPromptField?.value || defaultSuggestionsPrompt;
                 const modeKey = promptKeyFromMode(activeIaMode);
                 templates.forEach(template => {
                     const library = promptLibrary[template.id] || {};
                     library[modeKey] = promptValue;
                     library.bottom = bottomValue;
+                    library.suggestions = suggestionValue;
                     promptLibrary[template.id] = library;
                 });
                 setPromptFieldsForTemplate(activePromptTemplateId);
@@ -3151,7 +3455,8 @@
                         express: defaultPromptTemplate,
                         apprenti: apprentPromptTemplate,
                         lab: defaultPromptTemplate,
-                        bottom: bottomSectionDefaultPrompt
+                        bottom: bottomSectionDefaultPrompt,
+                        suggestions: defaultSuggestionsPrompt
                     };
                 });
                 setPromptFieldsForTemplate(activePromptTemplateId);
@@ -3392,6 +3697,19 @@
             }, 2200);
         }
 
+        function showErrorToast(message) {
+            if (!errorToast) return;
+            errorToast.textContent = message;
+            errorToast.classList.add("visible");
+            if (errorToastTimer) {
+                clearTimeout(errorToastTimer);
+            }
+            errorToastTimer = setTimeout(() => {
+                errorToast.classList.remove("visible");
+                errorToastTimer = null;
+            }, 3200);
+        }
+
         exportBtn.addEventListener("click", async () => {
             closeContextMenus();
             const slide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
@@ -3598,7 +3916,7 @@
                 return content;
             } catch (err) {
                 console.error("Erreur OpenAI", err);
-                alert("Impossible de contacter OpenAI (accès non autorisé ou quota excédé). Utilise ta propre clé OpenAI");
+                showErrorToast("Impossible de contacter OpenAI (accès non autorisé ou quota excédé). Utilise ta propre clé OpenAI");
                 return null;
             }
         }
@@ -3808,9 +4126,6 @@
 
         contextBtn.addEventListener("click", () => {
             activePromptTemplateId = currentTemplateId;
-            if (promptTemplateSelect) {
-                promptTemplateSelect.value = currentTemplateId;
-            }
             setPromptFieldsForTemplate(activePromptTemplateId);
             switchModalTab("settings");
             openModal(contextModal);
