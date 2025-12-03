@@ -1668,7 +1668,7 @@
             columnSections: "Résumé des 9 éléments de toutes les sections"
         };
 
-        const defaultPromptTemplate = `Tu es un consultant product owner expérimenté, sur la base du contexte global {{globalContext}} et du contexte de la page {{pageContext}}, et dans le cadre de {{columnTitle}}, reformuler {{fieldValue}} sous forme de 2 à 3 {{sectionTitle}} d'un point de vue business et utilisateur (un • de < 18 mots pour chaque) sans introduction préalable ni émoji`;
+        const defaultPromptTemplate = `Tu es un consultant product owner expérimenté, sur la base du titre de la page {{pageTitle}}, du contexte global {{globalContext}} et du contexte de la page {{pageContext}}, et dans le cadre de {{columnTitle}}, reformuler {{fieldValue}} sous forme de 2 à 3 {{sectionTitle}} d'un point de vue business et utilisateur (un • de < 18 mots pour chaque) sans introduction préalable ni émoji`;
         const IA_MODE_EXPRESS = "express";
         const IA_MODE_EXPERIMENTAL = "experimental";
         const promptModeMap = {
@@ -1676,8 +1676,8 @@
             [IA_MODE_EXPERIMENTAL]: "lab"
         };
         const bottomSectionPlaceholderText = "Synthèse, décisions clés ou résumé rapide";
-        const bottomSectionDefaultPrompt = `Tu es un consultant product owner expérimenté, sur la base du contexte global {{globalContext}} et du contexte de la page {{pageContext}}, et avec {{columnSections}}, répond à la slide {{slideTitle}} en 2 phrases courtes (< 16 mots pour chaque).`;
-        const defaultSuggestionsPrompt = `Tu es un coach product owner expérimenté, du titre de la page {{pageTitle}}, et dans le cadre de {{columnTitle}}, formuler 3 instructions commençant par un verbe pour aider à saisir des {{sectionTitle}} synthétiques et pertinents (< 12 mots pour chaque et en commençant chacune par un -). Tout ça sans introduction préalable ni émoji`;
+        const bottomSectionDefaultPrompt = `Tu es un consultant product owner expérimenté, sur la base du titre de la page {{pageTitle}}, du contexte global {{globalContext}} et du contexte de la page {{pageContext}}, et avec {{columnSections}}, répond à la slide {{slideTitle}} en 2 phrases courtes (< 16 mots pour chaque).`;
+        const defaultSuggestionsPrompt = `Tu es un coach product owner expérimenté, sur la base du titre de la page {{pageTitle}}, et dans le cadre de {{columnTitle}}, formuler 3 instructions commençant par un verbe pour aider à saisir des {{sectionTitle}} synthétiques et pertinents (< 12 mots pour chaque et en commençant chacune par un -). Tout ça sans introduction préalable ni émoji`;
 
         function getTemplateById(id) {
             return templates.find(template => template.id === id) || templates[0];
