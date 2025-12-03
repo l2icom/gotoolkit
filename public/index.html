@@ -1019,7 +1019,7 @@
             border-radius: 8px;
             font-size: 11px;
             white-space: pre-line;
-            max-width: 260px;
+            max-width: 520px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
             opacity: 0;
             visibility: hidden;
@@ -2132,6 +2132,37 @@
             column.classList.add("palette-active");
         }
 
+        function clearSectionSuggestionsForLabel(label, { skipPersist = false } = {}) {
+            if (!label) {
+                return false;
+            }
+            const hasHeaderSuggestion = Boolean(label.dataset.suggestions);
+            const sectionEl = label.closest(".section");
+            const textarea = sectionEl?.querySelector("textarea");
+            const hasTextareaSuggestion = Boolean(textarea?.dataset.suggestionPlaceholder);
+            if (!hasHeaderSuggestion && !hasTextareaSuggestion) {
+                return false;
+            }
+            if (hasHeaderSuggestion) {
+                label.classList.remove("has-suggestion");
+                label.removeAttribute("title");
+                delete label.dataset.suggestions;
+            }
+            if (textarea && hasTextareaSuggestion) {
+                const fallbackPlaceholder = textarea.dataset.placeholder || "";
+                delete textarea.dataset.suggestionPlaceholder;
+                if (!textarea.value.trim()) {
+                    textarea.placeholder = fallbackPlaceholder;
+                } else {
+                    textarea.placeholder = "";
+                }
+            }
+            if (!skipPersist) {
+                schedulePersist();
+            }
+            return true;
+        }
+
         function updateSectionLabelsInSlide(sectionKey, sourceLabel) {
             const slide = sourceLabel.closest(".slide");
             if (!slide) return;
@@ -2141,11 +2172,15 @@
             const normalized = rawText || defaultLabel;
             slide.querySelectorAll(`.section-label[data-section="${sectionKey}"]`).forEach(label => {
                 label.textContent = normalized;
+                clearSectionSuggestionsForLabel(label, { skipPersist: true });
             });
         }
 
         function bindSectionLabel(label) {
             const sectionKey = label.dataset.section;
+            label.addEventListener("input", () => {
+                clearSectionSuggestionsForLabel(label);
+            });
             label.addEventListener("blur", () => {
                 if (!label.textContent.trim()) {
                     const slide = label.closest(".slide");
