@@ -689,6 +689,14 @@
             color: var(--muted);
         }
 
+        .tab-btn-suggest-status {
+            min-width: 60px;
+            text-align: left;
+            font-size: 11px;
+            color: var(--muted);
+            margin-left: 2px;
+        }
+
         .timeline-nav-btn {
             border-radius: 999px;
             border: 1px solid #ebe0d1;
@@ -1376,11 +1384,14 @@
                 <button class="tab-btn-delete" id="deleteTabBtn" type="button">🗑️</button>
                 <button class="tab-btn-suggest" id="generatePlaceholdersBtn" type="button"
                     aria-label="Générer des suggestions pour les sections">💡</button>
+                <button class="tab-btn-suggest" id="generateFullSlideBtn" type="button"
+                    aria-label="Générer toutes les sections et la synthèse">✨</button>
+                <span class="tab-btn-suggest-status" id="suggestionStatusLabel" aria-live="polite"></span>
             </div>
             <div class="global-actions">
                 <button id="contextEditorBtn" class="info-button" type="button"
                     aria-label="Ouvrir le contexte">📝Contexte</button>
-                <button id="contextBtn" type="button" aria-label="AI Assistant">✨ Assistant IA</button>
+                <button id="contextBtn" type="button" aria-label="AI Assistant">🤖 Assistant IA</button>
 
                 <div class="menu-trigger" id="settingsMenuTrigger">
                     <button id="textStyleBtn" type="button" aria-label="Options d'affichage">📐 Affichage</button>
@@ -1728,6 +1739,8 @@
         const deleteTabBtn = document.getElementById("deleteTabBtn");
         const restoreStructureBtn = document.getElementById("restoreStructureBtn");
         const generatePlaceholdersBtn = document.getElementById("generatePlaceholdersBtn");
+        const generateFullSlideBtn = document.getElementById("generateFullSlideBtn");
+        const suggestionStatusLabel = document.getElementById("suggestionStatusLabel");
         const exportBtn = document.getElementById("exportPngBtn");
         const exportPptxBtn = document.getElementById("exportPptxBtn");
         const exportTextBtn = document.getElementById("exportTextBtn");
@@ -2045,7 +2058,7 @@
             };
             return acc;
         }, {});
-        const PLACEHOLDER_COOLDOWN_DURATION = 45;
+        const PLACEHOLDER_COOLDOWN_DURATION = 60;
         let suggestionCooldownTimer = null;
         let isGeneratingSuggestions = false;
 
@@ -2306,23 +2319,33 @@
         }
 
         function updateGeneratePlaceholdersButton(remaining = 0) {
-            if (!generatePlaceholdersBtn) return;
-            if (remaining > 0) {
-                generatePlaceholdersBtn.disabled = true;
-                generatePlaceholdersBtn.textContent = `💡 ⏳${remaining}s`;
-            } else {
-                generatePlaceholdersBtn.disabled = false;
+            const onCooldown = remaining > 0;
+            const disableButtons = onCooldown || isGeneratingSuggestions;
+            if (generatePlaceholdersBtn) {
+                generatePlaceholdersBtn.disabled = disableButtons;
                 generatePlaceholdersBtn.textContent = "💡";
+            }
+            if (generateFullSlideBtn) {
+                generateFullSlideBtn.disabled = disableButtons;
+                generateFullSlideBtn.textContent = "✨";
+            }
+            if (suggestionStatusLabel) {
+                suggestionStatusLabel.textContent = onCooldown ? `⏳ ${remaining}s` : "";
             }
         }
 
         function startGeneratePlaceholdersCooldown(duration = PLACEHOLDER_COOLDOWN_DURATION) {
-            if (!generatePlaceholdersBtn) return;
+            if (!generatePlaceholdersBtn && !generateFullSlideBtn && !suggestionStatusLabel) {
+                return;
+            }
             if (suggestionCooldownTimer) {
                 clearInterval(suggestionCooldownTimer);
             }
-            let remaining = duration;
+            let remaining = Math.max(0, duration);
             updateGeneratePlaceholdersButton(remaining);
+            if (remaining === 0) {
+                return;
+            }
             suggestionCooldownTimer = setInterval(() => {
                 remaining -= 1;
                 if (remaining <= 0) {
@@ -2347,7 +2370,7 @@
                 return;
             }
             isGeneratingSuggestions = true;
-            generatePlaceholdersBtn.disabled = true;
+            startGeneratePlaceholdersCooldown(PLACEHOLDER_COOLDOWN_DURATION);
             const suggestionTemplate = getPromptLibraryForTemplate(activePromptTemplateId).suggestions || defaultSuggestionsPrompt;
             const globalContextValue = globalContextField?.value.trim() || "";
             const pageContextValue = getSlidePageContext(slide).trim();
@@ -2402,10 +2425,89 @@
             if (generated) {
                 schedulePersist();
                 showCopyToast("Suggestions générées pour cette page");
-                startGeneratePlaceholdersCooldown();
             } else {
-                updateGeneratePlaceholdersButton(0);
                 showCopyToast("Aucune suggestion générée.");
+            }
+        }
+
+        async function generateFullSlideContent() {
+            if (!generateFullSlideBtn || isGeneratingSuggestions || suggestionCooldownTimer) {
+                return;
+            }
+            const slide = getActiveSlideElement();
+            if (!slide) {
+                return;
+            }
+            const templateId = slide.dataset.templateId || templates[0].id;
+            const globalContextValue = globalContextField?.value.trim() || "";
+            const pageContextValue = getSlidePageContext(slide).trim();
+            const tasks = [];
+            Array.from(slide.querySelectorAll(".section")).forEach(sectionEl => {
+                const sectionKey = sectionEl.dataset.section;
+                const textarea = sectionEl.querySelector("textarea");
+                if (!sectionKey || !textarea) {
+                    return;
+                }
+                const column = sectionEl.closest(".column");
+                const columnTitle = column?.querySelector(".column-title")?.textContent.trim() || "";
+                const labelEl = sectionEl.querySelector(".section-label");
+                const sectionLabel = labelEl?.textContent.trim() || getDefaultSectionLabel(templateId, sectionKey);
+                const promptContext = {
+                    globalContext: globalContextValue,
+                    contextField: globalContextValue,
+                    pageContext: pageContextValue,
+                    columnTitle,
+                    fieldValue: textarea.value.trim(),
+                    sectionTitle: sectionLabel
+                };
+                const promptText = buildFieldPrompt(sectionKey, templateId, promptContext);
+                tasks.push({ textarea, messages: buildAssistantMessages(promptText) });
+            });
+
+            const bottomTextarea = slide.querySelector(".bottom-section-text");
+            if (bottomTextarea) {
+                const bottomPromptContext = buildBottomPromptContext(slide);
+                const bottomPrompt = buildFieldPrompt("bottom-section", templateId, bottomPromptContext);
+                tasks.push({ textarea: bottomTextarea, messages: buildAssistantMessages(bottomPrompt) });
+            }
+
+            if (!tasks.length) {
+                showCopyToast("Aucune zone à générer.");
+                return;
+            }
+
+            isGeneratingSuggestions = true;
+            startGeneratePlaceholdersCooldown(PLACEHOLDER_COOLDOWN_DURATION);
+
+            try {
+                const results = await Promise.allSettled(
+                    tasks.map(async ({ textarea, messages }) => {
+                        const aiText = await callOpenAI(messages);
+                        if (!aiText) {
+                            return false;
+                        }
+                        const trimmed = aiText.trim();
+                        if (!trimmed) {
+                            return false;
+                        }
+                        textarea.value = trimmed;
+                        updateTextareaOverflowState(textarea);
+                        return true;
+                    })
+                );
+                const hasSuccess = results.some(result => result.status === "fulfilled" && result.value);
+                if (hasSuccess) {
+                    schedulePersist();
+                    updateSlideEmptyState();
+                    showCopyToast("Contenu IA généré pour cette page.");
+                } else {
+                    showCopyToast("Impossible de générer le contenu.");
+                }
+            } finally {
+                isGeneratingSuggestions = false;
+                if (!suggestionCooldownTimer) {
+                    updateGeneratePlaceholdersButton(0);
+                }
             }
         }
 
@@ -3321,6 +3423,9 @@
         generatePlaceholdersBtn?.addEventListener("click", () => {
             generateSectionPlaceholders();
         });
+        generateFullSlideBtn?.addEventListener("click", () => {
+            generateFullSlideContent();
+        });
 
 
         deleteTabBtn.addEventListener("click", () => {
@@ -3792,6 +3897,13 @@
             return fillTemplate(template, contextData);
         }
 
+        function buildAssistantMessages(messageText) {
+            return [
+                { role: "system", content: "Tu es un assistant produit." },
+                { role: "user", content: messageText }
+            ];
+        }
+
         async function callOpenAI(messages) {
             const apiKey = apiKeyInput.value.trim();
             try {
@@ -3977,14 +4089,9 @@
                     sectionTitle: sectionLabel
                 };
 
-            const baseMessages = messageText => [
-                { role: "system", content: "Tu es un assistant produit." },
-                { role: "user", content: messageText }
-            ];
-
             if (section === "bottom-section") {
                 const message = buildFieldPrompt(section, templateId, promptContext);
-                await executeAiRequest(button, textarea, baseMessages(message));
+                await executeAiRequest(button, textarea, buildAssistantMessages(message));
                 return;
             }
 
@@ -3993,12 +4100,12 @@
                 const editedTemplate = await openPromptEditor(templateText);
                 if (!editedTemplate) return;
                 const message = fillTemplate(editedTemplate, promptContext);
-                await executeAiRequest(button, textarea, baseMessages(message));
+                await executeAiRequest(button, textarea, buildAssistantMessages(message));
                 return;
             }
 
             const message = buildFieldPrompt(section, templateId, promptContext);
-            await executeAiRequest(button, textarea, baseMessages(message));
+            await executeAiRequest(button, textarea, buildAssistantMessages(message));
         }
 
         document.addEventListener("click", event => {
