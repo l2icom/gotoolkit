@@ -775,16 +775,9 @@
             display: flex;
             flex-direction: column;
             aspect-ratio: var(--slide-aspect-ratio, 16 / 9);
-            width: min(
-                var(--slide-width, min(1680px, 100%)),
-                var(
-                    --slide-height-width-limit,
-                    calc(
-                        var(--slide-available-height, calc(100vh - 190px)) *
-                            var(--slide-aspect-value, calc(16 / 9))
-                    )
-                )
-            );
+            width: min(var(--slide-width, min(1680px, 100%)),
+                    var(--slide-height-width-limit,
+                        calc(var(--slide-available-height, calc(100vh - 190px)) * var(--slide-aspect-value, calc(16 / 9)))));
             max-height: var(--slide-available-height, calc(100vh - 190px));
         }
 
@@ -1514,7 +1507,6 @@
                 <div class="ia-mode-toggle" id="iaModeToggle">
                     <div class="ia-mode-label">IA Mode</div>
                     <button type="button" data-ia-mode="express">⚡ Express</button>
-                    <button type="button" data-ia-mode="apprenti">💡 Apprenti</button>
                     <button type="button" data-ia-mode="experimental">🧪 Expérimental</button>
                 </div>
                 <div id="promptCustomizationArea">
@@ -1666,18 +1658,15 @@
         };
 
         const defaultPromptTemplate = `Tu es un consultant product owner expérimenté, sur la base du contexte global {{globalContext}} et du contexte de la page {{pageContext}}, et dans le cadre de {{columnTitle}}, reformuler {{fieldValue}} sous forme de 2 à 3 {{sectionTitle}} d'un point de vue business et utilisateur (un • de < 18 mots pour chaque) sans introduction préalable ni émoji`;
-        const apprentPromptTemplate = `Tu es un coach product owner expérimenté, sur la base du contexte global {{globalContext}} et du contexte de la page {{pageContext}}, et dans le cadre de {{columnTitle}}, reprendre ({{fieldValue}}) en ignorant les éléments entre "[ ]" sous forme de 2 à 3 éléments synthétiques (un • de < 18 mots pour chaque) sans toucher au sens, puis en dessous, proposer 2 à 3 questions d'approfondissement pour l'aider à formuler des {{sectionTitle}} synthétiques et pertinents (< 20 mots pour chaque et entre "[ ]" ). Tout ça sans introduction préalable ni émoji`;
         const IA_MODE_EXPRESS = "express";
-        const IA_MODE_APPRENTI = "apprenti";
         const IA_MODE_EXPERIMENTAL = "experimental";
         const promptModeMap = {
             [IA_MODE_EXPRESS]: "express",
-            [IA_MODE_APPRENTI]: "apprenti",
             [IA_MODE_EXPERIMENTAL]: "lab"
         };
         const bottomSectionPlaceholderText = "Synthèse, décisions clés ou résumé rapide";
-        const bottomSectionDefaultPrompt = `Tu es un consultant product owner expérimenté, sur la base du contexte global {{globalContext}} et du contexte de la page {{pageContext}}, et avec {{columnSections}}, répond à la slide {{slideTitle}} en 2 phrases courtes (< 18 mots pour chaque).`;
-        const defaultSuggestionsPrompt = `Tu es un coach product owner expérimenté, sur la base du contexte global {{globalContext}} et du contexte de la page {{pageContext}} et du titre de la page {{pageTitle}}, et dans le cadre de {{columnTitle}}, formuler 3 questions concrètes pour aider à saisir des {{sectionTitle}} synthétiques et pertinents (< 20 mots pour chaque et en commençant chacune par un -). Tout ça sans introduction préalable ni émoji`;
+        const bottomSectionDefaultPrompt = `Tu es un consultant product owner expérimenté, sur la base du contexte global {{globalContext}} et du contexte de la page {{pageContext}}, et avec {{columnSections}}, répond à la slide {{slideTitle}} en 2 phrases courtes (< 16 mots pour chaque).`;
+        const defaultSuggestionsPrompt = `Tu es un coach product owner expérimenté, du titre de la page {{pageTitle}}, et dans le cadre de {{columnTitle}}, formuler 3 instructions commençant par un verbe pour aider à saisir des {{sectionTitle}} synthétiques et pertinents (< 12 mots pour chaque et en commençant chacune par un -). Tout ça sans introduction préalable ni émoji`;
 
         function getTemplateById(id) {
             return templates.find(template => template.id === id) || templates[0];
@@ -2050,7 +2039,6 @@
         const promptLibrary = templates.reduce((acc, template) => {
             acc[template.id] = {
                 express: defaultPromptTemplate,
-                apprenti: apprentPromptTemplate,
                 lab: defaultPromptTemplate,
                 bottom: bottomSectionDefaultPrompt,
                 suggestions: defaultSuggestionsPrompt
@@ -2070,9 +2058,8 @@
                 Object.entries(payload.prompts).forEach(([templateId, prompts]) => {
                     if (!promptLibrary[templateId]) return;
                     const target = promptLibrary[templateId];
-                    target.express = prompts.express || defaultPromptTemplate;
-                    target.apprenti = prompts.apprenti || apprentPromptTemplate;
-                    target.lab = prompts.lab || defaultPromptTemplate;
+                    target.express = prompts.express || prompts.apprenti || defaultPromptTemplate;
+                    target.lab = prompts.lab || prompts.experimental || defaultPromptTemplate;
                     target.bottom = prompts.bottom || bottomSectionDefaultPrompt;
                     target.suggestions = prompts.suggestions || defaultSuggestionsPrompt;
                 });
@@ -2179,7 +2166,7 @@
         function updatePromptFields() {
             const library = getPromptLibraryForTemplate(activePromptTemplateId);
             const modeKey = promptKeyFromMode(activeIaMode);
-            const fallbackTemplate = activeIaMode === IA_MODE_APPRENTI ? apprentPromptTemplate : defaultPromptTemplate;
+            const fallbackTemplate = defaultPromptTemplate;
             if (mainPromptField) {
                 mainPromptField.value = library[modeKey] || fallbackTemplate;
             }
@@ -2190,11 +2177,7 @@
                 suggestionPromptField.value = library.suggestions || defaultSuggestionsPrompt;
             }
             if (promptModeLabel) {
-                const modeName = activeIaMode === IA_MODE_APPRENTI
-                    ? "Apprenti"
-                    : activeIaMode === IA_MODE_EXPRESS
-                        ? "Express"
-                        : "Expérimental";
+                const modeName = activeIaMode === IA_MODE_EXPRESS ? "Express" : "Expérimental";
                 promptModeLabel.textContent = `Mode ${modeName}`;
             }
         }
@@ -2213,7 +2196,7 @@
         }
 
         function setActiveIaMode(mode) {
-            if (![IA_MODE_EXPRESS, IA_MODE_APPRENTI, IA_MODE_EXPERIMENTAL].includes(mode)) {
+            if (![IA_MODE_EXPRESS, IA_MODE_EXPERIMENTAL].includes(mode)) {
                 return;
             }
             activeIaMode = mode;
@@ -2226,7 +2209,7 @@
             mainPromptField.addEventListener("input", () => {
                 const library = getPromptLibraryForTemplate(activePromptTemplateId);
                 const modeKey = promptKeyFromMode(activeIaMode);
-                library[modeKey] = mainPromptField.value || (activeIaMode === IA_MODE_APPRENTI ? apprentPromptTemplate : defaultPromptTemplate);
+                library[modeKey] = mainPromptField.value || defaultPromptTemplate;
                 schedulePersist();
             });
         }
@@ -2419,10 +2402,11 @@
             if (generated) {
                 schedulePersist();
                 showCopyToast("Suggestions générées pour cette page");
+                startGeneratePlaceholdersCooldown();
             } else {
+                updateGeneratePlaceholdersButton(0);
                 showCopyToast("Aucune suggestion générée.");
             }
-            startGeneratePlaceholdersCooldown();
         }
 
 
@@ -2648,8 +2632,8 @@
                             suggestions: suggestionHint,
                             placeholder: textarea
                                 ? textarea.dataset.suggestionPlaceholder ||
-                                  textarea.dataset.placeholder ||
-                                  ""
+                                textarea.dataset.placeholder ||
+                                ""
                                 : ""
                         };
                     });
@@ -3388,7 +3372,6 @@
                 templates.forEach(template => {
                     promptLibrary[template.id] = {
                         express: defaultPromptTemplate,
-                        apprenti: apprentPromptTemplate,
                         lab: defaultPromptTemplate,
                         bottom: bottomSectionDefaultPrompt,
                         suggestions: defaultSuggestionsPrompt
@@ -3796,7 +3779,7 @@
         function getMainPromptTemplate(templateId) {
             const library = getPromptLibraryForTemplate(templateId);
             const modeKey = promptKeyFromMode(activeIaMode);
-            const fallbackTemplate = activeIaMode === IA_MODE_APPRENTI ? apprentPromptTemplate : defaultPromptTemplate;
+            const fallbackTemplate = defaultPromptTemplate;
             return library[modeKey] || fallbackTemplate;
         }
 
