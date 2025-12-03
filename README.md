@@ -4,7 +4,7 @@ Go-Toolkit combine deux expériences pensées pour les consultants : **Go-Slides
 
 ## Go-Slides (public/index.html)
 
-1. **Choisis ton modèle** (“Go-Roadmap”, “Go-Design” ou “Go-Solve”) pour afficher des colonnes, des sections et des idées déjà structurées ; les exemples embarqués sont définis dans `public/demo.js` et tu peux les surcharger ou importer ton propre JSON pour amorcer un board.
+1. **Commence avec un canevas neutre** : trois colonnes et trois sections génériques sont prêts à l’emploi, sans modèle prédéfini. Les champs sont vierges, les placeholders se remplissent uniquement via le bouton `💡` ou manuellement, et tout contenu (y compris les placeholders) est conservé dans les exports/partages.
 2. **Change de page** avec les onglets : renomme-les, duplique une structure, ajoute une nouvelle page ou supprime une ancienne sans perdre ton travail.
 3. **Rédige librement** : chaque colonne contient des labels et des blocs de texte. Le bouton `✨` lance l’assistant IA pour reformuler, enrichir ou générer du contenu immédiatement à partir de ton contexte.
 4. **Ajuste le rendu** dans le menu “Files” (polices, tailles, proportions, couleurs, palettes) pour coller à ta charte, et utilise les styles prédéfinis pour garder une cohérence visuelle instantanée.

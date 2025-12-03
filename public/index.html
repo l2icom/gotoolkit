@@ -1639,93 +1639,18 @@
 
         const templates = [
             {
-                id: "go-roadmap",
-                name: "GO-Roadmap",
-                defaultTitle: "GO-Roadmap",
+                id: "default",
+                name: "Go Toolkit",
+                defaultTitle: "Page",
                 columns: [
-                    { stage: "first-col", label: "Now" },
-                    { stage: "second-col", label: "Next" },
-                    { stage: "third-col", label: "Later" }
+                    { stage: "first-col", label: "Colonne 1" },
+                    { stage: "second-col", label: "Colonne 2" },
+                    { stage: "third-col", label: "Colonne 3" }
                 ],
                 sections: [
-                    {
-                        key: "first-section",
-                        label: "Objectifs",
-                        examples:
-                            "Décrire ce que l’utilisateur ou l’entreprise gagne quand l’objectif est atteint."
-                    },
-                    {
-                        key: "second-section",
-                        label: "Moyens",
-                        examples:
-                            "Lister les actions, fonctionnalités ou livrables concrets. "
-                    },
-                    {
-                        key: "third-section",
-                        label: "Indicateurs",
-                        examples:
-                            "Décrire comment mesurer la réussite : chiffres, adoption, délais."
-                    }
-                ]
-            },
-            {
-                id: "go-design",
-                name: "GO-Design",
-                defaultTitle: "Go-Design",
-                columns: [
-                    { stage: "first-col", label: "Saisie de données" },
-                    { stage: "second-col", label: "Consultation de données" },
-                    { stage: "third-col", label: "Analyse de données" }
-                ],
-                sections: [
-                    {
-                        key: "first-section",
-                        label: "Personas",
-                        examples:
-                            "Décrire les profils utilisateurs prioritaires, leurs motivations et frustrations."
-                    },
-                    {
-                        key: "second-section",
-                        label: "Besoins",
-                        examples:
-                            "Lister les besoins métier ou utilisateur prioritaires."
-                    },
-                    {
-                        key: "third-section",
-                        label: "Opportunités",
-                        examples:
-                            "Identifier les opportunités de design, de différenciation ou d’impact."
-                    }
-                ]
-            },
-            {
-                id: "go-solve",
-                name: "GO-Solve",
-                defaultTitle: "Go-Solve",
-                columns: [
-                    { stage: "first-col", label: "UI" },
-                    { stage: "second-col", label: "Data" },
-                    { stage: "third-col", label: "API" }
-                ],
-                sections: [
-                    {
-                        key: "first-section",
-                        label: "Problèmes",
-                        examples:
-                            "Lister les problèmes, frictions ou irritants observés. Exemples : \n• Les utilisateurs abandonnent la saisie \n• Les données sont incohérentes \n• L’API manque d’observabilité"
-                    },
-                    {
-                        key: "second-section",
-                        label: "Causes",
-                        examples:
-                            "Identifier les causes profondes ou hypothèses. Exemples : \n• UI trop chargée \n• Schéma data non aligné \n• API non documentée"
-                    },
-                    {
-                        key: "third-section",
-                        label: "Solutions",
-                        examples:
-                            "Proposer des solutions rapides ou expérimentations. Exemples : \n• Prototyper un wizard de saisie \n• Ajouter des contrôles qualité data \n• Créer des endpoints documentés et versionnés"
-                    }
+                    { key: "first-section", label: "Section 1", examples: "" },
+                    { key: "second-section", label: "Section 2", examples: "" },
+                    { key: "third-section", label: "Section 3", examples: "" }
                 ]
             }
         ];
@@ -1792,10 +1717,9 @@
                 return acc;
             }, {});
             slideList.forEach(slide => {
-                const templateId = slide.templateId || templates[0].id;
-                if (!templateSlides[templateId]) {
-                    templateSlides[templateId] = [];
-                }
+                const incomingId = slide.templateId || "";
+                const templateId = templates.some(t => t.id === incomingId) ? incomingId : templates[0].id;
+                slide.templateId = templateId;
                 slide.pageContext = slide.pageContext ?? slide.context ?? "";
                 templateSlides[templateId].push(slide);
             });
@@ -2721,7 +2645,12 @@
                         columnData.sections[sectionKey] = {
                             label: label ? label.textContent.trim() : fallbackLabel,
                             text: textarea ? textarea.value : "",
-                            suggestions: suggestionHint
+                            suggestions: suggestionHint,
+                            placeholder: textarea
+                                ? textarea.dataset.suggestionPlaceholder ||
+                                  textarea.dataset.placeholder ||
+                                  ""
+                                : ""
                         };
                     });
                     return columnData;
@@ -2834,6 +2763,11 @@
                 if (textarea) {
                     if (sectionSeed) {
                         textarea.value = sectionSeed.text || "";
+                        const placeholderValue = sectionSeed.placeholder || "";
+                        textarea.dataset.placeholder = placeholderValue;
+                        if (placeholderValue && !textarea.value.trim()) {
+                            textarea.placeholder = placeholderValue;
+                        }
                         const suggestionValue = sectionSeed.suggestions || "";
                         if (suggestionValue) {
                             if (label) {
@@ -2945,9 +2879,7 @@
             const textarea = document.createElement("textarea");
             textarea.className = "editable";
             textarea.dataset.section = sectionKey;
-            if (placeholder) {
-                textarea.dataset.placeholder = placeholder;
-            }
+            textarea.dataset.placeholder = placeholder;
             textarea.value = seed.text || "";
             const suggestionValue = seed.suggestions || "";
             if (suggestionValue) {
@@ -3052,7 +2984,8 @@
             const slide = document.createElement("div");
             slide.className = "slide";
             slide.dataset.index = index;
-            const templateId = seed.templateId || templates[0].id;
+            const incomingTemplateId = seed.templateId || "";
+            const templateId = templates.some(t => t.id === incomingTemplateId) ? incomingTemplateId : templates[0].id;
             const titleValue = (seed.title || getDefaultTitle(templateId)).replace(/"/g, '&quot;');
             const subtitleValue = (seed.subtitle || defaultSubtitle).replace(/"/g, '&quot;');
             slide.dataset.templateId = templateId;
@@ -3153,7 +3086,9 @@
                 return acc;
             }, {});
             slides.forEach(slide => {
-                const templateId = slide.templateId || templates[0].id;
+                const incomingId = slide.templateId || "";
+                const templateId = templates.some(t => t.id === incomingId) ? incomingId : templates[0].id;
+                slide.templateId = templateId;
                 if (!map[templateId]) {
                     map[templateId] = [];
                 }
