@@ -688,7 +688,7 @@
     <script>
         (() => {
             const DEFAULT_PROMPT_TEMPLATE =
-                "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code mermaid sous forme d'un diagramme de {{draw_type}}. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
+                "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code mermaid sous forme d'un diagramme de {{draw_type}}. Les intitulés doivent être synthétiques. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
             const DRAW_TYPES = [
                 { id: "sequence", label: "↦ Séquence", promptValue: "séquence" },
                 { id: "flow", label: "△ Flux", promptValue: "flux" },

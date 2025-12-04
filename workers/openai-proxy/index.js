@@ -6,13 +6,14 @@ export default {
     ];
 
     const origin = request.headers.get("Origin") || "";
+    const corsOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
 
     // 1) Vérifier l'origine autorisée
     if (!allowedOrigins.includes(origin)) {
       return new Response("Forbidden", {
         status: 403,
         headers: {
-          "Access-Control-Allow-Origin": allowedOrigins[0],
+          "Access-Control-Allow-Origin": corsOrigin,
           "Vary": "Origin"
         }
       });
@@ -22,7 +23,7 @@ export default {
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
-          "Access-Control-Allow-Origin": origin,
+          "Access-Control-Allow-Origin": corsOrigin,
           "Access-Control-Allow-Methods": "POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, x-app-token, x-client-id",
           "Vary": "Origin"
@@ -31,7 +32,16 @@ export default {
     }
 
     if (request.method !== "POST") {
-      return new Response("Only POST", { status: 405 });
+      return new Response("Only POST", {
+        status: 405,
+        headers: {
+          "Access-Control-Allow-Origin": corsOrigin,
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, x-app-token, x-client-id",
+          "Allow": "POST, OPTIONS",
+          "Vary": "Origin"
+        }
+      });
     }
 
     const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
@@ -39,7 +49,7 @@ export default {
 
     // 3) IP whitelist → pas de quotas / rate limit, mais origine toujours contrôlée
     if (ipWhitelist.includes(clientIp)) {
-      return forwardToOpenAI(request, env, origin);
+      return forwardToOpenAI(request, env, corsOrigin);
     }
 
     // 4) Récupérer le clientId (ou fallback anonyme basé sur IP)
@@ -61,7 +71,7 @@ export default {
 
     if (dailyCount >= dailyLimit) {
       return jsonError(
-        origin,
+        corsOrigin,
         429,
         "DAILY_QUOTA_EXCEEDED",
         `Daily quota exceeded (${dailyLimit} requests per day).`
@@ -89,7 +99,7 @@ export default {
 
     if (minuteCount >= perMinuteLimit) {
       return jsonError(
-        origin,
+        corsOrigin,
         429,
         "RATE_LIMIT_EXCEEDED",
         "Too many requests, please wait a bit."
@@ -101,24 +111,24 @@ export default {
     });
 
     // 7) Proxy vers OpenAI (avec limites de payload)
-    return forwardToOpenAI(request, env, origin);
+    return forwardToOpenAI(request, env, corsOrigin);
   }
 };
 
-async function forwardToOpenAI(request, env, origin) {
+async function forwardToOpenAI(request, env, corsOrigin) {
   // Lire le body brut pour contrôler la taille
   const raw = await request.text();
   const maxBytes = 10_000; // ≈ 10 KB max pour tout le payload
 
   if (raw.length > maxBytes) {
-    return jsonError(origin, 413, "PAYLOAD_TOO_LARGE", "Payload too large.");
+    return jsonError(corsOrigin, 413, "PAYLOAD_TOO_LARGE", "Payload too large.");
   }
 
   let payload = {};
   try {
     payload = raw ? JSON.parse(raw) : {};
   } catch (e) {
-    return jsonError(origin, 400, "BAD_JSON", "Invalid JSON payload.");
+    return jsonError(corsOrigin, 400, "BAD_JSON", "Invalid JSON payload.");
   }
 
   // Sécurité sur messages
@@ -129,7 +139,7 @@ async function forwardToOpenAI(request, env, origin) {
 
   if (messages.length > maxMessages) {
     return jsonError(
-      origin,
+      corsOrigin,
       413,
       "TOO_MANY_MESSAGES",
       `Too many messages (max ${maxMessages}).`
@@ -140,7 +150,7 @@ async function forwardToOpenAI(request, env, origin) {
     const content = (m && m.content) || "";
     if (content.length > maxContentLength) {
       return jsonError(
-        origin,
+        corsOrigin,
         413,
         "MESSAGE_TOO_LONG",
         `A message is too long (max ${maxContentLength} characters).`
@@ -148,27 +158,38 @@ async function forwardToOpenAI(request, env, origin) {
     }
   }
 
-  const r = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: payload.model ?? "gpt-5-nano",
-      messages: messages.length
-        ? messages
-        : [{ role: "user", content: "Hello" }],
-      temperature: payload.temperature ?? 1,
-    })
-  });
+  let upstreamResponse;
+  try {
+    upstreamResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: payload.model ?? "gpt-5-nano",
+        messages: messages.length
+          ? messages
+          : [{ role: "user", content: "Hello" }],
+        temperature: payload.temperature ?? 1,
+      })
+    });
+  } catch (error) {
+    console.error("OpenAI fetch failed", error);
+    return jsonError(
+      corsOrigin,
+      502,
+      "UPSTREAM_UNAVAILABLE",
+      "OpenAI upstream unavailable."
+    );
+  }
 
-  const headers = new Headers(r.headers);
-  headers.set("Access-Control-Allow-Origin", origin);
+  const headers = new Headers(upstreamResponse.headers);
+  headers.set("Access-Control-Allow-Origin", corsOrigin);
   headers.set("Cache-Control", "no-store");
   headers.set("Vary", "Origin");
 
-  return new Response(r.body, { status: r.status, headers });
+  return new Response(upstreamResponse.body, { status: upstreamResponse.status, headers });
 }
 
 function jsonError(origin, status, code, message) {
