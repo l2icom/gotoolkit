@@ -1,5 +1,5 @@
 (function () {
-  const DEFAULT_WORKER_URL = "https://gotoolkit-share.tranxq.workers.dev";
+  const DEFAULT_WORKER_URL = "https://gotoolkit.tranxq.workers.dev";
   const configuredUrl = (window.GO_TOOLKIT_SHARE_API_URL || DEFAULT_WORKER_URL || "").trim().replace(/\/+$/g, "");
   const API_VERSION = "v1";
   const isReady = Boolean(configuredUrl);
