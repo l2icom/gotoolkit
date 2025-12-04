@@ -1,5 +1,5 @@
 (function () {
-  const DEFAULT_WORKER_URLS = ["https://gotoolkit.tranxq.workers.dev"];
+  const DEFAULT_WORKER_URLS = ["https://xxx.gotoolkit.workers.dev/"];
   const configuredUrls = [];
   if (Array.isArray(window.GO_TOOLKIT_SHARE_API_URLS)) {
     configuredUrls.push(...window.GO_TOOLKIT_SHARE_API_URLS);
