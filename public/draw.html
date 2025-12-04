@@ -283,11 +283,21 @@
             gap: 10px;
         }
 
-        .connect-left,
-        .connect-right {
+        .connect-left {
             background: #ffffff;
             border-radius: 4px;
             padding: 10px;
+            border: 1px solid #dfe3f5;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+
+        .connect-right {
+            background: #ffffff;
+            border-radius: 4px;
+            padding: 0px;
             border: 1px solid #dfe3f5;
             display: flex;
             flex-direction: column;
@@ -458,27 +468,27 @@
             width: 100%;
             position: relative;
             overflow: hidden;
-            --bar-padding: 0px;
+            --bar-padding: 5px;
         }
 
         #excalidrawHost .App-bottom-bar {
-            margin: 0 !important;
+            margin: 5px !important;
         }
 
         #excalidrawHost .layer-ui__wrapper__top-left {
-            left: 0;
-            right: auto;
+            left: auto;
+            right: 12px;
             flex-direction: row-reverse;
         }
 
         #excalidrawHost .layer-ui__wrapper__bottom-left {
-            left: 0;
-            right: auto;
+            left: auto;
+            right: 12px;
         }
 
         #excalidrawHost .layer-ui__wrapper__top-right,
         #excalidrawHost .layer-ui__wrapper__bottom-right {
-            right: 0;
+            right: 12px;
         }
 
         #excalidrawHost a[href*="excalidraw"],
