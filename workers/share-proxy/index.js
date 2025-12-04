@@ -89,27 +89,54 @@ function getClientIp(request) {
 }
 
 async function enforceWriteRateLimit(request, env) {
-  const limiter = env?.RATE_LIMIT;
-  if (!limiter?.limit) {
+  const kv = env?.RATE_LIMIT;
+  if (!kv?.get || !kv?.put) {
     return null;
   }
-  const key = `share-write:${getClientIp(request)}`;
-  try {
-    const outcome = await limiter.limit({ key });
-    if (outcome?.success) {
-      return null;
-    }
-    console.warn("Write rate limit reached", { key });
+  const ip = getClientIp(request);
+  const today = new Date().toISOString().slice(0, 10);
+  const minuteWindow = Math.floor(Date.now() / 60_000);
+  const dailyKey = `share-write:${ip}:day:${today}`;
+  const minuteKey = `share-write:${ip}:min:${minuteWindow}`;
+  const dailyLimit = 200;
+  const minuteLimit = 12;
+
+  const dailyCount = await readCounter(kv, dailyKey);
+  if (dailyCount >= dailyLimit) {
+    return errorResponse(
+      "Quota quotidien atteint, revenez demain",
+      429,
+      request,
+      env
+    );
+  }
+
+  const minuteCount = await readCounter(kv, minuteKey);
+  if (minuteCount >= minuteLimit) {
     return errorResponse(
       "Trop de requêtes d'écriture, réessayez dans un instant",
       429,
       request,
       env
     );
-  } catch (err) {
-    console.error("Rate limit check échoué", err);
-    return null;
   }
+
+  await writeCounter(kv, dailyKey, dailyCount + 1, 27 * 60 * 60);
+  await writeCounter(kv, minuteKey, minuteCount + 1, 90);
+  return null;
+}
+
+async function readCounter(kv, key) {
+  const stored = await kv.get(key);
+  if (!stored) {
+    return 0;
+  }
+  const value = parseInt(stored, 10);
+  return Number.isNaN(value) ? 0 : value;
+}
+
+async function writeCounter(kv, key, value, ttlSeconds) {
+  await kv.put(key, String(value), { expirationTtl: ttlSeconds });
 }
 
 function getDocumentUrl(env, collection, documentId) {
