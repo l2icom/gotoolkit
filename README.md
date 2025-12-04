@@ -1,57 +1,46 @@
-# Go-Toolkit
+# Go-Toolkit : la boîte à idées IA des Product Owners
 
-Go-Toolkit combine deux expériences pensées pour les consultants : **Go-Slides** (pour créer des planches claires et structurées) et **Go-Timeline** (pour visualiser et ajuster un planning). Chaque outil s’utilise en ouvrant directement son fichier dans un navigateur, avec des assistants IA, des exports réactifs et des modèles prêts à l’emploi.
+Go-Toolkit rassemble trois mini-apps prêtes à l'emploi pour transformer vos idées en livrables sans friction :
+- **Go-Slides** pour maqueter des présentations en quelques minutes.
+- **Go-Draw** pour esquisser visuels et mindmaps.
+- **Go-Timelines** pour planifier des roadmaps et cadencer vos releases.
 
-## Go-Slides (public/index.html)
+Chaque outil tient dans un simple fichier HTML : ouvrez, personnalisez, exportez. Rien à installer, aucun setup technique : vous gardez le contrôle sur vos contenus, en ligne ou hors ligne.
 
-1. **Commence avec un canevas neutre** : trois colonnes et trois sections génériques sont prêts à l’emploi, sans modèle prédéfini. Les champs sont vierges, les placeholders se remplissent uniquement via le bouton `💡` ou manuellement, et tout contenu (y compris les placeholders) est conservé dans les exports/partages.
-2. **Change de page** avec les onglets : renomme-les, duplique une structure, ajoute une nouvelle page ou supprime une ancienne sans perdre ton travail.
-3. **Rédige librement** : chaque colonne contient des labels et des blocs de texte. Le bouton `✨` lance l’assistant IA pour reformuler, enrichir ou générer du contenu immédiatement à partir de ton contexte.
-4. **Ajuste le rendu** dans le menu “Files” (polices, tailles, proportions, couleurs, palettes) pour coller à ta charte, et utilise les styles prédéfinis pour garder une cohérence visuelle instantanée.
-5. **Décris ton contexte** dans la fenêtre “Contexte & prompts”, indique ta clé OpenAI si tu en as une et choisis un mode IA (Express, Apprenti ou Expérimental) pour gérer ton niveau d’accompagnement.
-6. **Démarre avec le tour guidé** et les bulles d’info pour découvrir les actions clés dès le chargement.
-7. **Exporte et partage** : PNG pour capturer une slide propre, PPTX pour convertir tes tableaux en diapositives et JSON pour réimporter ou synchroniser avec une autre session.
-8. **Partage en toute sécurité** en pointant `window.GO_TOOLKIT_SHARE_API_URL` vers ton worker Cloudflare (voir la section technique) et en lançant la fenêtre “Partager” pour sauvegarder/charger sans exposer ta base.
+## Pour quoi faire ?
+- **Ateliers d'idéation** : poser rapidement une vision produit en diapositives, dessiner un parcours utilisateur, ou placer des jalons clés avant un comité.
+- **Briefs et handoffs** : générer un premier draft de slides ou de planning à partager à l'équipe design/dev pour éviter les réunions "à blanc".
+- **Comités et QBR** : aligner en direct sur la roadmap, réordonner les priorités et repartir avec un support exportable immédiatement.
+- **Test & learn** : créer plusieurs variantes (pitch, storyboard, timeline) et comparer les options en quelques clics.
 
-## Go-Timeline (public/timeline.html)
+## Points forts pour les PO
+- **Prêt à l'instant T** : pas d'app à déployer ni de compte à créer ; tout tient dans les fichiers `public/` que vous ouvrez dans le navigateur.
+- **Exports formats métier** : récupérez vos supports en PNG, PPTX, JSON ou Excel pour intégrer facilement dans vos decks, tickets ou wiki.
+- **Assistants IA contextualisés** : prompts préconfigurés par type d'outil (slides, dessin, planning) pour gagner du temps sans réécrire vos briefs à chaque fois.
+- **Autonomie et sécurité** : vos données restent locales par défaut ; le partage n'est activé que si vous le décidez via le proxy de partage.
 
-1. **Ouvre l’interface planning** et choisis un horizon (jour, semaine, mois) pour jouer avec la granularité.
-2. **Demande de l’aide IA** avec le bouton `✨`, choisis le mode “créer” ou “modifier” et décris l’objectif pour générer un planning cohérent et articulé sur les livrables.
-3. **Déplace et ajuste** les éléments directement sur la timeline : zoom, glisser-déposer, duplication, modification des durées et gestion fine des chevauchements.
-4. **Utilise les catégories** colorées pour distinguer fonctions, jalons, risques, bugs, dépendances ou actions commerciales.
-5. **Exporte ton planning** en texte, en image (capture) ou en Excel pour le partager rapidement avec ton équipe.
-6. **Partage tes projets** via le même worker Cloudflare configuré par `window.GO_TOOLKIT_SHARE_API_URL` afin d’uniformiser les états entre collaborateurs.
-7. **Découvre le tour guidé** pour prendre en main les outils IA, la barre d’outils et les exports dès la première visite.
+## Freins à garder en tête
+- **Clé OpenAI à saisir** : l'assistance IA fonctionne avec votre propre clé ; si vous ne l'avez pas, les outils restent manuels.
+- **Partage optionnel à configurer** : pour collaborer en ligne, il faut brancher le proxy de partage (compte de service requis).
+- **Périmètre ciblé** : slides, dessin, timelines seulement ; ce n'est pas une suite complète de productivité.
+- **Pas d'apprentissage global** : chaque session repart de zéro ; il n'y a pas (encore) de mémoire cross-projet.
 
-## Pour commencer
+## Pistes d'amélioration (vision produit)
+- **Bibliothèque d'assets PO** : templates de pitch, matrices d'impact, cartes d'empathie ou cadres RICE prêts à injecter.
+- **Assistant IA proactif** : suggestions automatiques quand une slide est vide, un jalon manque ou une dépendance est incohérente.
+- **Mode collaboratif léger** : liens de partage temporaires, commentaires in-app et historique des versions.
+- **Espace de publication** : un hub pour conserver vos exports clés (PPTX, PNG, Excel) et les retrouver par initiative.
 
-1. Ouvre les fichiers `public/index.html` et `public/timeline.html` dans ton navigateur préféré (Chrome, Firefox, Edge, Safari…).
-2. Tu n’as rien à installer : l’interface est entièrement statique et ne dépend que de scripts embarqués et d’APIs publiques.
-3. Pour diffuser une version en ligne, dépose le dossier `public/` sur ton hébergeur habituel ou sur la plateforme de ton choix, puis configure `window.GO_TOOLKIT_SHARE_API_URL` pour pointer vers ton worker partagé.
+## Nouveaux outils qui complèteraient le panel
+- **Go-Backlog** : prioriser les user stories avec scoring RICE/WSJF et générer des briefs clairs pour l'équipe tech.
+- **Go-Discovery** : cartographier les hypothèses, interviews et insights avec des canevas Discovery/Opportunity Solution Tree.
+- **Go-Metrics** : cadrer les KPI North Star, aligner les métriques par persona et suivre les succès d'un quarter à l'autre.
+- **Go-Pitch** : assembler en 5 minutes un pitch client/investisseur cohérent avec vos slides et votre roadmap.
 
-## Conseils pratiques
+## Comment démarrer
+1. Ouvrez `public/index.html` (slides), `public/draw.html` (draw) ou `public/timeline.html` (timelines) depuis votre navigateur.
+2. Ajoutez votre clé OpenAI dans l'interface si vous souhaitez les suggestions IA.
+3. Personnalisez : blocs, couleurs, images, jalons. Tout se fait directement dans la page.
+4. Exportez en un clic ou partagez via le proxy si vous travaillez à plusieurs.
 
-- Prépare ton contexte (client, objectifs, contraintes) avant d’activer l’IA pour obtenir des réponses pertinentes.
-- Harmonise les colonnes avec les styles et palettes pour coller à ta charte.
-- Essaie le mode “Apprenti” si tu veux guider section par section, ou reste en “Express” pour aller plus vite.
-- Sauvegarde et réimporte les fichiers JSON pour reproduire un livrable validé sur une autre session ou un autre modèle.
-- Utilise les exports image/PPTX ou Excel pour partager tes supports dans OneDrive, Notion, Confluence ou directement avec tes clients.
-- Configure ton worker Cloudflare (voir la section technique) avant de partager un lien : l’UI masque les accès Firestore et consomme `window.goToolkitShareWorker`.
-
-## Pistes
-
-- Centraliser les exports pour les retrouver facilement dans un espace partagé.
-- Partager les prompts et palettes avec les autres membres de ton équipe.
-- Proposer des suggestions proactives en fonction du contexte de ton client.
-
-## Implémentation technique
-
-- **Front-end statique** : `public/index.html` et `public/timeline.html` embarquent toutes les interactions (modèles, blocs de texte, IA, exports). Les exemples et configurations de colonnes sont définis directement via `window.GO_INDEX_DEMO_DATA` dans `public/index.html`, tu peux surcharger cette variable ou injecter ton propre JSON pour précharger des cas d’usage.
-- **Partages Firestore** : l’interface invoque `window.goToolkitShareWorker` (voir `public/js/share-worker-client.js`) ; ce client redirige les `GET` et `PUT` vers le worker Cloudflare `workers/share-proxy/index.js`. Ce worker :
-  - Valide les chemins `/v1/shares/{collection}/{document}` uniquement pour `slides` et `timelines`.
-  - Tire un token OAuth2 Google à partir de la clé `FIREBASE_SERVICE_ACCOUNT`, signe les JWT, cache le jeton et parle à l’API Firestore sans dépendances externes.
-  - Gère les en-têtes CORS, limite les écritures quand `env.RATE_LIMIT` est configuré et renvoie des erreurs lisibles pour l’UI.
-- **Sécurité Firestore** : `firestore.rules` interdit tout `read`/`write` direct en production ; seul le worker Cloudflare, avec le compte de service, possède les droits d’écriture. Avant de déployer depuis `workers/share-proxy`, configure les secrets : `wrangler secret put FIREBASE_SERVICE_ACCOUNT "<JSON de la clé de service>"`, puis (optionnellement) `FIREBASE_PROJECT_ID` et `SHARE_ALLOWED_ORIGINS`.
-- **Personnalisation IA & partages** : modifie `window.GO_TOOLKIT_SHARE_API_URL` dans `public/index.html` et `public/timeline.html` pour pointer vers ton worker, alimente la clé OpenAI et sélectionne le mode IA qui correspond à ton workflow pour activer les assistants de génération / reformulation.
-
-Bonne préparation !
+Go-Toolkit vous aide à passer de l'idée à un support partageable en quelques minutes. Bonne exploration !
