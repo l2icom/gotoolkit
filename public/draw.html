@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Go Toolkit - Draw</title>
+    <title>Go-Draw</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
@@ -347,6 +347,46 @@
             margin-bottom: 10px;
         }
 
+        .draw-type-control {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .draw-type-control-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #566188;
+        }
+
+        .draw-type-selector {
+            display: flex;
+            gap: 6px;
+        }
+
+        .draw-type-btn {
+            flex: 1;
+            border-radius: 20px;
+            border: 1px solid #d6dbf2;
+            background: #ffffff;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #1f2a56;
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .draw-type-btn.active {
+            background: #2a7a57;
+            border-color: #2a7a57;
+            color: #ffffff;
+        }
+
+        .draw-type-btn:focus-visible {
+            outline: 2px solid #2a7a57;
+        }
+
         .mermaid-output-card {
             flex: 1;
             display: flex;
@@ -579,6 +619,17 @@
                         <div class="card-title">Contexte (5 lignes)</div>
                         <button id="generateBtn" class="generate-btn" type="button">✨ Générer</button>
                     </div>
+                    <div class="draw-type-control">
+                        <span class="draw-type-control-label">Type de diagramme</span>
+                        <div class="draw-type-selector" role="group" aria-label="Type de diagramme">
+                            <button class="draw-type-btn active" type="button" data-draw-type="sequence"
+                                aria-pressed="true">↦ Séquence</button>
+                            <button class="draw-type-btn" type="button" data-draw-type="flow" aria-pressed="false">△
+                                Flux</button>
+                            <button class="draw-type-btn" type="button" data-draw-type="class" aria-pressed="false">⌬
+                                Classe</button>
+                        </div>
+                    </div>
                     <textarea id="promptInput" rows="5"
                         placeholder="Décris ton contexte produit, tes utilisateurs, ta problématique..."></textarea>
                 </div>
@@ -637,7 +688,13 @@
     <script>
         (() => {
             const DEFAULT_PROMPT_TEMPLATE =
-                "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code mermaid sous forme d'un diagramme au choix (séquence, class uml ou flow). Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
+                "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code mermaid sous forme d'un diagramme de {{draw_type}}. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
+            const DRAW_TYPES = [
+                { id: "sequence", label: "↦ Séquence", promptValue: "séquence" },
+                { id: "flow", label: "△ Flux", promptValue: "flux" },
+                { id: "class", label: "⌬ Classe", promptValue: "classe" }
+            ];
+            const DEFAULT_DRAW_TYPE = DRAW_TYPES[0].id;
             const STORAGE_KEY = "connect-ai-state";
             const FIRESTORE_COLLECTION = "diagrams";
             const SHARE_QUERY_PARAM = "share";
@@ -667,6 +724,7 @@
 
             const promptInput = document.getElementById("promptInput");
             const mermaidOutput = document.getElementById("mermaidOutput");
+            const drawTypeButtons = Array.from(document.querySelectorAll(".draw-type-btn[data-draw-type]"));
             const generateBtn = document.getElementById("generateBtn");
             const statusToast = document.getElementById("statusToast");
             const pageTabs = document.getElementById("pageTabs");
@@ -697,8 +755,9 @@
                         return;
                     }
                     const parsed = JSON.parse(raw);
+                    const storedPages = Array.isArray(parsed.pages) && parsed.pages.length ? parsed.pages : [createPage(1)];
                     state = {
-                        pages: Array.isArray(parsed.pages) && parsed.pages.length ? parsed.pages : [createPage(1)],
+                        pages: storedPages.map((page, index) => normalizePage(page, index)),
                         activeIndex: parsed.activeIndex || 0,
                         apiKey: parsed.apiKey || "",
                         promptTemplate: parsed.promptTemplate || DEFAULT_PROMPT_TEMPLATE
@@ -719,7 +778,7 @@
 
             function buildSharePayload() {
                 return {
-                    pages: state.pages.map(page => ({ ...page })),
+                    pages: state.pages.map((page, index) => normalizePage(page, index)),
                     activeIndex: state.activeIndex,
                     apiKey: state.apiKey || "",
                     promptTemplate: state.promptTemplate || DEFAULT_PROMPT_TEMPLATE
@@ -731,15 +790,7 @@
                 const incomingPages = Array.isArray(payload.pages) && payload.pages.length
                     ? payload.pages
                     : [createPage(1)];
-                state.pages = incomingPages.map((page, index) => {
-                    const fallback = createPage(index + 1);
-                    return {
-                        id: page.id || fallback.id,
-                        label: page.label || fallback.label,
-                        input: page.input || "",
-                        mermaid: page.mermaid || ""
-                    };
-                });
+                state.pages = incomingPages.map((page, index) => normalizePage(page, index));
                 state.activeIndex = Math.max(0, Math.min(state.pages.length - 1, payload.activeIndex || 0));
                 state.apiKey = payload.apiKey || "";
                 state.promptTemplate = payload.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
@@ -1001,8 +1052,32 @@
                     id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
                     label: `Page ${position}`,
                     input: "",
-                    mermaid: ""
+                    mermaid: "",
+                    drawType: DEFAULT_DRAW_TYPE
                 };
+            }
+
+            function normalizePage(page, index) {
+                const fallback = createPage(index + 1);
+                const incomingType = page?.drawType;
+                const drawType = DRAW_TYPES.some(option => option.id === incomingType)
+                    ? incomingType
+                    : DEFAULT_DRAW_TYPE;
+                return {
+                    id: page?.id || fallback.id,
+                    label: page?.label || fallback.label,
+                    input: page?.input || "",
+                    mermaid: page?.mermaid || "",
+                    drawType
+                };
+            }
+
+            function getDrawTypeOptionById(typeId) {
+                return DRAW_TYPES.find(option => option.id === typeId) || DRAW_TYPES[0];
+            }
+
+            function getDrawTypePromptValue(typeId) {
+                return getDrawTypeOptionById(typeId).promptValue;
             }
 
             function getActivePage() {
@@ -1031,6 +1106,35 @@
                 });
             }
 
+            function updateDrawTypeSelector(selectedType) {
+                const normalizedType = DRAW_TYPES.some(option => option.id === selectedType)
+                    ? selectedType
+                    : DEFAULT_DRAW_TYPE;
+                if (!drawTypeButtons.length) {
+                    return;
+                }
+                drawTypeButtons.forEach(button => {
+                    const isActive = button.dataset.drawType === normalizedType;
+                    button.classList.toggle("active", isActive);
+                    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+                });
+            }
+
+            function updateActivePageDrawType(typeId) {
+                const page = getActivePage();
+                if (!page) return;
+                const normalizedType = DRAW_TYPES.some(option => option.id === typeId)
+                    ? typeId
+                    : DEFAULT_DRAW_TYPE;
+                if (page.drawType === normalizedType) {
+                    updateDrawTypeSelector(normalizedType);
+                    return;
+                }
+                page.drawType = normalizedType;
+                updateDrawTypeSelector(normalizedType);
+                saveState();
+            }
+
             function setActivePage(index) {
                 state.activeIndex = Math.max(0, Math.min(state.pages.length - 1, index));
                 renderTabs();
@@ -1042,6 +1146,7 @@
                 const page = getActivePage();
                 promptInput.value = page?.input || "";
                 mermaidOutput.value = page?.mermaid || "";
+                updateDrawTypeSelector(page?.drawType || DEFAULT_DRAW_TYPE);
                 updateExcalidrawScene(page?.mermaid || "");
             }
 
@@ -1054,7 +1159,12 @@
                     promptInput.focus();
                     return;
                 }
-                const template = (state.promptTemplate || DEFAULT_PROMPT_TEMPLATE).replace(/{{field_input}}/gi, inputText);
+                const drawType = page.drawType || DEFAULT_DRAW_TYPE;
+                const drawTypePrompt = getDrawTypePromptValue(drawType);
+                const templateBase = state.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                const template = templateBase
+                    .replace(/{{field_input}}/gi, inputText)
+                    .replace(/{{draw_type}}/gi, drawTypePrompt);
                 const messages = [
                     { role: "system", content: "Tu es un assistant produit." },
                     { role: "user", content: template }
@@ -1935,6 +2045,15 @@
                         saveState();
                     }
                     updateExcalidrawScene(value);
+                });
+                drawTypeButtons.forEach(button => {
+                    button.addEventListener("click", () => {
+                        const selectedType = button.dataset.drawType;
+                        if (!selectedType) {
+                            return;
+                        }
+                        updateActivePageDrawType(selectedType);
+                    });
                 });
                 addPageBtn.addEventListener("click", () => {
                     const newPage = createPage(state.pages.length + 1);
