@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="https://unpkg.com/@excalidraw/excalidraw@0.15.0/dist/excalidraw.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.min.css">
     <style>
         :root {
             font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -436,6 +436,15 @@
             right: 12px;
         }
 
+        #excalidrawHost a[href*="excalidraw"],
+        #excalidrawHost button[title*="Excalidraw" i],
+        #excalidrawHost [aria-label*="Excalidraw" i],
+        #excalidrawHost a[href*="discord" i],
+        #excalidrawHost button[title*="Discord" i],
+        #excalidrawHost [aria-label*="Discord" i] {
+            display: none !important;
+        }
+
         .placeholder {
             color: #9ca3c7;
             font-size: 14px;
@@ -558,6 +567,12 @@
         </header>
 
         <main class="connect-layout">
+            <section class="connect-right">
+                <div class="excalidraw-card">
+                    <div id="excalidrawHost"></div>
+                </div>
+            </section>
+
             <section class="connect-left">
                 <div class="prompt-input-card">
                     <div class="card-title-row">
@@ -573,12 +588,6 @@
                         <button id="refreshExcalidrawBtn" class="refresh-btn" type="button">↻ Rafraîchir</button>
                     </div>
                     <textarea id="mermaidOutput" placeholder="Le code généré apparaitra ici"></textarea>
-                </div>
-            </section>
-
-            <section class="connect-right">
-                <div class="excalidraw-card">
-                    <div id="excalidrawHost"></div>
                 </div>
             </section>
         </main>
@@ -609,14 +618,20 @@
     </div>
 
     <script src="js/share-worker-client.js"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script>
+        var process = window.process || {};
+        (function () {
+            process.env = process.env || {};
+            if (!process.env.NODE_ENV) {
+                process.env.NODE_ENV = "production";
+            }
+            process.browser = true;
+            window.process = process;
+        })();
+    </script>
+    <script src="js/connect-excalidraw.js" data-excalidraw-bundle="true"></script>
     <script>
         (() => {
-            const EXCALIDRAW_CDN_SOURCES = [
-                "https://unpkg.com/@excalidraw/excalidraw@0.15.0/dist/excalidraw.production.min.js",
-                "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.15.0/dist/excalidraw.production.min.js"
-            ];
             const DEFAULT_PROMPT_TEMPLATE =
                 "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code mermaid sous forme d'un graphique au choix (séquence, flow ou diagramme). Ne fais pas d'introduction ou de conclusion, donne directement et uniquement le bloc de code.";
             const STORAGE_KEY = "connect-ai-state";
@@ -625,6 +640,9 @@
             const SHARE_WORKER_UNAVAILABLE_MESSAGE =
                 "Le partage privé nécessite le worker Cloudflare lié à Go-Toolkit.";
             const shareWorkerService = window.goToolkitShareWorker;
+            const EXCALIDRAW_BUNDLE_SRC = "js/connect-excalidraw.js";
+            const EXCALIDRAW_BRIDGE_MAX_WAIT_MS = 8000;
+            const EXCALIDRAW_BRIDGE_POLL_INTERVAL_MS = 50;
 
             let state = {
                 pages: [],
@@ -633,7 +651,8 @@
                 promptTemplate: DEFAULT_PROMPT_TEMPLATE
             };
             let pendingSceneCode = "";
-            let waitingForReadyApi = false;
+            let bridgeDetectionPromise = null;
+            let sceneBuildRequestId = 0;
             let shareWorkerAvailable = Boolean(shareWorkerService?.isReady);
             let currentShareToken = null;
             let shareLoadedFromRemote = false;
@@ -1139,142 +1158,145 @@
                 closeModal();
             }
 
-            function resolveExcalidrawLib() {
-                if (window.ExcalidrawLib?.Excalidraw) {
-                    return window.ExcalidrawLib;
+            const EXCALIDRAW_STYLESHEET_URL = "https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw-assets/index.css";
+
+            function ensureExcalidrawStyles() {
+                if (document.querySelector('[data-excalidraw-css="main"]')) {
+                    return;
                 }
-                if (window.Excalidraw?.default) {
-                    window.ExcalidrawLib = { Excalidraw: window.Excalidraw.default };
-                    return window.ExcalidrawLib;
-                }
-                if (typeof window.Excalidraw === "function") {
-                    window.ExcalidrawLib = { Excalidraw: window.Excalidraw };
-                    return window.ExcalidrawLib;
-                }
-                return null;
+                const link = document.createElement("link");
+                link.rel = "stylesheet";
+                link.href = EXCALIDRAW_STYLESHEET_URL;
+                link.dataset.excalidrawCss = "main";
+                document.head.appendChild(link);
             }
 
-            function loadExcalidrawBundle() {
-                if (resolveExcalidrawLib()) {
-                    return Promise.resolve();
+            function ensureExcalidrawBundleScript() {
+                if (window.GoToolkitExcalidraw) {
+                    return;
                 }
-                if (window.__excalScriptPromise) {
-                    return window.__excalScriptPromise;
+                let script = document.querySelector('script[data-excalidraw-bundle]');
+                if (!script) {
+                    script = document.createElement("script");
+                    script.src = EXCALIDRAW_BUNDLE_SRC;
+                    script.dataset.excalidrawBundle = "true";
+                    document.body.appendChild(script);
                 }
-                let sourceIndex = 0;
-                window.__excalScriptPromise = new Promise((resolve, reject) => {
-                    const tryNext = () => {
-                        if (resolveExcalidrawLib()) {
-                            resolve();
-                            return;
-                        }
-                        const cdnUrl = EXCALIDRAW_CDN_SOURCES[sourceIndex++];
-                        if (!cdnUrl) {
-                            reject(new Error("Impossible de charger Excalidraw depuis les CDN connus"));
-                            return;
-                        }
-                        const existing = document.querySelector(`script[src="${cdnUrl}"]`);
-                        if (existing) {
-                            existing.addEventListener("load", () => {
-                                resolveExcalidrawLib() ? resolve() : reject(new Error("Excalidraw indisponible après chargement"));
-                            });
-                            existing.addEventListener("error", () => {
-                                console.error("Echec de chargement Excalidraw", cdnUrl);
-                                tryNext();
-                            });
-                            return;
-                        }
-                        const script = document.createElement("script");
-                        script.src = cdnUrl;
-                        script.async = true;
-                        // no crossOrigin attribute to avoid CORS blocking when running from file://
-                        script.onload = () => {
-                            if (resolveExcalidrawLib()) {
-                                resolve();
-                            } else {
-                                console.error("Excalidraw chargé mais non initialisable", cdnUrl);
-                                tryNext();
-                            }
-                        };
-                        script.onerror = event => {
-                            console.error("Echec de chargement Excalidraw", cdnUrl, event);
-                            script.remove();
-                            tryNext();
-                        };
-                        document.head.appendChild(script);
-                    };
-                    tryNext();
-                });
-                return window.__excalScriptPromise;
             }
 
-            function mountExcalidraw(rootEl) {
-                const { Excalidraw } = resolveExcalidrawLib();
-                const { createElement, useEffect, useRef } = window.React;
-                const root = window.ReactDOM.createRoot(rootEl);
-                const ExcalidrawShell = () => {
-                    const instanceRef = useRef(null);
-                    useEffect(() => {
-                        if (instanceRef.current) {
-                            window.__excalidrawApi = instanceRef.current;
-                            document.dispatchEvent(new CustomEvent("excal-ready"));
-                        }
-                    }, [instanceRef.current]);
-                    return createElement(Excalidraw, {
-                        ref: api => {
-                            if (api) {
-                                instanceRef.current = api;
-                                window.__excalidrawApi = api;
-                                document.dispatchEvent(new CustomEvent("excal-ready"));
+            function waitForBridgeBundle() {
+                if (window.GoToolkitExcalidraw) {
+                    return Promise.resolve(window.GoToolkitExcalidraw);
+                }
+                ensureExcalidrawBundleScript();
+                if (!bridgeDetectionPromise) {
+                    bridgeDetectionPromise = new Promise((resolve, reject) => {
+                        const deadline = Date.now() + EXCALIDRAW_BRIDGE_MAX_WAIT_MS;
+                        const poll = () => {
+                            const bridge = window.GoToolkitExcalidraw;
+                            if (bridge) {
+                                resolve(bridge);
+                                return;
                             }
-                        },
-                        theme: "light",
-                        viewModeEnabled: false,
-                        gridModeEnabled: false,
-                        zenModeEnabled: false,
-                        initialData: {
-                            elements: [],
-                            appState: {
-                                viewBackgroundColor: "#fdfdfd",
-                                gridModeEnabled: false
+                            if (Date.now() > deadline) {
+                                bridgeDetectionPromise = null;
+                                reject(new Error("Bundle Excalidraw non chargé"));
+                                return;
                             }
-                        }
+                            setTimeout(poll, EXCALIDRAW_BRIDGE_POLL_INTERVAL_MS);
+                        };
+                        poll();
                     });
-                };
-                root.render(createElement(ExcalidrawShell));
+                }
+                return bridgeDetectionPromise;
+            }
+
+            let excalidrawReadyPromise = null;
+
+            function getExcalidrawBridge() {
+                return window.GoToolkitExcalidraw || null;
+            }
+
+            function ensureExcalidrawReady() {
+                ensureExcalidrawStyles();
+                if (excalidrawReadyPromise) {
+                    return excalidrawReadyPromise;
+                }
+                const hostEl = document.getElementById("excalidrawHost");
+                if (!hostEl) {
+                    return Promise.reject(new Error("Hôte Excalidraw introuvable"));
+                }
+                excalidrawReadyPromise = waitForBridgeBundle()
+                    .then(bridge => bridge.initialize(hostEl).then(() => bridge))
+                    .catch(error => {
+                        excalidrawReadyPromise = null;
+                        throw error;
+                    });
+                return excalidrawReadyPromise;
             }
 
             function initializeExcalidraw() {
-                const rootEl = document.getElementById("excalidrawHost");
-                if (!rootEl) return;
-                let attempt = 0;
-                const waitForLibs = () => {
-                    const hasReact = Boolean(window.React && window.ReactDOM);
-                    const lib = resolveExcalidrawLib();
-                    if (!hasReact || !lib) {
-                        attempt += 1;
-                        if (attempt % 25 === 1) {
-                            console.warn("Excalidraw CDN non prêt", { hasReact, hasExcalidraw: Boolean(lib) });
-                        }
-                        setTimeout(waitForLibs, 120);
-                        return;
-                    }
-                    try {
-                        mountExcalidraw(rootEl);
-                        console.info("Excalidraw initialisé après", attempt, "tentatives");
-                    } catch (err) {
-                        console.error("Impossible d'initialiser Excalidraw", err);
-                        setStatus("Erreur Excalidraw : consulte la console");
-                    }
-                };
-                loadExcalidrawBundle()
+                ensureExcalidrawReady()
                     .then(() => {
-                        waitForLibs();
+                        console.info("Excalidraw initialisé via bundle");
                     })
                     .catch(err => {
-                        console.error("Erreur critique Excalidraw", err);
-                        setStatus("Impossible de charger Excalidraw (voir console)");
+                        console.error("Impossible d'initialiser Excalidraw", err);
+                        setStatus("Erreur Excalidraw : consulte la console");
                     });
+            }
+
+            async function getExcalidrawApi() {
+                const bridge = await ensureExcalidrawReady();
+                const api = bridge?.getApi();
+                if (!api) {
+                    throw new Error("API Excalidraw indisponible");
+                }
+                return api;
+            }
+
+            async function tryMermaidConversion(code) {
+                const trimmed = (code || "").trim();
+                if (!trimmed) {
+                    console.log("[Mermaid] conversion skipped: empty code block");
+                    return null;
+                }
+                console.log("[Mermaid] conversion attempt", {
+                    charCount: trimmed.length
+                });
+                try {
+                    const bridge = await ensureExcalidrawReady();
+                    const conversion = await bridge.convertMermaid(trimmed);
+                    if (conversion?.elements?.length) {
+                        console.log("[Mermaid] conversion succeeded", {
+                            elementCount: conversion.elements.length,
+                            hasFiles: Boolean(conversion.files)
+                        });
+                        return conversion;
+                    }
+                    console.log("[Mermaid] conversion returned no elements", {
+                        charCount: trimmed.length
+                    });
+                    return null;
+                } catch (error) {
+                    console.warn("Conversion Mermaid -> Excalidraw impossible", error);
+                    return null;
+                }
+            }
+            async function buildScenePayload(code) {
+                const trimmed = (code || "").trim();
+                if (!trimmed) {
+                    console.log("[Mermaid] buildScenePayload: empty input");
+                    return { elements: [] };
+                }
+                console.log("[Mermaid] buildScenePayload: attempting conversion");
+                const converted = await tryMermaidConversion(trimmed);
+                if (converted?.elements?.length) {
+                    console.log("[Mermaid] scene payload uses converted elements");
+                    return converted;
+                }
+                console.log("[Mermaid] falling back to legacy builder");
+                return { elements: buildLegacyExcalidrawElements(trimmed), files: null };
             }
 
             function createBaseElement(type, overrides = {}) {
@@ -1435,6 +1457,7 @@
                     return null;
                 }
                 const header = lines[0].toLowerCase();
+                console.log("[Mermaid] legacy translator header", header);
                 if (header.startsWith("flowchart") || header.startsWith("graph")) {
                     return buildFlowchartElements(lines);
                 }
@@ -1772,6 +1795,9 @@
                 if (!lines.length) {
                     lines.push("Diagramme vide");
                 }
+                console.log("[Mermaid] using fallback text elements", {
+                    lineCount: lines.length
+                });
                 const baseY = 40;
                 const gap = 70;
                 return lines.map((line, idx) => createTextElement(line, 40, baseY + idx * gap, {
@@ -1779,7 +1805,7 @@
                 }));
             }
 
-            function buildExcalidrawElements(code) {
+            function buildLegacyExcalidrawElements(code) {
                 const translated = translateMermaidToElements(code);
                 if (translated && translated.length) {
                     return translated;
@@ -1806,53 +1832,81 @@
                 return false;
             }
 
-            function updateExcalidrawScene(code) {
+            async function updateExcalidrawScene(code) {
                 pendingSceneCode = code || "";
-                const attemptUpdate = () => {
-                    const api = window.__excalidrawApi;
-                    if (!api) {
-                        return false;
+                sceneBuildRequestId += 1;
+                const requestId = sceneBuildRequestId;
+                console.log("[Excalidraw] scene update requested", {
+                    requestId,
+                    charCount: pendingSceneCode.length
+                });
+                try {
+                    const api = await getExcalidrawApi();
+                    console.log("[Excalidraw] API resolved for scene update", {
+                        requestId
+                    });
+                    const sceneData = await buildScenePayload(pendingSceneCode);
+                    console.log("[Excalidraw] scene data built", {
+                        requestId,
+                        hasElements: Boolean(sceneData?.elements?.length),
+                        hasFiles: Boolean(sceneData?.files)
+                    });
+                    if (requestId !== sceneBuildRequestId) {
+                        console.log("[Excalidraw] scene update superseded", {
+                            requestId,
+                            latestId: sceneBuildRequestId
+                        });
+                        return;
                     }
-                    const applyScene = () => {
-                        const latest = pendingSceneCode;
-                        const elements = buildExcalidrawElements(latest);
-                        const appState = {
-                            ...api.getAppState(),
-                            viewBackgroundColor: "#fdfdfd",
-                            gridModeEnabled: false
-                        };
-                        const scenePayload = { elements, appState };
-                        if (!applySceneUpdate(api, scenePayload)) {
-                            console.warn("Aucune méthode disponible pour mettre à jour Excalidraw", {
-                                hasUpdateScene: typeof api?.updateScene === "function",
-                                hasResetScene: typeof api?.resetScene === "function",
-                                hasReplaceAll: typeof api?.replaceAllElements === "function"
-                            });
-                        }
+                    const appState = {
+                        ...api.getAppState(),
+                        viewBackgroundColor: "#fdfdfd",
+                        gridModeEnabled: false,
+                        isLoading: false
                     };
-                    if (api.readyPromise && typeof api.readyPromise.then === "function") {
-                        api.readyPromise
-                            .then(() => {
-                                applyScene();
-                            })
-                            .catch(err => {
-                                console.error("Excalidraw readyPromise rejetée", err);
-                            });
-                    } else {
-                        applyScene();
+                    const scenePayload = {
+                        elements: sceneData.elements || [],
+                        appState
+                    };
+                    if (sceneData.files) {
+                        scenePayload.files = sceneData.files;
                     }
-                    return true;
-                };
-                if (!attemptUpdate() && !waitingForReadyApi) {
-                    waitingForReadyApi = true;
-                    document.addEventListener(
-                        "excal-ready",
-                        () => {
-                            waitingForReadyApi = false;
-                            attemptUpdate();
-                        },
-                        { once: true }
-                    );
+                    console.log("[Excalidraw] applying scene", {
+                        requestId,
+                        elementCount: scenePayload.elements.length,
+                        hasFiles: Boolean(scenePayload.files)
+                    });
+                    if (!applySceneUpdate(api, scenePayload)) {
+                        console.warn("Aucune méthode disponible pour mettre à jour Excalidraw", {
+                            hasUpdateScene: typeof api?.updateScene === "function",
+                            hasResetScene: typeof api?.resetScene === "function",
+                            hasReplaceAll: typeof api?.replaceAllElements === "function"
+                        });
+                    }
+                    if (sceneData.files && typeof api.addFiles === "function") {
+                        api.addFiles(sceneData.files);
+                    }
+                } catch (error) {
+                    console.error("Impossible de mettre à jour Excalidraw", error);
+                    if (requestId !== sceneBuildRequestId) {
+                        return;
+                    }
+                    const api = getExcalidrawBridge()?.getApi();
+                    if (!api) {
+                        return;
+                    }
+                    const fallbackElements = buildFallbackTextElements(pendingSceneCode || "Diagramme indisponible");
+                    const appState = {
+                        ...api.getAppState(),
+                        viewBackgroundColor: "#fdfdfd",
+                        gridModeEnabled: false,
+                        isLoading: false
+                    };
+                    console.log("[Excalidraw] fallback scene applied", {
+                        requestId,
+                        fallbackCount: fallbackElements.length
+                    });
+                    applySceneUpdate(api, { elements: fallbackElements, appState });
                 }
             }
 

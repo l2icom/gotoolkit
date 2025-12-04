@@ -1,0 +1,33 @@
+{
+  "name": "gotoolkit",
+  "version": "1.0.0",
+  "description": "Go-Toolkit combine deux expériences pensées pour les consultants : **Go-Slides** (pour créer des planches claires et structurées) et **Go-Timeline** (pour visualiser et ajuster un planning). Chaque outil s’utilise en ouvrant directement son fichier dans un navigateur, avec des assistants IA, des exports réactifs et des modèles prêts à l’emploi.",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm run build:connect",
+    "build:connect": "esbuild src/connect-excalidraw.tsx --bundle --format=iife --platform=browser --target=es2018 --sourcemap --minify-identifiers --define:process.env.NODE_ENV=\\\"'production'\\\" --outdir=public/js --entry-names=connect-excalidraw --asset-names=assets/[name]-[hash] --loader:.css=text --loader:.woff=file --loader:.woff2=file --loader:.ttf=file --loader:.svg=file --loader:.png=file"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/quangfr/goroadmap.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/quangfr/goroadmap/issues"
+  },
+  "homepage": "https://github.com/quangfr/goroadmap#readme",
+  "dependencies": {
+    "@excalidraw/excalidraw": "^0.17.6",
+    "@excalidraw/mermaid-to-excalidraw": "^2.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "esbuild": "^0.27.1",
+    "playwright": "^1.57.0"
+  }
+}
