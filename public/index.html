@@ -1648,7 +1648,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
-    <script src="demo.js"></script>
+    <script>
+        window.GO_INDEX_DEMO_DATA = window.GO_INDEX_DEMO_DATA || { slides: [] };
+    </script>
     <script>
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://gotoolkit.tranxq.workers.dev";

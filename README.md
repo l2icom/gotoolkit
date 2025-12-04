@@ -46,7 +46,7 @@ Go-Toolkit combine deux expériences pensées pour les consultants : **Go-Slides
 
 ## Implémentation technique
 
-- **Front-end statique** : `public/index.html` et `public/timeline.html` embarquent toutes les interactions (modèles, blocs de texte, IA, exports). Les exemples et configurations de colonnes proviennent de `public/demo.js`, tu peux surcharger `window.GO_INDEX_DEMO_DATA` ou injecter ton propre JSON pour précharger des cas d’usage.
+- **Front-end statique** : `public/index.html` et `public/timeline.html` embarquent toutes les interactions (modèles, blocs de texte, IA, exports). Les exemples et configurations de colonnes sont définis directement via `window.GO_INDEX_DEMO_DATA` dans `public/index.html`, tu peux surcharger cette variable ou injecter ton propre JSON pour précharger des cas d’usage.
 - **Partages Firestore** : l’interface invoque `window.goToolkitShareWorker` (voir `public/js/share-worker-client.js`) ; ce client redirige les `GET` et `PUT` vers le worker Cloudflare `workers/share-proxy/index.js`. Ce worker :
   - Valide les chemins `/v1/shares/{collection}/{document}` uniquement pour `slides` et `timelines`.
   - Tire un token OAuth2 Google à partir de la clé `FIREBASE_SERVICE_ACCOUNT`, signe les JWT, cache le jeton et parle à l’API Firestore sans dépendances externes.

@@ -629,7 +629,7 @@
             window.process = process;
         })();
     </script>
-    <script src="js/connect-excalidraw.js" data-excalidraw-bundle="true"></script>
+    <script src="js/connect.bundle.js" data-excalidraw-bundle="true"></script>
     <script>
         (() => {
             const DEFAULT_PROMPT_TEMPLATE =
@@ -640,7 +640,7 @@
             const SHARE_WORKER_UNAVAILABLE_MESSAGE =
                 "Le partage privé nécessite le worker Cloudflare lié à Go-Toolkit.";
             const shareWorkerService = window.goToolkitShareWorker;
-            const EXCALIDRAW_BUNDLE_SRC = "js/connect-excalidraw.js";
+            const EXCALIDRAW_BUNDLE_SRC = "js/connect.bundle.js";
             const EXCALIDRAW_BRIDGE_MAX_WAIT_MS = 8000;
             const EXCALIDRAW_BRIDGE_POLL_INTERVAL_MS = 50;
 
