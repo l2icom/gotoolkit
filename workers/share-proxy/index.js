@@ -89,12 +89,13 @@ function getClientIp(request) {
 }
 
 async function enforceWriteRateLimit(request, env) {
-  if (!env?.RATE_LIMIT2) {
+  const limiter = env?.RATE_LIMIT;
+  if (!limiter?.limit) {
     return null;
   }
   const key = `share-write:${getClientIp(request)}`;
   try {
-    const outcome = await env.RATE_LIMIT.limit({ key });
+    const outcome = await limiter.limit({ key });
     if (outcome?.success) {
       return null;
     }
