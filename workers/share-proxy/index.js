@@ -89,7 +89,7 @@ function getClientIp(request) {
 }
 
 async function enforceWriteRateLimit(request, env) {
-  if (!env?.RATE_LIMIT) {
+  if (!env?.RATE_LIMIT2) {
     return null;
   }
   const key = `share-write:${getClientIp(request)}`;
