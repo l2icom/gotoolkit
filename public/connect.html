@@ -534,7 +534,7 @@
     <div class="app">
         <header class="app-header">
             <div class="nav-switch">
-                <button id="navSwitcherBtn" class="nav-switch-btn" type="button">⇆ Go-Draw ▾</button>
+                <button id="navSwitcherBtn" class="nav-switch-btn" type="button">⇆ Go-Connect ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
                     <a class="nav-switch-link" href="index.html">⇆ Go-Slides</a>
                     <a class="nav-switch-link" href="timeline.html">⇆ Go-Timeline</a>
@@ -1292,8 +1292,12 @@
                 console.log("[Mermaid] buildScenePayload: attempting conversion");
                 const converted = await tryMermaidConversion(trimmed);
                 if (converted?.elements?.length) {
-                    console.log("[Mermaid] scene payload uses converted elements");
-                    return converted;
+                    const imageOnlyScene = converted.elements.every(element => element?.type === "image");
+                    if (!imageOnlyScene) {
+                        console.log("[Mermaid] scene payload uses converted elements");
+                        return converted;
+                    }
+                    console.log("[Mermaid] converted scene is image-only; fallback renderer preferred");
                 }
                 console.log("[Mermaid] falling back to legacy builder");
                 return { elements: buildLegacyExcalidrawElements(trimmed), files: null };
