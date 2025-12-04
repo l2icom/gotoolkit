@@ -58,9 +58,9 @@ export default {
       clientId = `anon:${clientIp}`;
     }
 
-    // 5) Quota journalier par client (ex: 50 req / jour / client)
+    // 5) Quota journalier par client (ex: 100 req / jour / client)
     const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
-    const dailyLimit = 50;
+    const dailyLimit = 100;
     const quotaKey = `quota:${clientId}:${today}`;
 
     let dailyCount = 0;
