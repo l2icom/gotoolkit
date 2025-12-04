@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go Toolkit - Connect</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="https://unpkg.com/@excalidraw/excalidraw@0.15.0/dist/excalidraw.min.css">
+    <style>
+        :root {
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size: 12px;
+            color: #101428;
+            background-color: #eef0f6;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #eef0f6;
+        }
+
+        .app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            width: 100%;
+            margin: 4px 0 auto;
+            padding: 0 20px;
+            border-radius: 0;
+            border: none;
+            box-shadow: none;
+            background: transparent;
+        }
+
+        .tabs-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            flex-wrap: wrap;
+        }
+
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .tab-btn {
+            border: 1px solid #cdd4ed;
+            background: #f7f8ff;
+            color: #1f2a56;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-weight: 500;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background: #2a7a57;
+            border-color: #2a7a57;
+            color: #ffffff;
+        }
+
+        .tab-btn-add,
+        .tab-btn-remove {
+            border: none;
+            background: #edf0ff;
+            color: #1f2a56;
+            font-size: 16px;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .tab-btn-add:hover,
+        .tab-btn-remove:hover {
+            background: #dbe2ff;
+        }
+
+        .global-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .global-actions button,
+        .global-actions .info-button,
+        .reset-prompts-btn,
+        .nav-switch-btn {
+            border-radius: 999px;
+            border: 1px solid #ebe0d1;
+            background: #ffffff;
+            padding: 0 10px;
+            min-height: 32px;
+            font-size: 12px;
+            line-height: 32px;
+            cursor: pointer;
+            box-shadow: none;
+        }
+
+        .global-actions button.primary {
+            border: none;
+            background: #2a7a57;
+            color: #ffffff;
+        }
+
+        .global-actions button:hover,
+        .global-actions button:focus-visible,
+        .global-actions .info-button:hover,
+        .global-actions .info-button:focus-visible,
+        .reset-prompts-btn:hover,
+        .reset-prompts-btn:focus-visible,
+        .nav-switch-btn:hover,
+        .nav-switch-btn:focus-visible {
+            box-shadow: 0 6px 18px rgba(42, 122, 87, 0.32);
+        }
+
+        .share-menu-wrapper {
+            position: relative;
+        }
+
+        .share-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 240px;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid #dfe3f5;
+            background: #ffffff;
+            box-shadow: 0 18px 32px rgba(16, 20, 40, 0.18);
+            display: none;
+            z-index: 20;
+        }
+
+        .share-menu.open {
+            display: block;
+        }
+
+        .share-menu-header {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1f2a56;
+            margin-bottom: 8px;
+        }
+
+        .share-link-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .share-link-field {
+            flex: 1;
+            border-radius: 6px;
+            border: 1px solid #d6dbf2;
+            padding: 8px 10px;
+            font-size: 12px;
+            background: #fbfbff;
+            color: #101428;
+        }
+
+        .share-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .share-action-btn {
+            flex: 1;
+            border-radius: 10px;
+            border: 1px solid #ebe0d1;
+            background: #ffffff;
+            font-size: 12px;
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+
+        .share-action-btn.primary {
+            border: none;
+            background: #2a7a57;
+            color: #ffffff;
+        }
+
+        .share-action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .share-menu-status {
+            font-size: 11px;
+            color: #566188;
+            min-height: 16px;
+            margin: 0;
+        }
+
+        .share-menu-status.error {
+            color: #b42318;
+        }
+
+        .nav-switch {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .nav-switch-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            min-width: 180px;
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 6px;
+            display: none;
+            z-index: 50;
+        }
+
+        .nav-switch-menu.open {
+            display: block;
+        }
+
+        .nav-switch-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #1f2a56;
+        }
+
+        .nav-switch-link:hover,
+        .nav-switch-link:focus-visible {
+            background: rgba(42, 122, 87, 0.08);
+        }
+
+        .ai-button,
+        .generate-btn,
+        .refresh-btn {
+            border: 1px solid #444444;
+            background: white;
+            color: #1f2a56;
+            font-size: 13px;
+            padding: 8px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .connect-layout {
+            flex: 1;
+            padding: 16px 20px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .connect-left,
+        .connect-right {
+            background: #ffffff;
+            border-radius: 4px;
+            padding: 16px;
+            border: 1px solid #dfe3f5;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .connect-left,
+        .connect-right {
+            flex: 1;
+        }
+
+        .connect-left {
+            flex: 0 0 350px;
+            max-width: 350px;
+            width: 100%;
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .card-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        textarea {
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid #d6dbf2;
+            padding: 12px;
+            resize: none;
+            font-family: inherit;
+            font-size: 12px;
+            line-height: 1.5;
+            background: #fbfbff;
+            color: #101428;
+        }
+
+        textarea:focus {
+            outline: 2px solid #6776ff;
+            background: #ffffff;
+        }
+
+        .prompt-input-card {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .prompt-input-card textarea {
+            height: 130px;
+            margin-bottom: 10px;
+        }
+
+        .mermaid-output-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 0;
+        }
+
+        .mermaid-output-card textarea {
+            flex: 1;
+            min-height: 0;
+        }
+
+        .generate-btn,
+        .refresh-btn {
+            align-self: flex-start;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-label {
+            font-size: 12px;
+            color: #566188;
+            min-height: 18px;
+        }
+
+        .status-toast {
+            position: fixed;
+            left: 24px;
+            bottom: 24px;
+            max-width: 280px;
+            background: rgba(16, 20, 40, 0.92);
+            color: #ffffff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: 0 12px 24px rgba(16, 20, 40, 0.35);
+            font-size: 13px;
+            line-height: 1.4;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .status-toast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .excalidraw-card {
+            flex: 1;
+            border-radius: 4px;
+            border: 1px dashed #cfd5ef;
+            background: #fdfdff;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            min-height: 320px;
+            overflow: hidden;
+        }
+
+        #excalidrawHost {
+            flex: 1;
+            border-radius: 4px;
+            background: #ffffff;
+            min-height: 360px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #excalidrawHost .layer-ui__wrapper__top-left {
+            left: auto;
+            right: 12px;
+            flex-direction: row-reverse;
+        }
+
+        #excalidrawHost .layer-ui__wrapper__bottom-left {
+            left: auto;
+            right: 12px;
+        }
+
+        #excalidrawHost .layer-ui__wrapper__top-right,
+        #excalidrawHost .layer-ui__wrapper__bottom-right {
+            right: 12px;
+        }
+
+        .placeholder {
+            color: #9ca3c7;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .ai-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(16, 20, 40, 0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 40;
+        }
+
+        .ai-modal-overlay.open {
+            display: flex;
+        }
+
+        .ai-modal {
+            width: min(460px, 90vw);
+            background: #ffffff;
+            border-radius: 6px;
+            padding: 20px;
+            box-shadow: 0 24px 40px rgba(16, 19, 63, 0.25);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .ai-modal header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .ai-modal input,
+        .ai-modal textarea {
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid #dfe4fa;
+            padding: 10px 12px;
+            background: #f8f9ff;
+        }
+
+        .ai-modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-secondary,
+        .btn-primary {
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .btn-secondary {
+            background: #eef0ff;
+            color: #2b3271;
+        }
+
+        .btn-primary {
+            background: #1f64ff;
+            color: #ffffff;
+        }
+
+        @media (max-width: 1100px) {
+            .connect-layout {
+                flex-direction: column;
+            }
+
+            .connect-left {
+                flex: 1;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <header class="app-header">
+            <div class="nav-switch">
+                <button id="navSwitcherBtn" class="nav-switch-btn" type="button">⇆ Go-Draw ▾</button>
+                <div id="navSwitcherMenu" class="nav-switch-menu">
+                    <a class="nav-switch-link" href="index.html">⇆ Go-Slides</a>
+                    <a class="nav-switch-link" href="timeline.html">⇆ Go-Timeline</a>
+                </div>
+            </div>
+            <div class="tabs-actions">
+                <div id="pageTabs" class="tabs"></div>
+                <button id="addPageBtn" class="tab-btn-add" title="Ajouter une page">➕</button>
+                <button id="deletePageBtn" class="tab-btn-remove" title="Supprimer la page">🗑️</button>
+            </div>
+            <div class="global-actions">
+                <div class="share-menu-wrapper">
+                    <button id="shareBtn" class="info-button" type="button" title="Lien de partage">🔗 Partage</button>
+                    <div id="shareMenu" class="share-menu" role="dialog" aria-live="polite">
+                        <div class="share-menu-header">Lien de partage</div>
+                        <div class="share-link-line">
+                            <input id="shareLinkField" class="share-link-field" type="text" readonly
+                                placeholder="Créer un lien privé">
+                        </div>
+                        <div class="share-actions">
+                            <button id="shareUpdateBtn" type="button" class="share-action-btn">🔄 Actualiser</button>
+                            <button id="shareCreateBtn" type="button" class="share-action-btn primary">🔗
+                                Nouveau</button>
+                        </div>
+                        <p class="share-menu-status" id="shareMenuStatus"></p>
+                    </div>
+                </div>
+                <button id="aiSettingsBtn" class="ai-button" type="button">🤖 Assistant AI</button>
+            </div>
+        </header>
+
+        <main class="connect-layout">
+            <section class="connect-left">
+                <div class="prompt-input-card">
+                    <div class="card-title-row">
+                        <div class="card-title">Contexte (5 lignes)</div>
+                        <button id="generateBtn" class="generate-btn" type="button">✨ Générer</button>
+                    </div>
+                    <textarea id="promptInput" rows="5"
+                        placeholder="Décris ton contexte produit, tes utilisateurs, ta problématique..."></textarea>
+                </div>
+                <div class="mermaid-output-card">
+                    <div class="card-title-row">
+                        <div class="card-title">Code Mermaid reçu</div>
+                        <button id="refreshExcalidrawBtn" class="refresh-btn" type="button">↻ Rafraîchir</button>
+                    </div>
+                    <textarea id="mermaidOutput" placeholder="Le code généré apparaitra ici"></textarea>
+                </div>
+            </section>
+
+            <section class="connect-right">
+                <div class="excalidraw-card">
+                    <div id="excalidrawHost"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="statusToast" class="status-toast" role="status"></div>
+
+    <div class="ai-modal-overlay" id="aiModal">
+        <div class="ai-modal">
+            <header>
+                <h3>Assistant IA</h3>
+                <button id="closeAiModal" class="btn-secondary" type="button">✕</button>
+            </header>
+            <label>
+                <span>Clé OpenAI personnelle</span>
+                <input type="password" id="apiKeyField" placeholder="sk-...">
+            </label>
+            <label>
+                <span>Prompt personnalisé</span>
+                <textarea id="promptTemplateField" rows="6"></textarea>
+            </label>
+            <p class="status-label">Utilise {{field_input}} pour injecter le texte saisi</p>
+            <div class="ai-modal-actions">
+                <button id="resetPromptBtn" class="btn-secondary" type="button">Prompt par défaut</button>
+                <button id="saveAiSettingsBtn" class="btn-primary" type="button">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/share-worker-client.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script>
+        (() => {
+            const EXCALIDRAW_CDN_SOURCES = [
+                "https://unpkg.com/@excalidraw/excalidraw@0.15.0/dist/excalidraw.production.min.js",
+                "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.15.0/dist/excalidraw.production.min.js"
+            ];
+            const DEFAULT_PROMPT_TEMPLATE =
+                "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code mermaid sous forme d'un graphique au choix (séquence, flow ou diagramme). Ne fais pas d'introduction ou de conclusion, donne directement et uniquement le bloc de code.";
+            const STORAGE_KEY = "connect-ai-state";
+            const FIRESTORE_COLLECTION = "connect-pages";
+            const SHARE_QUERY_PARAM = "share";
+            const SHARE_WORKER_UNAVAILABLE_MESSAGE =
+                "Le partage privé nécessite le worker Cloudflare lié à Go-Toolkit.";
+            const shareWorkerService = window.goToolkitShareWorker;
+
+            let state = {
+                pages: [],
+                activeIndex: 0,
+                apiKey: "",
+                promptTemplate: DEFAULT_PROMPT_TEMPLATE
+            };
+            let pendingSceneCode = "";
+            let waitingForReadyApi = false;
+            let shareWorkerAvailable = Boolean(shareWorkerService?.isReady);
+            let currentShareToken = null;
+            let shareLoadedFromRemote = false;
+            let shareStatusMessage = "";
+            let shareStatusType = "";
+            let shareRequestInProgress = false;
+            let shareLastUpdatedAt = null;
+
+            const promptInput = document.getElementById("promptInput");
+            const mermaidOutput = document.getElementById("mermaidOutput");
+            const generateBtn = document.getElementById("generateBtn");
+            const statusToast = document.getElementById("statusToast");
+            const pageTabs = document.getElementById("pageTabs");
+            const addPageBtn = document.getElementById("addPageBtn");
+            const deletePageBtn = document.getElementById("deletePageBtn");
+            const refreshExcalidrawBtn = document.getElementById("refreshExcalidrawBtn");
+            const aiModal = document.getElementById("aiModal");
+            const aiSettingsBtn = document.getElementById("aiSettingsBtn");
+            const closeAiModalBtn = document.getElementById("closeAiModal");
+            const apiKeyField = document.getElementById("apiKeyField");
+            const promptTemplateField = document.getElementById("promptTemplateField");
+            const resetPromptBtn = document.getElementById("resetPromptBtn");
+            const saveAiSettingsBtn = document.getElementById("saveAiSettingsBtn");
+            const navSwitcherBtn = document.getElementById("navSwitcherBtn");
+            const navSwitcherMenu = document.getElementById("navSwitcherMenu");
+            const shareBtn = document.getElementById("shareBtn");
+            const shareMenu = document.getElementById("shareMenu");
+            const shareLinkField = document.getElementById("shareLinkField");
+            const shareMenuStatus = document.getElementById("shareMenuStatus");
+            const shareCreateBtn = document.getElementById("shareCreateBtn");
+            const shareUpdateBtn = document.getElementById("shareUpdateBtn");
+
+            function loadState() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (!raw) {
+                        state.pages = [createPage(1)];
+                        return;
+                    }
+                    const parsed = JSON.parse(raw);
+                    state = {
+                        pages: Array.isArray(parsed.pages) && parsed.pages.length ? parsed.pages : [createPage(1)],
+                        activeIndex: parsed.activeIndex || 0,
+                        apiKey: parsed.apiKey || "",
+                        promptTemplate: parsed.promptTemplate || DEFAULT_PROMPT_TEMPLATE
+                    };
+                } catch (err) {
+                    console.warn("Impossible de charger l'état", err);
+                    state.pages = [createPage(1)];
+                }
+            }
+
+            function saveState() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                } catch (err) {
+                    console.error("Impossible de sauvegarder l'état", err);
+                }
+            }
+
+            function buildSharePayload() {
+                return {
+                    pages: state.pages.map(page => ({ ...page })),
+                    activeIndex: state.activeIndex,
+                    apiKey: state.apiKey || "",
+                    promptTemplate: state.promptTemplate || DEFAULT_PROMPT_TEMPLATE
+                };
+            }
+
+            function applySharedState(payload) {
+                if (!payload) return false;
+                const incomingPages = Array.isArray(payload.pages) && payload.pages.length
+                    ? payload.pages
+                    : [createPage(1)];
+                state.pages = incomingPages.map((page, index) => {
+                    const fallback = createPage(index + 1);
+                    return {
+                        id: page.id || fallback.id,
+                        label: page.label || fallback.label,
+                        input: page.input || "",
+                        mermaid: page.mermaid || ""
+                    };
+                });
+                state.activeIndex = Math.max(0, Math.min(state.pages.length - 1, payload.activeIndex || 0));
+                state.apiKey = payload.apiKey || "";
+                state.promptTemplate = payload.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                return true;
+            }
+
+            function initShareWorkerService() {
+                shareWorkerAvailable = Boolean(window.goToolkitShareWorker?.isReady);
+            }
+
+            function setShareStatus(message, type = "") {
+                shareStatusMessage = message;
+                shareStatusType = type;
+            }
+
+            function formatRelativeTime(isoString) {
+                if (!isoString) return "";
+                const value = new Date(isoString).getTime();
+                if (Number.isNaN(value)) return "";
+                const deltaSeconds = Math.max(0, Math.floor((Date.now() - value) / 1000));
+                if (deltaSeconds < 60) {
+                    return "Mis à jour à l'instant";
+                }
+                const deltaMinutes = Math.floor(deltaSeconds / 60);
+                if (deltaMinutes < 60) {
+                    return `Mis à jour il y a ${deltaMinutes} minute${deltaMinutes > 1 ? "s" : ""}`;
+                }
+                const deltaHours = Math.floor(deltaMinutes / 60);
+                if (deltaHours < 24) {
+                    return `Mis à jour il y a ${deltaHours} heure${deltaHours > 1 ? "s" : ""}`;
+                }
+                const deltaDays = Math.floor(deltaHours / 24);
+                return `Mis à jour il y a ${deltaDays} jour${deltaDays > 1 ? "s" : ""}`;
+            }
+
+            function getShareTokenFromUrl() {
+                const params = new URLSearchParams(window.location.search);
+                const value = params.get(SHARE_QUERY_PARAM);
+                return value ? value.trim() : null;
+            }
+
+            function buildShareUrl(token) {
+                if (!token) {
+                    return "";
+                }
+                const url = new URL(window.location.href);
+                url.searchParams.set(SHARE_QUERY_PARAM, token);
+                return url.toString();
+            }
+
+            function updateUrlWithShareToken(token) {
+                const url = new URL(window.location.href);
+                if (token) {
+                    url.searchParams.set(SHARE_QUERY_PARAM, token);
+                } else {
+                    url.searchParams.delete(SHARE_QUERY_PARAM);
+                }
+                history.replaceState(null, "", url.toString());
+            }
+
+            function createShareToken() {
+                if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+                    return crypto.randomUUID();
+                }
+                const bytes = new Uint8Array(16);
+                if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+                    crypto.getRandomValues(bytes);
+                } else {
+                    for (let i = 0; i < bytes.length; i++) {
+                        bytes[i] = Math.floor(Math.random() * 256);
+                    }
+                }
+                return Array.from(bytes)
+                    .map(byte => byte.toString(16).padStart(2, "0"))
+                    .join("");
+            }
+
+            async function fetchSharePayload(token) {
+                if (!shareWorkerAvailable || !shareWorkerService) {
+                    throw new Error(SHARE_WORKER_UNAVAILABLE_MESSAGE);
+                }
+                return shareWorkerService.fetchSharePayload(FIRESTORE_COLLECTION, token);
+            }
+
+            async function tryLoadSharedStateFromUrl() {
+                const token = getShareTokenFromUrl();
+                if (!token) {
+                    return false;
+                }
+                try {
+                    const result = await fetchSharePayload(token);
+                    const payload = result?.payload;
+                    if (!payload || !Array.isArray(payload.pages)) {
+                        setShareStatus("Lien de partage introuvable.", "error");
+                        return false;
+                    }
+                    applySharedState(payload);
+                    currentShareToken = token;
+                    shareLoadedFromRemote = true;
+                    shareLastUpdatedAt = result?.meta?.updatedAt || new Date().toISOString();
+                    setShareStatus(formatRelativeTime(shareLastUpdatedAt));
+                    return true;
+                } catch (err) {
+                    console.error("Erreur de chargement du lien partagé :", err);
+                    setShareStatus("Impossible de charger le lien partagé.", "error");
+                    return false;
+                }
+            }
+
+            async function saveSharePayload(token, payload) {
+                if (!shareWorkerAvailable || !shareWorkerService) {
+                    throw new Error(SHARE_WORKER_UNAVAILABLE_MESSAGE);
+                }
+                const meta = await shareWorkerService.saveSharePayload(FIRESTORE_COLLECTION, token, payload);
+                return meta?.updatedAt || new Date().toISOString();
+            }
+
+            function getShareDefaultStatusText() {
+                if (!shareWorkerAvailable) {
+                    return SHARE_WORKER_UNAVAILABLE_MESSAGE;
+                }
+                if (shareLastUpdatedAt) {
+                    return formatRelativeTime(shareLastUpdatedAt);
+                }
+                if (shareLoadedFromRemote && currentShareToken) {
+                    return "Ce lien charge une session partagée.";
+                }
+                if (currentShareToken) {
+                    return "Un lien privé existe déjà pour cette session.";
+                }
+                return "Crée un lien privé pour partager cette session.";
+            }
+
+            function updateShareMenuUI() {
+                if (shareLinkField) {
+                    const hasToken = Boolean(currentShareToken);
+                    shareLinkField.value = hasToken ? buildShareUrl(currentShareToken) : "";
+                    shareLinkField.placeholder = hasToken ? "" : "Créer un lien privé";
+                }
+                if (shareCreateBtn) {
+                    shareCreateBtn.disabled = shareRequestInProgress || !shareWorkerAvailable;
+                    shareCreateBtn.classList.toggle("primary", !currentShareToken);
+                }
+                if (shareUpdateBtn) {
+                    const hasToken = Boolean(currentShareToken);
+                    shareUpdateBtn.hidden = !hasToken;
+                    shareUpdateBtn.disabled = shareRequestInProgress || !hasToken || !shareWorkerAvailable;
+                }
+                if (shareMenuStatus) {
+                    const text = shareStatusMessage || getShareDefaultStatusText();
+                    shareMenuStatus.textContent = text;
+                    const isError = (shareStatusType === "error" && Boolean(text)) || (!shareWorkerAvailable && !shareStatusMessage);
+                    shareMenuStatus.classList.toggle("error", isError);
+                }
+            }
+
+            function closeShareMenu() {
+                shareMenu?.classList.remove("open");
+            }
+
+            async function copyCurrentShareLinkToClipboard() {
+                if (!currentShareToken) return false;
+                const link = buildShareUrl(currentShareToken);
+                if (!link) return false;
+                try {
+                    await copyTextToClipboard(link);
+                    setStatus("Lien privé copié ✔️");
+                    return true;
+                } catch (err) {
+                    console.error("Copie du lien privé impossible", err);
+                    setStatus("Impossible de copier le lien privé");
+                    return false;
+                }
+            }
+
+            async function handleShareCreateClick() {
+                if (!shareWorkerAvailable) {
+                    setShareStatus(SHARE_WORKER_UNAVAILABLE_MESSAGE, "error");
+                    updateShareMenuUI();
+                    return;
+                }
+                if (shareRequestInProgress) return;
+                shareRequestInProgress = true;
+                updateShareMenuUI();
+                try {
+                    const token = createShareToken();
+                    const updatedAt = await saveSharePayload(token, buildSharePayload());
+                    currentShareToken = token;
+                    shareLoadedFromRemote = true;
+                    shareLastUpdatedAt = updatedAt;
+                    updateUrlWithShareToken(token);
+                    setShareStatus(formatRelativeTime(updatedAt));
+                    updateShareMenuUI();
+                    await copyCurrentShareLinkToClipboard();
+                } catch (err) {
+                    console.error("Erreur lors de la création du lien partagé :", err);
+                    setShareStatus("Impossible de créer le lien partagé.", "error");
+                } finally {
+                    shareRequestInProgress = false;
+                    updateShareMenuUI();
+                }
+            }
+
+            async function handleShareUpdateClick() {
+                if (!shareWorkerAvailable) {
+                    setShareStatus(SHARE_WORKER_UNAVAILABLE_MESSAGE, "error");
+                    updateShareMenuUI();
+                    return;
+                }
+                if (!currentShareToken) {
+                    setShareStatus("Pas de lien privé à mettre à jour.", "error");
+                    updateShareMenuUI();
+                    return;
+                }
+                if (shareRequestInProgress) return;
+                shareRequestInProgress = true;
+                updateShareMenuUI();
+                try {
+                    const updatedAt = await saveSharePayload(currentShareToken, buildSharePayload());
+                    shareLoadedFromRemote = true;
+                    shareLastUpdatedAt = updatedAt;
+                    setShareStatus(formatRelativeTime(updatedAt));
+                    updateShareMenuUI();
+                    await copyCurrentShareLinkToClipboard();
+                } catch (err) {
+                    console.error("Erreur lors de la mise à jour du lien partagé :", err);
+                    setShareStatus("Impossible de mettre à jour le lien partagé.", "error");
+                } finally {
+                    shareRequestInProgress = false;
+                    updateShareMenuUI();
+                }
+            }
+
+            function copyTextToClipboard(text) {
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+                    return navigator.clipboard.writeText(text);
+                }
+                return new Promise((resolve, reject) => {
+                    const textarea = document.createElement("textarea");
+                    textarea.value = text;
+                    textarea.setAttribute("readonly", "");
+                    textarea.style.position = "absolute";
+                    textarea.style.left = "-9999px";
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    textarea.setSelectionRange(0, textarea.value.length);
+                    const success = document.execCommand("copy");
+                    document.body.removeChild(textarea);
+                    if (success) {
+                        resolve();
+                    } else {
+                        reject(new Error("Fallback copy failed"));
+                    }
+                });
+            }
+
+            function createPage(position) {
+                return {
+                    id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+                    label: `Page ${position}`,
+                    input: "",
+                    mermaid: ""
+                };
+            }
+
+            function getActivePage() {
+                return state.pages[state.activeIndex];
+            }
+
+            function renderTabs() {
+                pageTabs.innerHTML = "";
+                state.pages.forEach((page, index) => {
+                    const btn = document.createElement("button");
+                    btn.className = `tab-btn${index === state.activeIndex ? " active" : ""}`;
+                    btn.textContent = page.label || `Page ${index + 1}`;
+                    btn.title = "Double-clique pour renommer";
+                    btn.addEventListener("click", () => {
+                        setActivePage(index);
+                    });
+                    btn.addEventListener("dblclick", () => {
+                        const name = prompt("Renommer la page", page.label || "Page");
+                        if (name) {
+                            page.label = name.trim();
+                            renderTabs();
+                            saveState();
+                        }
+                    });
+                    pageTabs.appendChild(btn);
+                });
+            }
+
+            function setActivePage(index) {
+                state.activeIndex = Math.max(0, Math.min(state.pages.length - 1, index));
+                renderTabs();
+                syncFormWithPage();
+                saveState();
+            }
+
+            function syncFormWithPage() {
+                const page = getActivePage();
+                promptInput.value = page?.input || "";
+                mermaidOutput.value = page?.mermaid || "";
+                updateExcalidrawScene(page?.mermaid || "");
+            }
+
+            async function handleGenerate() {
+                const page = getActivePage();
+                if (!page) return;
+                const inputText = promptInput.value.trim();
+                if (!inputText) {
+                    setStatus("Ajoute du contexte pour générer ✍️");
+                    promptInput.focus();
+                    return;
+                }
+                const template = (state.promptTemplate || DEFAULT_PROMPT_TEMPLATE).replace(/{{field_input}}/gi, inputText);
+                const messages = [
+                    { role: "system", content: "Tu es un assistant produit." },
+                    { role: "user", content: template }
+                ];
+                setStatus("Génération en cours...");
+                generateBtn.disabled = true;
+                const defaultLabel = generateBtn.textContent;
+                generateBtn.textContent = "⏳";
+                try {
+                    const aiText = await callOpenAI(messages);
+                    if (!aiText) {
+                        throw new Error("Réponse vide");
+                    }
+                    const mermaidCode = extractMermaidCode(aiText);
+                    page.input = inputText;
+                    page.mermaid = mermaidCode;
+                    mermaidOutput.value = mermaidCode;
+                    updateExcalidrawScene(mermaidCode);
+                    saveState();
+                    setStatus("Diagramme généré ✔️");
+                } catch (err) {
+                    console.error(err);
+                    setStatus(`Erreur: ${err.message || "imprévue"}`);
+                } finally {
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = defaultLabel;
+                }
+            }
+
+            function extractMermaidCode(text) {
+                if (!text) return "";
+                const fenced = text.match(/```(?:mermaid)?([\s\S]*?)```/i);
+                if (fenced && fenced[1]) {
+                    return fenced[1].trim();
+                }
+                return text.trim();
+            }
+
+            let statusTimeoutId = null;
+
+            function setStatus(message) {
+                if (!statusToast) return;
+                const text = message?.trim() || "";
+                if (!text) {
+                    statusToast.classList.remove("visible");
+                    statusToast.textContent = "";
+                    return;
+                }
+                statusToast.textContent = text;
+                statusToast.classList.add("visible");
+                if (statusTimeoutId) {
+                    clearTimeout(statusTimeoutId);
+                }
+                statusTimeoutId = setTimeout(() => {
+                    statusToast.classList.remove("visible");
+                }, 3500);
+            }
+
+            async function callOpenAI(messages) {
+                const apiKey = (state.apiKey || "").trim();
+                const useProxy = !apiKey;
+                const endpoint = useProxy
+                    ? "https://openai.tranxq.workers.dev/v1/chat/completions"
+                    : "https://api.openai.com/v1/chat/completions";
+                const headers = { "Content-Type": "application/json" };
+                if (!useProxy) {
+                    headers.Authorization = `Bearer ${apiKey}`;
+                }
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify({
+                        model: "gpt-5-nano",
+                        messages,
+                        temperature: 1
+                    })
+                });
+                if (!response.ok) {
+                    const body = await response.text();
+                    throw new Error(body || "API non disponible");
+                }
+                const payload = await response.json();
+                const choice = payload.choices?.[0];
+                return choice?.message?.content ?? choice?.text ?? "";
+            }
+
+            function openModal() {
+                aiModal.classList.add("open");
+                apiKeyField.value = state.apiKey || "";
+                promptTemplateField.value = state.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+            }
+
+            function closeModal() {
+                aiModal.classList.remove("open");
+            }
+
+            function resetPrompt() {
+                promptTemplateField.value = DEFAULT_PROMPT_TEMPLATE;
+            }
+
+            function saveAiSettings() {
+                state.apiKey = apiKeyField.value.trim();
+                state.promptTemplate = promptTemplateField.value.trim() || DEFAULT_PROMPT_TEMPLATE;
+                saveState();
+                closeModal();
+            }
+
+            function resolveExcalidrawLib() {
+                if (window.ExcalidrawLib?.Excalidraw) {
+                    return window.ExcalidrawLib;
+                }
+                if (window.Excalidraw?.default) {
+                    window.ExcalidrawLib = { Excalidraw: window.Excalidraw.default };
+                    return window.ExcalidrawLib;
+                }
+                if (typeof window.Excalidraw === "function") {
+                    window.ExcalidrawLib = { Excalidraw: window.Excalidraw };
+                    return window.ExcalidrawLib;
+                }
+                return null;
+            }
+
+            function loadExcalidrawBundle() {
+                if (resolveExcalidrawLib()) {
+                    return Promise.resolve();
+                }
+                if (window.__excalScriptPromise) {
+                    return window.__excalScriptPromise;
+                }
+                let sourceIndex = 0;
+                window.__excalScriptPromise = new Promise((resolve, reject) => {
+                    const tryNext = () => {
+                        if (resolveExcalidrawLib()) {
+                            resolve();
+                            return;
+                        }
+                        const cdnUrl = EXCALIDRAW_CDN_SOURCES[sourceIndex++];
+                        if (!cdnUrl) {
+                            reject(new Error("Impossible de charger Excalidraw depuis les CDN connus"));
+                            return;
+                        }
+                        const existing = document.querySelector(`script[src="${cdnUrl}"]`);
+                        if (existing) {
+                            existing.addEventListener("load", () => {
+                                resolveExcalidrawLib() ? resolve() : reject(new Error("Excalidraw indisponible après chargement"));
+                            });
+                            existing.addEventListener("error", () => {
+                                console.error("Echec de chargement Excalidraw", cdnUrl);
+                                tryNext();
+                            });
+                            return;
+                        }
+                        const script = document.createElement("script");
+                        script.src = cdnUrl;
+                        script.async = true;
+                        // no crossOrigin attribute to avoid CORS blocking when running from file://
+                        script.onload = () => {
+                            if (resolveExcalidrawLib()) {
+                                resolve();
+                            } else {
+                                console.error("Excalidraw chargé mais non initialisable", cdnUrl);
+                                tryNext();
+                            }
+                        };
+                        script.onerror = event => {
+                            console.error("Echec de chargement Excalidraw", cdnUrl, event);
+                            script.remove();
+                            tryNext();
+                        };
+                        document.head.appendChild(script);
+                    };
+                    tryNext();
+                });
+                return window.__excalScriptPromise;
+            }
+
+            function mountExcalidraw(rootEl) {
+                const { Excalidraw } = resolveExcalidrawLib();
+                const { createElement, useEffect, useRef } = window.React;
+                const root = window.ReactDOM.createRoot(rootEl);
+                const ExcalidrawShell = () => {
+                    const instanceRef = useRef(null);
+                    useEffect(() => {
+                        if (instanceRef.current) {
+                            window.__excalidrawApi = instanceRef.current;
+                            document.dispatchEvent(new CustomEvent("excal-ready"));
+                        }
+                    }, [instanceRef.current]);
+                    return createElement(Excalidraw, {
+                        ref: api => {
+                            if (api) {
+                                instanceRef.current = api;
+                                window.__excalidrawApi = api;
+                                document.dispatchEvent(new CustomEvent("excal-ready"));
+                            }
+                        },
+                        theme: "light",
+                        viewModeEnabled: false,
+                        gridModeEnabled: false,
+                        zenModeEnabled: false,
+                        initialData: {
+                            elements: [],
+                            appState: {
+                                viewBackgroundColor: "#fdfdfd",
+                                gridModeEnabled: false
+                            }
+                        }
+                    });
+                };
+                root.render(createElement(ExcalidrawShell));
+            }
+
+            function initializeExcalidraw() {
+                const rootEl = document.getElementById("excalidrawHost");
+                if (!rootEl) return;
+                let attempt = 0;
+                const waitForLibs = () => {
+                    const hasReact = Boolean(window.React && window.ReactDOM);
+                    const lib = resolveExcalidrawLib();
+                    if (!hasReact || !lib) {
+                        attempt += 1;
+                        if (attempt % 25 === 1) {
+                            console.warn("Excalidraw CDN non prêt", { hasReact, hasExcalidraw: Boolean(lib) });
+                        }
+                        setTimeout(waitForLibs, 120);
+                        return;
+                    }
+                    try {
+                        mountExcalidraw(rootEl);
+                        console.info("Excalidraw initialisé après", attempt, "tentatives");
+                    } catch (err) {
+                        console.error("Impossible d'initialiser Excalidraw", err);
+                        setStatus("Erreur Excalidraw : consulte la console");
+                    }
+                };
+                loadExcalidrawBundle()
+                    .then(() => {
+                        waitForLibs();
+                    })
+                    .catch(err => {
+                        console.error("Erreur critique Excalidraw", err);
+                        setStatus("Impossible de charger Excalidraw (voir console)");
+                    });
+            }
+
+            function createBaseElement(type, overrides = {}) {
+                const timestamp = Date.now();
+                return {
+                    id: `${type}-${timestamp}-${Math.floor(Math.random() * 1000000)}`,
+                    type,
+                    x: 0,
+                    y: 0,
+                    width: overrides.width ?? 0,
+                    height: overrides.height ?? 0,
+                    angle: 0,
+                    strokeColor: "#1c2a55",
+                    backgroundColor: overrides.backgroundColor ?? "#ffffff",
+                    fillStyle: overrides.fillStyle ?? "solid",
+                    strokeWidth: overrides.strokeWidth ?? 2,
+                    strokeStyle: "solid",
+                    roundness: overrides.roundness ?? null,
+                    roughness: 0,
+                    opacity: 100,
+                    groupIds: [],
+                    boundElements: [],
+                    updated: timestamp,
+                    seed: Math.floor(Math.random() * 1000000),
+                    version: 1,
+                    versionNonce: Math.floor(Math.random() * 1000000),
+                    isDeleted: false,
+                    locked: false,
+                    ...overrides
+                };
+            }
+
+            function wrapTextContent(value, maxCharsPerLine = 24) {
+                const text = (value ?? "").toString().trim();
+                if (!text) return "";
+                const segments = text.split(/\n+/);
+                const lines = [];
+                segments.forEach((segment, segmentIndex) => {
+                    const words = segment.trim().split(/\s+/).filter(Boolean);
+                    if (!words.length) {
+                        if (segmentIndex < segments.length - 1) {
+                            lines.push("");
+                        }
+                        return;
+                    }
+                    let currentLine = "";
+                    words.forEach(word => {
+                        const candidate = currentLine ? `${currentLine} ${word}` : word;
+                        if (candidate.length > maxCharsPerLine && currentLine) {
+                            lines.push(currentLine);
+                            currentLine = word;
+                        } else {
+                            currentLine = candidate;
+                        }
+                    });
+                    if (currentLine) {
+                        lines.push(currentLine);
+                    }
+                    if (segmentIndex < segments.length - 1) {
+                        lines.push("");
+                    }
+                });
+                const joined = lines.join("\n").replace(/^(\n+)/, "").replace(/(\n+)$/, "");
+                return joined || text;
+            }
+
+            function countTextLines(text) {
+                if (!text) {
+                    return 1;
+                }
+                const segments = text.split(/\n/);
+                return segments.length || 1;
+            }
+
+            function createTextElement(text, x, y, options = {}) {
+                const fontSize = options.fontSize || 18;
+                const width = options.width || Math.max(100, (text?.length || 0) * (fontSize * 0.6));
+                const lineHeight = options.lineHeight || 1.2;
+                const textLines = options.textLines || countTextLines(text);
+                const height = options.height || fontSize * lineHeight * textLines;
+                const cleanOptions = { ...options };
+                delete cleanOptions.textLines;
+                delete cleanOptions.lineHeight;
+                return createBaseElement("text", {
+                    x,
+                    y,
+                    width,
+                    height,
+                    strokeColor: options.strokeColor || "#1c2a55",
+                    backgroundColor: "transparent",
+                    text,
+                    originalText: text,
+                    fontSize,
+                    fontFamily: 1,
+                    textAlign: options.textAlign || "left",
+                    verticalAlign: options.verticalAlign || "top",
+                    baseline: fontSize,
+                    lineHeight,
+                    containerId: null,
+                    ...cleanOptions
+                });
+            }
+
+            function createRectangleElement(x, y, width, height, options = {}) {
+                return createBaseElement("rectangle", {
+                    x,
+                    y,
+                    width,
+                    height,
+                    backgroundColor: options.backgroundColor || "#ffffff",
+                    strokeColor: options.strokeColor || "#1c2a55",
+                    ...options
+                });
+            }
+
+            function createLineElement(x, y, dx, dy, options = {}) {
+                return createBaseElement("line", {
+                    x,
+                    y,
+                    width: dx,
+                    height: dy,
+                    points: [
+                        [0, 0],
+                        [dx, dy]
+                    ],
+                    backgroundColor: "transparent",
+                    strokeColor: options.strokeColor || "#1c2a55",
+                    strokeStyle: options.strokeStyle || "dashed",
+                    ...options
+                });
+            }
+
+            function createArrowElement(startX, startY, endX, endY, options = {}) {
+                return createBaseElement("arrow", {
+                    x: startX,
+                    y: startY,
+                    width: endX - startX,
+                    height: endY - startY,
+                    points: [
+                        [0, 0],
+                        [endX - startX, endY - startY]
+                    ],
+                    backgroundColor: "transparent",
+                    strokeColor: options.strokeColor || "#1c2a55",
+                    startArrowhead: null,
+                    endArrowhead: "arrow",
+                    ...options
+                });
+            }
+
+            function translateMermaidToElements(code) {
+                const trimmed = (code || "").trim();
+                if (!trimmed) {
+                    return null;
+                }
+                const lines = trimmed.split(/\n+/).map(line => line.trim()).filter(Boolean);
+                if (!lines.length) {
+                    return null;
+                }
+                const header = lines[0].toLowerCase();
+                if (header.startsWith("flowchart") || header.startsWith("graph")) {
+                    return buildFlowchartElements(lines);
+                }
+                if (header.startsWith("sequencediagram")) {
+                    return buildSequenceDiagramElements(lines);
+                }
+                if (header.startsWith("classdiagram")) {
+                    return buildClassDiagramElements(lines);
+                }
+                return null;
+            }
+
+            function buildFlowchartElements(lines) {
+                const elements = [];
+                const header = lines.shift();
+                const orientationMatch = header.match(/(LR|RL|TD|BT)/i);
+                const orientation = orientationMatch ? orientationMatch[1].toUpperCase() : "TD";
+                const horizontal = orientation === "LR" || orientation === "RL";
+                const nodeMap = new Map();
+                const edges = [];
+
+                const registerNode = (id, label) => {
+                    if (!nodeMap.has(id)) {
+                        nodeMap.set(id, {
+                            id,
+                            label: label || id
+                        });
+                    } else if (label) {
+                        nodeMap.get(id).label = label;
+                    }
+                };
+
+                lines.forEach(line => {
+                    if (!line) return;
+                    const nodeMatch = line.match(/^([A-Za-z0-9_]+)\s*(?:\(|\[|\{)\s*(.+?)\s*(?:\)|\]|\})/);
+                    if (nodeMatch) {
+                        registerNode(nodeMatch[1], nodeMatch[2]);
+                    }
+                    const edgeMatch = line.match(/^([A-Za-z0-9_]+)\s*[-.]{1,4}[>]{1,2}\s*([A-Za-z0-9_]+)(?:\s*:?\s*(.+))?/);
+                    if (edgeMatch) {
+                        registerNode(edgeMatch[1]);
+                        registerNode(edgeMatch[2]);
+                        edges.push({
+                            from: edgeMatch[1],
+                            to: edgeMatch[2],
+                            label: edgeMatch[3]?.trim()
+                        });
+                    }
+                });
+
+                if (!nodeMap.size) {
+                    return null;
+                }
+
+                const nodeIds = Array.from(nodeMap.keys());
+                const spacingX = 220;
+                const spacingY = 160;
+                const baseX = 60;
+                const baseY = 60;
+                const columns = Math.max(1, horizontal ? Math.ceil(Math.sqrt(nodeIds.length)) : Math.min(3, Math.ceil(Math.sqrt(nodeIds.length))));
+
+                nodeIds.forEach((id, idx) => {
+                    const col = idx % columns;
+                    const row = Math.floor(idx / columns);
+                    const x = baseX + col * spacingX;
+                    const y = baseY + row * spacingY;
+                    const nodeWidth = 160;
+                    const rawLabel = (nodeMap.get(id)?.label || id).trim() || id;
+                    const wrappedLabel = wrapTextContent(rawLabel, 24) || rawLabel;
+                    const lineCount = countTextLines(wrappedLabel);
+                    const fontSize = 16;
+                    const textHeight = lineCount * fontSize * 1.3;
+                    const nodeHeight = Math.max(70, textHeight + 32);
+                    const rect = createRectangleElement(x, y, nodeWidth, nodeHeight);
+                    const textY = y + (nodeHeight - textHeight) / 2;
+                    const text = createTextElement(wrappedLabel, x + 10, textY, {
+                        width: nodeWidth - 20,
+                        fontSize,
+                        textAlign: "center",
+                        lineHeight: 1.3,
+                        textLines: lineCount,
+                        height: textHeight
+                    });
+                    nodeMap.get(id).x = x;
+                    nodeMap.get(id).y = y;
+                    nodeMap.get(id).width = nodeWidth;
+                    nodeMap.get(id).height = nodeHeight;
+                    elements.push(rect, text);
+                });
+
+                edges.forEach(edge => {
+                    const source = nodeMap.get(edge.from);
+                    const target = nodeMap.get(edge.to);
+                    if (!source || !target) return;
+                    const startX = source.x + source.width / 2;
+                    const startY = source.y + source.height / 2;
+                    const endX = target.x + target.width / 2;
+                    const endY = target.y + target.height / 2;
+                    const arrow = createArrowElement(startX, startY, endX, endY);
+                    elements.push(arrow);
+                    if (edge.label) {
+                        const labelX = (startX + endX) / 2 - 40;
+                        const labelY = (startY + endY) / 2 - 20;
+                        elements.push(createTextElement(edge.label, labelX, labelY, {
+                            fontSize: 14,
+                            width: 80,
+                            textAlign: "center"
+                        }));
+                    }
+                });
+
+                return elements;
+            }
+
+            function buildSequenceDiagramElements(lines) {
+                const elements = [];
+                lines.shift();
+                const participants = [];
+                const participantLabels = new Map();
+                const messages = [];
+
+                const registerParticipant = (id, label) => {
+                    if (!participantLabels.has(id)) {
+                        participantLabels.set(id, label || id);
+                        participants.push(id);
+                    }
+                };
+
+                lines.forEach(line => {
+                    if (!line) return;
+                    const participantMatch = line.match(/^participant\s+([A-Za-z0-9_]+)(?:\s+as\s+(.+))?/i);
+                    if (participantMatch) {
+                        registerParticipant(participantMatch[1], participantMatch[2]?.trim());
+                        return;
+                    }
+                    const messageMatch = line.match(/^([A-Za-z0-9_]+)\s*([-.]+[>]{1,2})\s*([A-Za-z0-9_]+)\s*:?\s*(.*)?/);
+                    if (messageMatch) {
+                        registerParticipant(messageMatch[1]);
+                        registerParticipant(messageMatch[3]);
+                        messages.push({
+                            from: messageMatch[1],
+                            to: messageMatch[3],
+                            text: messageMatch[4]?.trim() || ""
+                        });
+                    }
+                });
+
+                if (!participants.length) {
+                    return null;
+                }
+
+                const spacingX = 190;
+                const baseX = 80;
+                const topY = 60;
+                const lifelineHeight = 140 + messages.length * 80;
+                const positions = new Map();
+
+                participants.forEach((id, idx) => {
+                    const x = baseX + idx * spacingX;
+                    positions.set(id, x);
+                    const boxWidth = 140;
+                    const boxX = x - boxWidth / 2;
+                    const label = participantLabels.get(id) || id;
+                    const wrappedLabel = wrapTextContent(label, 18) || label;
+                    const lineCount = countTextLines(wrappedLabel);
+                    const fontSize = 15;
+                    const textHeight = lineCount * fontSize * 1.3;
+                    const headerHeight = Math.max(40, textHeight + 20);
+                    const rect = createRectangleElement(boxX, topY, boxWidth, headerHeight, {
+                        backgroundColor: "#ffffff"
+                    });
+                    const textY = topY + (headerHeight - textHeight) / 2;
+                    const text = createTextElement(wrappedLabel, boxX + 10, textY, {
+                        width: boxWidth - 20,
+                        fontSize,
+                        textAlign: "center",
+                        lineHeight: 1.3,
+                        textLines: lineCount,
+                        height: textHeight
+                    });
+                    elements.push(rect, text);
+                    const adjustedLifelineHeight = Math.max(120, lifelineHeight - (headerHeight - 40));
+                    const lifeline = createLineElement(x, topY + headerHeight, 0, adjustedLifelineHeight, {
+                        strokeWidth: 1.5,
+                        strokeStyle: "dashed"
+                    });
+                    elements.push(lifeline);
+                });
+
+                messages.forEach((message, idx) => {
+                    const startX = positions.get(message.from);
+                    const endX = positions.get(message.to);
+                    if (startX == null || endX == null) return;
+                    const y = topY + 80 + idx * 80;
+                    const arrow = createArrowElement(startX, y, endX, y, {
+                        strokeWidth: 1.5
+                    });
+                    elements.push(arrow);
+                    if (message.text) {
+                        const labelX = Math.min(startX, endX) + Math.abs(endX - startX) / 2 - 60;
+                        elements.push(createTextElement(message.text, labelX, y - 24, {
+                            width: 120,
+                            fontSize: 14,
+                            textAlign: "center"
+                        }));
+                    }
+                });
+
+                return elements;
+            }
+
+            function buildClassDiagramElements(lines) {
+                const elements = [];
+                lines.shift();
+                const classes = [];
+                const relations = [];
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (!line) continue;
+                    if (/^class\s+/i.test(line)) {
+                        const match = line.match(/^class\s+([A-Za-z0-9_]+)(?:\s+as\s+(.+?))?(?:\s*\{)?/i);
+                        if (!match) continue;
+                        const id = match[1];
+                        const label = match[2]?.trim() || id;
+                        const members = [];
+                        if (line.includes("{") && !line.includes("}")) {
+                            i++;
+                            while (i < lines.length && !lines[i].includes("}")) {
+                                const member = lines[i].replace(/[{}]/g, "").trim();
+                                if (member) members.push(member);
+                                i++;
+                            }
+                        } else if (line.includes("{") && line.includes("}")) {
+                            const inside = line.split("{")[1].split("}")[0];
+                            inside.split(/;|\n/).forEach(entry => {
+                                const trimmed = entry.trim();
+                                if (trimmed) members.push(trimmed);
+                            });
+                        }
+                        classes.push({ id, label, members });
+                        continue;
+                    }
+                    const relationMatch = line.match(/^([A-Za-z0-9_]+)\s+([<:\.o*\-|]+)\s+([A-Za-z0-9_]+)/);
+                    if (relationMatch) {
+                        relations.push({
+                            from: relationMatch[1],
+                            to: relationMatch[3],
+                            marker: relationMatch[2]
+                        });
+                    }
+                }
+
+                if (!classes.length) {
+                    return null;
+                }
+
+                const columns = Math.max(1, Math.ceil(Math.sqrt(classes.length)));
+                const spacingX = 240;
+                const spacingY = 200;
+                const baseX = 60;
+                const baseY = 60;
+                const classPositions = new Map();
+
+                classes.forEach((klass, idx) => {
+                    const col = idx % columns;
+                    const row = Math.floor(idx / columns);
+                    const width = 200;
+                    const memberLines = Math.max(1, klass.members.length);
+                    const wrappedLabel = wrapTextContent(klass.label, 20) || klass.label;
+                    const titleLineCount = countTextLines(wrappedLabel);
+                    const titleFontSize = 18;
+                    const titleTextHeight = titleLineCount * titleFontSize * 1.3;
+                    const titleHeight = Math.max(40, titleTextHeight + 10);
+                    const bodyHeight = memberLines * 20 + 20;
+                    const height = titleHeight + bodyHeight;
+                    const x = baseX + col * spacingX;
+                    const y = baseY + row * spacingY;
+                    const rect = createRectangleElement(x, y, width, height, {
+                        backgroundColor: "#fafbff"
+                    });
+                    const titleY = y + (titleHeight - titleTextHeight) / 2;
+                    const title = createTextElement(wrappedLabel, x + 10, titleY, {
+                        width: width - 20,
+                        fontSize: titleFontSize,
+                        textAlign: "center",
+                        lineHeight: 1.3,
+                        textLines: titleLineCount,
+                        height: titleTextHeight
+                    });
+                    const memberText = klass.members.join("\n");
+                    if (memberText) {
+                        elements.push(
+                            rect,
+                            title,
+                            createTextElement(memberText, x + 10, y + titleHeight + 10, {
+                                width: width - 20,
+                                fontSize: 14
+                            })
+                        );
+                    } else {
+                        elements.push(rect, title);
+                    }
+                    const position = {
+                        x: x + width / 2,
+                        y: y + height / 2,
+                        boxX: x,
+                        boxY: y,
+                        width,
+                        height
+                    };
+                    classPositions.set(klass.id, position);
+                    classPositions.set(klass.label, position);
+                });
+
+                relations.forEach(rel => {
+                    const from = classPositions.get(rel.from);
+                    const to = classPositions.get(rel.to);
+                    if (!from || !to) return;
+                    const arrow = createArrowElement(from.x, from.y, to.x, to.y, {
+                        strokeWidth: rel.marker.includes("..") ? 1 : 2,
+                        strokeStyle: rel.marker.includes("..") ? "dashed" : "solid"
+                    });
+                    elements.push(arrow);
+                });
+
+                return elements;
+            }
+
+            function buildFallbackTextElements(code) {
+                const lines = code
+                    .split("\n")
+                    .map(line => line.trim())
+                    .filter(Boolean);
+                if (!lines.length) {
+                    lines.push("Diagramme vide");
+                }
+                const baseY = 40;
+                const gap = 70;
+                return lines.map((line, idx) => createTextElement(line, 40, baseY + idx * gap, {
+                    fontSize: 24
+                }));
+            }
+
+            function buildExcalidrawElements(code) {
+                const translated = translateMermaidToElements(code);
+                if (translated && translated.length) {
+                    return translated;
+                }
+                return buildFallbackTextElements(code);
+            }
+
+            function applySceneUpdate(api, scenePayload) {
+                if (api && typeof api.updateScene === "function") {
+                    api.updateScene(scenePayload);
+                    return true;
+                }
+                if (api && typeof api.resetScene === "function") {
+                    api.resetScene({ ...scenePayload, commitToHistory: false });
+                    return true;
+                }
+                if (api && typeof api.replaceAllElements === "function") {
+                    api.replaceAllElements(scenePayload.elements);
+                    if (typeof api.setAppState === "function") {
+                        api.setAppState(scenePayload.appState);
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            function updateExcalidrawScene(code) {
+                pendingSceneCode = code || "";
+                const attemptUpdate = () => {
+                    const api = window.__excalidrawApi;
+                    if (!api) {
+                        return false;
+                    }
+                    const applyScene = () => {
+                        const latest = pendingSceneCode;
+                        const elements = buildExcalidrawElements(latest);
+                        const appState = {
+                            ...api.getAppState(),
+                            viewBackgroundColor: "#fdfdfd",
+                            gridModeEnabled: false
+                        };
+                        const scenePayload = { elements, appState };
+                        if (!applySceneUpdate(api, scenePayload)) {
+                            console.warn("Aucune méthode disponible pour mettre à jour Excalidraw", {
+                                hasUpdateScene: typeof api?.updateScene === "function",
+                                hasResetScene: typeof api?.resetScene === "function",
+                                hasReplaceAll: typeof api?.replaceAllElements === "function"
+                            });
+                        }
+                    };
+                    if (api.readyPromise && typeof api.readyPromise.then === "function") {
+                        api.readyPromise
+                            .then(() => {
+                                applyScene();
+                            })
+                            .catch(err => {
+                                console.error("Excalidraw readyPromise rejetée", err);
+                            });
+                    } else {
+                        applyScene();
+                    }
+                    return true;
+                };
+                if (!attemptUpdate() && !waitingForReadyApi) {
+                    waitingForReadyApi = true;
+                    document.addEventListener(
+                        "excal-ready",
+                        () => {
+                            waitingForReadyApi = false;
+                            attemptUpdate();
+                        },
+                        { once: true }
+                    );
+                }
+            }
+
+            function bindEvents() {
+                generateBtn.addEventListener("click", handleGenerate);
+                promptInput.addEventListener("input", () => {
+                    const page = getActivePage();
+                    if (page) {
+                        page.input = promptInput.value;
+                        saveState();
+                    }
+                });
+                mermaidOutput.addEventListener("input", () => {
+                    const page = getActivePage();
+                    const value = mermaidOutput.value;
+                    if (page) {
+                        page.mermaid = value;
+                        saveState();
+                    }
+                    updateExcalidrawScene(value);
+                });
+                addPageBtn.addEventListener("click", () => {
+                    const newPage = createPage(state.pages.length + 1);
+                    state.pages.push(newPage);
+                    setActivePage(state.pages.length - 1);
+                    saveState();
+                });
+                deletePageBtn.addEventListener("click", () => {
+                    if (state.pages.length <= 1) {
+                        setStatus("Au moins une page est requise");
+                        return;
+                    }
+                    state.pages.splice(state.activeIndex, 1);
+                    setActivePage(Math.max(0, state.activeIndex - 1));
+                    saveState();
+                });
+                refreshExcalidrawBtn.addEventListener("click", () => {
+                    updateExcalidrawScene(mermaidOutput.value);
+                    setStatus("Projection mise à jour ✔️");
+                });
+                aiSettingsBtn.addEventListener("click", openModal);
+                closeAiModalBtn.addEventListener("click", closeModal);
+                aiModal.addEventListener("click", event => {
+                    if (event.target === aiModal) {
+                        closeModal();
+                    }
+                });
+                resetPromptBtn.addEventListener("click", resetPrompt);
+                saveAiSettingsBtn.addEventListener("click", saveAiSettings);
+                window.addEventListener("keydown", event => {
+                    if (event.key === "Escape" && aiModal.classList.contains("open")) {
+                        closeModal();
+                    }
+                });
+
+                if (shareBtn && shareMenu) {
+                    shareBtn.addEventListener("click", event => {
+                        event.stopPropagation();
+                        shareMenu.classList.toggle("open");
+                        updateShareMenuUI();
+                    });
+                    shareMenu.addEventListener("click", event => {
+                        event.stopPropagation();
+                    });
+                }
+                shareLinkField?.addEventListener("focus", () => {
+                    shareLinkField.select();
+                });
+                shareLinkField?.addEventListener("click", () => {
+                    shareLinkField.select();
+                });
+                shareCreateBtn?.addEventListener("click", handleShareCreateClick);
+                shareUpdateBtn?.addEventListener("click", handleShareUpdateClick);
+                document.addEventListener("click", event => {
+                    if (!shareMenu?.contains(event.target) && event.target !== shareBtn) {
+                        closeShareMenu();
+                    }
+                });
+
+                if (navSwitcherBtn && navSwitcherMenu) {
+                    navSwitcherBtn.addEventListener("click", event => {
+                        event.stopPropagation();
+                        navSwitcherMenu.classList.toggle("open");
+                    });
+                    navSwitcherMenu.addEventListener("click", event => {
+                        event.stopPropagation();
+                    });
+                    document.addEventListener("click", event => {
+                        if (!navSwitcherMenu.contains(event.target) && event.target !== navSwitcherBtn) {
+                            navSwitcherMenu.classList.remove("open");
+                        }
+                    });
+                }
+
+                updateShareMenuUI();
+            }
+
+            async function initializeAppState() {
+                initShareWorkerService();
+                const sharedLoaded = await tryLoadSharedStateFromUrl();
+                if (!sharedLoaded) {
+                    loadState();
+                }
+                renderTabs();
+                syncFormWithPage();
+                bindEvents();
+                initializeExcalidraw();
+                if (sharedLoaded) {
+                    saveState();
+                }
+            }
+
+            initializeAppState();
+        })();
+    </script>
+</body>
+
+</html>
