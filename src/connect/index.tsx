@@ -12,6 +12,39 @@ import type { ExcalidrawElement } from "@excalidraw/excalidraw/types/element/typ
 import { parseMermaidToExcalidraw } from "@excalidraw/mermaid-to-excalidraw";
 
 const MERMAID_OPTIONS = { fontSize: 20 };
+const EDGE_HOST_CLASS = "go-excalidraw-edge";
+const EDGE_STYLE_ID = "go-excalidraw-edge-style";
+const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
+    margin: 0 !important;
+    --bar-padding: 0 !important;
+    padding-top: var(--sat, 0);
+    padding-right: var(--sar, 0);
+    padding-bottom: var(--sab, 0);
+    padding-left: var(--sal, 0);
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar > .Island {
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    max-width: 100% !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .layer-ui__wrapper__top-left,
+.${EDGE_HOST_CLASS} .excalidraw .layer-ui__wrapper__bottom-left {
+    left: 0 !important;
+    right: auto !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .layer-ui__wrapper__top-right,
+.${EDGE_HOST_CLASS} .excalidraw .layer-ui__wrapper__bottom-right {
+    right: 0 !important;
+    left: auto !important;
+}
+
+.${EDGE_HOST_CLASS} .excalidraw .layer-ui__wrapper:is(.layer-ui__wrapper__top-left, .layer-ui__wrapper__top-right, .layer-ui__wrapper__bottom-left, .layer-ui__wrapper__bottom-right) {
+    padding: 4px !important;
+}`;
 
 type SceneData = {
     elements: readonly ExcalidrawElement[];
@@ -45,6 +78,7 @@ class ExcalidrawBridge {
             this.readyPromise = null;
         }
         this.host = host;
+        this.ensureEdgeStyles(host);
         if (!this.readyPromise) {
             this.readyPromise = new Promise((resolve, reject) => {
                 try {
@@ -146,6 +180,17 @@ class ExcalidrawBridge {
             throw new Error("Excalidraw API non initialisé");
         }
         return this.api;
+    }
+
+    private ensureEdgeStyles(host: HTMLElement): void {
+        host.classList.add(EDGE_HOST_CLASS);
+        if (document.getElementById(EDGE_STYLE_ID)) {
+            return;
+        }
+        const styleEl = document.createElement("style");
+        styleEl.id = EDGE_STYLE_ID;
+        styleEl.textContent = EDGE_STYLE_CONTENT;
+        document.head.appendChild(styleEl);
     }
 }
 
