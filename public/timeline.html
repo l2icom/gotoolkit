@@ -272,11 +272,65 @@
             box-shadow: none;
         }
 
-        #switchToIndex:hover,
-        #switchToIndex:focus-visible {
+        .nav-switch {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            margin-right: 6px;
+        }
+
+        .nav-switch-btn {
+            border-radius: 999px;
+            border: 1px solid rgba(15, 23, 42, 0.2);
+            background: #fff;
             color: #0f172a;
+            padding: 5px 12px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .nav-switch-btn:hover,
+        .nav-switch-btn:focus-visible {
+            color: #2a7a57;
             border-color: #2a7a57;
-            box-shadow: none;
+            box-shadow: 0 6px 18px rgba(42, 122, 87, 0.32);
+        }
+
+        .nav-switch-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            min-width: 180px;
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 6px;
+            display: none;
+            z-index: 50;
+        }
+
+        .nav-switch-menu.open {
+            display: block;
+        }
+
+        .nav-switch-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #1f2a56;
+        }
+
+        .nav-switch-link:hover,
+        .nav-switch-link:focus-visible {
+            background: rgba(42, 122, 87, 0.08);
         }
 
         .btn-ghost {
@@ -287,10 +341,6 @@
 
         .btn:hover {
             box-shadow: 0 6px 18px rgba(42, 122, 87, 0.32);
-        }
-
-        #switchToIndex:hover {
-            box-shadow: none;
         }
 
         .btn-ghost:hover {
@@ -1439,7 +1489,14 @@
     <div class="app">
         <div class="app-header">
             <div class="tabs-actions">
-                <button class="btn white-btn" id="switchToIndex" aria-label="Go to index">⇆ Go-Timeline</button>
+                <div class="nav-switch">
+                    <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
+                        aria-expanded="false">⇢ Go-Timeline ▾</button>
+                    <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
+                        <a class="nav-switch-link" href="index.html" role="menuitem">◧ Go-Slides</a>
+                        <a class="nav-switch-link" href="draw.html" role="menuitem">⌘ Go-Draw</a>
+                    </div>
+                </div>
                 <div class="tabs-wrapper">
                     <div id="viewTabs" class="tabs"></div>
                     <div class="tab-actions">
@@ -2815,7 +2872,8 @@
             var shareStatusType = "";
             var shareRequestInProgress = false;
             var shareLastUpdatedAt = null;
-            var switchToIndexBtn = document.getElementById("switchToIndex");
+            var navSwitcherBtn = document.getElementById("navSwitcherBtn");
+            var navSwitcherMenu = document.getElementById("navSwitcherMenu");
             var colorModalOverlay = document.getElementById("colorModalOverlay");
             var colorModalClose = document.getElementById("colorModalClose");
             var openColorPaletteBtn = document.getElementById("openColorPaletteBtn");
@@ -4004,9 +4062,20 @@
                 }
                 closeTimelineInfoPopup();
             });
-            if (switchToIndexBtn) {
-                switchToIndexBtn.addEventListener("click", function () {
-                    window.location.href = "index.html";
+            if (navSwitcherBtn && navSwitcherMenu) {
+                navSwitcherBtn.addEventListener("click", function (event) {
+                    event.stopPropagation();
+                    var isOpen = navSwitcherMenu.classList.toggle("open");
+                    navSwitcherBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+                });
+                navSwitcherMenu.addEventListener("click", function (event) {
+                    event.stopPropagation();
+                });
+                document.addEventListener("click", function (event) {
+                    if (!navSwitcherMenu.contains(event.target) && event.target !== navSwitcherBtn) {
+                        navSwitcherMenu.classList.remove("open");
+                        navSwitcherBtn.setAttribute("aria-expanded", "false");
+                    }
                 });
             }
 
