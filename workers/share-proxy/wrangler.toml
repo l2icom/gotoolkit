@@ -2,6 +2,10 @@ name = "gotoolkit-share-proxy"
 main = "index.js"
 compatibility_date = "2024-12-01"
 workers_dev = true
-# Add your Cloudflare account information before deploying (account_id, zone_id, routes)
-# account_id = "bdcd0c3bac2cc9b0280d71a911b2b74f"
-# route = "https://gotoolkit.web.app/*"
+account_id = "bdcd0c3bac2cc9b0280d71a911b2b74f"
+# To bind the worker to a custom domain, Cloudflare requires either
+# `route = { pattern = "example.com/*", zone_id = "..." }` for each
+# zone you control, or a `custom_domain` entry. Commented out for now.
+# routes = [
+#   { pattern = "example.com/*", zone_id = "<your_zone_id>" }
+# ]

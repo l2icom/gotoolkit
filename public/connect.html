@@ -617,6 +617,10 @@
         </div>
     </div>
 
+    <script>
+        window.GO_TOOLKIT_SHARE_API_URL =
+            window.GO_TOOLKIT_SHARE_API_URL || "https://gotoolkit.tranxq.workers.dev";
+    </script>
     <script src="js/share-worker-client.js"></script>
     <script>
         var process = window.process || {};
@@ -635,7 +639,7 @@
             const DEFAULT_PROMPT_TEMPLATE =
                 "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code mermaid sous forme d'un graphique au choix (séquence, flow ou diagramme). Ne fais pas d'introduction ou de conclusion, donne directement et uniquement le bloc de code.";
             const STORAGE_KEY = "connect-ai-state";
-            const FIRESTORE_COLLECTION = "connect-pages";
+            const FIRESTORE_COLLECTION = "diagrams";
             const SHARE_QUERY_PARAM = "share";
             const SHARE_WORKER_UNAVAILABLE_MESSAGE =
                 "Le partage privé nécessite le worker Cloudflare lié à Go-Toolkit.";
