@@ -58,6 +58,10 @@
             return "";
         }
 
+        if (payload?.error?.message) {
+            throw new Error(payload.error.message);
+        }
+
         if (typeof payload.delta === "string") {
             return payload.delta;
         }
@@ -78,6 +82,10 @@
             return extractFromOutput(payload.output);
         }
 
+        if (typeof payload.content === "string") {
+            return payload.content;
+        }
+
         const choice = payload?.choices && payload.choices[0];
         if (choice) {
             const delta = choice.delta || {};
@@ -90,7 +98,14 @@
 
     async function parseJsonResponse(response) {
         const payload = await response.json();
-        return normalizeChunk(payload).trim();
+        const normalized = normalizeChunk(payload);
+        if (normalized && typeof normalized === "string") {
+            return normalized.trim();
+        }
+        if (typeof payload === "string") {
+            return payload.trim();
+        }
+        return "";
     }
 
     function buildHeaders(apiKey, headers) {
