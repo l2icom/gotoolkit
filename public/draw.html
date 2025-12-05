@@ -136,10 +136,10 @@
             border-radius: 999px;
             border: 1px solid #ebe0d1;
             background: #ffffff;
-            padding: 0 10px;
-            min-height: 32px;
+            padding: 0 6px;
+            min-height: 24px;
             font-size: 12px;
-            line-height: 32px;
+            line-height: 24px;
             cursor: pointer;
             box-shadow: none;
         }
@@ -224,7 +224,7 @@
         }
 
         .share-action-btn.primary {
-            border: none;
+            border: 1px solid #2a7a57;
             background: #2a7a57;
             color: #ffffff;
         }
@@ -348,8 +348,8 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
-            margin-bottom: 8px;
+            gap: 0px;
+            margin-bottom: 0px;
         }
 
         textarea {
@@ -533,10 +533,11 @@
         .ai-modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(16, 20, 40, 0.55);
+            background: rgba(0, 0, 0, 0.4);
             display: none;
             align-items: center;
             justify-content: center;
+            padding: 24px;
             z-index: 40;
         }
 
@@ -545,35 +546,225 @@
         }
 
         .ai-modal {
-            width: min(460px, 90vw);
+            width: min(520px, 92vw);
             background: #ffffff;
-            border-radius: 6px;
-            padding: 20px;
-            box-shadow: 0 24px 40px rgba(16, 19, 63, 0.25);
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 12px;
         }
 
         .ai-modal header {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .ai-modal header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .ai-modal header button {
+            border: none;
+            background: transparent;
+            font-size: 18px;
+            cursor: pointer;
+            color: #6b7280;
         }
 
         .ai-modal input,
         .ai-modal textarea {
             width: 100%;
-            border-radius: 4px;
-            border: 1px solid #dfe4fa;
+            border-radius: 8px;
+            border: 1px solid #d0c3ad;
             padding: 10px 12px;
-            background: #f8f9ff;
+            background: #ffffff;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .ai-modal textarea {
+            min-height: 110px;
         }
 
         .ai-modal-actions {
             display: flex;
             justify-content: flex-end;
-            gap: 12px;
+            gap: 10px;
+        }
+
+        .ai-modal-actions button {
+            border-radius: 8px;
+            border: 1px solid #ebe0d1;
+            background: #ffffff;
+            color: #0f172a;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .ai-modal-actions .btn-primary {
+            border: none;
+            background: #2a7a57;
+            color: #ffffff;
+        }
+
+        .info-popup {
+            position: absolute;
+            top: 56px;
+            right: 12px;
+            width: 280px;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 12px;
+            z-index: 60;
+        }
+
+        .info-popup.open {
+            display: flex;
+        }
+
+        .info-popup img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            align-self: center;
+        }
+
+        .info-popup a {
+            color: #2a7a57;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .info-popup button {
+            border-radius: 8px;
+            border: 1px solid rgba(15, 23, 42, 0.15);
+            background: #fff;
+            color: #0f172a;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            min-width: 110px;
+        }
+
+        .info-popup button.update-btn {
+            background: #2a7a57;
+            border-color: #2a7a57;
+            color: #fff;
+        }
+
+        .info-popup button.secondary {
+            background: #fff;
+            border-color: rgba(15, 23, 42, 0.15);
+            color: #0f172a;
+        }
+
+        .info-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tour-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 80;
+        }
+
+        .tour-overlay.open {
+            display: flex;
+        }
+
+        .tour-overlay.has-highlight {
+            background: transparent;
+        }
+
+        .tour-highlight {
+            position: absolute;
+            border: 2px solid #2a7a57;
+            border-radius: 12px;
+            background: transparent;
+            box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55);
+            pointer-events: none;
+            transition: all 0.2s ease;
+        }
+
+        .tour-panel {
+            position: relative;
+            z-index: 2;
+            background: #fff;
+            border-radius: 14px;
+            padding: 16px;
+            width: min(480px, 92vw);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .tour-step-counter {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .tour-panel h4 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .tour-panel p {
+            margin: 0;
+            font-size: 13px;
+            color: #374151;
+        }
+
+        .tour-step-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tour-step-footer button {
+            border-radius: 8px;
+            border: 1px solid rgba(15, 23, 42, 0.15);
+            background: #fff;
+            color: #0f172a;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .tour-step-footer button.primary {
+            background: #2a7a57;
+            color: #fff;
+            border-color: #2a7a57;
+        }
+
+        .tour-skip {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            border: none;
+            background: transparent;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
         }
 
         .btn-secondary,
@@ -581,7 +772,7 @@
             border: none;
             border-radius: 4px;
             padding: 6px 12px;
-            font-weight: 600;
+
             font-size: 12px;
             cursor: pointer;
         }
@@ -589,11 +780,20 @@
         .btn-secondary {
             background: #eef0ff;
             color: #2a7a57;
+            font-weight: 300;
         }
 
         .btn-primary {
             background: #2a7a57;
             color: #ffffff;
+            font-weight: 600;
+        }
+
+        /* Ajuste le menu latéral Excalidraw (selected-shape-actions) */
+        .excalidraw-card .Island.App-menu__left {
+            --padding: 2px;
+            max-height: 200px;
+            max-width: 100px;
         }
 
         @media (max-width: 900px) {
@@ -616,8 +816,8 @@
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button">◇ Go-Draw ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="think.html">◧ Go-Think</a>
-                    <a class="nav-switch-link" href="plan.html">⇢ Go-Plan</a>
+                    <a class="nav-switch-link" href="think.html">◫ Go-Think</a>
+                    <a class="nav-switch-link" href="plan.html">▷ Go-Plan</a>
                 </div>
             </div>
             <div class="tabs-actions">
@@ -636,16 +836,30 @@
                                 placeholder="Créer un lien privé">
                         </div>
                         <div class="share-actions">
-                            <button id="shareUpdateBtn" type="button" class="share-action-btn">🔄 Actualiser</button>
+                            <button id="shareUpdateBtn" type="button" class="share-action-btn primary">🔄
+                                Actualiser</button>
                             <button id="shareCreateBtn" type="button" class="share-action-btn primary">🔗
-                                Créer le lien</button>
+                                Créer</button>
                         </div>
                         <p class="share-menu-status" id="shareMenuStatus"></p>
                     </div>
                 </div>
+                <button id="infoButton" class="info-button" type="button" title="À propos">ℹ️ À propos</button>
 
             </div>
         </header>
+
+        <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
+            <img src="logo.gif" alt="Logo Go-Toolkit">
+            <strong>Go-Draw</strong>
+            <span>Version 0.12.05</span>
+            <span>Développé par Quang TRAN.</span>
+            <span>Usage réservé à Savane Consulting.</span>
+            <div class="info-actions">
+                <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
+                <button id="tourReplayBtn" type="button" class="secondary">Tour guidé</button>
+            </div>
+        </div>
 
         <main class="connect-layout">
             <section class="connect-right">
@@ -655,9 +869,9 @@
             </section>
 
             <section class="connect-left">
-                <div class="prompt-input-card">
+                <div class="prompt-input-card" id="prompt-input-card">
                     <div class="card-title-row">
-                        <div class="card-title">Contexte (5 lignes)</div>
+                        <div class="card-title">Contexte</div>
                         <button id="generateBtn" class="generate-btn" type="button">✨ Générer</button>
                     </div>
                     <div class="draw-type-control">
@@ -687,6 +901,21 @@
 
     <div id="statusToast" class="status-toast" role="status"></div>
 
+    <div id="tourOverlay" class="tour-overlay" aria-hidden="true">
+        <div class="tour-highlight" aria-hidden="true"></div>
+        <div class="tour-panel">
+            <span class="tour-step-counter" id="tourStepCounter"></span>
+            <h4 id="tourStepTitle"></h4>
+            <p id="tourStepDescription"></p>
+            <div class="tour-step-footer">
+                <button id="tourPrevBtn" type="button">Précédent</button>
+                <button id="tourNextBtn" type="button" class="primary">Suivant</button>
+                <button id="tourCloseBtn" type="button">Fermer</button>
+            </div>
+        </div>
+        <button id="tourSkipBtn" class="tour-skip" type="button" aria-label="Fermer">×</button>
+    </div>
+
     <div class="ai-modal-overlay" id="aiModal">
         <div class="ai-modal">
             <header>
@@ -694,14 +923,14 @@
                 <button id="closeAiModal" class="btn-secondary" type="button">✕</button>
             </header>
             <label>
-                <span>Clé OpenAI personnelle</span>
+                <a href="https://platform.openai.com/settings/organization/api-keys" target="_blank"
+                    rel="noreferrer">OpenAI API key</a>
                 <input type="password" id="apiKeyField" placeholder="sk-...">
             </label>
             <label>
                 <span>Prompt personnalisé</span>
                 <textarea id="promptTemplateField" rows="6"></textarea>
             </label>
-            <p class="status-label">Utilise {{field_input}} pour injecter le texte saisi</p>
             <div class="ai-modal-actions">
                 <button id="resetPromptBtn" class="btn-secondary" type="button">Prompt par défaut</button>
                 <button id="saveAiSettingsBtn" class="btn-primary" type="button">Sauvegarder</button>
@@ -765,14 +994,29 @@
             let shareRequestInProgress = false;
             let shareLastUpdatedAt = null;
 
+            function getDrawSharePreview() {
+                const firstPage = state.pages?.[0];
+                const title = (firstPage?.label || "Page 1").trim();
+                const desc = (firstPage?.input || "")
+                    .split(/\r?\n/)
+                    .map(line => line.trim())
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .join(" · ");
+                return { title, description: desc || "Complète le contexte pour l'afficher ici." };
+            }
+
             function persistDrawShareRecord(token, updatedAt) {
                 if (!shareHistory || !token) {
                     return;
                 }
                 try {
+                    const preview = getDrawSharePreview();
                     shareHistory.upsertRecord("draw", {
                         token,
-                        updatedAt: updatedAt || new Date().toISOString()
+                        updatedAt: updatedAt || new Date().toISOString(),
+                        title: preview.title,
+                        description: preview.description
                     });
                 } catch (err) {
                     console.warn("Impossible d'archiver le lien Go-Draw", err);
@@ -788,6 +1032,19 @@
             const addPageBtn = document.getElementById("addPageBtn");
             const deletePageBtn = document.getElementById("deletePageBtn");
             const refreshExcalidrawBtn = document.getElementById("refreshExcalidrawBtn");
+            const infoButton = document.getElementById("infoButton");
+            const infoPopup = document.getElementById("infoPopup");
+            const updateAppBtn = document.getElementById("updateAppBtn");
+            const tourReplayBtn = document.getElementById("tourReplayBtn");
+            const tourOverlay = document.getElementById("tourOverlay");
+            const tourHighlight = tourOverlay?.querySelector(".tour-highlight");
+            const tourStepCounter = document.getElementById("tourStepCounter");
+            const tourStepTitle = document.getElementById("tourStepTitle");
+            const tourStepDescription = document.getElementById("tourStepDescription");
+            const tourPrevBtn = document.getElementById("tourPrevBtn");
+            const tourNextBtn = document.getElementById("tourNextBtn");
+            const tourCloseBtn = document.getElementById("tourCloseBtn");
+            const tourSkipBtn = document.getElementById("tourSkipBtn");
             const aiModal = document.getElementById("aiModal");
             const aiSettingsBtn = document.getElementById("aiSettingsBtn");
             const closeAiModalBtn = document.getElementById("closeAiModal");
@@ -804,6 +1061,37 @@
             const shareCreateBtn = document.getElementById("shareCreateBtn");
             const shareUpdateBtn = document.getElementById("shareUpdateBtn");
             const shareHistory = window.goToolkitShareHistory;
+            const generateDefaultLabel = generateBtn?.textContent || "✨ Générer";
+            let generateCooldownTimer = null;
+            let generateCooldownEndTime = 0;
+            let currentTourIndex = 0;
+            const tourSteps = [
+                {
+                    title: "Intention Go-Draw",
+                    description: "Go-Draw aide les consultants à illustrer rapidement des idées en diagrammes clairs.",
+                    selector: null
+                },
+                {
+                    title: "Décris et choisis",
+                    description: "Décris le contexte, choisis le type de diagramme puis clique sur Générer.",
+                    selector: "#prompt-input-card"
+                },
+                {
+                    title: "Code généré",
+                    description: "Attends la réponse dans le bloc Mermaid et ajuste le texte si besoin.",
+                    selector: "#mermaidOutput"
+                },
+                {
+                    title: "Visualisation en direct",
+                    description: "Observe les changements dans la zone de droite et affine visuellement flèches et formes.",
+                    selector: ".connect-right"
+                },
+                {
+                    title: "Actions globales",
+                    description: "Utilise les actions d'en-tête pour partager, gérer les pages ou accéder à l'IA.",
+                    selector: ".app-header"
+                }
+            ];
 
             function loadState() {
                 try {
@@ -834,14 +1122,35 @@
                 }
             }
 
-            function buildSharePayload() {
+            async function captureExcalidrawScene() {
+                try {
+                    const api = await getExcalidrawApi();
+                    const elements = typeof api.getSceneElements === "function"
+                        ? api.getSceneElements()
+                        : typeof api.getElements === "function"
+                            ? api.getElements()
+                            : [];
+                    const appState = typeof api.getAppState === "function" ? api.getAppState() : undefined;
+                    const files = typeof api.getFiles === "function" ? api.getFiles() : undefined;
+                    return { elements: elements || [], appState, files };
+                } catch (err) {
+                    console.warn("Impossible de capturer la scène Excalidraw", err);
+                    return null;
+                }
+            }
+
+            async function buildSharePayload() {
+                const scene = await captureExcalidrawScene();
                 return {
                     pages: state.pages.map((page, index) => normalizePage(page, index)),
                     activeIndex: state.activeIndex,
                     apiKey: state.apiKey || "",
-                    promptTemplate: state.promptTemplate || DEFAULT_PROMPT_TEMPLATE
+                    promptTemplate: state.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
+                    scene
                 };
             }
+
+            let sharedScenePayload = null;
 
             function applySharedState(payload) {
                 if (!payload) return false;
@@ -852,6 +1161,9 @@
                 state.activeIndex = Math.max(0, Math.min(state.pages.length - 1, payload.activeIndex || 0));
                 state.apiKey = payload.apiKey || "";
                 state.promptTemplate = payload.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                if (payload.scene && payload.scene.elements) {
+                    sharedScenePayload = payload.scene;
+                }
                 return true;
             }
 
@@ -933,6 +1245,30 @@
                 return shareWorkerService.fetchSharePayload(FIRESTORE_COLLECTION, token);
             }
 
+            async function applySharedSceneIfPresent() {
+                if (!sharedScenePayload) return;
+                try {
+                    const api = await getExcalidrawApi();
+                    const appState = {
+                        ...api.getAppState?.(),
+                        ...(sharedScenePayload.appState || {})
+                    };
+                    const scenePayload = {
+                        elements: sharedScenePayload.elements || [],
+                        appState
+                    };
+                    if (sharedScenePayload.files) {
+                        scenePayload.files = sharedScenePayload.files;
+                    }
+                    applySceneUpdate(api, scenePayload);
+                    if (sharedScenePayload.files && typeof api.addFiles === "function") {
+                        api.addFiles(sharedScenePayload.files);
+                    }
+                } catch (err) {
+                    console.warn("Impossible d'appliquer la scène partagée", err);
+                }
+            }
+
             async function tryLoadSharedStateFromUrl() {
                 const token = getShareTokenFromUrl();
                 if (!token) {
@@ -951,6 +1287,7 @@
                     shareLastUpdatedAt = result?.meta?.updatedAt || new Date().toISOString();
                     setShareStatus(formatRelativeTime(shareLastUpdatedAt));
                     persistDrawShareRecord(token, shareLastUpdatedAt);
+                    await applySharedSceneIfPresent();
                     return true;
                 } catch (err) {
                     console.error("Erreur de chargement du lien partagé :", err);
@@ -1010,6 +1347,100 @@
                 shareMenu?.classList.remove("open");
             }
 
+            function closeInfoPopup() {
+                infoPopup?.classList.remove("open");
+            }
+
+            function clearAppCacheAndReload() {
+                try {
+                    localStorage.clear();
+                } catch (err) {
+                    console.warn("Impossible de vider localStorage", err);
+                }
+                try {
+                    sessionStorage.clear();
+                } catch (err) {
+                    console.warn("Impossible de vider sessionStorage", err);
+                }
+                (document.cookie || "")
+                    .split(";")
+                    .forEach(function (cookie) {
+                        const eqPos = cookie.indexOf("=");
+                        let name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+                        name = name.trim();
+                        if (!name) return;
+                        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+                    });
+                const reload = function () {
+                    window.location.reload();
+                };
+                if (window.caches && typeof window.caches.keys === "function") {
+                    window.caches
+                        .keys()
+                        .then(function (keys) {
+                            return Promise.all(keys.map(function (key) {
+                                return window.caches.delete(key);
+                            }));
+                        })
+                        .catch(function () { })
+                        .finally(reload);
+                } else {
+                    reload();
+                }
+            }
+
+            function promptManualUpdate() {
+                const warning = "La mise à jour effacera les données locales (cache, cookies, préférences). Continuer ?";
+                if (!confirm(warning)) return;
+                closeInfoPopup();
+                clearAppCacheAndReload();
+            }
+
+            function focusHighlight(selector) {
+                if (!tourHighlight || !tourOverlay || !selector) {
+                    tourHighlight?.style.setProperty("display", "none");
+                    tourOverlay?.classList.remove("has-highlight");
+                    return;
+                }
+                const target = document.querySelector(selector);
+                if (!target) {
+                    tourHighlight.style.display = "none";
+                    tourOverlay.classList.remove("has-highlight");
+                    return;
+                }
+                const rect = target.getBoundingClientRect();
+                tourHighlight.style.display = "block";
+                tourHighlight.style.top = `${rect.top - 8 + window.scrollY}px`;
+                tourHighlight.style.left = `${rect.left - 8 + window.scrollX}px`;
+                tourHighlight.style.width = `${rect.width + 16}px`;
+                tourHighlight.style.height = `${rect.height + 16}px`;
+                tourOverlay.classList.add("has-highlight");
+            }
+
+            function renderTourStep(index) {
+                if (!tourOverlay) return;
+                const step = tourSteps[index];
+                if (!step) return;
+                currentTourIndex = index;
+                tourOverlay.classList.add("open");
+                tourStepCounter.textContent = `${index + 1}/${tourSteps.length}`;
+                tourStepTitle.textContent = step.title;
+                tourStepDescription.textContent = step.description;
+                focusHighlight(step.selector);
+                tourPrevBtn.disabled = index === 0;
+                tourNextBtn.textContent = index === tourSteps.length - 1 ? "Terminer" : "Suivant";
+            }
+
+            function closeTour() {
+                if (!tourOverlay) return;
+                tourOverlay.classList.remove("open");
+                focusHighlight(null);
+            }
+
+            function startTour() {
+                renderTourStep(0);
+            }
+
             async function copyCurrentShareLinkToClipboard() {
                 if (!currentShareToken) return false;
                 const link = buildShareUrl(currentShareToken);
@@ -1036,7 +1467,8 @@
                 updateShareMenuUI();
                 try {
                     const token = createShareToken();
-                    const updatedAt = await saveSharePayload(token, buildSharePayload());
+                    const payload = await buildSharePayload();
+                    const updatedAt = await saveSharePayload(token, payload);
                     currentShareToken = token;
                     shareLoadedFromRemote = true;
                     shareLastUpdatedAt = updatedAt;
@@ -1069,7 +1501,8 @@
                 shareRequestInProgress = true;
                 updateShareMenuUI();
                 try {
-                    const updatedAt = await saveSharePayload(currentShareToken, buildSharePayload());
+                    const payload = await buildSharePayload();
+                    const updatedAt = await saveSharePayload(currentShareToken, payload);
                     shareLoadedFromRemote = true;
                     shareLastUpdatedAt = updatedAt;
                     setShareStatus(formatRelativeTime(updatedAt));
@@ -1211,6 +1644,40 @@
                 updateExcalidrawScene(page?.mermaid || "");
             }
 
+            function clearGenerateCooldown() {
+                if (generateCooldownTimer) {
+                    clearInterval(generateCooldownTimer);
+                    generateCooldownTimer = null;
+                }
+                generateCooldownEndTime = 0;
+            }
+
+            function startGenerateCooldown(seconds = 60) {
+                if (!generateBtn) return;
+                clearGenerateCooldown();
+                const duration = Math.max(1, seconds);
+                generateCooldownEndTime = Date.now() + duration * 1000;
+                generateBtn.disabled = true;
+
+                const updateLabel = () => {
+                    if (!generateBtn) {
+                        clearGenerateCooldown();
+                        return;
+                    }
+                    const remainingMs = generateCooldownEndTime - Date.now();
+                    const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+                    generateBtn.textContent = `⏳ ${remainingSeconds}s`;
+                    if (remainingSeconds <= 0) {
+                        clearGenerateCooldown();
+                        generateBtn.disabled = false;
+                        generateBtn.textContent = generateDefaultLabel;
+                    }
+                };
+
+                updateLabel();
+                generateCooldownTimer = setInterval(updateLabel, 1000);
+            }
+
             async function handleGenerate() {
                 const page = getActivePage();
                 if (!page) return;
@@ -1232,7 +1699,6 @@
                 ];
                 setStatus("Génération en cours...");
                 generateBtn.disabled = true;
-                const defaultLabel = generateBtn.textContent;
                 generateBtn.textContent = "⏳";
                 try {
                     const aiText = await callOpenAI(messages);
@@ -1250,8 +1716,7 @@
                     console.error(err);
                     setStatus(`Erreur: ${err.message || "imprévue"}`);
                 } finally {
-                    generateBtn.disabled = false;
-                    generateBtn.textContent = defaultLabel;
+                    startGenerateCooldown(60);
                 }
             }
 
@@ -2135,6 +2600,38 @@
                     updateExcalidrawScene(mermaidOutput.value);
                     setStatus("Projection mise à jour ✔️");
                 });
+                infoButton?.addEventListener("click", event => {
+                    event.stopPropagation();
+                    closeShareMenu();
+                    infoPopup?.classList.toggle("open");
+                });
+                updateAppBtn?.addEventListener("click", event => {
+                    event.stopPropagation();
+                    promptManualUpdate();
+                });
+                tourReplayBtn?.addEventListener("click", event => {
+                    event.stopPropagation();
+                    infoPopup?.classList.remove("open");
+                    startTour();
+                });
+                document.addEventListener("click", event => {
+                    if (!infoPopup?.contains(event.target) && event.target !== infoButton) {
+                        closeInfoPopup();
+                    }
+                });
+                tourPrevBtn?.addEventListener("click", () => {
+                    const prev = Math.max(0, currentTourIndex - 1);
+                    renderTourStep(prev);
+                });
+                tourNextBtn?.addEventListener("click", () => {
+                    if (currentTourIndex >= tourSteps.length - 1) {
+                        closeTour();
+                        return;
+                    }
+                    renderTourStep(currentTourIndex + 1);
+                });
+                tourCloseBtn?.addEventListener("click", closeTour);
+                tourSkipBtn?.addEventListener("click", closeTour);
                 aiSettingsBtn.addEventListener("click", openModal);
                 closeAiModalBtn.addEventListener("click", closeModal);
                 aiModal.addEventListener("click", event => {

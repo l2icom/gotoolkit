@@ -1515,9 +1515,9 @@
             <div class="tabs-actions">
                 <div class="nav-switch">
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
-                        aria-expanded="false">⇢ Go-Plan ▾</button>
+                        aria-expanded="false">▷ Go-Plan ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                        <a class="nav-switch-link" href="think.html" role="menuitem">◧ Go-Think</a>
+                        <a class="nav-switch-link" href="think.html" role="menuitem">◫ Go-Think</a>
                         <a class="nav-switch-link" href="draw.html" role="menuitem">◇ Go-Draw</a>
                     </div>
                 </div>
@@ -1625,7 +1625,7 @@
                                     <button id="shareUpdateBtn" type="button" class="menu-panel-btn">🔄️
                                         Actualiser</button>
                                     <button id="shareCreateBtn" type="button" class="menu-panel-btn primary">🔗
-                                        Créer un lien</button>
+                                        Créer</button>
                                 </div>
                                 <p class="share-menu-status" id="shareMenuStatus"></p>
                             </div>
@@ -2915,14 +2915,33 @@
             var shareStatusType = "";
             var shareRequestInProgress = false;
             var shareLastUpdatedAt = null;
+
+            function getPlanSharePreview() {
+                var firstView = Array.isArray(views) && views.length ? views[0] : null;
+                var title = (firstView && (firstView.title || firstView.name)) || "Planning";
+                var desc = getTimelineBrief()
+                    .split(/\r?\n/)
+                    .map(function (line) { return line.trim(); })
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .join(" · ");
+                return {
+                    title: title,
+                    description: desc || "Complète le contexte pour l'afficher ici."
+                };
+            }
+
             function persistPlanShareRecord(token, updatedAt) {
                 if (!shareHistory || !token) {
                     return;
                 }
                 try {
+                    var preview = getPlanSharePreview();
                     shareHistory.upsertRecord("plan", {
                         token: token,
-                        updatedAt: updatedAt || new Date().toISOString()
+                        updatedAt: updatedAt || new Date().toISOString(),
+                        title: preview.title,
+                        description: preview.description
                     });
                 } catch (err) {
                     console.warn("Impossible d'archiver le lien Go-Plan", err);
