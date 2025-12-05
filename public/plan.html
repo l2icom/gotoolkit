@@ -1446,7 +1446,7 @@
         }
 
         .vis-item .vis-item-content {
-            padding: 2px 2px 2px 6px;
+            padding: 2px 2px 2px 4px;
         }
 
         .type-milestone .vis-item-content {
@@ -2715,9 +2715,11 @@
                 var startDate = formatTooltipDate(item.start || item.date);
                 var endDate = formatTooltipDate(item.end || item.start || item.date);
                 if (!startDate || !endDate) return null;
+                var label = (item.content || item.label || "").trim();
                 var days = getItemDurationInDays(item);
                 var durationText = days ? " (" + days + " jours)" : "";
-                return startDate + " → " + endDate + durationText;
+                var prefix = label ? label + " — " : "";
+                return prefix + startDate + " → " + endDate + durationText;
             }
 
             function positionEditTooltip(clientX, clientY) {
@@ -2962,29 +2964,25 @@
             }
 
             var CREATE_SYSTEM_TEMPLATE = `Tu es un assistant qui va générer un planning à partir des instructions suivantes {{(contenu du id="prompt") }}
-
-Le planning de départ est le suivant (conserve les ids existants) : {{(contenu au format JSON du planning existant)}}
-
 Réponds toujours avec un JSON qui contient :
 - \`page\` : le titre de la page courante (utilisé pour le header).
 - \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des types d'actions différentes. Ajouter un type spécifique aux milestones.
 - \`timeline\` : \`{ start, end }\` au format ISO (YYYY-MM-DD).
 - \`groups\` : chaque groupe d'actions avec { id, label }.
 - \`items\` : chaque item { id, groupId, label, kind, start?, end?, date? }.
-- Les items de moins de 2 jours sont convertis en \`kind: "milestone"\` avec juste la date de début.
+- Les items de moins de 5 jours sont convertis en \`kind: "milestone"\` avec juste la date de début.
+- Décomposer en plusieurs items, ceux qui ont plus de 30 jours
 - Sors uniquement le JSON, sans explication ni texte additionnel. Utiliser des intitulés courtes.`;
 
             var MODIFY_SYSTEM_TEMPLATE = `Tu es un assistant qui modifie à partir du contexte suivant {{(contenu du id="prompt") }}
-
-Le planning de départ est le suivant (conserve les ids existants) : {{(contenu au format JSON du planning existant)}}
-
 Réponds toujours avec un JSON qui contient :
 - \`page\` : le titre de la page courante (utilisé pour le header).
 - \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des types d'actions différentes.
 - \`timeline\` : \`{ start, end }\` au format ISO (YYYY-MM-DD).
 - \`groups\` : chaque groupe d'actions avec { id, label }.
 - \`items\` : chaque item { id, groupId, label, kind, start?, end?, date? }.
-- Les items de moins de 2 jours sont convertis en \`kind: "milestone"\` avec juste la date de début.
+- Les items de moins de 5 jours sont convertis en \`kind: "milestone"\` avec juste la date de début.
+- Décomposer en plusieurs items, ceux qui ont plus de 30 jours
 - Sors seulement le JSON, sans explication ni texte additionnel. Utiliser des intitulés courtes.`;
 
             customSystemTemplates.create = customSystemTemplates.create || CREATE_SYSTEM_TEMPLATE;
@@ -5298,14 +5296,15 @@ Réponds toujours avec un JSON qui contient :
             btnDay.addEventListener("click", function () { setScale("day"); });
             btnMonth.addEventListener("click", function () { setScale("month"); });
 
-            // Global wheel zoom (Ctrl + wheel anywhere) targeting the timeline
-            document.addEventListener("wheel", function (event) {
-                if (!event.ctrlKey) return; // avoid hijacking normal scroll
+            // Global wheel zoom (Ctrl/Meta + wheel anywhere) targeting the timeline
+            window.addEventListener("wheel", function (event) {
+                if (!(event.ctrlKey || event.metaKey)) return; // avoid hijacking normal scroll
                 if (!timeline) return;
                 event.preventDefault();
+                event.stopPropagation();
                 var zoomFactor = event.deltaY < 0 ? 0.8 : 1.25;
                 zoomTimelineByFactor(zoomFactor);
-            }, { passive: false });
+            }, { passive: false, capture: true });
 
             function detectScaleFromRange(start, end) {
                 if (!start || !end) return null;
