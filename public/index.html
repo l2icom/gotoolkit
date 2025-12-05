@@ -407,6 +407,21 @@
             gap: 4px;
         }
 
+        .hero-meta {
+            margin-left: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+        }
+
+        .hero-version {
+            color: var(--muted);
+            font-size: 0.56rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
         @media (max-width: 720px) {
             body {
                 padding: 8px;
@@ -440,7 +455,10 @@
             </div>
             <h1>Go-Toolkit</h1>
             <p>La boîte à idées IA des consultants</p>
-            <button id="openFeedbackBtn" class="feedback-button" type="button">💬 Donne ton avis</button>
+            <div class="hero-meta">
+                <span class="hero-version">version 2025.12.05</span>
+                <button id="openFeedbackBtn" class="feedback-button" type="button">💬 Donne ton avis</button>
+            </div>
         </header>
 
         <section class="section">
