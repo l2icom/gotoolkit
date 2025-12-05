@@ -1767,7 +1767,7 @@
         <input type="file" id="importJsonInput" accept="application/json" style="display:none">
         <script>
             window.GO_TOOLKIT_SHARE_API_URL =
-                window.GO_TOOLKIT_SHARE_API_URL || "https://xxx.gotoolkit.workers.dev/";
+                window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
         </script>
         <script src="js/share-worker-client.js"></script>
         <script>
@@ -1873,7 +1873,7 @@
             var timeline = null;
             var emptyStateElement = document.getElementById("timelineEmptyState");
             var emptyStateAction = document.getElementById("timelineEmptyAction");
-            var OPENAI_PROXY_URL = "https://openai.tranxq.workers.dev/v1/chat/completions";
+            var OPENAI_PROXY_URL = "https://openai.gotoolkit.workers.dev/v1/chat/completions";
             var OPENAI_MODEL = "gpt-5-nano";
             var OPENAI_TEMPERATURE = 1;
             var LOCAL_STORAGE_KEY = "timeline-planning-state";
