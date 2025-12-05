@@ -3459,6 +3459,20 @@
                 selectColumnForPalette(firstColumn);
             }
 
+            const cleanTitle = (template.defaultTitle || "").trim() || (template.name || "").replace(/^\s*[^\w]+\s*/, "").trim();
+            const titleInput = slide.querySelector(".slide-title-input");
+            if (titleInput && cleanTitle) {
+                titleInput.value = cleanTitle;
+            }
+            if (cleanTitle) {
+                slide.dataset.tabLabel = cleanTitle;
+                slide.dataset.title = cleanTitle;
+                const activeTabBtn = tabsContainer.querySelector(`.tab-btn[data-index="${activeIndex}"]`);
+                if (activeTabBtn) {
+                    activeTabBtn.textContent = cleanTitle;
+                }
+            }
+
             slide.dataset.templateId = template.id;
             currentTemplateId = template.id;
             lastAppliedTemplateId = template.id;

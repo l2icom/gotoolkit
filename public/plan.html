@@ -916,7 +916,7 @@
         .ia-prompt-field {
             display: none;
             width: 100%;
-            max-height: 300px;
+            max-height: 250px;
             resize: vertical;
         }
 
@@ -1744,9 +1744,11 @@
                             </select>
                         </label>
                     </div>
-                    <button class="btn" id="btn-call">
-                        <span>✨ Envoyer</span>
-                    </button>
+                    <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                        <button class="btn" id="btn-call">
+                            <span>✨ Envoyer</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2867,6 +2869,7 @@
                 "Tu es un assistant qui va générer un planning à partir des instructions suivantes {{(contenu du id=\"prompt\") }}\\n\\n" +
                 "Le planning de départ est le suivant (conserve les ids existants) : {{(contenu au format JSON du planning existant)}}\\n\\n" +
                 "Réponds toujours avec un JSON qui contient :\\n" +
+                "- `page` : le titre de la page courante (utilisé pour le header).\\n" +
                 "- `types` : un tableau d’objets `{ id, label}` pour décrire des types d'actions différentes. Ajouter un type spécifique aux milestones.\\n" +
                 "- `timeline` : `{ start, end }` au format ISO (YYYY-MM-DD).\\n" +
                 "- `groups` : chaque groupe d'actions avec { id, label }.\\n" +
@@ -2878,6 +2881,7 @@
                 "Tu es un assistant qui modifie à partir du contexte suivant {{(contenu du id=\"prompt\") }}\\n\\n" +
                 "Le planning de départ est le suivant (conserve les ids existants) : {{(contenu au format JSON du planning existant)}}\\n\\n" +
                 "Réponds toujours avec un JSON qui contient :\\n" +
+                "- `page` : le titre de la page courante (utilisé pour le header).\\n" +
                 "- `types` : un tableau d’objets `{ id, label}` pour décrire des types d'actions différentes.\\n" +
                 "- `timeline` : `{ start, end }` au format ISO (YYYY-MM-DD).\\n" +
                 "- `groups` : chaque groupe d'actions avec { id, label }.\\n" +
@@ -4445,7 +4449,6 @@
                     if (!label) return;
                     var view = views[activeViewIndex];
                     if (!view) return;
-                    view.name = label;
                     view.title = label;
                     refreshHeaderText();
                     persistTimelineState();
@@ -4464,6 +4467,19 @@
                     btn.dataset.index = index;
                     btn.addEventListener("click", function () {
                         activateView(Number(this.dataset.index));
+                    });
+                    btn.addEventListener("dblclick", function () {
+                        var idx = Number(this.dataset.index);
+                        var currentName = ensureViewName(idx);
+                        var newName = window.prompt("Nom de l'onglet", currentName);
+                        if (newName === null) return;
+                        newName = newName.trim();
+                        if (!newName) return;
+                        var targetView = views[idx];
+                        if (!targetView) return;
+                        targetView.name = newName;
+                        this.textContent = newName;
+                        persistTimelineState();
                     });
                     viewTabs.appendChild(btn);
                 });
@@ -5217,9 +5233,8 @@
             function updateIaButtonLabel(isLoading, counter) {
                 if (!iaModalButton) return;
                 if (isLoading) {
-                    var baseLabel = iaModalButtonDefaultLabel ? iaModalButtonDefaultLabel + " " : "";
                     var displayCounter = typeof counter === "number" ? counter : waitingCounter;
-                    iaModalButton.textContent = baseLabel + "⏳ Attente " + displayCounter + "s";
+                    iaModalButton.textContent = "⏳ Attente " + displayCounter + "s";
                 } else {
                     iaModalButton.textContent = iaModalButtonDefaultLabel;
                 }
@@ -5355,6 +5370,17 @@
                         console.error("JSON OpenAI invalide", err);
                         alert("Réponse OpenAI invalide : JSON attendu.");
                         return;
+                    }
+                    if (planning && typeof planning.page === "string") {
+                        var pageTitle = planning.page.trim();
+                        if (pageTitle) {
+                            var currentView = views[activeViewIndex];
+                            if (currentView) {
+                                currentView.title = pageTitle;
+                                refreshHeaderText();
+                                persistTimelineState();
+                            }
+                        }
                     }
                     applyPlanningFromJson(planning);
                 } finally {

@@ -484,6 +484,21 @@
             overflow: hidden;
         }
 
+        .diagram-title-row {
+            margin: 0 10px 2px 0;
+        }
+
+        .diagram-title-input {
+            width: 100%;
+            padding: 6px 6px;
+            font-size: 14px;
+            font-weight: 700;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #0f172a;
+        }
+
         #excalidrawHost {
             flex: 1;
             border-radius: 4px;
@@ -863,6 +878,10 @@
 
         <main class="connect-layout">
             <section class="connect-right">
+                <div class="diagram-title-row">
+                    <input id="diagramTitleInput" class="diagram-title-input" type="text" readonly
+                        placeholder="Titre de la page">
+                </div>
                 <div class="excalidraw-card">
                     <div id="excalidrawHost"></div>
                 </div>
@@ -969,7 +988,7 @@
     <script>
         (() => {
             const DEFAULT_PROMPT_TEMPLATE =
-                "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code mermaid sous forme d'un diagramme de {{draw_type}}. Les intitulés font moins de 3 mots. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
+                "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code mermaid sous forme d'un diagramme de {{draw_type}}. Les intitulés font moins de 4 mots. Ajoute un titre en commentaire %% Title dans la réponse. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
             const DRAW_TYPES = [
                 { id: "sequence", label: "↦ Séquence", promptValue: "sequenceDiagram" },
                 { id: "flow", label: "△ Flux", promptValue: "flowchart" },
@@ -1006,7 +1025,7 @@
 
             function getDrawSharePreview() {
                 const firstPage = state.pages?.[0];
-                const title = (firstPage?.label || "Page 1").trim();
+                const title = (firstPage?.title || firstPage?.label || "Page 1").trim();
                 const desc = (firstPage?.input || "")
                     .split(/\r?\n/)
                     .map(line => line.trim())
@@ -1034,6 +1053,7 @@
             }
 
             const promptInput = document.getElementById("promptInput");
+            const diagramTitleInput = document.getElementById("diagramTitleInput");
             const mermaidOutput = document.getElementById("mermaidOutput");
             const drawTypeButtons = Array.from(document.querySelectorAll(".draw-type-btn[data-draw-type]"));
             const generateBtn = document.getElementById("generateBtn");
@@ -1558,6 +1578,7 @@
                 return {
                     id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
                     label: `Page ${position}`,
+                    title: `Page ${position}`,
                     input: "",
                     mermaid: "",
                     drawType: DEFAULT_DRAW_TYPE
@@ -1573,6 +1594,7 @@
                 return {
                     id: page?.id || fallback.id,
                     label: page?.label || fallback.label,
+                    title: page?.title || page?.label || fallback.title,
                     input: page?.input || "",
                     mermaid: page?.mermaid || "",
                     drawType
@@ -1653,6 +1675,10 @@
                 const page = getActivePage();
                 promptInput.value = page?.input || "";
                 mermaidOutput.value = page?.mermaid || "";
+                if (diagramTitleInput) {
+                    diagramTitleInput.value = page?.title || page?.label || `Page ${state.activeIndex + 1}`;
+                    diagramTitleInput.readOnly = true;
+                }
                 updateDrawTypeSelector(page?.drawType || DEFAULT_DRAW_TYPE);
                 updateExcalidrawScene(page?.mermaid || "");
             }
@@ -1722,8 +1748,15 @@
                         throw new Error("Réponse vide");
                     }
                     const mermaidCode = extractMermaidCode(aiText);
+                    const extractedTitle = extractDiagramTitle(mermaidCode || aiText);
                     page.input = inputText;
                     page.mermaid = mermaidCode;
+                    if (extractedTitle) {
+                        page.title = extractedTitle;
+                        if (diagramTitleInput) {
+                            diagramTitleInput.value = extractedTitle;
+                        }
+                    }
                     mermaidOutput.value = mermaidCode;
                     updateExcalidrawScene(mermaidCode);
                     saveState();
@@ -1743,6 +1776,12 @@
                     return fenced[1].trim();
                 }
                 return text.trim();
+            }
+
+            function extractDiagramTitle(text) {
+                if (!text) return "";
+                const match = text.match(/^%%\s*Title\s*[:\-]?\s*(.+)$/im);
+                return match && match[1] ? match[1].trim() : "";
             }
 
             function hasCompleteMermaidBlock(text) {
@@ -2597,6 +2636,20 @@
                         page.input = promptInput.value;
                         saveState();
                     }
+                });
+                diagramTitleInput?.addEventListener("dblclick", () => {
+                    diagramTitleInput.readOnly = false;
+                    diagramTitleInput.focus();
+                    diagramTitleInput.select();
+                });
+                diagramTitleInput?.addEventListener("blur", () => {
+                    diagramTitleInput.readOnly = true;
+                });
+                diagramTitleInput?.addEventListener("input", () => {
+                    const page = getActivePage();
+                    if (!page) return;
+                    page.title = diagramTitleInput.value;
+                    saveState();
                 });
                 mermaidOutput.addEventListener("input", () => {
                     const page = getActivePage();

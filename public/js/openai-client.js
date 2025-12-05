@@ -156,13 +156,20 @@
                             return aggregated.trim();
                         }
                     }
+                    if (payload?.type === "response.error") {
+                        await cancelStream();
+                        releaseReader();
+                        throw new Error(payload?.error?.message || "OpenAI response error");
+                    }
                     if (
                         payload?.type === "response.completed" ||
-                        payload?.type === "response.error" ||
                         payload?.type === "response.output_text.done"
                     ) {
                         await cancelStream();
                         releaseReader();
+                        if (!aggregated && chunk) {
+                            return String(chunk).trim();
+                        }
                         return aggregated.trim();
                     }
                 } catch (error) {

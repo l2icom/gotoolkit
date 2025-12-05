@@ -47,10 +47,15 @@ function parseAllowedOrigins(env) {
 function corsHeaders(request, env) {
   const allowedOrigins = parseAllowedOrigins(env);
   const origin = request.headers.get("Origin");
+  const isLocalhost = origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
   const headers = {
     "Access-Control-Allow-Methods": "GET,PUT,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Allow-Origin": allowedOrigins && origin && allowedOrigins.includes(origin) ? origin : "*"
+    "Access-Control-Allow-Origin": isLocalhost
+      ? origin
+      : allowedOrigins && origin && allowedOrigins.includes(origin)
+        ? origin
+        : "*"
   };
   if (allowedOrigins) {
     headers["Vary"] = "Origin";
