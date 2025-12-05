@@ -1,0 +1,13 @@
+name = "feedback"
+main = "index.js"
+compatibility_date = "2024-12-01"
+workers_dev = true
+
+kv_namespaces = [
+  { binding = "RATE_LIMIT", id = "90a49630169d4619b3c2306f85d6a90a" }
+]
+
+# Set these secrets/vars at deploy time:
+# - FIREBASE_SERVICE_ACCOUNT (JSON string)
+# - FIREBASE_PROJECT_ID (optional, defaults to service account project_id)
+# - SHARE_ALLOWED_ORIGINS (comma-separated)

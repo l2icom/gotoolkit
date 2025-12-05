@@ -236,6 +236,177 @@
             color: #b43a3f;
         }
 
+        .feedback-button {
+            margin-left: auto;
+            border: 1px solid var(--border-strong);
+            border-radius: 8px;
+            background: #fff;
+            color: var(--text);
+            font-weight: 500;
+            font-size: 14px;
+            padding: 3px 9px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: none;
+            transition: border-color 0.15s ease, color 0.15s ease;
+        }
+
+        .feedback-button:hover,
+        .feedback-button:focus-visible {
+            border-color: var(--primary);
+            color: var(--primary);
+            outline: none;
+        }
+
+        .feedback-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.25);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            z-index: 50;
+        }
+
+        .feedback-modal-backdrop.open {
+            display: flex;
+        }
+
+        .feedback-modal {
+            width: min(720px, 100%);
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid var(--border-soft);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .feedback-modal header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .feedback-modal h3 {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .feedback-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .feedback-form label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 0.78rem;
+            color: var(--text);
+        }
+
+        .feedback-form input,
+        .feedback-form select,
+        .feedback-form textarea {
+            border-radius: 10px;
+            border: 1px solid var(--border-soft);
+            padding: 10px 12px;
+            font-family: inherit;
+            font-size: 0.83rem;
+            background: var(--surface-soft);
+            color: var(--text);
+        }
+
+        .feedback-form textarea {
+            resize: vertical;
+            min-height: 160px;
+        }
+
+        .feedback-form .field-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .feedback-form .field-row label {
+            flex: 1 1 220px;
+        }
+
+        .feedback-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            border: 1px solid var(--border-soft);
+            background: transparent;
+            color: var(--text);
+            border-radius: 10px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            border: none;
+            background: #2a7a57;
+            color: #fff;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 12px 24px rgba(42, 122, 87, 0.25);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .toast {
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            color: #fff;
+            background: #2a7a57;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
+            display: none;
+            z-index: 60;
+            min-width: 240px;
+        }
+
+        .toast.error {
+            background: #b43a3f;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        .required-asterisk {
+            color: #b43a3f;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+
+        .label-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
         @media (max-width: 720px) {
             body {
                 padding: 8px;
@@ -269,6 +440,7 @@
             </div>
             <h1>Go-Toolkit</h1>
             <p>La boîte à idées IA des consultants</p>
+            <button id="openFeedbackBtn" class="feedback-button" type="button">💬 Donne ton avis</button>
         </header>
 
         <section class="section">
@@ -301,6 +473,53 @@
             <p id="shareEmpty" class="share-helper" hidden>Aucun partage enregistré pour cette session.</p>
             <p id="shareError" class="share-helper share-helper-error" hidden></p>
         </section>
+
+        <div id="feedbackModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+            <div class="feedback-modal">
+                <header>
+                    <h3>Donne ton avis</h3>
+                    <button id="closeFeedbackBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
+                </header>
+                <form id="feedbackForm" class="feedback-form">
+                    <div class="field-row">
+                        <label>
+                            <span class="label-title">Nom</span>
+                            <input id="feedbackName" name="name" type="text" autocomplete="name"
+                                placeholder="Ton nom" />
+                        </label>
+                        <label>
+                            <span class="label-title">Email <span id="emailRequiredMark" class="required-asterisk"
+                                    aria-hidden="true"></span></span>
+                            <input id="feedbackEmail" name="email" type="email" autocomplete="email"
+                                placeholder="prenom@domaine.com" />
+                        </label>
+                    </div>
+                    <label>
+                        <span class="label-title">Type <span class="required-asterisk"
+                                aria-hidden="true">*</span></span>
+                        <select id="feedbackType" name="type" required>
+                            <option value="" disabled selected>Choisir un type</option>
+                            <option value="bug">Bug</option>
+                            <option value="amelioration">Amélioration</option>
+                            <option value="partenariat">Partenariat</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span class="label-title">Détails <span class="required-asterisk"
+                                aria-hidden="true">*</span></span>
+                        <textarea id="feedbackMessage" name="message" rows="10" required
+                            placeholder="Décris ton retour"></textarea>
+                    </label>
+                    <div class="feedback-actions">
+                        <button type="button" id="cancelFeedbackBtn" class="btn-secondary">Annuler</button>
+                        <button type="submit" id="submitFeedbackBtn" class="btn-primary">Envoyer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="feedbackToast" class="toast" role="status" aria-live="polite"></div>
     </div>
 
     <script>
@@ -473,6 +692,127 @@
 
             refreshGallery();
         })();
+    </script>
+    <script type="module">
+        const feedbackModal = document.getElementById("feedbackModal");
+        const openFeedbackBtn = document.getElementById("openFeedbackBtn");
+        const closeFeedbackBtn = document.getElementById("closeFeedbackBtn");
+        const cancelFeedbackBtn = document.getElementById("cancelFeedbackBtn");
+        const feedbackForm = document.getElementById("feedbackForm");
+        const feedbackType = document.getElementById("feedbackType");
+        const feedbackMessage = document.getElementById("feedbackMessage");
+        const feedbackEmail = document.getElementById("feedbackEmail");
+        const emailRequiredMark = document.getElementById("emailRequiredMark");
+        const submitFeedbackBtn = document.getElementById("submitFeedbackBtn");
+        const toastEl = document.getElementById("feedbackToast");
+
+        const messagePlaceholders = {
+            bug: "Décris le bug, les étapes pour reproduire, le résultat attendu et le résultat observé.",
+            amelioration: "Décris l'amélioration souhaitée, le contexte et l'impact attendu.",
+            partenariat: "Décris ta proposition, le type de partenariat et les objectifs communs.",
+            autre: "Décris ton retour ou ta question."
+        };
+
+        function showToast(message, isError = false) {
+            if (!toastEl) return;
+            toastEl.textContent = message;
+            toastEl.classList.toggle("error", Boolean(isError));
+            toastEl.classList.add("show");
+            setTimeout(() => toastEl.classList.remove("show"), 3200);
+        }
+
+        function updateMessagePlaceholder(type) {
+            const placeholder = messagePlaceholders[type] || messagePlaceholders.autre;
+            feedbackMessage.placeholder = placeholder;
+        }
+
+        function updateEmailRequirement(type) {
+            const requireEmail = type === "partenariat";
+            feedbackEmail.required = requireEmail;
+            if (emailRequiredMark) {
+                emailRequiredMark.textContent = requireEmail ? "*" : "";
+            }
+        }
+        function openModal() {
+            if (!feedbackModal) return;
+            feedbackModal.classList.add("open");
+            feedbackModal.setAttribute("aria-hidden", "false");
+            feedbackType?.focus();
+        }
+
+        function closeModal() {
+            if (!feedbackModal) return;
+            feedbackModal.classList.remove("open");
+            feedbackModal.setAttribute("aria-hidden", "true");
+            feedbackForm?.reset();
+            updateMessagePlaceholder("autre");
+            updateEmailRequirement("autre");
+        }
+
+        async function handleSubmit(event) {
+            event.preventDefault();
+            if (!feedbackForm.checkValidity()) {
+                feedbackForm.reportValidity();
+                return;
+            }
+            const type = feedbackType.value;
+            const message = feedbackMessage.value.trim();
+            const email = feedbackEmail.value.trim();
+            const name = (document.getElementById("feedbackName")?.value || "").trim();
+            if (type === "partenariat" && !email) {
+                showToast("Email requis pour un partenariat.", true);
+                return;
+            }
+            submitFeedbackBtn.disabled = true;
+            submitFeedbackBtn.textContent = "Envoi...";
+            try {
+                const endpoint = window.GO_TOOLKIT_FEEDBACK_API_URL || "https://feedback.gotoolkit.workers.dev/v1/feedback";
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        name: name || null,
+                        email: email || null,
+                        type,
+                        message,
+                        page: "index",
+                        userAgent: navigator.userAgent || ""
+                    })
+                });
+                if (!response.ok) {
+                    const body = await response.text().catch(() => "");
+                    throw new Error(body || "Envoi impossible");
+                }
+                showToast("Merci pour ton avis !");
+                closeModal();
+            } catch (err) {
+                console.error("Feedback non envoyé", err);
+                showToast("Impossible d'enregistrer le feedback (config ?)", true);
+            } finally {
+                submitFeedbackBtn.disabled = false;
+                submitFeedbackBtn.textContent = "Envoyer";
+            }
+        }
+
+        openFeedbackBtn?.addEventListener("click", openModal);
+        closeFeedbackBtn?.addEventListener("click", closeModal);
+        cancelFeedbackBtn?.addEventListener("click", closeModal);
+        feedbackModal?.addEventListener("click", event => {
+            if (event.target === feedbackModal) {
+                closeModal();
+            }
+        });
+        feedbackType?.addEventListener("change", event => {
+            const value = event.target.value;
+            updateMessagePlaceholder(value);
+            updateEmailRequirement(value);
+        });
+        feedbackForm?.addEventListener("submit", handleSubmit);
+
+        updateMessagePlaceholder("autre");
+        updateEmailRequirement("autre");
     </script>
 </body>
 
