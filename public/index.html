@@ -250,6 +250,32 @@
             outline: none;
         }
 
+        .share-card-pin {
+            position: absolute;
+            right: 38px;
+            bottom: 6px;
+            border: 1px solid var(--border-strong);
+            background: #fff;
+            border-radius: 12px;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        }
+
+        .share-card-pin:hover,
+        .share-card-pin:focus-visible {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 18px rgba(0, 0, 0, 0.12);
+            border-color: var(--primary);
+            outline: none;
+        }
+
         .share-helper {
             margin: 8px 0 0;
             color: var(--muted);
@@ -664,7 +690,9 @@
                     return [];
                 }
                 const records = shareHistory.getRecords() || {};
-                return Object.entries(records).filter(([app, record]) => APP_DEFINITIONS[app] && record?.token);
+                return Object.entries(records)
+                    .filter(([app, record]) => APP_DEFINITIONS[app] && record?.token)
+                    .map(([app, record]) => ({ app, record }));
             }
 
             function buildShareUrl(definition, token) {
@@ -703,21 +731,41 @@
                     <p class="share-card-desc">${preview.lines.join(" · ") || "Complète le contexte pour l'afficher ici."}</p>
                     <p class="share-card-date">${formattedDate}</p>
                 `;
+                const pinBtn = document.createElement("button");
+                pinBtn.type = "button";
+                pinBtn.className = "share-card-pin";
+                const isPinned = Boolean(record.pinned);
+                pinBtn.title = isPinned ? "Retirer l'épingle" : "Épingler ce partage";
+                pinBtn.textContent = "📌";
+                pinBtn.addEventListener("click", event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const nextPinned = !isPinned;
+                    shareHistory?.upsertRecord?.(app, { ...record, pinned: nextPinned });
+                    refreshGallery();
+                });
                 const deleteBtn = document.createElement("button");
                 deleteBtn.type = "button";
                 deleteBtn.className = "share-card-delete";
                 deleteBtn.title = "Supprimer ce partage";
                 deleteBtn.textContent = "🗑️";
-                deleteBtn.addEventListener("click", event => {
+                deleteBtn.addEventListener("click", async event => {
                     event.preventDefault();
                     event.stopPropagation();
                     const confirmed = window.confirm("Supprimer ce lien de partage ?");
                     if (!confirmed) return;
+                    try {
+                        await shareService?.deleteSharePayload?.(definition.collection, record.token);
+                    } catch (err) {
+                        alert("Suppression distante impossible : " + (err?.message || err));
+                        return;
+                    }
                     shareHistory?.removeRecord?.(app);
                     refreshGallery();
                 });
+                card.appendChild(pinBtn);
                 card.appendChild(deleteBtn);
-                return card;
+                return { card, preview, updatedAt, isPinned, app };
             }
 
             async function refreshGallery() {
@@ -736,13 +784,25 @@
                     setState({ loading: false, hasData: false, error: "" });
                     return;
                 }
-                const cards = await Promise.all(entries.map(([app, record]) => buildShareCard(app, record)));
+                const cards = await Promise.all(entries.map(({ app, record }) => buildShareCard(app, record)));
                 const validCards = cards.filter(Boolean);
                 if (!validCards.length) {
                     setState({ loading: false, hasData: false, error: "" });
                     return;
                 }
-                validCards.forEach(card => gallery.appendChild(card));
+                const sorted = validCards.sort((a, b) => {
+                    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+                    if (a.isPinned && b.isPinned) {
+                        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+                    }
+                    const nameA = (a.preview?.tabName || "").toLowerCase();
+                    const nameB = (b.preview?.tabName || "").toLowerCase();
+                    if (nameA && nameB) {
+                        return nameA.localeCompare(nameB, "fr");
+                    }
+                    return 0;
+                });
+                sorted.forEach(item => gallery.appendChild(item.card));
                 setState({ loading: false, hasData: true, error: "" });
             }
 

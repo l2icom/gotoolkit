@@ -93,6 +93,26 @@
     });
   }
 
+  async function deleteSharePayload(collection, token) {
+    assertReady();
+    return withWorkerFallback(async base => {
+      const response = await fetchWithBase(base, collection, token, {
+        method: "DELETE",
+        headers: {
+          Accept: "application/json"
+        }
+      });
+      if (response.status === 404) {
+        return null;
+      }
+      if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        throw new Error(body || "Impossible de supprimer le partage");
+      }
+      return true;
+    });
+  }
+
   async function saveSharePayload(collection, token, payload) {
     assertReady();
     return withWorkerFallback(async base => {
@@ -119,6 +139,7 @@
     version: API_VERSION,
     isReady,
     fetchSharePayload,
-    saveSharePayload
+    saveSharePayload,
+    deleteSharePayload
   };
 })();
