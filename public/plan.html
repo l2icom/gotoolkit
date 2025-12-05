@@ -1967,6 +1967,7 @@
             var contextUiReady = false;
             var lastTimelineGenerationAt = 0;
             var AUTO_CONTEXT_SUPPRESSION_MS = 15000;
+            var shouldOpenContextOnFirstLoad = true;
             var DEFAULT_CONTEXT_STATE = {
                 mode: "create",
                 prompts: {
@@ -1996,180 +1997,8 @@
                 }
             }
             var DEMO_STATE = {
-                views: [
-                    {
-                        name: "Page 1",
-                        title: "Page 1",
-                        planning: {
-                            timeline: {
-                                start: "2025-11-30",
-                                end: "2026-06-15"
-                            },
-                            groups: [
-                                { id: "g1", label: "PM & Stakeholders" },
-                                { id: "g2", label: "Architecture & Data" },
-                                { id: "g3", label: "Backend" },
-                                { id: "g4", label: "Frontend & UX" },
-                                { id: "g5", label: "Quality Assurance" },
-                                { id: "g6", label: "DevOps & Infra" },
-                                { id: "g7", label: "Formation & Support" }
-                            ],
-                            items: [
-                                {
-                                    id: "i2",
-                                    groupId: "g2",
-                                    label: "Architecture Freeze",
-                                    kind: "milestone",
-                                    date: "2025-12-21"
-                                },
-                                {
-                                    id: "i3",
-                                    groupId: "g4",
-                                    label: "MVP Scope Freeze",
-                                    kind: "milestone",
-                                    date: "2026-02-15"
-                                },
-                                {
-                                    id: "i4",
-                                    groupId: "g6",
-                                    label: "Production Readiness",
-                                    kind: "milestone",
-                                    date: "2026-05-31"
-                                },
-                                {
-                                    id: "i5",
-                                    groupId: "g1",
-                                    label: "Review & Next PI",
-                                    kind: "milestone",
-                                    date: "2026-05-31"
-                                },
-                                {
-                                    id: "i9",
-                                    groupId: "g3",
-                                    label: "API: Demandes de maintenance endpoints",
-                                    kind: "feature",
-                                    start: "2025-11-30",
-                                    end: "2026-01-19"
-                                },
-                                {
-                                    id: "i10",
-                                    groupId: "g3",
-                                    label: "Gestion des états de demande",
-                                    kind: "task",
-                                    start: "2026-01-31",
-                                    end: "2026-03-13"
-                                },
-                                {
-                                    id: "i11",
-                                    groupId: "g4",
-                                    label: "UI: Création et suivi des demandes",
-                                    kind: "feature",
-                                    start: "2025-12-15",
-                                    end: "2026-02-28"
-                                },
-                                {
-                                    id: "i12",
-                                    groupId: "g4",
-                                    label: "Dashboard & filtres",
-                                    kind: "task",
-                                    start: "2026-01-10",
-                                    end: "2026-03-20"
-                                },
-                                {
-                                    id: "i13",
-                                    groupId: "g5",
-                                    label: "Tests fonctionnels & acceptance criteria",
-                                    kind: "documentation",
-                                    start: "2026-01-15",
-                                    end: "2026-03-15"
-                                },
-                                {
-                                    id: "i14",
-                                    groupId: "g5",
-                                    label: "Automatisation QA",
-                                    kind: "task",
-                                    start: "2026-02-20",
-                                    end: "2026-04-30"
-                                },
-                                {
-                                    id: "i15",
-                                    groupId: "g6",
-                                    label: "CI/CD & Environnements",
-                                    kind: "integration",
-                                    start: "2025-12-15",
-                                    end: "2026-04-30"
-                                },
-                                {
-                                    id: "i16",
-                                    groupId: "g6",
-                                    label: "Monitoring & Observabilité",
-                                    kind: "task",
-                                    start: "2026-03-01",
-                                    end: "2026-05-31"
-                                },
-                                {
-                                    id: "i17",
-                                    groupId: "g7",
-                                    label: "Formation utilisateur",
-                                    kind: "documentation",
-                                    start: "2026-03-15",
-                                    end: "2026-04-30"
-                                },
-                                {
-                                    id: "i18",
-                                    groupId: "g7",
-                                    label: "Support post-déploiement",
-                                    kind: "task",
-                                    start: "2026-04-01",
-                                    end: "2026-06-15"
-                                },
-                                {
-                                    id: "i20",
-                                    groupId: "g3",
-                                    label: "Intégration sécurité & conformité API",
-                                    kind: "integration",
-                                    start: "2026-01-05",
-                                    end: "2026-02-28"
-                                }
-                            ]
-                        },
-                        context: {
-                            mode: "create",
-                            prompts: {
-                                create: "",
-                                modify: ""
-                            }
-                        }
-                    },
-                    {
-                        name: "Page 2",
-                        title: "Page 2",
-                        planning: {
-                            timeline: {
-                                start: "2025-11-23",
-                                end: "2025-11-23"
-                            },
-                            groups: [],
-                            items: []
-                        },
-                        context: {
-                            mode: "create",
-                            prompts: {
-                                create: "",
-                                modify: ""
-                            }
-                        }
-                    }
-                ],
-                displayPreferences: {
-                    font: "Inter",
-                    fontSize: 14,
-                    background: "#f7f7f7",
-                    ratio: "full",
-                    spacing: "dense",
-                    itemDurationMode: "days",
-                    hideWeekends: true
-                }
+                views: [],
+                displayPreferences: null
             };
             function sanitizeTypeId(raw) {
                 var id = (raw || "").toLowerCase().trim();
@@ -2626,6 +2455,7 @@
                 ];
             }
             var persistedState = loadPersistedTimelineState();
+            shouldOpenContextOnFirstLoad = !persistedState;
             if (persistedState) {
                 if (Array.isArray(persistedState.views) && persistedState.views.length) {
                     views = persistedState.views.map(function (view, index) {
@@ -5317,6 +5147,10 @@ Réponds toujours avec un JSON qui contient :
 
             syncContextFieldsFromState({ skipPersist: true, refreshModify: true });
             contextUiReady = true;
+
+            if (shouldOpenContextOnFirstLoad && !hasTimelineData()) {
+                openContextModal({ mode: "create" });
+            }
 
             if (txtPromptCreate) {
                 txtPromptCreate.addEventListener("input", function () {
