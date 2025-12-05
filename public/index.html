@@ -1707,6 +1707,7 @@
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
     <script src="js/share-worker-client.js"></script>
+    <script src="js/openai-client.js"></script>
     <script>
         const stageColors = {
             "first-col": getComputedStyle(document.documentElement).getPropertyValue("--now-color").trim(),
@@ -4064,17 +4065,16 @@
         }
 
         async function callOpenAI(messages) {
-            const apiKey = apiKeyInput.value.trim();
             try {
-                const useProxy = !apiKey;
-                if (useProxy) {
-                    console.warn("Appel OpenAI via le proxy gotoolkit.workers.dev");
-                } else {
-                    console.warn("Appel OpenAI officiel");
+                if (!window.GoToolkitOpenAI) {
+                    throw new Error("Client OpenAI indisponible");
                 }
-                const endpoint = apiKey
-                    ? "https://api.openai.com/v1/chat/completions"
-                    : "https://openai.gotoolkit.workers.dev/v1/chat/completions";
+                const apiKey = (apiKeyInput.value || "").trim();
+                const useProxy = !apiKey;
+                console.warn(useProxy ? "Appel OpenAI via le proxy gotoolkit.workers.dev" : "Appel OpenAI officiel");
+                const endpoint = useProxy
+                    ? "https://openai.gotoolkit.workers.dev/v1/chat/completions"
+                    : "https://api.openai.com/v1/chat/completions";
                 console.log(
                     "send request",
                     messages.map(message => ({
@@ -4082,30 +4082,23 @@
                         content: message.content
                     }))
                 );
-                const response = await fetch(endpoint, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {})
-                    },
-                    body: JSON.stringify({
+                const content = await GoToolkitOpenAI.chatCompletion({
+                    endpoint,
+                    apiKey: useProxy ? "" : apiKey,
+                    payload: {
                         model: "gpt-5-nano",
                         messages,
-                        temperature: 1
-                    })
+                        temperature: 1,
+                        stream: true
+                    }
                 });
-                if (!response.ok) {
-                    const body = await response.text();
-                    throw new Error(body);
-                }
-                const payload = await response.json();
-                console.debug("OpenAI response payload", payload);
-                const choice = payload.choices?.[0] || {};
-                const content = choice.message?.content ?? choice.text ?? "";
+                console.debug("OpenAI response text", content);
                 return content;
             } catch (err) {
                 console.error("Erreur OpenAI", err);
-                showErrorToast("Impossible de contacter OpenAI (accès non autorisé ou quota excédé). Utilise ta propre clé OpenAI");
+                showErrorToast(
+                    "Impossible de contacter OpenAI (accès non autorisé ou quota excédé). Utilise ta propre clé OpenAI"
+                );
                 return null;
             }
         }

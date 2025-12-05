@@ -688,6 +688,7 @@
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
     <script src="js/share-worker-client.js"></script>
+    <script src="js/openai-client.js"></script>
     <script>
         var process = window.process || {};
         (function () {
@@ -703,7 +704,7 @@
     <script>
         (() => {
             const DEFAULT_PROMPT_TEMPLATE =
-                "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code mermaid sous forme d'un diagramme de {{draw_type}}. Les intitulés doivent être synthétiques. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
+                "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code mermaid sous forme d'un diagramme de {{draw_type}}. Les intitulés font moins de 3 mots. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
             const DRAW_TYPES = [
                 { id: "sequence", label: "↦ Séquence", promptValue: "séquence" },
                 { id: "flow", label: "△ Flux", promptValue: "flux" },
@@ -1218,6 +1219,11 @@
                 return text.trim();
             }
 
+            function hasCompleteMermaidBlock(text) {
+                if (!text) return false;
+                return /```(?:mermaid)?[\s\S]*?```/i.test(text);
+            }
+
             let statusTimeoutId = null;
 
             function setStatus(message) {
@@ -1239,31 +1245,25 @@
             }
 
             async function callOpenAI(messages) {
+                if (!window.GoToolkitOpenAI) {
+                    throw new Error("Client OpenAI indisponible");
+                }
                 const apiKey = (state.apiKey || "").trim();
                 const useProxy = !apiKey;
                 const endpoint = useProxy
                     ? "https://openai.gotoolkit.workers.dev/v1/chat/completions"
                     : "https://api.openai.com/v1/chat/completions";
-                const headers = { "Content-Type": "application/json" };
-                if (!useProxy) {
-                    headers.Authorization = `Bearer ${apiKey}`;
-                }
-                const response = await fetch(endpoint, {
-                    method: "POST",
-                    headers,
-                    body: JSON.stringify({
+                return GoToolkitOpenAI.chatCompletion({
+                    endpoint,
+                    apiKey: useProxy ? "" : apiKey,
+                    payload: {
                         model: "gpt-5-nano",
                         messages,
-                        temperature: 1
-                    })
+                        temperature: 1,
+                        stream: true
+                    },
+                    stopCondition: hasCompleteMermaidBlock
                 });
-                if (!response.ok) {
-                    const body = await response.text();
-                    throw new Error(body || "API non disponible");
-                }
-                const payload = await response.json();
-                const choice = payload.choices?.[0];
-                return choice?.message?.content ?? choice?.text ?? "";
             }
 
             function openModal() {
@@ -1387,25 +1387,14 @@
             async function tryMermaidConversion(code) {
                 const trimmed = (code || "").trim();
                 if (!trimmed) {
-                    console.log("[Mermaid] conversion skipped: empty code block");
                     return null;
                 }
-                console.log("[Mermaid] conversion attempt", {
-                    charCount: trimmed.length
-                });
                 try {
                     const bridge = await ensureExcalidrawReady();
                     const conversion = await bridge.convertMermaid(trimmed);
                     if (conversion?.elements?.length) {
-                        console.log("[Mermaid] conversion succeeded", {
-                            elementCount: conversion.elements.length,
-                            hasFiles: Boolean(conversion.files)
-                        });
                         return conversion;
                     }
-                    console.log("[Mermaid] conversion returned no elements", {
-                        charCount: trimmed.length
-                    });
                     return null;
                 } catch (error) {
                     console.warn("Conversion Mermaid -> Excalidraw impossible", error);
@@ -1415,20 +1404,15 @@
             async function buildScenePayload(code) {
                 const trimmed = (code || "").trim();
                 if (!trimmed) {
-                    console.log("[Mermaid] buildScenePayload: empty input");
                     return { elements: [] };
                 }
-                console.log("[Mermaid] buildScenePayload: attempting conversion");
                 const converted = await tryMermaidConversion(trimmed);
                 if (converted?.elements?.length) {
                     const imageOnlyScene = converted.elements.every(element => element?.type === "image");
                     if (!imageOnlyScene) {
-                        console.log("[Mermaid] scene payload uses converted elements");
                         return converted;
                     }
-                    console.log("[Mermaid] converted scene is image-only; fallback renderer preferred");
                 }
-                console.log("[Mermaid] falling back to legacy builder");
                 return { elements: buildLegacyExcalidrawElements(trimmed), files: null };
             }
 
@@ -1590,7 +1574,6 @@
                     return null;
                 }
                 const header = lines[0].toLowerCase();
-                console.log("[Mermaid] legacy translator header", header);
                 if (header.startsWith("flowchart") || header.startsWith("graph")) {
                     return buildFlowchartElements(lines);
                 }
@@ -1928,9 +1911,6 @@
                 if (!lines.length) {
                     lines.push("Diagramme vide");
                 }
-                console.log("[Mermaid] using fallback text elements", {
-                    lineCount: lines.length
-                });
                 const baseY = 40;
                 const gap = 70;
                 return lines.map((line, idx) => createTextElement(line, 40, baseY + idx * gap, {
@@ -1969,26 +1949,10 @@
                 pendingSceneCode = code || "";
                 sceneBuildRequestId += 1;
                 const requestId = sceneBuildRequestId;
-                console.log("[Excalidraw] scene update requested", {
-                    requestId,
-                    charCount: pendingSceneCode.length
-                });
                 try {
                     const api = await getExcalidrawApi();
-                    console.log("[Excalidraw] API resolved for scene update", {
-                        requestId
-                    });
                     const sceneData = await buildScenePayload(pendingSceneCode);
-                    console.log("[Excalidraw] scene data built", {
-                        requestId,
-                        hasElements: Boolean(sceneData?.elements?.length),
-                        hasFiles: Boolean(sceneData?.files)
-                    });
                     if (requestId !== sceneBuildRequestId) {
-                        console.log("[Excalidraw] scene update superseded", {
-                            requestId,
-                            latestId: sceneBuildRequestId
-                        });
                         return;
                     }
                     const appState = {
@@ -2004,11 +1968,6 @@
                     if (sceneData.files) {
                         scenePayload.files = sceneData.files;
                     }
-                    console.log("[Excalidraw] applying scene", {
-                        requestId,
-                        elementCount: scenePayload.elements.length,
-                        hasFiles: Boolean(scenePayload.files)
-                    });
                     if (!applySceneUpdate(api, scenePayload)) {
                         console.warn("Aucune méthode disponible pour mettre à jour Excalidraw", {
                             hasUpdateScene: typeof api?.updateScene === "function",
@@ -2035,10 +1994,6 @@
                         gridModeEnabled: false,
                         isLoading: false
                     };
-                    console.log("[Excalidraw] fallback scene applied", {
-                        requestId,
-                        fallbackCount: fallbackElements.length
-                    });
                     applySceneUpdate(api, { elements: fallbackElements, appState });
                 }
             }

@@ -1770,6 +1770,7 @@
                 window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
         </script>
         <script src="js/share-worker-client.js"></script>
+        <script src="js/openai-client.js"></script>
         <script>
             // ============================================================
             // 1. Schema JSON · planning-v1 (doc développeur)
@@ -5135,44 +5136,35 @@
             }
 
             async function callOpenAI(messages) {
-                var apiKey = "";
-                if (iaApiKeyInput && iaApiKeyInput.value) {
-                    apiKey = iaApiKeyInput.value.trim();
-                }
-                if (!apiKey) {
-                    apiKey = readSharedTimelineApiKey();
-                }
-                var useProxy = !apiKey;
-                var headers = {
-                    "Content-Type": "application/json"
-                };
-                if (apiKey) {
-                    headers.Authorization = "Bearer " + apiKey;
-                }
-                var endpoint = useProxy ? OPENAI_PROXY_URL : "https://api.openai.com/v1/chat/completions";
                 try {
+                    if (!window.GoToolkitOpenAI) {
+                        throw new Error("Client OpenAI indisponible");
+                    }
+                    var apiKey = "";
+                    if (iaApiKeyInput && iaApiKeyInput.value) {
+                        apiKey = iaApiKeyInput.value.trim();
+                    }
+                    if (!apiKey) {
+                        apiKey = readSharedTimelineApiKey();
+                    }
+                    var useProxy = !apiKey;
+                    var endpoint = useProxy ? OPENAI_PROXY_URL : "https://api.openai.com/v1/chat/completions";
                     console.log(
                         "OpenAI request content",
                         messages.map(function (m) {
                             return "[" + m.role + "] " + (m.content || "");
                         })
                     );
-                    var response = await fetch(endpoint, {
-                        method: "POST",
-                        headers: headers,
-                        body: JSON.stringify({
+                    var messageText = await GoToolkitOpenAI.chatCompletion({
+                        endpoint: endpoint,
+                        apiKey: useProxy ? "" : apiKey,
+                        payload: {
                             model: OPENAI_MODEL,
                             temperature: OPENAI_TEMPERATURE,
-                            messages: messages
-                        })
+                            messages: messages,
+                            stream: true
+                        }
                     });
-                    if (!response.ok) {
-                        var errBody = await response.text();
-                        throw new Error(errBody);
-                    }
-                    var payload = await response.json();
-                    var choice = (payload.choices && payload.choices[0]) || {};
-                    var messageText = (choice.message && choice.message.content) || choice.text || "";
                     console.log("OpenAI received text", messageText);
                     return messageText;
                 } catch (err) {

@@ -59,16 +59,22 @@ export default {
     }
 
     // 5) Quota journalier par client (ex: 100 req / jour / client)
-    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const now = Date.now();
+    const today = new Date(now).toISOString().slice(0, 10); // "YYYY-MM-DD"
     const dailyLimit = 100;
+    const windowMs = 60_000; // 1 minute
+    const perMinuteLimit = 10; // 60 req / min / client
+
     const quotaKey = `quota:${clientId}:${today}`;
+    const windowId = Math.floor(now / windowMs);
+    const rlKey = `rl:${clientId}:${windowId}`;
 
-    let dailyCount = 0;
-    const storedDaily = await env.RATE_LIMIT.get(quotaKey);
-    if (storedDaily) {
-      dailyCount = parseInt(storedDaily, 10) || 0;
-    }
+    const [storedDaily, storedMinute] = await Promise.all([
+      env.RATE_LIMIT.get(quotaKey),
+      env.RATE_LIMIT.get(rlKey)
+    ]);
 
+    const dailyCount = storedDaily ? parseInt(storedDaily, 10) || 0 : 0;
     if (dailyCount >= dailyLimit) {
       return jsonError(
         corsOrigin,
@@ -78,25 +84,7 @@ export default {
       );
     }
 
-    // Incrémenter quota journalier (expire après ~27h pour être safe)
-    await env.RATE_LIMIT.put(quotaKey, String(dailyCount + 1), {
-      expirationTtl: 27 * 60 * 60
-    });
-
-    // 6) Rate limit court terme (fenêtre 1 minute) par client
-    const windowMs = 60_000; // 1 minute
-    const perMinuteLimit = 10; // 60 req / min / client
-
-    const now = Date.now();
-    const windowId = Math.floor(now / windowMs);
-    const rlKey = `rl:${clientId}:${windowId}`;
-
-    let minuteCount = 0;
-    const storedMinute = await env.RATE_LIMIT.get(rlKey);
-    if (storedMinute) {
-      minuteCount = parseInt(storedMinute, 10) || 0;
-    }
-
+    const minuteCount = storedMinute ? parseInt(storedMinute, 10) || 0 : 0;
     if (minuteCount >= perMinuteLimit) {
       return jsonError(
         corsOrigin,
@@ -106,9 +94,15 @@ export default {
       );
     }
 
-    await env.RATE_LIMIT.put(rlKey, String(minuteCount + 1), {
-      expirationTtl: 70 // secondes
-    });
+    // Incrémenter quota quotidien + fenêtre minute (TTL 27h / 70s) en parallèle.
+    await Promise.all([
+      env.RATE_LIMIT.put(quotaKey, String(dailyCount + 1), {
+        expirationTtl: 27 * 60 * 60
+      }),
+      env.RATE_LIMIT.put(rlKey, String(minuteCount + 1), {
+        expirationTtl: 70 // secondes
+      })
+    ]);
 
     // 7) Proxy vers OpenAI (avec limites de payload)
     return forwardToOpenAI(request, env, corsOrigin);
@@ -158,6 +152,18 @@ async function forwardToOpenAI(request, env, corsOrigin) {
     }
   }
 
+  const upstreamPayload = {
+    model: payload.model ?? "gpt-5-nano",
+    messages: messages.length
+      ? messages
+      : [{ role: "user", content: "Hello" }],
+    temperature: payload.temperature ?? 1
+  };
+
+  if (payload.stream === true) {
+    upstreamPayload.stream = true;
+  }
+
   let upstreamResponse;
   try {
     upstreamResponse = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -166,13 +172,7 @@ async function forwardToOpenAI(request, env, corsOrigin) {
         "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        model: payload.model ?? "gpt-5-nano",
-        messages: messages.length
-          ? messages
-          : [{ role: "user", content: "Hello" }],
-        temperature: payload.temperature ?? 1,
-      })
+      body: JSON.stringify(upstreamPayload)
     });
   } catch (error) {
     console.error("OpenAI fetch failed", error);
