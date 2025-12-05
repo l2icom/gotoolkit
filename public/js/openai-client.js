@@ -66,6 +66,14 @@
             return payload.output_text;
         }
 
+        if (Array.isArray(payload.output_text)) {
+            return payload.output_text.map(extractFromOutput).join("");
+        }
+
+        if (payload.output_text && typeof payload.output_text === "object") {
+            return extractFromOutput(payload.output_text);
+        }
+
         if (Array.isArray(payload.output)) {
             return extractFromOutput(payload.output);
         }
