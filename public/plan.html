@@ -2874,7 +2874,7 @@
                 "- `timeline` : `{ start, end }` au format ISO (YYYY-MM-DD).\\n" +
                 "- `groups` : chaque groupe d'actions avec { id, label }.\\n" +
                 "- `items` : chaque item { id, groupId, label, kind, start?, end?, date? }.\\n" +
-                "- Les items ponctuels sont des `kind: \"milestone\"`.\\n" +
+                "- Les items de moins de 7 jours sont des `kind: \"milestone\"`. avec juste la date de début\\n" +
                 "- Sors uniquement le JSON, sans explication ni texte additionnel.";
 
             var MODIFY_SYSTEM_TEMPLATE =
@@ -2886,7 +2886,7 @@
                 "- `timeline` : `{ start, end }` au format ISO (YYYY-MM-DD).\\n" +
                 "- `groups` : chaque groupe d'actions avec { id, label }.\\n" +
                 "- `items` : chaque item { id, groupId, label, kind, start?, end?, date? }.\\n" +
-                "- Les items ponctuels sont des `kind: \"milestone\"`.\\n" +
+                "- Les items de moins de 7 jours sont des `kind: \"milestone\"`. avec juste la date de début.\\n" +
                 "- Sors seulement le JSON.";
 
             var optionsBtn = document.getElementById("optionsBtn");
