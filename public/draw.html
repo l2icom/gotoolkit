@@ -311,7 +311,7 @@
             background: white;
             color: #1f2a56;
             font-size: 13px;
-            padding: 4px 8px;
+            padding: 6px 10px;
             border-radius: 8px;
             cursor: pointer;
         }
@@ -331,6 +331,15 @@
             display: flex;
             flex-direction: column;
             min-height: 0;
+        }
+
+        .connect-left.collapsed {
+            display: none;
+        }
+
+        .connect-right.full-width {
+            flex: 1 1 100%;
+            width: 100%;
         }
 
 
@@ -636,7 +645,7 @@
 
         .ai-modal-actions {
             display: flex;
-            justify-content: flex-end;
+            justify-content: flex-start;
             gap: 10px;
         }
 
@@ -1020,8 +1029,7 @@
                 <textarea id="promptTemplateField" rows="6"></textarea>
             </label>
             <div class="ai-modal-actions">
-                <button id="resetPromptBtn" class="btn-secondary" type="button">Prompt par défaut</button>
-                <button id="saveAiSettingsBtn" class="btn-primary" type="button">Sauvegarder</button>
+                <button id="resetPromptBtn" class="btn-secondary" type="button">↺ Réinitialiser</button>
             </div>
         </div>
     </div>
@@ -1174,7 +1182,6 @@ sequenceDiagram
             const reasoningEffortSelect = document.getElementById("reasoningEffortSelect");
             const promptTemplateField = document.getElementById("promptTemplateField");
             const resetPromptBtn = document.getElementById("resetPromptBtn");
-            const saveAiSettingsBtn = document.getElementById("saveAiSettingsBtn");
             const navSwitcherBtn = document.getElementById("navSwitcherBtn");
             const navSwitcherMenu = document.getElementById("navSwitcherMenu");
             const shareBtn = document.getElementById("shareBtn");
@@ -1186,6 +1193,7 @@ sequenceDiagram
             const toggleDrawerBtn = document.getElementById("toggleDrawerBtn");
             const drawerOverlay = document.getElementById("drawerOverlay");
             const connectLeft = document.querySelector(".connect-left");
+            const connectRight = document.querySelector(".connect-right");
             const drawerMediaQuery = window.matchMedia("(max-width: 1200px)");
             const shareHistory = window.goToolkitShareHistory;
             const generateDefaultLabel = generateBtn?.textContent || "✨ Générer";
@@ -1193,7 +1201,7 @@ sequenceDiagram
             let generateCooldownTimer = null;
             let generateCooldownEndTime = 0;
             let currentTourIndex = 0;
-            let isDrawerOpen = false;
+            let isDrawerOpen = !drawerMediaQuery.matches;
             const tourSteps = [
                 {
                     title: "Intention Go-Draw",
@@ -1222,26 +1230,25 @@ sequenceDiagram
                 }
             ];
 
+            function syncDrawerToggleUi() {
+                const isOpen = isDrawerOpen || !drawerMediaQuery.matches;
+                toggleDrawerBtn?.classList.toggle("is-open", isOpen);
+                connectLeft?.classList.toggle("is-open", isOpen);
+            }
+
             function closeDrawer() {
                 if (!connectLeft) return;
                 isDrawerOpen = false;
-                connectLeft.classList.remove("open");
-                drawerOverlay?.classList.remove("visible");
-                drawerOverlay?.setAttribute("aria-hidden", "true");
-                toggleDrawerBtn?.setAttribute("aria-expanded", "false");
+                syncDrawerToggleUi();
             }
 
             function openDrawer() {
-                if (!connectLeft || !drawerMediaQuery.matches) return;
+                if (!connectLeft) return;
                 isDrawerOpen = true;
-                connectLeft.classList.add("open");
-                drawerOverlay?.classList.add("visible");
-                drawerOverlay?.setAttribute("aria-hidden", "false");
-                toggleDrawerBtn?.setAttribute("aria-expanded", "true");
+                syncDrawerToggleUi();
             }
 
             function toggleDrawer() {
-                if (!drawerMediaQuery.matches) return;
                 if (isDrawerOpen) {
                     closeDrawer();
                 } else {
@@ -1250,12 +1257,42 @@ sequenceDiagram
             }
 
             function handleDrawerBreakpointChange(event) {
-                if (!event.matches) {
-                    closeDrawer();
+                if (event.matches) {
+                    isDrawerOpen = false; // mobile starts closed
                 } else {
-                    closeDrawer();
+                    isDrawerOpen = true; // desktop defaults open
+                }
+                syncDrawerToggleUi();
+            }
+
+            function syncDrawerToggleUi() {
+                const isMobile = drawerMediaQuery.matches;
+                const isOpen = isDrawerOpen;
+
+                if (isMobile) {
+                    connectLeft?.classList.toggle("open", isOpen);
+                    connectLeft?.classList.remove("collapsed");
+                    connectRight?.classList.remove("full-width");
+                    if (isOpen) {
+                        drawerOverlay?.classList.add("visible");
+                        drawerOverlay?.setAttribute("aria-hidden", "false");
+                        toggleDrawerBtn?.setAttribute("aria-expanded", "true");
+                    } else {
+                        drawerOverlay?.classList.remove("visible");
+                        drawerOverlay?.setAttribute("aria-hidden", "true");
+                        toggleDrawerBtn?.setAttribute("aria-expanded", "false");
+                    }
+                } else {
+                    connectLeft?.classList.remove("open");
+                    drawerOverlay?.classList.remove("visible");
+                    drawerOverlay?.setAttribute("aria-hidden", "true");
+                    toggleDrawerBtn?.setAttribute("aria-expanded", isOpen ? "true" : "false");
+                    connectLeft?.classList.toggle("collapsed", !isOpen);
+                    connectRight?.classList.toggle("full-width", !isOpen);
                 }
             }
+
+            syncDrawerToggleUi();
 
             function loadState() {
                 try {
@@ -1270,7 +1307,8 @@ sequenceDiagram
                         pages: storedPages.map((page, index) => normalizePage(page, index)),
                         activeIndex: parsed.activeIndex || 0,
                         apiKey: parsed.apiKey || "",
-                        promptTemplate: parsed.promptTemplate || DEFAULT_PROMPT_TEMPLATE
+                        promptTemplate: parsed.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
+                        reasoningEffort: parsed.reasoningEffort || parsed.reasoning?.effort || "low"
                     };
                 } catch (err) {
                     console.warn("Impossible de charger l'état", err);
@@ -2024,16 +2062,8 @@ sequenceDiagram
 
             function resetPrompt() {
                 promptTemplateField.value = DEFAULT_PROMPT_TEMPLATE;
-            }
-
-            function saveAiSettings() {
-                state.apiKey = apiKeyField.value.trim();
-                state.promptTemplate = promptTemplateField.value.trim() || DEFAULT_PROMPT_TEMPLATE;
-                if (reasoningEffortSelect) {
-                    state.reasoningEffort = reasoningEffortSelect.value || "low";
-                }
+                state.promptTemplate = DEFAULT_PROMPT_TEMPLATE;
                 saveState();
-                closeModal();
             }
 
             const EXCALIDRAW_STYLESHEET_URL = "https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw-assets/index.css";
@@ -2892,7 +2922,18 @@ sequenceDiagram
                     }
                 });
                 resetPromptBtn.addEventListener("click", resetPrompt);
-                saveAiSettingsBtn.addEventListener("click", saveAiSettings);
+                apiKeyField?.addEventListener("input", () => {
+                    state.apiKey = apiKeyField.value.trim();
+                    saveState();
+                });
+                promptTemplateField?.addEventListener("input", () => {
+                    state.promptTemplate = promptTemplateField.value.trim() || DEFAULT_PROMPT_TEMPLATE;
+                    saveState();
+                });
+                reasoningEffortSelect?.addEventListener("change", () => {
+                    state.reasoningEffort = reasoningEffortSelect.value || "low";
+                    saveState();
+                });
                 window.addEventListener("keydown", event => {
                     const isEscape = event.key === "Escape";
                     if (isEscape && aiModal.classList.contains("open")) {

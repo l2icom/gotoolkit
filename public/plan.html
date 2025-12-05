@@ -876,10 +876,11 @@
             flex-wrap: wrap;
         }
 
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        width: 100%;
+        .header-actions .header-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 100%;
         }
 
         .ia-key-row label {
@@ -922,6 +923,17 @@
 
         .ia-prompt-field.active {
             display: block;
+        }
+
+        .ia-actions-footer {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 8px;
+            gap: 8px;
+        }
+
+        .ia-template-footer {
+            justify-content: flex-start;
         }
 
         .header-actions textarea {
@@ -1522,6 +1534,7 @@
                         <a class="nav-switch-link" href="draw.html" role="menuitem">◇ Go-Draw</a>
                     </div>
                 </div>
+
                 <div class="tabs-wrapper">
                     <div id="viewTabs" class="tabs"></div>
                     <div class="tab-actions">
@@ -1531,8 +1544,11 @@
                             aria-label="Supprimer la vue active">🗑️</button>
                     </div>
                 </div>
+
                 <div class="header-actions">
+                    <button class="btn" id="openContextModal" aria-label="Ouvrir le contexte">💬 Contexte</button>
                     <button class="btn" id="openIaModal" aria-label="Ouvrir l'IA">🤖 Assistant IA</button>
+
                     <div class="menu-trigger">
                         <button class="btn" id="optionsBtn" aria-label="Options d'affichage">📐 Affichage</button>
                         <div class="context-menu" id="optionsMenu">
@@ -1595,10 +1611,10 @@
                                         <option value="hide">Non</option>
                                     </select>
                                 </label>
-
                             </div>
                         </div>
                     </div>
+
                     <div class="menu-trigger">
                         <button class="btn" id="fileMenuBtn" aria-label="Fichier">Fichier 📄</button>
                         <div class="context-menu file-menu" id="fileMenu">
@@ -1612,6 +1628,7 @@
                             </div>
                         </div>
                     </div>
+
                     <div class="menu-trigger">
                         <button id="shareBtn" class="info-button" type="button" aria-label="Partager"
                             title="Lien de partage">🔗 Partage</button>
@@ -1635,6 +1652,7 @@
                 </div>
             </div>
         </div>
+
         <!-- TIMELINE + TOOLBAR -->
         <div class="timeline-card" data-spacing="dense" data-ratio="full">
 
@@ -1699,18 +1717,20 @@
                     <p class="timeline-empty-text">
                         Cette page est vide.
                     </p>
-                    <a href="#openIaModal" role="button" class="timeline-empty-link" id="timelineEmptyAction">
-                        ✨ Ouvrir l’IA
+                    <a href="#openContextModal" role="button" class="timeline-empty-link" id="timelineEmptyAction">
+                        ✨ Renseigner le contexte
                     </a>
                 </div>
             </div>
         </div>
 
-        <div class="modal-overlay" id="iaModalOverlay" role="dialog" aria-modal="true" aria-labelledby="iaModalTitle">
+        <div class="modal-overlay" id="contextModalOverlay" role="dialog" aria-modal="true"
+            aria-labelledby="contextModalTitle">
             <div class="filter-modal">
                 <div class="modal-header">
-                    <h3 id="iaModalTitle">Assistant IA</h3>
-                    <button class="modal-close" id="iaModalClose" type="button" aria-label="Fermer l'IA">×</button>
+                    <h3 id="contextModalTitle">💬 Contexte</h3>
+                    <button class="modal-close" id="contextModalClose" type="button"
+                        aria-label="Fermer le contexte">×</button>
                 </div>
                 <div class="ia-actions">
                     <div class="header-row  ia-header-actions">
@@ -1723,10 +1743,37 @@
                     <div class="header-row ia-header-actions">
                         <label for="promptCreate">Demande</label>
                         <div class="ia-prompt-fields">
-                            <textarea id="promptCreate" class="ia-prompt-field active" rows="30"
+                            <textarea id="promptCreate" class="ia-prompt-field active" rows="20"
                                 placeholder="Décris ici le planning complet : période couverte, objectifs, jalons clés, contraintes de temps, dépendances, acteurs impliqués, livrables attendus et rythme général (quotidien, hebdo, sprint, etc.). Donne la vision d'ensemble et ce qui doit absolument tenir dans le temps imparti."></textarea>
-                            <textarea id="promptModify" class="ia-prompt-field" rows="30" aria-hidden="true"></textarea>
+                            <textarea id="promptModify" class="ia-prompt-field" rows="20" aria-hidden="true"></textarea>
                         </div>
+                    </div>
+                    <div class="ia-actions-footer">
+                        <button class="btn" id="btn-call">
+                            <span>✨ Créer le planning</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="iaModalOverlay" role="dialog" aria-modal="true" aria-labelledby="iaModalTitle">
+            <div class="filter-modal">
+                <div class="modal-header">
+                    <h3 id="iaModalTitle">Assistant IA</h3>
+                    <button class="modal-close" id="iaModalClose" type="button" aria-label="Fermer l'IA">×</button>
+                </div>
+                <div class="ia-actions">
+                    <div class="header-row  ia-header-actions">
+                        <label for="templateModeSelect">Mode de saisie</label>
+                        <select id="templateModeSelect">
+                            <option value="create">🤖 Magique</option>
+                            <option value="modify">✍️ Guidé</option>
+                        </select>
+                    </div>
+                    <div class="header-row ia-header-actions">
+                        <label for="iaTemplateEditor">Prompt système</label>
+                        <textarea id="iaTemplateEditor" rows="18"></textarea>
                     </div>
                     <div class="header-row ia-header-actions ia-key-row">
                         <label>
@@ -1744,10 +1791,8 @@
                             </select>
                         </label>
                     </div>
-                    <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
-                        <button class="btn" id="btn-call">
-                            <span>✨ Envoyer</span>
-                        </button>
+                    <div class="ia-actions-footer ia-template-footer">
+                        <button class="btn white-btn" type="button" id="resetTemplatesBtn">↺ Réinitialiser</button>
                     </div>
                 </div>
             </div>
@@ -1920,6 +1965,20 @@
             document.head.appendChild(typeStyleElement);
             var persistenceLocked = false;
             var persistedTimelineBrief = "";
+            var contextUiReady = false;
+            var lastTimelineGenerationAt = 0;
+            var AUTO_CONTEXT_SUPPRESSION_MS = 15000;
+            var DEFAULT_CONTEXT_STATE = {
+                mode: "create",
+                prompts: {
+                    create: "",
+                    modify: ""
+                }
+            };
+            var customSystemTemplates = {
+                create: "",
+                modify: ""
+            };
             var allowedBackgroundValues = ["transparent", "#ffffff"];
             function deepClone(value) {
                 if (value === undefined || value === null) return value;
@@ -2074,6 +2133,13 @@
                                     end: "2026-02-28"
                                 }
                             ]
+                        },
+                        context: {
+                            mode: "create",
+                            prompts: {
+                                create: "",
+                                modify: ""
+                            }
                         }
                     },
                     {
@@ -2086,6 +2152,13 @@
                             },
                             groups: [],
                             items: []
+                        },
+                        context: {
+                            mode: "create",
+                            prompts: {
+                                create: "",
+                                modify: ""
+                            }
                         }
                     }
                 ],
@@ -2413,16 +2486,28 @@
                         return {
                             name: view.name,
                             title: view.title,
-                            planning: view.planning
+                            planning: view.planning,
+                            context: normalizeContextState(view.context)
                         };
                     }),
                     displayPreferences: Object.assign({}, displayPreferences),
                     types: snapshotTypeDefinitions(),
+                    templates: {
+                        create: customSystemTemplates.create,
+                        modify: customSystemTemplates.modify
+                    },
                     brief: getTimelineBrief()
                 };
             }
 
             function getTimelineBrief() {
+                var context = getActiveViewContext();
+                if (context && context.prompts) {
+                    var prompt = context.prompts[context.mode] || context.prompts.create || context.prompts.modify;
+                    if (typeof prompt === "string") {
+                        return prompt;
+                    }
+                }
                 if (typeof txtPromptCreate !== "undefined" && txtPromptCreate && typeof txtPromptCreate.value === "string") {
                     return txtPromptCreate.value;
                 }
@@ -2473,6 +2558,35 @@
                 labels: {},
                 timeline: displayPreferences.background || "#ffffff"
             };
+
+            function cloneDefaultContext() {
+                return deepClone(DEFAULT_CONTEXT_STATE);
+            }
+
+            function normalizeContextState(context) {
+                var base = context && typeof context === "object"
+                    ? deepClone(context)
+                    : cloneDefaultContext();
+                if (!base.prompts || typeof base.prompts !== "object") {
+                    base.prompts = { create: "", modify: "" };
+                }
+                base.prompts.create = typeof base.prompts.create === "string" ? base.prompts.create : "";
+                base.prompts.modify = typeof base.prompts.modify === "string" ? base.prompts.modify : "";
+                base.mode = base.mode === "modify" ? "modify" : "create";
+                return base;
+            }
+
+            function ensureViewContext(view) {
+                if (!view) return cloneDefaultContext();
+                view.context = normalizeContextState(view.context);
+                return view.context;
+            }
+
+            function getActiveViewContext() {
+                var view = views[activeViewIndex];
+                if (!view) return cloneDefaultContext();
+                return ensureViewContext(view);
+            }
             function padTwoDigits(value) {
                 return value < 10 ? "0" + value : "" + value;
             }
@@ -2519,7 +2633,8 @@
                         return {
                             name: view.name || view.title || ("Page " + (index + 1)),
                             title: view.title || view.name || ("Page " + (index + 1)),
-                            planning: view.planning || null
+                            planning: view.planning || null,
+                            context: normalizeContextState(view.context)
                         };
                     });
                 } else if (persistedState.groups) {
@@ -2527,7 +2642,8 @@
                     views = [{
                         name: defaultLabel,
                         title: defaultLabel,
-                        planning: persistedState
+                        planning: persistedState,
+                        context: cloneDefaultContext()
                     }];
                 }
                 if (persistedState.displayPreferences) {
@@ -2535,6 +2651,14 @@
                 }
                 if (Array.isArray(persistedState.types)) {
                     applyTypeDefinitions(persistedState.types);
+                }
+                if (persistedState.templates) {
+                    if (typeof persistedState.templates.create === "string") {
+                        customSystemTemplates.create = persistedState.templates.create;
+                    }
+                    if (typeof persistedState.templates.modify === "string") {
+                        customSystemTemplates.modify = persistedState.templates.modify;
+                    }
                 }
             } else {
                 if (Array.isArray(DEMO_STATE.views) && DEMO_STATE.views.length) {
@@ -2547,9 +2671,16 @@
                 }
             }
             if (!views.length) {
-                views = [{ name: "Page 1", title: "Page 1", planning: null }];
+                views = [{ name: "Page 1", title: "Page 1", planning: null, context: cloneDefaultContext() }];
             }
             views.forEach(ensureViewFilterState);
+            views.forEach(ensureViewContext);
+            if (persistedTimelineBrief && views.length) {
+                var firstContext = ensureViewContext(views[0]);
+                if (!firstContext.prompts.create) {
+                    firstContext.prompts.create = persistedTimelineBrief;
+                }
+            }
 
             function persistCurrentPlanning() {
                 if (persistenceLocked) return;
@@ -2563,6 +2694,19 @@
                 var isEmpty = items.get().length === 0;
                 emptyStateElement.classList.toggle("visible", isEmpty);
                 emptyStateElement.setAttribute("aria-hidden", isEmpty ? "false" : "true");
+            }
+
+            function syncContextUIForActiveView() {
+                syncContextFieldsFromState({ refreshModify: true, skipPersist: true });
+            }
+
+            function maybeAutoOpenContextModal() {
+                if (!contextUiReady) return;
+                if (!contextModalOverlay) return;
+                if (contextModalOverlay.classList.contains("open")) return;
+                if (hasTimelineData()) return;
+                if (lastTimelineGenerationAt && Date.now() - lastTimelineGenerationAt < AUTO_CONTEXT_SUPPRESSION_MS) return;
+                openContextModal();
             }
 
             function getActiveTypeIds() {
@@ -2825,15 +2969,37 @@
                 var currentRange = timeline.getWindow();
             });
 
+            var contextModalOverlay = document.getElementById("contextModalOverlay");
+            var contextModalButton = document.getElementById("openContextModal");
+            var contextModalClose = document.getElementById("contextModalClose");
             var iaModalOverlay = document.getElementById("iaModalOverlay");
             var iaModalButton = document.getElementById("openIaModal");
             var iaModalClose = document.getElementById("iaModalClose");
 
-            function openIaModal() {
-                var defaultMode = hasTimelineData() ? "modify" : "create";
+            function openContextModal(options) {
+                var desiredMode =
+                    (options && options.mode) ||
+                    (selectMode && selectMode.value) ||
+                    (getActiveViewContext().mode || "create");
+                if (!desiredMode) {
+                    desiredMode = hasTimelineData() ? "modify" : "create";
+                }
                 if (selectMode) {
-                    selectMode.value = defaultMode;
-                    updatePromptForMode(defaultMode);
+                    selectMode.value = desiredMode;
+                    updatePromptForMode(desiredMode, { refreshModify: true });
+                }
+                if (contextModalOverlay) contextModalOverlay.classList.add("open");
+            }
+
+            function closeContextModal() {
+                if (contextModalOverlay) contextModalOverlay.classList.remove("open");
+            }
+
+            function openIaModal() {
+                var defaultTemplateMode = "create";
+                if (templateModeSelect) {
+                    templateModeSelect.value = defaultTemplateMode;
+                    syncTemplateEditor(defaultTemplateMode);
                 }
                 if (iaModalOverlay) iaModalOverlay.classList.add("open");
             }
@@ -2842,6 +3008,21 @@
                 if (iaModalOverlay) iaModalOverlay.classList.remove("open");
             }
 
+            if (contextModalButton) {
+                contextModalButton.addEventListener("click", function () {
+                    openContextModal();
+                });
+            }
+            if (contextModalClose) {
+                contextModalClose.addEventListener("click", closeContextModal);
+            }
+            if (contextModalOverlay) {
+                contextModalOverlay.addEventListener("click", function (event) {
+                    if (event.target === contextModalOverlay) {
+                        closeContextModal();
+                    }
+                });
+            }
             if (iaModalButton) {
                 iaModalButton.addEventListener("click", openIaModal);
             }
@@ -2858,36 +3039,41 @@
             if (emptyStateAction) {
                 emptyStateAction.addEventListener("click", function (event) {
                     event.preventDefault();
-                    openIaModal();
-                    if (iaModalButton) {
-                        iaModalButton.focus();
+                    openContextModal();
+                    if (contextModalButton) {
+                        contextModalButton.focus();
                     }
                 });
             }
 
-            var CREATE_SYSTEM_TEMPLATE =
-                "Tu es un assistant qui va générer un planning à partir des instructions suivantes {{(contenu du id=\"prompt\") }}\\n\\n" +
-                "Le planning de départ est le suivant (conserve les ids existants) : {{(contenu au format JSON du planning existant)}}\\n\\n" +
-                "Réponds toujours avec un JSON qui contient :\\n" +
-                "- `page` : le titre de la page courante (utilisé pour le header).\\n" +
-                "- `types` : un tableau d’objets `{ id, label}` pour décrire des types d'actions différentes. Ajouter un type spécifique aux milestones.\\n" +
-                "- `timeline` : `{ start, end }` au format ISO (YYYY-MM-DD).\\n" +
-                "- `groups` : chaque groupe d'actions avec { id, label }.\\n" +
-                "- `items` : chaque item { id, groupId, label, kind, start?, end?, date? }.\\n" +
-                "- Les items de moins de 7 jours sont des `kind: \"milestone\"`. avec juste la date de début\\n" +
-                "- Sors uniquement le JSON, sans explication ni texte additionnel.";
+            var CREATE_SYSTEM_TEMPLATE = `Tu es un assistant qui va générer un planning à partir des instructions suivantes {{(contenu du id="prompt") }}
 
-            var MODIFY_SYSTEM_TEMPLATE =
-                "Tu es un assistant qui modifie à partir du contexte suivant {{(contenu du id=\"prompt\") }}\\n\\n" +
-                "Le planning de départ est le suivant (conserve les ids existants) : {{(contenu au format JSON du planning existant)}}\\n\\n" +
-                "Réponds toujours avec un JSON qui contient :\\n" +
-                "- `page` : le titre de la page courante (utilisé pour le header).\\n" +
-                "- `types` : un tableau d’objets `{ id, label}` pour décrire des types d'actions différentes.\\n" +
-                "- `timeline` : `{ start, end }` au format ISO (YYYY-MM-DD).\\n" +
-                "- `groups` : chaque groupe d'actions avec { id, label }.\\n" +
-                "- `items` : chaque item { id, groupId, label, kind, start?, end?, date? }.\\n" +
-                "- Les items de moins de 7 jours sont des `kind: \"milestone\"`. avec juste la date de début.\\n" +
-                "- Sors seulement le JSON.";
+Le planning de départ est le suivant (conserve les ids existants) : {{(contenu au format JSON du planning existant)}}
+
+Réponds toujours avec un JSON qui contient :
+- \`page\` : le titre de la page courante (utilisé pour le header).
+- \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des types d'actions différentes. Ajouter un type spécifique aux milestones.
+- \`timeline\` : \`{ start, end }\` au format ISO (YYYY-MM-DD).
+- \`groups\` : chaque groupe d'actions avec { id, label }.
+- \`items\` : chaque item { id, groupId, label, kind, start?, end?, date? }.
+- Les items de moins de 3 jours sont convertis en \`kind: "milestone"\` avec juste la date de début.
+- Sors uniquement le JSON, sans explication ni texte additionnel. Utiliser des intitulés courtes.`;
+
+            var MODIFY_SYSTEM_TEMPLATE = `Tu es un assistant qui modifie à partir du contexte suivant {{(contenu du id="prompt") }}
+
+Le planning de départ est le suivant (conserve les ids existants) : {{(contenu au format JSON du planning existant)}}
+
+Réponds toujours avec un JSON qui contient :
+- \`page\` : le titre de la page courante (utilisé pour le header).
+- \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des types d'actions différentes.
+- \`timeline\` : \`{ start, end }\` au format ISO (YYYY-MM-DD).
+- \`groups\` : chaque groupe d'actions avec { id, label }.
+- \`items\` : chaque item { id, groupId, label, kind, start?, end?, date? }.
+- Les items de moins de 3 jours sont convertis en \`kind: "milestone"\` avec juste la date de début.
+- Sors seulement le JSON, sans explication ni texte additionnel. Utiliser des intitulés courtes.`;
+
+            customSystemTemplates.create = customSystemTemplates.create || CREATE_SYSTEM_TEMPLATE;
+            customSystemTemplates.modify = customSystemTemplates.modify || MODIFY_SYSTEM_TEMPLATE;
 
             var optionsBtn = document.getElementById("optionsBtn");
             var optionsMenu = document.getElementById("optionsMenu");
@@ -3716,12 +3902,13 @@
                         return {
                             name: label,
                             title: view.title || view.name || label,
-                            planning: view.planning || null
+                            planning: view.planning || null,
+                            context: normalizeContextState(view.context)
                         };
                     });
                 } else if (state.groups) {
                     var label = state.label || state.name || "Page 1";
-                    importedViews = [{ name: label, title: label, planning: state }];
+                    importedViews = [{ name: label, title: label, planning: state, context: cloneDefaultContext() }];
                 }
                 if (!importedViews.length) {
                     if (options.alertOnEmpty !== false) {
@@ -3738,8 +3925,24 @@
                 }
                 if (typeof state.brief === "string") {
                     persistedTimelineBrief = state.brief;
-                    syncPromptBriefField();
+                    if (importedViews.length) {
+                        var migratedContext = ensureViewContext(importedViews[0]);
+                        if (!migratedContext.prompts.create) {
+                            migratedContext.prompts.create = state.brief;
+                        }
+                    }
+                    syncContextFieldsFromState({ refreshModify: true, skipPersist: true });
                 }
+                if (state.templates) {
+                    if (typeof state.templates.create === "string") {
+                        customSystemTemplates.create = state.templates.create;
+                    }
+                    if (typeof state.templates.modify === "string") {
+                        customSystemTemplates.modify = state.templates.modify;
+                    }
+                }
+                importedViews.forEach(ensureViewContext);
+                syncTemplateEditor(templateModeSelect ? templateModeSelect.value : "create");
                 renderFontSizeOptions();
                 applyDisplayPreferences();
                 syncFontControls();
@@ -4435,9 +4638,11 @@
                 } else {
                     resetTimelineForEmptyView();
                 }
+                ensureViewContext(view);
                 refreshHeaderText();
                 renderViewTabs();
                 updateEmptyViewMessage();
+                syncContextUIForActiveView();
             }
 
             if (headerTitleElement) {
@@ -4492,11 +4697,12 @@
             function addView() {
                 persistCurrentPlanning();
                 var label = "Page " + (views.length + 1);
-                var newView = { name: label, title: label, planning: null };
+                var newView = { name: label, title: label, planning: null, context: cloneDefaultContext() };
                 ensureViewFilterState(newView);
                 views.push(newView);
                 persistTimelineState();
                 activateView(views.length - 1, true);
+                openContextModal({ mode: "create" });
             }
 
             function deleteView() {
@@ -5081,21 +5287,110 @@
             // ============================================================
             var txtPromptCreate = document.getElementById("promptCreate");
             var txtPromptModify = document.getElementById("promptModify");
+            var selectMode = document.getElementById("mode");
+            var btnCall = document.getElementById("btn-call");
+            var templateModeSelect = document.getElementById("templateModeSelect");
+            var iaTemplateEditor = document.getElementById("iaTemplateEditor");
+            var resetTemplatesBtn = document.getElementById("resetTemplatesBtn");
 
-            function syncPromptBriefField() {
+            function syncContextFieldsFromState(options) {
+                var context = getActiveViewContext();
+                if (selectMode) {
+                    selectMode.value = context.mode || "create";
+                }
                 if (txtPromptCreate) {
-                    txtPromptCreate.value = persistedTimelineBrief || "";
+                    txtPromptCreate.value = context.prompts.create || "";
+                }
+                if (txtPromptModify) {
+                    txtPromptModify.value = context.prompts.modify || "";
+                }
+                updatePromptForMode(context.mode, Object.assign({ refreshModify: true }, options));
+            }
+
+            function persistActiveContext(updateFn) {
+                var context = getActiveViewContext();
+                if (typeof updateFn === "function") {
+                    updateFn(context);
+                }
+                persistedTimelineBrief = context.prompts.create || context.prompts.modify || "";
+                persistTimelineState();
+            }
+
+            syncContextFieldsFromState({ skipPersist: true, refreshModify: true });
+            contextUiReady = true;
+
+            if (txtPromptCreate) {
+                txtPromptCreate.addEventListener("input", function () {
+                    persistActiveContext(function (ctx) {
+                        ctx.prompts.create = txtPromptCreate.value || "";
+                    });
+                });
+            }
+            if (txtPromptModify) {
+                txtPromptModify.addEventListener("input", function () {
+                    persistActiveContext(function (ctx) {
+                        ctx.prompts.modify = txtPromptModify.value || "";
+                    });
+                });
+            }
+            if (selectMode) {
+                selectMode.addEventListener("change", function () {
+                    var value = this.value === "modify" ? "modify" : "create";
+                    persistActiveContext(function (ctx) {
+                        ctx.mode = value;
+                    });
+                    updatePromptForMode(value, { refreshModify: true });
+                });
+            }
+
+            function getSystemTemplateForMode(mode) {
+                return mode === "modify"
+                    ? (customSystemTemplates.modify || MODIFY_SYSTEM_TEMPLATE)
+                    : (customSystemTemplates.create || CREATE_SYSTEM_TEMPLATE);
+            }
+
+            function resetSystemTemplates() {
+                customSystemTemplates.create = CREATE_SYSTEM_TEMPLATE;
+                customSystemTemplates.modify = MODIFY_SYSTEM_TEMPLATE;
+                syncTemplateEditor(templateModeSelect ? templateModeSelect.value : "create");
+                persistTimelineState();
+            }
+
+            function persistTemplateChange(mode, value) {
+                var target = mode === "modify" ? "modify" : "create";
+                customSystemTemplates[target] = value || getSystemTemplateForMode(target);
+                persistTimelineState();
+            }
+
+            function syncTemplateEditor(mode) {
+                var normalized = mode === "modify" ? "modify" : "create";
+                if (templateModeSelect) {
+                    templateModeSelect.value = normalized;
+                }
+                if (iaTemplateEditor) {
+                    iaTemplateEditor.value = getSystemTemplateForMode(normalized);
                 }
             }
 
-            syncPromptBriefField();
-            if (txtPromptCreate) {
-                txtPromptCreate.addEventListener("input", function () {
-                    persistedTimelineBrief = txtPromptCreate.value || "";
+            if (templateModeSelect) {
+                templateModeSelect.addEventListener("change", function () {
+                    syncTemplateEditor(this.value);
                 });
             }
-            var selectMode = document.getElementById("mode");
-            var btnCall = document.getElementById("btn-call");
+
+            if (iaTemplateEditor) {
+                iaTemplateEditor.addEventListener("input", function () {
+                    var mode = templateModeSelect ? templateModeSelect.value : "create";
+                    persistTemplateChange(mode, iaTemplateEditor.value || "");
+                });
+            }
+
+            if (resetTemplatesBtn) {
+                resetTemplatesBtn.addEventListener("click", function () {
+                    resetSystemTemplates();
+                });
+            }
+
             var IA_API_KEY_STORAGE_KEY = "go-toolkit-api-key";
             var iaApiKeyInput = document.getElementById("iaApiKeyInput");
             var reasoningEffortSelect = document.getElementById("reasoningEffortSelect");
@@ -5208,26 +5503,26 @@
                 return txtPromptCreate;
             }
 
-            function updatePromptForMode(mode) {
+            function updatePromptForMode(mode, options) {
                 if (!txtPromptCreate || !txtPromptModify) {
                     return;
                 }
+                options = options || {};
                 var isModify = mode === "modify";
+                var context = getActiveViewContext();
+                context.mode = isModify ? "modify" : "create";
+                if (isModify && (options.refreshModify || !context.prompts.modify)) {
+                    context.prompts.modify = getModifyPromptContent();
+                }
+                txtPromptCreate.value = context.prompts.create || "";
+                txtPromptModify.value = context.prompts.modify || "";
                 txtPromptCreate.classList.toggle("active", !isModify);
                 txtPromptModify.classList.toggle("active", isModify);
                 txtPromptCreate.setAttribute("aria-hidden", isModify);
                 txtPromptModify.setAttribute("aria-hidden", !isModify);
-                if (isModify) {
-                    txtPromptModify.value = getModifyPromptContent();
-                } else {
-                    txtPromptCreate.value = "";
+                if (!options.skipPersist) {
+                    persistTimelineState();
                 }
-            }
-
-            if (selectMode) {
-                selectMode.addEventListener("change", function () {
-                    updatePromptForMode(this.value);
-                });
             }
 
             function updateIaButtonLabel(isLoading, counter) {
@@ -5338,7 +5633,7 @@
                 }
 
                 var systemContent = fillPromptTemplate(
-                    mode === "modify" ? MODIFY_SYSTEM_TEMPLATE : CREATE_SYSTEM_TEMPLATE,
+                    getSystemTemplateForMode(mode),
                     promptText,
                     planningJson
                 );
@@ -5355,6 +5650,8 @@
                     { role: "user", content: JSON.stringify(payload, null, 2) }
                 ];
 
+                lastTimelineGenerationAt = Date.now();
+                closeContextModal();
                 startWaitingTimer();
                 btnCall.disabled = true;
                 closeIaModal();
@@ -5396,9 +5693,9 @@
                     selectors: ["#timeline"]
                 },
                 {
-                    title: "Démarre par la modal IA ✨",
-                    description: "Clique sur ✨, décris ta demande dans la fenêtre IA et patiente pendant que la magie transforme ton besoin en planning.",
-                    selectors: ["#openIaModal"]
+                    title: "Démarre par le Contexte 💬",
+                    description: "Clique sur 💬, choisis Magique ou Guidé, saisis ton contexte puis lance \"✨ Créer le planning\".",
+                    selectors: ["#openContextModal"]
                 },
                 {
                     title: "Affiche, zoome, navigue",
