@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Go-Timeline</title>
+    <title>Go-Plan</title>
 
     <!-- Vis Timeline -->
     <link rel="stylesheet" href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css"
@@ -103,8 +103,8 @@
         .app-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 12px;
+            justify-content: flex-start;
+            gap: 2px;
             flex-wrap: wrap;
             width: 100%;
             margin: 4px 0 auto;
@@ -112,6 +112,28 @@
             border-radius: 0;
             border: none;
             box-shadow: none;
+        }
+
+        .app-home-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: #ffffff;
+            font-size: 16px;
+            color: var(--primary-strong);
+            text-decoration: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .app-home-link:hover,
+        .app-home-link:focus-visible {
+            border-color: var(--primary);
+            box-shadow: 0 10px 24px rgba(42, 122, 87, 0.25);
+            outline: none;
         }
 
         .tabs {
@@ -845,21 +867,18 @@
             align-items: flex-start;
         }
 
-        .ia-actions {
+        .tabs-actions {
             display: flex;
-            flex-direction: column;
+            align-items: center;
             gap: 8px;
-            max-width: 800px;
-            width: 100%;
-            justify-content: flex-end;
-            align-items: flex-start;
+            flex: 1;
+            flex-wrap: wrap;
         }
 
-        .header-actions .header-row {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
         }
 
         .ia-key-row label {
@@ -1492,13 +1511,14 @@
 <body>
     <div class="app">
         <div class="app-header">
+            <a class="app-home-link" href="index.html" title="Revenir à l'accueil">⌘</a>
             <div class="tabs-actions">
                 <div class="nav-switch">
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
-                        aria-expanded="false">⇢ Go-Timeline ▾</button>
+                        aria-expanded="false">⇢ Go-Plan ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                        <a class="nav-switch-link" href="index.html" role="menuitem">◧ Go-Slides</a>
-                        <a class="nav-switch-link" href="draw.html" role="menuitem">⌘ Go-Draw</a>
+                        <a class="nav-switch-link" href="think.html" role="menuitem">◧ Go-Think</a>
+                        <a class="nav-switch-link" href="draw.html" role="menuitem">◇ Go-Draw</a>
                     </div>
                 </div>
                 <div class="tabs-wrapper">
@@ -1774,6 +1794,7 @@
                 window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
         </script>
         <script src="js/share-worker-client.js"></script>
+        <script src="js/share-history.js"></script>
         <script src="js/openai-client.js"></script>
         <script>
             // ============================================================
@@ -1886,6 +1907,7 @@
             typeStyleElement.id = "timeline-type-styles";
             document.head.appendChild(typeStyleElement);
             var persistenceLocked = false;
+            var persistedTimelineBrief = "";
             var allowedBackgroundValues = ["transparent", "#ffffff"];
             function deepClone(value) {
                 if (value === undefined || value === null) return value;
@@ -2383,8 +2405,16 @@
                         };
                     }),
                     displayPreferences: Object.assign({}, displayPreferences),
-                    types: snapshotTypeDefinitions()
+                    types: snapshotTypeDefinitions(),
+                    brief: getTimelineBrief()
                 };
+            }
+
+            function getTimelineBrief() {
+                if (typeof txtPromptCreate !== "undefined" && txtPromptCreate && typeof txtPromptCreate.value === "string") {
+                    return txtPromptCreate.value;
+                }
+                return persistedTimelineBrief || "";
             }
 
             function persistTimelineState() {
@@ -2400,9 +2430,16 @@
                 try {
                     var raw = localStorage.getItem(LOCAL_STORAGE_KEY);
                     if (!raw) return null;
-                    return JSON.parse(raw);
+                    var parsed = JSON.parse(raw);
+                    if (parsed && typeof parsed.brief === "string") {
+                        persistedTimelineBrief = parsed.brief;
+                    } else {
+                        persistedTimelineBrief = "";
+                    }
+                    return parsed;
                 } catch (err) {
                     console.warn("Impossible de lire le planning sauvegardé", err);
+                    persistedTimelineBrief = "";
                     return null;
                 }
             }
@@ -2865,6 +2902,7 @@
             var shareMenuStatus = document.getElementById("shareMenuStatus");
             var shareCreateBtn = document.getElementById("shareCreateBtn");
             var shareUpdateBtn = document.getElementById("shareUpdateBtn");
+            var shareHistory = window.goToolkitShareHistory;
             var FIRESTORE_COLLECTION = "timelines";
             var SHARE_QUERY_PARAM = "share";
             var SHARE_WORKER_UNAVAILABLE_MESSAGE =
@@ -2877,6 +2915,19 @@
             var shareStatusType = "";
             var shareRequestInProgress = false;
             var shareLastUpdatedAt = null;
+            function persistPlanShareRecord(token, updatedAt) {
+                if (!shareHistory || !token) {
+                    return;
+                }
+                try {
+                    shareHistory.upsertRecord("plan", {
+                        token: token,
+                        updatedAt: updatedAt || new Date().toISOString()
+                    });
+                } catch (err) {
+                    console.warn("Impossible d'archiver le lien Go-Plan", err);
+                }
+            }
             var navSwitcherBtn = document.getElementById("navSwitcherBtn");
             var navSwitcherMenu = document.getElementById("navSwitcherMenu");
             var colorModalOverlay = document.getElementById("colorModalOverlay");
@@ -3423,7 +3474,7 @@
                     var canvas = await html2canvas(timelineCard, { scale: 2, backgroundColor: null, useCORS: true });
                     var link = document.createElement("a");
                     link.href = canvas.toDataURL("image/png");
-                    link.download = "go-timeline-view.png";
+                    link.download = "go-plan-view.png";
                     link.click();
                 } catch (err) {
                     console.error("Export image impossible", err);
@@ -3491,7 +3542,7 @@
                     });
                     var workbook = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(workbook, worksheet, "Planning");
-                    XLSX.writeFile(workbook, "go-timeline.xlsx");
+                    XLSX.writeFile(workbook, "go-plan.xlsx");
                 } catch (err) {
                     console.error("Export Excel failed", err);
                     alert("Export Excel impossible. Réessaie.");
@@ -3652,6 +3703,10 @@
                 if (state.displayPreferences) {
                     Object.assign(displayPreferences, state.displayPreferences);
                 }
+                if (typeof state.brief === "string") {
+                    persistedTimelineBrief = state.brief;
+                    syncPromptBriefField();
+                }
                 renderFontSizeOptions();
                 applyDisplayPreferences();
                 syncFontControls();
@@ -3766,6 +3821,7 @@
                     shareLoadedFromRemote = true;
                     shareLastUpdatedAt = (result && result.meta && result.meta.updatedAt) || new Date().toISOString();
                     setShareStatus(formatRelativeTime(shareLastUpdatedAt));
+                    persistPlanShareRecord(token, shareLastUpdatedAt);
                     updateShareMenuUI();
                     return true;
                 } catch (err) {
@@ -3870,6 +3926,7 @@
                     updateUrlWithShareToken(token);
                     setShareStatus(formatRelativeTime(updatedAt));
                     updateShareMenuUI();
+                    persistPlanShareRecord(token, updatedAt);
                     await copyCurrentShareLinkToClipboard();
                 } catch (err) {
                     console.error("Erreur lors de la création du lien partagé :", err);
@@ -3903,6 +3960,7 @@
                     shareLastUpdatedAt = updatedAt;
                     setShareStatus(formatRelativeTime(updatedAt));
                     updateShareMenuUI();
+                    persistPlanShareRecord(currentShareToken, updatedAt);
                     await copyCurrentShareLinkToClipboard();
                 } catch (err) {
                     console.error("Erreur lors de la mise à jour du lien partagé :", err);
@@ -4978,6 +5036,19 @@
             // ============================================================
             var txtPromptCreate = document.getElementById("promptCreate");
             var txtPromptModify = document.getElementById("promptModify");
+
+            function syncPromptBriefField() {
+                if (txtPromptCreate) {
+                    txtPromptCreate.value = persistedTimelineBrief || "";
+                }
+            }
+
+            syncPromptBriefField();
+            if (txtPromptCreate) {
+                txtPromptCreate.addEventListener("input", function () {
+                    persistedTimelineBrief = txtPromptCreate.value || "";
+                });
+            }
             var selectMode = document.getElementById("mode");
             var btnCall = document.getElementById("btn-call");
             var IA_API_KEY_STORAGE_KEY = "go-toolkit-api-key";
@@ -5166,6 +5237,7 @@
                             model: OPENAI_MODEL,
                             temperature: OPENAI_TEMPERATURE,
                             messages: messages,
+                            reasoning_effort: "minimal",
                             stream: true
                         }
                     });
@@ -5241,8 +5313,8 @@
 
             var timelineTourSteps = [
                 {
-                    title: "Go-Timeline, ton copilote planning",
-                    description: "Go-Timeline aide les consultants à générer des plannings de projet clairs et rapides pour cadrer leurs prochaines étapes.",
+                    title: "Go-Plan, ton copilote planning",
+                    description: "Go-Plan aide les consultants à générer des plannings de projet clairs et rapides pour cadrer leurs prochaines étapes.",
                     selectors: ["#timeline"]
                 },
                 {

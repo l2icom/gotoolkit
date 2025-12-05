@@ -37,8 +37,8 @@
         .app-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 12px;
+            justify-content: flex-start;
+            gap: 2px;
             flex-wrap: wrap;
             width: 100%;
             margin: 4px 0 auto;
@@ -47,6 +47,28 @@
             border: none;
             box-shadow: none;
             background: transparent;
+        }
+
+        .app-home-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: 1px solid #cdd4ed;
+            background: #ffffff;
+            font-size: 16px;
+            color: #1f2a56;
+            text-decoration: none;
+            transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .app-home-link:hover,
+        .app-home-link:focus-visible {
+            border-color: #2a7a57;
+            box-shadow: 0 8px 20px rgba(42, 122, 87, 0.3);
+            outline: none;
         }
 
         .tabs-actions {
@@ -104,6 +126,7 @@
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
+            margin-left: auto;
         }
 
         .global-actions button,
@@ -589,11 +612,12 @@
 <body>
     <div class="app">
         <header class="app-header">
+            <a class="app-home-link" href="index.html" title="Revenir à l'accueil">⌘</a>
             <div class="nav-switch">
-                <button id="navSwitcherBtn" class="nav-switch-btn" type="button">⌘ Go-Draw ▾</button>
+                <button id="navSwitcherBtn" class="nav-switch-btn" type="button">◇ Go-Draw ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="index.html">◧ Go-Slides</a>
-                    <a class="nav-switch-link" href="timeline.html">⇢ Go-Timeline</a>
+                    <a class="nav-switch-link" href="think.html">◧ Go-Think</a>
+                    <a class="nav-switch-link" href="plan.html">⇢ Go-Plan</a>
                 </div>
             </div>
             <div class="tabs-actions">
@@ -690,6 +714,7 @@
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
     <script src="js/share-worker-client.js"></script>
+    <script src="js/share-history.js"></script>
     <script src="js/openai-client.js"></script>
     <script>
         var process = window.process || {};
@@ -708,9 +733,9 @@
             const DEFAULT_PROMPT_TEMPLATE =
                 "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code mermaid sous forme d'un diagramme de {{draw_type}}. Les intitulés font moins de 3 mots. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
             const DRAW_TYPES = [
-                { id: "sequence", label: "↦ Séquence", promptValue: "séquence" },
-                { id: "flow", label: "△ Flux", promptValue: "flux" },
-                { id: "class", label: "⌬ Classe", promptValue: "classe" }
+                { id: "sequence", label: "↦ Séquence", promptValue: "sequenceDiagram" },
+                { id: "flow", label: "△ Flux", promptValue: "flowchart" },
+                { id: "class", label: "⌬ Classe", promptValue: "classDiagram" }
             ];
             const DEFAULT_DRAW_TYPE = DRAW_TYPES[0].id;
             const STORAGE_KEY = "connect-ai-state";
@@ -740,6 +765,20 @@
             let shareRequestInProgress = false;
             let shareLastUpdatedAt = null;
 
+            function persistDrawShareRecord(token, updatedAt) {
+                if (!shareHistory || !token) {
+                    return;
+                }
+                try {
+                    shareHistory.upsertRecord("draw", {
+                        token,
+                        updatedAt: updatedAt || new Date().toISOString()
+                    });
+                } catch (err) {
+                    console.warn("Impossible d'archiver le lien Go-Draw", err);
+                }
+            }
+
             const promptInput = document.getElementById("promptInput");
             const mermaidOutput = document.getElementById("mermaidOutput");
             const drawTypeButtons = Array.from(document.querySelectorAll(".draw-type-btn[data-draw-type]"));
@@ -764,6 +803,7 @@
             const shareMenuStatus = document.getElementById("shareMenuStatus");
             const shareCreateBtn = document.getElementById("shareCreateBtn");
             const shareUpdateBtn = document.getElementById("shareUpdateBtn");
+            const shareHistory = window.goToolkitShareHistory;
 
             function loadState() {
                 try {
@@ -910,6 +950,7 @@
                     shareLoadedFromRemote = true;
                     shareLastUpdatedAt = result?.meta?.updatedAt || new Date().toISOString();
                     setShareStatus(formatRelativeTime(shareLastUpdatedAt));
+                    persistDrawShareRecord(token, shareLastUpdatedAt);
                     return true;
                 } catch (err) {
                     console.error("Erreur de chargement du lien partagé :", err);
@@ -1002,6 +1043,7 @@
                     updateUrlWithShareToken(token);
                     setShareStatus(formatRelativeTime(updatedAt));
                     updateShareMenuUI();
+                    persistDrawShareRecord(token, updatedAt);
                     await copyCurrentShareLinkToClipboard();
                 } catch (err) {
                     console.error("Erreur lors de la création du lien partagé :", err);
@@ -1032,6 +1074,7 @@
                     shareLastUpdatedAt = updatedAt;
                     setShareStatus(formatRelativeTime(updatedAt));
                     updateShareMenuUI();
+                    persistDrawShareRecord(currentShareToken, updatedAt);
                     await copyCurrentShareLinkToClipboard();
                 } catch (err) {
                     console.error("Erreur lors de la mise à jour du lien partagé :", err);
@@ -1261,6 +1304,7 @@
                     payload: {
                         model: "gpt-5-nano",
                         messages,
+                        reasoning_effort: "minimal",
                         temperature: 1,
                         stream: true
                     },
