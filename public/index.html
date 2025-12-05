@@ -194,6 +194,8 @@
             color: var(--text);
             min-height: 120px;
             transition: box-shadow 0.2s ease;
+            position: relative;
+            padding-bottom: 28px;
         }
 
         .share-card:hover,
@@ -220,6 +222,32 @@
             margin: 4px 0 0;
             font-size: 0.75rem;
             color: rgba(47, 41, 34, 0.6);
+        }
+
+        .share-card-delete {
+            position: absolute;
+            right: 8px;
+            bottom: 6px;
+            border: 1px solid var(--border-strong);
+            background: #fff;
+            border-radius: 12px;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        }
+
+        .share-card-delete:hover,
+        .share-card-delete:focus-visible {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 18px rgba(0, 0, 0, 0.12);
+            border-color: var(--primary);
+            outline: none;
         }
 
         .share-helper {
@@ -483,7 +511,7 @@
 
         <section class="section">
             <div class="section-title-row">
-                <p class="section-label">Partages</p>
+                <p class="section-label">Mes partages</p>
                 <button id="refreshShares" class="ghost-button" type="button">↻</button>
             </div>
             <div id="shareGallery" class="share-gallery" aria-live="polite"></div>
@@ -624,7 +652,7 @@
                 }
                 if (app === "draw") {
                     const firstPage = payload?.pages?.[0];
-                    const tabName = firstPage?.label || "Page 1";
+                    const tabName = firstPage?.title || firstPage?.label || "Page 1";
                     const context = firstPage?.input || "";
                     return { tabName, lines: normalizeLines(context) };
                 }
@@ -675,6 +703,20 @@
                     <p class="share-card-desc">${preview.lines.join(" · ") || "Complète le contexte pour l'afficher ici."}</p>
                     <p class="share-card-date">${formattedDate}</p>
                 `;
+                const deleteBtn = document.createElement("button");
+                deleteBtn.type = "button";
+                deleteBtn.className = "share-card-delete";
+                deleteBtn.title = "Supprimer ce partage";
+                deleteBtn.textContent = "🗑️";
+                deleteBtn.addEventListener("click", event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const confirmed = window.confirm("Supprimer ce lien de partage ?");
+                    if (!confirmed) return;
+                    shareHistory?.removeRecord?.(app);
+                    refreshGallery();
+                });
+                card.appendChild(deleteBtn);
                 return card;
             }
 

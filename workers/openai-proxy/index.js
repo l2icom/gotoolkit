@@ -71,9 +71,9 @@ export default {
     // 5) Quota journalier par client (ex: 100 req / jour / client)
     const now = Date.now();
     const today = new Date(now).toISOString().slice(0, 10); // "YYYY-MM-DD"
-    const dailyLimit = 100;
+    const dailyLimit = 200;
     const windowMs = 60_000; // 1 minute
-    const perMinuteLimit = 10; // 60 req / min / client
+    const perMinuteLimit = 20; // 20 req / min / client
 
     const quotaKey = `quota:${clientId}:${today}`;
     const windowId = Math.floor(now / windowMs);
