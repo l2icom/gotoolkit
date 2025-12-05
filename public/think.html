@@ -89,6 +89,7 @@
             position: relative;
             display: inline-flex;
             align-items: stretch;
+            gap: 4px;
         }
 
         .context-menu {
@@ -1799,9 +1800,6 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
     <script>
-        window.GO_INDEX_DEMO_DATA = window.GO_INDEX_DEMO_DATA || { slides: [] };
-    </script>
-    <script>
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
@@ -1945,7 +1943,7 @@
                 sections: [
                     { key: "business", label: "Business", examples: "" },
                     { key: "tech", label: "Tech", examples: "" },
-                    { key: "ux", label: "UX", examples: "" }
+                    { key: "ux", label: "Expérience Utilisateur", examples: "" }
                 ]
             },
             {
@@ -2231,20 +2229,11 @@
             }
         }
 
-        function getDemoSlides() {
-            const demo = window.GO_INDEX_DEMO_DATA;
-            if (!demo || !Array.isArray(demo.slides)) {
-                return [];
-            }
-            return demo.slides.map(slide => ({ ...slide }));
-        }
-
         function loadSavedState() {
             const stored = localStorage.getItem(STORAGE_KEY);
             if (!stored) {
-                const demoSlides = getDemoSlides();
-                initializeTemplateSlides(demoSlides);
-                return demoSlides.length > 0;
+                initializeTemplateSlides();
+                return false;
             }
             try {
                 const parsed = JSON.parse(stored);
@@ -4859,13 +4848,17 @@
         async function initializeAppState() {
             initShareWorkerService();
             const sharedLoaded = await tryLoadSharedStateFromUrl();
+            let hasLocalSlides = false;
             if (!sharedLoaded) {
-                loadSavedState();
+                hasLocalSlides = loadSavedState();
             }
             renderSlides();
             applyRatio(currentRatioIndex);
             if (sharedLoaded) {
                 persistState();
+            }
+            if (!sharedLoaded && !hasLocalSlides) {
+                openTemplateModal();
             }
         }
         initializeAppState();
