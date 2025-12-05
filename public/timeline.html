@@ -156,7 +156,11 @@
         .context-menu.file-menu {
             padding: 0;
             margin: 0;
-            transform: translateX(10px);
+        }
+
+        .context-menu.file-menu .menu-panel .menu-panel-btn {
+            margin-right: 10px;
+            border: none;
         }
 
         .tab.active {
@@ -1601,7 +1605,7 @@
                                     <button id="shareUpdateBtn" type="button" class="menu-panel-btn">🔄️
                                         Actualiser</button>
                                     <button id="shareCreateBtn" type="button" class="menu-panel-btn primary">🔗
-                                        Nouveau</button>
+                                        Créer un lien</button>
                                 </div>
                                 <p class="share-menu-status" id="shareMenuStatus"></p>
                             </div>
@@ -3793,7 +3797,7 @@
                 if (currentShareToken) {
                     return "Un lien privé existe déjà pour cette session.";
                 }
-                return "Crée un lien d’édition privée pour le partager.";
+                return "Seules les personnes disposant du lien peuvent y accéder.";
             }
 
             function updateShareMenuUI() {

@@ -141,6 +141,10 @@
             background: rgba(42, 122, 87, 0.08);
         }
 
+        .menu-panel .menu-panel-btn {
+            border: none;
+        }
+
         .toast {
             position: fixed;
             bottom: 18px;
@@ -465,11 +469,11 @@
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 0px;
             align-items: stretch;
             min-height: 100vh;
             height: 100vh;
-            padding: 12px;
+            padding: 10px;
             overflow: hidden;
         }
 
@@ -1566,7 +1570,7 @@
                             <div class="share-actions">
                                 <button id="shareUpdateBtn" type="button" class="menu-panel-btn">🔄️ Actualiser</button>
                                 <button id="shareCreateBtn" type="button" class="menu-panel-btn primary">🔗
-                                    Nouveau</button>
+                                    Créer un lien</button>
                             </div>
                             <p class="share-menu-status" id="shareMenuStatus"></p>
                         </div>
@@ -4505,7 +4509,7 @@
             if (currentShareToken) {
                 return "Un lien privé existe déjà pour cette session.";
             }
-            return "Crée un lien d’édition privée pour le partager.";
+            return "Seules les personnes disposant du lien peuvent y accéder.";
         }
 
         function updateShareMenuUI() {

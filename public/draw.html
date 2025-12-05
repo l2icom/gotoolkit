@@ -31,6 +31,7 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            padding: 10px 0px;
         }
 
         .app-header {
@@ -564,11 +565,11 @@
 
         .btn-secondary {
             background: #eef0ff;
-            color: #2b3271;
+            color: #2a7a57;
         }
 
         .btn-primary {
-            background: #1f64ff;
+            background: #2a7a57;
             color: #ffffff;
         }
 
@@ -601,6 +602,7 @@
                 <button id="deletePageBtn" class="tab-btn-remove" title="Supprimer la page">🗑️</button>
             </div>
             <div class="global-actions">
+                <button id="aiSettingsBtn" class="ai-button" type="button">🤖 Assistant AI</button>
                 <div class="share-menu-wrapper">
                     <button id="shareBtn" class="info-button" type="button" title="Lien de partage">🔗 Partage</button>
                     <div id="shareMenu" class="share-menu" role="dialog" aria-live="polite">
@@ -617,7 +619,7 @@
                         <p class="share-menu-status" id="shareMenuStatus"></p>
                     </div>
                 </div>
-                <button id="aiSettingsBtn" class="ai-button" type="button">🤖 Assistant AI</button>
+
             </div>
         </header>
 
@@ -937,7 +939,7 @@
                 if (currentShareToken) {
                     return "Un lien privé existe déjà pour cette session.";
                 }
-                return "Crée un lien privé pour partager cette session.";
+                return "Seules les personnes disposant du lien peuvent y accéder.";
             }
 
             function updateShareMenuUI() {
@@ -1564,6 +1566,24 @@
                 });
             }
 
+            function computeCompactionFactor(count, start = 4, end = 16) {
+                if (count <= start) {
+                    return 0;
+                }
+                if (count >= end) {
+                    return 1;
+                }
+                return (count - start) / (end - start);
+            }
+
+            function compactValue(count, minValue, maxValue, options = {}) {
+                if (maxValue <= minValue) {
+                    return minValue;
+                }
+                const factor = computeCompactionFactor(count, options.start ?? 4, options.end ?? 16);
+                return maxValue - (maxValue - minValue) * factor;
+            }
+
             function translateMermaidToElements(code) {
                 const trimmed = (code || "").trim();
                 if (!trimmed) {
@@ -1629,24 +1649,40 @@
                 }
 
                 const nodeIds = Array.from(nodeMap.keys());
-                const spacingX = 220;
-                const spacingY = 160;
-                const baseX = 60;
-                const baseY = 60;
-                const columns = Math.max(1, horizontal ? Math.ceil(Math.sqrt(nodeIds.length)) : Math.min(3, Math.ceil(Math.sqrt(nodeIds.length))));
+                const nodeCount = nodeIds.length;
+                const nodeWidth = compactValue(nodeCount, 120, 170);
+                const spacingX = nodeWidth + compactValue(nodeCount, 30, 80);
+                const spacingY = compactValue(nodeCount, 100, 150);
+                const baseX = 40;
+                const baseY = 40;
+                const minBoxHeight = compactValue(nodeCount, 60, 80);
+                const columns = (() => {
+                    if (!nodeCount) {
+                        return 1;
+                    }
+                    if (horizontal) {
+                        return Math.max(2, Math.min(nodeCount, Math.ceil(Math.sqrt(nodeCount * 1.4))));
+                    }
+                    if (nodeCount <= 4) {
+                        return nodeCount;
+                    }
+                    if (nodeCount <= 9) {
+                        return 3;
+                    }
+                    return Math.min(nodeCount, 4);
+                })();
 
                 nodeIds.forEach((id, idx) => {
                     const col = idx % columns;
                     const row = Math.floor(idx / columns);
                     const x = baseX + col * spacingX;
                     const y = baseY + row * spacingY;
-                    const nodeWidth = 160;
                     const rawLabel = (nodeMap.get(id)?.label || id).trim() || id;
                     const wrappedLabel = wrapTextContent(rawLabel, 24) || rawLabel;
                     const lineCount = countTextLines(wrappedLabel);
                     const fontSize = 16;
                     const textHeight = lineCount * fontSize * 1.3;
-                    const nodeHeight = Math.max(70, textHeight + 32);
+                    const nodeHeight = Math.max(minBoxHeight, textHeight + 24);
                     const rect = createRectangleElement(x, y, nodeWidth, nodeHeight);
                     const textY = y + (nodeHeight - textHeight) / 2;
                     const text = createTextElement(wrappedLabel, x + 10, textY, {
@@ -1725,23 +1761,27 @@
                     return null;
                 }
 
-                const spacingX = 190;
-                const baseX = 80;
-                const topY = 60;
-                const lifelineHeight = 140 + messages.length * 80;
+                const participantCount = participants.length;
+                const messageCount = Math.max(1, messages.length);
+                const spacingX = compactValue(participantCount, 120, 190, { start: 3, end: 12 });
+                const baseX = 60;
+                const topY = 40;
+                const messageSpacing = compactValue(messageCount, 55, 80, { start: 2, end: 12 });
+                const lifelineHeight = 100 + messageCount * messageSpacing;
+                const boxWidth = compactValue(participantCount, 110, 150, { start: 3, end: 12 });
+                const headerBaseHeight = compactValue(participantCount, 36, 48, { start: 3, end: 12 });
                 const positions = new Map();
 
                 participants.forEach((id, idx) => {
                     const x = baseX + idx * spacingX;
                     positions.set(id, x);
-                    const boxWidth = 140;
                     const boxX = x - boxWidth / 2;
                     const label = participantLabels.get(id) || id;
                     const wrappedLabel = wrapTextContent(label, 18) || label;
                     const lineCount = countTextLines(wrappedLabel);
                     const fontSize = 15;
                     const textHeight = lineCount * fontSize * 1.3;
-                    const headerHeight = Math.max(40, textHeight + 20);
+                    const headerHeight = Math.max(headerBaseHeight, textHeight + 16);
                     const rect = createRectangleElement(boxX, topY, boxWidth, headerHeight, {
                         backgroundColor: "#ffffff"
                     });
@@ -1755,7 +1795,7 @@
                         height: textHeight
                     });
                     elements.push(rect, text);
-                    const adjustedLifelineHeight = Math.max(120, lifelineHeight - (headerHeight - 40));
+                    const adjustedLifelineHeight = Math.max(110, lifelineHeight - Math.max(0, headerHeight - headerBaseHeight));
                     const lifeline = createLineElement(x, topY + headerHeight, 0, adjustedLifelineHeight, {
                         strokeWidth: 1.5,
                         strokeStyle: "dashed"
@@ -1767,16 +1807,18 @@
                     const startX = positions.get(message.from);
                     const endX = positions.get(message.to);
                     if (startX == null || endX == null) return;
-                    const y = topY + 80 + idx * 80;
+                    const y = topY + headerBaseHeight + 20 + idx * messageSpacing;
                     const arrow = createArrowElement(startX, y, endX, y, {
                         strokeWidth: 1.5
                     });
                     elements.push(arrow);
                     if (message.text) {
-                        const labelX = Math.min(startX, endX) + Math.abs(endX - startX) / 2 - 60;
-                        elements.push(createTextElement(message.text, labelX, y - 24, {
-                            width: 120,
-                            fontSize: 14,
+                        const horizontalGap = Math.abs(endX - startX);
+                        const labelWidth = Math.max(90, horizontalGap - 40);
+                        const labelX = Math.min(startX, endX) + (horizontalGap - labelWidth) / 2;
+                        elements.push(createTextElement(message.text, labelX, y - 22, {
+                            width: labelWidth,
+                            fontSize: 13,
                             textAlign: "center"
                         }));
                     }
@@ -1831,24 +1873,27 @@
                     return null;
                 }
 
-                const columns = Math.max(1, Math.ceil(Math.sqrt(classes.length)));
-                const spacingX = 240;
-                const spacingY = 200;
-                const baseX = 60;
-                const baseY = 60;
+                const classCount = classes.length;
+                const columns = Math.max(1, Math.min(classCount, Math.round(Math.sqrt(classCount * 1.3)) || 1));
+                const spacingX = compactValue(classCount, 150, 240, { start: 3, end: 12 });
+                const spacingY = compactValue(classCount, 140, 220, { start: 3, end: 12 });
+                const baseX = 40;
+                const baseY = 40;
+                const boxWidth = compactValue(classCount, 160, 210, { start: 3, end: 12 });
+                const memberLineHeight = 18;
                 const classPositions = new Map();
 
                 classes.forEach((klass, idx) => {
                     const col = idx % columns;
                     const row = Math.floor(idx / columns);
-                    const width = 200;
-                    const memberLines = Math.max(1, klass.members.length);
+                    const width = boxWidth;
+                    const memberLines = Math.max(0, klass.members.length);
                     const wrappedLabel = wrapTextContent(klass.label, 20) || klass.label;
                     const titleLineCount = countTextLines(wrappedLabel);
                     const titleFontSize = 18;
                     const titleTextHeight = titleLineCount * titleFontSize * 1.3;
-                    const titleHeight = Math.max(40, titleTextHeight + 10);
-                    const bodyHeight = memberLines * 20 + 20;
+                    const titleHeight = Math.max(compactValue(classCount, 36, 52, { start: 3, end: 12 }), titleTextHeight + 12);
+                    const bodyHeight = memberLines ? memberLines * memberLineHeight + 16 : 20;
                     const height = titleHeight + bodyHeight;
                     const x = baseX + col * spacingX;
                     const y = baseY + row * spacingY;
@@ -1871,7 +1916,9 @@
                             title,
                             createTextElement(memberText, x + 10, y + titleHeight + 10, {
                                 width: width - 20,
-                                fontSize: 14
+                                fontSize: 13,
+                                lineHeight: 1.2,
+                                textLines: Math.max(1, memberLines)
                             })
                         );
                     } else {
