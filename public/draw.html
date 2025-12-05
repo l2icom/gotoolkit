@@ -1064,6 +1064,37 @@
             ];
             const DEFAULT_DRAW_TYPE = DRAW_TYPES[0].id;
             const STORAGE_KEY = "connect-ai-state";
+            const API_KEY_STORAGE_KEY = "go-toolkit-api-key";
+            function getShareDraftKey(token) {
+                return `${STORAGE_KEY}-share-${token}`;
+            }
+
+            function readShareDraft(token) {
+                if (!token || typeof window === "undefined" || !window.localStorage) return null;
+                try {
+                    const raw = localStorage.getItem(getShareDraftKey(token));
+                    if (!raw) return null;
+                    const parsed = JSON.parse(raw);
+                    if (!parsed || typeof parsed !== "object") return null;
+                    return parsed;
+                } catch (err) {
+                    console.warn("Impossible de lire le cache local du partage", err);
+                    return null;
+                }
+            }
+
+            function writeShareDraft(token, payload, updatedAt) {
+                if (!token || typeof window === "undefined" || !window.localStorage) return;
+                try {
+                    const value = {
+                        payload,
+                        updatedAt: updatedAt || new Date().toISOString()
+                    };
+                    localStorage.setItem(getShareDraftKey(token), JSON.stringify(value));
+                } catch (err) {
+                    console.warn("Impossible de sauvegarder le cache local du partage", err);
+                }
+            }
             const FIRESTORE_COLLECTION = "diagrams";
             const SHARE_QUERY_PARAM = "share";
             const SHARE_WORKER_UNAVAILABLE_MESSAGE =
@@ -1319,6 +1350,9 @@ sequenceDiagram
             function saveState() {
                 try {
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                    if (currentShareToken) {
+                        writeShareDraft(currentShareToken, state, new Date().toISOString());
+                    }
                 } catch (err) {
                     console.error("Impossible de sauvegarder l'état", err);
                 }
@@ -1400,6 +1434,19 @@ sequenceDiagram
                 return `Mis à jour il y a ${deltaDays} jour${deltaDays > 1 ? "s" : ""}`;
             }
 
+            function formatFullDate(isoString) {
+                const value = new Date(isoString);
+                if (Number.isNaN(value.getTime())) return "";
+                const formatter = new Intl.DateTimeFormat("fr-FR", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+                return formatter.format(value);
+            }
+
             function getShareTokenFromUrl() {
                 const params = new URLSearchParams(window.location.search);
                 const value = params.get(SHARE_QUERY_PARAM);
@@ -1478,26 +1525,68 @@ sequenceDiagram
                 if (!token) {
                     return false;
                 }
+                const localDraft = readShareDraft(token);
+                let remoteResult = null;
                 try {
-                    const result = await fetchSharePayload(token);
-                    const payload = result?.payload;
-                    if (!payload || !Array.isArray(payload.pages)) {
-                        setShareStatus("Lien de partage introuvable.", "error");
-                        return false;
-                    }
-                    applySharedState(payload);
-                    currentShareToken = token;
-                    shareLoadedFromRemote = true;
-                    shareLastUpdatedAt = result?.meta?.updatedAt || new Date().toISOString();
-                    setShareStatus(formatRelativeTime(shareLastUpdatedAt));
-                    persistDrawShareRecord(token, shareLastUpdatedAt);
-                    await applySharedSceneIfPresent();
-                    return true;
+                    remoteResult = await fetchSharePayload(token);
                 } catch (err) {
                     console.error("Erreur de chargement du lien partagé :", err);
-                    setShareStatus("Impossible de charger le lien partagé.", "error");
+                }
+
+                const remotePayload = remoteResult?.payload;
+                const remoteUpdatedAt = remoteResult?.meta?.updatedAt;
+                const localPayload = localDraft?.payload;
+                const localUpdatedAt = localDraft?.updatedAt;
+
+                const remoteDate = remoteUpdatedAt ? new Date(remoteUpdatedAt).getTime() : 0;
+                const localDate = localUpdatedAt ? new Date(localUpdatedAt).getTime() : 0;
+                const payloadsMatch = remotePayload && localPayload
+                    ? JSON.stringify(remotePayload) === JSON.stringify(localPayload)
+                    : false;
+                const timestampsEqual = remoteUpdatedAt && localUpdatedAt && remoteDate === localDate;
+
+                let chosenPayload = null;
+                let chosenUpdatedAt = null;
+
+                if (remotePayload && localPayload && (payloadsMatch || timestampsEqual)) {
+                    chosenPayload = localPayload;
+                    chosenUpdatedAt = localUpdatedAt || remoteUpdatedAt;
+                } else if (localPayload && localDate > remoteDate) {
+                    chosenPayload = localPayload;
+                    chosenUpdatedAt = localUpdatedAt;
+                } else if (remotePayload && remoteDate > localDate && localPayload) {
+                    const confirmed = window.confirm(
+                        `Mettre à jour avec les modifications du ${formatFullDate(remoteUpdatedAt)} ?`
+                    );
+                    if (confirmed) {
+                        chosenPayload = remotePayload;
+                        chosenUpdatedAt = remoteUpdatedAt;
+                    } else {
+                        chosenPayload = localPayload;
+                        chosenUpdatedAt = localUpdatedAt || remoteUpdatedAt || new Date().toISOString();
+                    }
+                } else if (remotePayload && Array.isArray(remotePayload.pages)) {
+                    chosenPayload = remotePayload;
+                    chosenUpdatedAt = remoteUpdatedAt || new Date().toISOString();
+                } else if (localPayload) {
+                    chosenPayload = localPayload;
+                    chosenUpdatedAt = localUpdatedAt || new Date().toISOString();
+                }
+
+                if (!chosenPayload || !Array.isArray(chosenPayload.pages)) {
+                    setShareStatus("Lien de partage introuvable.", "error");
                     return false;
                 }
+
+                applySharedState(chosenPayload);
+                currentShareToken = token;
+                shareLoadedFromRemote = true;
+                shareLastUpdatedAt = chosenUpdatedAt || new Date().toISOString();
+                setShareStatus(formatRelativeTime(shareLastUpdatedAt));
+                persistDrawShareRecord(token, shareLastUpdatedAt);
+                writeShareDraft(token, chosenPayload, shareLastUpdatedAt);
+                await applySharedSceneIfPresent();
+                return true;
             }
 
             async function saveSharePayload(token, payload) {
@@ -1680,6 +1769,7 @@ sequenceDiagram
                     setShareStatus(formatRelativeTime(updatedAt));
                     updateShareMenuUI();
                     persistDrawShareRecord(token, updatedAt);
+                    writeShareDraft(token, payload, updatedAt);
                     await copyCurrentShareLinkToClipboard();
                 } catch (err) {
                     console.error("Erreur lors de la création du lien partagé :", err);
@@ -1712,6 +1802,7 @@ sequenceDiagram
                     setShareStatus(formatRelativeTime(updatedAt));
                     updateShareMenuUI();
                     persistDrawShareRecord(currentShareToken, updatedAt);
+                    writeShareDraft(currentShareToken, payload, updatedAt);
                     await copyCurrentShareLinkToClipboard();
                 } catch (err) {
                     console.error("Erreur lors de la mise à jour du lien partagé :", err);

@@ -2355,6 +2355,9 @@
                 try {
                     var payload = buildTimelineStatePayload();
                     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
+                    if (currentShareToken) {
+                        writeShareDraft(currentShareToken, payload, new Date().toISOString());
+                    }
                 } catch (err) {
                     console.warn("Impossible de sauvegarder le planning", err);
                 }
@@ -3028,6 +3031,37 @@ Réponds toujours avec un JSON qui contient :
             var shareStatusType = "";
             var shareRequestInProgress = false;
             var shareLastUpdatedAt = null;
+
+            function getShareDraftKey(token) {
+                return LOCAL_STORAGE_KEY + "-share-" + token;
+            }
+
+            function readShareDraft(token) {
+                if (!token || typeof window === "undefined" || !window.localStorage) return null;
+                try {
+                    var raw = localStorage.getItem(getShareDraftKey(token));
+                    if (!raw) return null;
+                    var parsed = JSON.parse(raw);
+                    if (!parsed || typeof parsed !== "object") return null;
+                    return parsed;
+                } catch (err) {
+                    console.warn("Impossible de lire le cache local du partage", err);
+                    return null;
+                }
+            }
+
+            function writeShareDraft(token, payload, updatedAt) {
+                if (!token || typeof window === "undefined" || !window.localStorage) return;
+                try {
+                    var value = {
+                        payload: payload,
+                        updatedAt: updatedAt || new Date().toISOString()
+                    };
+                    localStorage.setItem(getShareDraftKey(token), JSON.stringify(value));
+                } catch (err) {
+                    console.warn("Impossible de sauvegarder le cache local du partage", err);
+                }
+            }
 
             function getPlanSharePreview() {
                 var firstView = Array.isArray(views) && views.length ? views[0] : null;
@@ -3966,6 +4000,19 @@ Réponds toujours avec un JSON qui contient :
                 return "Mis à jour il y a " + deltaDays + " jour" + (deltaDays > 1 ? "s" : "");
             }
 
+            function formatFullDate(isoString) {
+                var value = new Date(isoString);
+                if (Number.isNaN(value.getTime())) return "";
+                var formatter = new Intl.DateTimeFormat("fr-FR", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+                return formatter.format(value);
+            }
+
             function getShareTokenFromUrl() {
                 var params = new URLSearchParams(window.location.search);
                 var value = params.get(SHARE_QUERY_PARAM);
@@ -4026,31 +4073,73 @@ Réponds toujours avec un JSON qui contient :
                     setShareStatus(SHARE_WORKER_UNAVAILABLE_MESSAGE, "error");
                     return false;
                 }
+
+                var localDraft = readShareDraft(token);
+                var remoteResult = null;
                 try {
-                    var result = await fetchSharePayload(token);
-                    var payload = result && result.payload;
-                    if (!payload) {
-                        setShareStatus("Lien de partage introuvable.", "error");
-                        return false;
-                    }
-                    var imported = applyImportedState(payload, { alertOnEmpty: false });
-                    if (!imported) {
-                        setShareStatus("Lien de partage introuvable.", "error");
-                        return false;
-                    }
-                    currentShareToken = token;
-                    shareLoadedFromRemote = true;
-                    shareLastUpdatedAt = (result && result.meta && result.meta.updatedAt) || new Date().toISOString();
-                    setShareStatus(formatRelativeTime(shareLastUpdatedAt));
-                    persistPlanShareRecord(token, shareLastUpdatedAt);
-                    updateShareMenuUI();
-                    return true;
+                    remoteResult = await fetchSharePayload(token);
                 } catch (err) {
-                    console.error("Erreur de chargement du lien partagé :", err);
-                    setShareStatus("Impossible de charger le lien partagé.", "error");
-                    updateShareMenuUI();
+                    console.error("Erreur de chargement distant du lien partagé :", err);
+                }
+
+                var remotePayload = remoteResult && remoteResult.payload;
+                var remoteUpdatedAt = remoteResult && remoteResult.meta && remoteResult.meta.updatedAt;
+                var localPayload = localDraft && localDraft.payload;
+                var localUpdatedAt = localDraft && localDraft.updatedAt;
+
+                var remoteDate = remoteUpdatedAt ? new Date(remoteUpdatedAt).getTime() : 0;
+                var localDate = localUpdatedAt ? new Date(localUpdatedAt).getTime() : 0;
+                var payloadsMatch = remotePayload && localPayload
+                    ? JSON.stringify(remotePayload) === JSON.stringify(localPayload)
+                    : false;
+                var timestampsEqual = remoteUpdatedAt && localUpdatedAt && remoteDate === localDate;
+
+                var chosenPayload = null;
+                var chosenUpdatedAt = null;
+
+                if (remotePayload && localPayload && (payloadsMatch || timestampsEqual)) {
+                    chosenPayload = localPayload;
+                    chosenUpdatedAt = localUpdatedAt || remoteUpdatedAt;
+                } else if (localPayload && localDate > remoteDate) {
+                    chosenPayload = localPayload;
+                    chosenUpdatedAt = localUpdatedAt;
+                } else if (remotePayload && remoteDate > localDate && localPayload) {
+                    var confirmed = window.confirm(
+                        "Mettre à jour avec les modifications du " + formatFullDate(remoteUpdatedAt) + " ?"
+                    );
+                    if (confirmed) {
+                        chosenPayload = remotePayload;
+                        chosenUpdatedAt = remoteUpdatedAt;
+                    } else {
+                        chosenPayload = localPayload;
+                        chosenUpdatedAt = localUpdatedAt || remoteUpdatedAt || new Date().toISOString();
+                    }
+                } else if (remotePayload) {
+                    chosenPayload = remotePayload;
+                    chosenUpdatedAt = remoteUpdatedAt || new Date().toISOString();
+                } else if (localPayload) {
+                    chosenPayload = localPayload;
+                    chosenUpdatedAt = localUpdatedAt || new Date().toISOString();
+                }
+
+                if (!chosenPayload) {
+                    setShareStatus("Lien de partage introuvable.", "error");
                     return false;
                 }
+
+                var imported = applyImportedState(chosenPayload, { alertOnEmpty: false });
+                if (!imported) {
+                    setShareStatus("Lien de partage introuvable.", "error");
+                    return false;
+                }
+                currentShareToken = token;
+                shareLoadedFromRemote = true;
+                shareLastUpdatedAt = chosenUpdatedAt || new Date().toISOString();
+                setShareStatus(formatRelativeTime(shareLastUpdatedAt));
+                persistPlanShareRecord(token, shareLastUpdatedAt);
+                writeShareDraft(token, chosenPayload, shareLastUpdatedAt);
+                updateShareMenuUI();
+                return true;
             }
 
             async function saveSharePayload(token, payload) {
@@ -4148,6 +4237,7 @@ Réponds toujours avec un JSON qui contient :
                     setShareStatus(formatRelativeTime(updatedAt));
                     updateShareMenuUI();
                     persistPlanShareRecord(token, updatedAt);
+                    writeShareDraft(token, payload, updatedAt);
                     await copyCurrentShareLinkToClipboard();
                 } catch (err) {
                     console.error("Erreur lors de la création du lien partagé :", err);
@@ -4182,6 +4272,7 @@ Réponds toujours avec un JSON qui contient :
                     setShareStatus(formatRelativeTime(updatedAt));
                     updateShareMenuUI();
                     persistPlanShareRecord(currentShareToken, updatedAt);
+                    writeShareDraft(currentShareToken, payload, updatedAt);
                     await copyCurrentShareLinkToClipboard();
                 } catch (err) {
                     console.error("Erreur lors de la mise à jour du lien partagé :", err);
