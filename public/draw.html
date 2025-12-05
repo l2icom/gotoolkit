@@ -144,6 +144,19 @@
             box-shadow: none;
         }
 
+        .drawer-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border-radius: 8px;
+            border: 1px solid #dfe3f5;
+            background: #ffffff;
+            padding: 4px 8px;
+            font-size: 12px;
+            line-height: 18px;
+            cursor: pointer;
+        }
+
         .global-actions button.primary {
             border: none;
             background: #2a7a57;
@@ -339,6 +352,17 @@
             width: 100%;
         }
 
+        .drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(2px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 60;
+        }
+
         .card-title {
             font-size: 13px;
             font-weight: 600;
@@ -504,6 +528,7 @@
             border-radius: 4px;
             background: #ffffff;
             min-height: 360px;
+            height: 100%;
             width: 100%;
             position: relative;
             overflow: hidden;
@@ -811,14 +836,43 @@
             max-width: 100px;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1200px) {
             .connect-layout {
-                flex-direction: column;
+                position: relative;
+                gap: 6px;
+            }
+
+            .connect-right {
+                width: 100%;
             }
 
             .connect-left {
-                flex: 1;
-                max-width: none;
+                position: fixed;
+                top: 0;
+                right: 0;
+                height: 100vh;
+                max-width: min(420px, 90vw);
+                width: 90vw;
+                box-shadow: -12px 0 30px rgba(16, 20, 40, 0.25);
+                transform: translateX(110%);
+                transition: transform 0.22s ease;
+                z-index: 70;
+                overflow-y: auto;
+            }
+
+            .connect-left.open {
+                transform: translateX(0);
+            }
+
+            .drawer-overlay.visible {
+                opacity: 1;
+                pointer-events: all;
+            }
+
+            .excalidraw-card,
+            #excalidrawHost {
+                min-height: 70vh;
+                height: 70vh;
             }
         }
     </style>
@@ -841,6 +895,7 @@
                 <button id="deletePageBtn" class="tab-btn-remove" title="Supprimer la page">🗑️</button>
             </div>
             <div class="global-actions">
+                <button id="toggleDrawerBtn" class="drawer-toggle-btn" type="button">📄 Contexte</button>
                 <button id="aiSettingsBtn" class="ai-button" type="button">🤖 Assistant AI</button>
                 <div class="share-menu-wrapper">
                     <button id="shareBtn" class="info-button" type="button" title="Lien de partage">🔗 Partage</button>
@@ -863,6 +918,8 @@
 
             </div>
         </header>
+
+        <div id="drawerOverlay" class="drawer-overlay" aria-hidden="true"></div>
 
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
@@ -1123,11 +1180,17 @@ sequenceDiagram
             const shareMenuStatus = document.getElementById("shareMenuStatus");
             const shareCreateBtn = document.getElementById("shareCreateBtn");
             const shareUpdateBtn = document.getElementById("shareUpdateBtn");
+            const toggleDrawerBtn = document.getElementById("toggleDrawerBtn");
+            const drawerOverlay = document.getElementById("drawerOverlay");
+            const connectLeft = document.querySelector(".connect-left");
+            const drawerMediaQuery = window.matchMedia("(max-width: 1200px)");
             const shareHistory = window.goToolkitShareHistory;
             const generateDefaultLabel = generateBtn?.textContent || "✨ Générer";
+            const drawerDefaultLabel = toggleDrawerBtn?.textContent || "📄 Contexte";
             let generateCooldownTimer = null;
             let generateCooldownEndTime = 0;
             let currentTourIndex = 0;
+            let isDrawerOpen = false;
             const tourSteps = [
                 {
                     title: "Intention Go-Draw",
@@ -1155,6 +1218,41 @@ sequenceDiagram
                     selector: ".app-header"
                 }
             ];
+
+            function closeDrawer() {
+                if (!connectLeft) return;
+                isDrawerOpen = false;
+                connectLeft.classList.remove("open");
+                drawerOverlay?.classList.remove("visible");
+                drawerOverlay?.setAttribute("aria-hidden", "true");
+                toggleDrawerBtn?.setAttribute("aria-expanded", "false");
+            }
+
+            function openDrawer() {
+                if (!connectLeft || !drawerMediaQuery.matches) return;
+                isDrawerOpen = true;
+                connectLeft.classList.add("open");
+                drawerOverlay?.classList.add("visible");
+                drawerOverlay?.setAttribute("aria-hidden", "false");
+                toggleDrawerBtn?.setAttribute("aria-expanded", "true");
+            }
+
+            function toggleDrawer() {
+                if (!drawerMediaQuery.matches) return;
+                if (isDrawerOpen) {
+                    closeDrawer();
+                } else {
+                    openDrawer();
+                }
+            }
+
+            function handleDrawerBreakpointChange(event) {
+                if (!event.matches) {
+                    closeDrawer();
+                } else {
+                    closeDrawer();
+                }
+            }
 
             function loadState() {
                 try {
@@ -1741,6 +1839,10 @@ sequenceDiagram
                     generateBtn.disabled = false;
                     generateBtn.textContent = generateDefaultLabel;
                 }
+                if (toggleDrawerBtn) {
+                    toggleDrawerBtn.disabled = false;
+                    toggleDrawerBtn.textContent = drawerDefaultLabel;
+                }
             }
 
             function startGenerateCooldown(seconds = 30) {
@@ -1749,6 +1851,9 @@ sequenceDiagram
                 const duration = Math.max(1, seconds);
                 generateCooldownEndTime = Date.now() + duration * 1000;
                 generateBtn.disabled = true;
+                if (toggleDrawerBtn) {
+                    toggleDrawerBtn.disabled = true;
+                }
 
                 const updateLabel = () => {
                     if (!generateBtn) {
@@ -1757,11 +1862,19 @@ sequenceDiagram
                     }
                     const remainingMs = generateCooldownEndTime - Date.now();
                     const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
-                    generateBtn.textContent = `⏳ ${remainingSeconds}s`;
+                    const label = `⏳ ${remainingSeconds}s`;
+                    generateBtn.textContent = label;
+                    if (toggleDrawerBtn) {
+                        toggleDrawerBtn.textContent = label;
+                    }
                     if (remainingSeconds <= 0) {
                         clearGenerateCooldown();
                         generateBtn.disabled = false;
                         generateBtn.textContent = generateDefaultLabel;
+                        if (toggleDrawerBtn) {
+                            toggleDrawerBtn.disabled = false;
+                            toggleDrawerBtn.textContent = drawerDefaultLabel;
+                        }
                     }
                 };
 
@@ -2778,10 +2891,24 @@ sequenceDiagram
                 resetPromptBtn.addEventListener("click", resetPrompt);
                 saveAiSettingsBtn.addEventListener("click", saveAiSettings);
                 window.addEventListener("keydown", event => {
-                    if (event.key === "Escape" && aiModal.classList.contains("open")) {
+                    const isEscape = event.key === "Escape";
+                    if (isEscape && aiModal.classList.contains("open")) {
                         closeModal();
                     }
+                    if (isEscape && isDrawerOpen && drawerMediaQuery.matches) {
+                        closeDrawer();
+                    }
                 });
+
+                toggleDrawerBtn?.addEventListener("click", () => {
+                    toggleDrawer();
+                });
+
+                drawerOverlay?.addEventListener("click", () => {
+                    closeDrawer();
+                });
+
+                drawerMediaQuery.addEventListener("change", handleDrawerBreakpointChange);
 
                 if (shareBtn && shareMenu) {
                     shareBtn.addEventListener("click", event => {
@@ -2834,6 +2961,7 @@ sequenceDiagram
                 renderTabs();
                 syncFormWithPage();
                 bindEvents();
+                handleDrawerBreakpointChange(drawerMediaQuery);
                 initializeExcalidraw();
                 if (sharedLoaded) {
                     saveState();
