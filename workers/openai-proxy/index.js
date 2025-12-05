@@ -54,7 +54,7 @@ export default {
       });
     }
 
-    const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
+    const clientIp = normalizeClientIp(request);
     const ipWhitelist = ["78.112.62.208"];
 
     // 3) IP whitelist → pas de quotas / rate limit, mais origine toujours contrôlée
@@ -68,12 +68,12 @@ export default {
       clientId = `anon:${clientIp}`;
     }
 
-    // 5) Quota journalier par client (ex: 100 req / jour / client)
+    // 5) Quota journalier par client (ex: 600 req / jour / client)
     const now = Date.now();
     const today = new Date(now).toISOString().slice(0, 10); // "YYYY-MM-DD"
-    const dailyLimit = 200;
+    const dailyLimit = 300;
     const windowMs = 60_000; // 1 minute
-    const perMinuteLimit = 20; // 20 req / min / client
+    const perMinuteLimit = 30; // 20 req / min / client
 
     const quotaKey = `quota:${clientId}:${today}`;
     const windowId = Math.floor(now / windowMs);
@@ -118,6 +118,19 @@ export default {
     return forwardToOpenAI(request, env, corsOrigin);
   }
 };
+
+function normalizeClientIp(request) {
+  const raw =
+    request.headers.get("CF-Connecting-IP") ||
+    request.headers.get("X-Forwarded-For") ||
+    "";
+  const first = raw.split(",")[0].trim();
+  if (!first) return "unknown";
+  // Drop IPv6 brackets and port if present
+  const withoutBrackets = first.replace(/^\[/, "").replace(/]$/, "");
+  const [hostPart] = withoutBrackets.split(":");
+  return hostPart || "unknown";
+}
 
 async function forwardToOpenAI(request, env, corsOrigin) {
   // Lire le body brut pour contrôler la taille

@@ -1548,7 +1548,7 @@
 
                 <div class="header-actions">
                     <button class="btn" id="openContextModal" aria-label="Ouvrir le contexte">💬 Contexte</button>
-                    <button class="btn" id="openIaModal" aria-label="Ouvrir l'IA">🤖 Assistant IA</button>
+                    <button class="btn" id="openIaModal" aria-label="Ouvrir Promptzilla">🤖 Promptzilla</button>
 
                     <div class="menu-trigger">
                         <button class="btn" id="optionsBtn" aria-label="Options d'affichage">📐 Affichage</button>
@@ -1764,7 +1764,7 @@
         <div class="modal-overlay" id="iaModalOverlay" role="dialog" aria-modal="true" aria-labelledby="iaModalTitle">
             <div class="filter-modal">
                 <div class="modal-header">
-                    <h3 id="iaModalTitle">Assistant IA</h3>
+                    <h3 id="iaModalTitle">🤖 Promptzilla</h3>
                     <button class="modal-close" id="iaModalClose" type="button" aria-label="Fermer l'IA">×</button>
                 </div>
                 <div class="ia-actions">
@@ -2980,7 +2980,7 @@ Réponds toujours avec un JSON qui contient :
             var MODIFY_SYSTEM_TEMPLATE = `Tu es un assistant qui modifie à partir du contexte suivant {{(contenu du id="prompt") }}
 Réponds toujours avec un JSON qui contient :
 - \`page\` : le titre de la page courante (utilisé pour le header).
-- \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des types d'actions différentes.
+- \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des types d'actions différentes. Ajouter un type spécifique aux milestones.
 - \`timeline\` : \`{ start, end }\` au format ISO (YYYY-MM-DD).
 - \`groups\` : chaque groupe d'actions avec { id, label }.
 - \`items\` : chaque item { id, groupId, label, kind, start?, end?, date? }.
