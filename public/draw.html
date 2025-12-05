@@ -1056,6 +1056,38 @@
             const diagramTitleInput = document.getElementById("diagramTitleInput");
             const mermaidOutput = document.getElementById("mermaidOutput");
             const drawTypeButtons = Array.from(document.querySelectorAll(".draw-type-btn[data-draw-type]"));
+            const drawTypePlaceholders = {
+                flow: "Décris les étapes du processus, ce qui se passe à chaque moment, les décisions possibles et comment on arrive au résultat final.",
+                class: "Décris les éléments importants, leurs caractéristiques, leurs rôles et la manière dont ils sont reliés entre eux.",
+                sequence: "Décris qui interagit avec qui, dans quel ordre, ce que chaque échange signifie et comment la situation évolue du début à la fin."
+            };
+            const mermaidPlaceholders = {
+                flow: `%% FLOW DIAGRAM PLACEHOLDER
+flowchart TD
+    A[Décris ici la première étape du flux] --> B[Explique l'étape suivante]
+    B --> C{Décris la décision ou le choix possible}
+    C -->|Option 1| D[Décris ce qui arrive si on choisit cette option]
+    C -->|Option 2| E[Décris l’autre chemin]
+    E --> F[Décris l’étape finale du processus]`,
+                class: `%% CLASS DIAGRAM PLACEHOLDER
+classDiagram
+    class Item {
+        +DécrisIciLesAttributs
+        +DécrisIciLesActions
+    }
+    class User {
+        +DécrisCeQuiCaractériseCetÉlément
+    }
+    User --> Item : "Décris le lien entre eux"`,
+                sequence: `%% SEQUENCE DIAGRAM PLACEHOLDER
+sequenceDiagram
+    participant A as DécrisIciLePremierActeur
+    participant B as DécrisLeDeuxièmeActeur
+    A->>B: Décris la première interaction
+    B->>A: Décris la réponse
+    A->>B: Décris l’étape suivante
+    Note over A,B: Ajoute ici une explication ou un contexte`
+            };
             const generateBtn = document.getElementById("generateBtn");
             const statusToast = document.getElementById("statusToast");
             const pageTabs = document.getElementById("pageTabs");
@@ -1647,6 +1679,20 @@
                     button.classList.toggle("active", isActive);
                     button.setAttribute("aria-pressed", isActive ? "true" : "false");
                 });
+                updatePromptPlaceholder(normalizedType);
+                updateMermaidPlaceholder(normalizedType);
+            }
+
+            function updatePromptPlaceholder(drawType) {
+                if (!promptInput) return;
+                const normalized = DRAW_TYPES.some(option => option.id === drawType) ? drawType : DEFAULT_DRAW_TYPE;
+                promptInput.placeholder = drawTypePlaceholders[normalized] || "Décris ton contexte produit, tes utilisateurs, ta problématique...";
+            }
+
+            function updateMermaidPlaceholder(drawType) {
+                if (!mermaidOutput) return;
+                const normalized = DRAW_TYPES.some(option => option.id === drawType) ? drawType : DEFAULT_DRAW_TYPE;
+                mermaidOutput.placeholder = mermaidPlaceholders[normalized] || "Le code généré apparaitra ici";
             }
 
             function updateActivePageDrawType(typeId) {
@@ -1680,6 +1726,8 @@
                     diagramTitleInput.readOnly = true;
                 }
                 updateDrawTypeSelector(page?.drawType || DEFAULT_DRAW_TYPE);
+                updatePromptPlaceholder(page?.drawType || DEFAULT_DRAW_TYPE);
+                updateMermaidPlaceholder(page?.drawType || DEFAULT_DRAW_TYPE);
                 updateExcalidrawScene(page?.mermaid || "");
             }
 
