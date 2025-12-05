@@ -1351,6 +1351,8 @@
                 color 120ms ease;
             white-space: normal;
             word-break: break-word;
+            max-height: 50px;
+            overflow: hidden;
         }
 
         #timeline .vis-labelset .vis-label {
@@ -1695,10 +1697,13 @@
                     <button class="btn-small" id="btn-add-item" aria-label="Ajouter un élément">
                         + Action
                     </button>
+                    <button class="btn-small" id="btn-add-type" aria-label="Ajouter un type">
+                        + Type
+                    </button>
                 </div>
                 <div class="btn-group">
-                    <button class="btn-small" id="openColorPaletteBtn" aria-label="Personnaliser les couleurs">🎨
-                        Personnalisation</button>
+                    <button class="btn-small" id="openColorPaletteBtn" aria-label="Gérer les types">⚙️
+                        Réglages</button>
                 </div>
             </div>
             <div class="timeline-header">
@@ -1801,7 +1806,7 @@
             aria-labelledby="colorModalTitle">
             <div class="color-modal">
                 <div class="modal-header">
-                    <h3 id="colorModalTitle">Personalisation</h3>
+                    <h3 id="colorModalTitle">Type</h3>
                     <button class="modal-close" id="colorModalClose" type="button"
                         aria-label="Fermer la palette">×</button>
                 </div>
@@ -1951,10 +1956,14 @@
             var filterState = { kinds: {} };
             var typeFilterPanel = document.getElementById("typeFilterPanel");
             var itemTypeSelect = document.getElementById("itemTypeSelect");
+            var btnAddType = document.getElementById("btn-add-type");
             var typeSelectorControl = document.querySelector(".type-selector");
             var timeline = null;
             var emptyStateElement = document.getElementById("timelineEmptyState");
             var emptyStateAction = document.getElementById("timelineEmptyAction");
+            var emptyStateTextEl = document.querySelector(".timeline-empty-text");
+            var defaultEmptyText = emptyStateTextEl ? emptyStateTextEl.textContent.trim() : "";
+            var defaultEmptyLinkText = emptyStateAction ? emptyStateAction.textContent.trim() : "";
             var OPENAI_PROXY_URL = "https://openai.gotoolkit.workers.dev/v1/responses";
             var OPENAI_MODEL = "gpt-5-nano";
             var OPENAI_TEMPERATURE = 1;
@@ -2525,6 +2534,23 @@
                 emptyStateElement.setAttribute("aria-hidden", isEmpty ? "false" : "true");
             }
 
+            function setEmptyStateLoading(isLoading, counter) {
+                if (!emptyStateTextEl) return;
+                if (isLoading) {
+                    var label = "⏳ Attente" + (typeof counter === "number" ? " " + counter + "s" : "");
+                    emptyStateTextEl.textContent = label;
+                    if (emptyStateAction) {
+                        emptyStateAction.style.display = "none";
+                    }
+                } else {
+                    emptyStateTextEl.textContent = defaultEmptyText;
+                    if (emptyStateAction) {
+                        emptyStateAction.textContent = defaultEmptyLinkText;
+                        emptyStateAction.style.display = "";
+                    }
+                }
+            }
+
             function syncContextUIForActiveView() {
                 syncContextFieldsFromState({ refreshModify: true, skipPersist: true });
             }
@@ -2553,7 +2579,24 @@
             function refreshTypeFilterUI(typeIds) {
                 if (!typeFilterPanel) return;
                 typeFilterPanel.innerHTML = "";
-                var orderedIds = getOrderedTypeIds(typeIds);
+                var usage = {};
+                if (items && typeof items.get === "function") {
+                    items.get().forEach(function (item) {
+                        var kind = sanitizeTypeId(item.kind || item.type || "");
+                        if (!kind) return;
+                        usage[kind] = (usage[kind] || 0) + 1;
+                    });
+                }
+                var orderedIds = getOrderedTypeIds(typeIds).filter(function (key) {
+                    return usage[key] > 0;
+                });
+
+                if (!orderedIds.length) {
+                    typeFilterPanel.style.display = "none";
+                    return;
+                }
+                typeFilterPanel.style.display = "";
+
                 orderedIds.forEach(function (key) {
                     var def = typeDefinitions[key];
                     if (!def) return;
@@ -2725,6 +2768,48 @@
                 editTooltip.classList.remove("visible");
             }
 
+            function normalizeItemAfterResize(item) {
+                if (!item) return item;
+                var previous = items.get(item.id) || {};
+                var startDate = item.start ? new Date(item.start) : null;
+                var endDate = item.end ? new Date(item.end) : null;
+                var hasValidEnd = endDate && !isNaN(endDate.getTime());
+                var hasValidStart = startDate && !isNaN(startDate.getTime());
+                var durationMs = hasValidStart && hasValidEnd ? endDate.getTime() - startDate.getTime() : 0;
+                var isMilestone = (previous.kind || item.kind) === "milestone";
+                var epsilon = 5 * 60 * 1000; // 5 minutes to avoid jitter around the threshold
+                var atOrBelowOneDay = hasValidStart && hasValidEnd && durationMs < (oneDay - epsilon);
+
+                // Constrain non-milestone items resized to a single day into milestones.
+                if (!isMilestone && atOrBelowOneDay) {
+                    var milestoneDate = hasValidStart ? startDate : (previous.start ? new Date(previous.start) : new Date());
+                    item.kind = "milestone";
+                    item.type = "point";
+                    item.className = "type-milestone milestone-class";
+                    item.date = milestoneDate;
+                    delete item.end;
+                    delete item.start;
+                    item.start = milestoneDate;
+                    return item;
+                }
+
+                // Allow milestones stretched beyond one day to become regular items.
+                var beyondOneDay = hasValidStart && hasValidEnd && durationMs > (oneDay + epsilon);
+                if (isMilestone && beyondOneDay) {
+                    var nextKind = getFirstNonMilestoneTypeId();
+                    ensureTypeDefinition({ id: nextKind });
+                    item.kind = nextKind;
+                    item.type = undefined;
+                    item.className = "type-" + nextKind;
+                    item.end = endDate && endDate > startDate
+                        ? endDate
+                        : new Date(startDate.getTime() + oneDay);
+                    return item;
+                }
+
+                return item;
+            }
+
             var options = {
                 stack: true,
                 orientation: "top",
@@ -2785,6 +2870,7 @@
                     }
                 },
                 onMove: function (item, callback) {
+                    item = normalizeItemAfterResize(item);
                     if (typeof callback === "function") {
                         callback(item);
                     }
@@ -2885,7 +2971,7 @@ Réponds toujours avec un JSON qui contient :
 - \`timeline\` : \`{ start, end }\` au format ISO (YYYY-MM-DD).
 - \`groups\` : chaque groupe d'actions avec { id, label }.
 - \`items\` : chaque item { id, groupId, label, kind, start?, end?, date? }.
-- Les items de moins de 3 jours sont convertis en \`kind: "milestone"\` avec juste la date de début.
+- Les items de moins de 2 jours sont convertis en \`kind: "milestone"\` avec juste la date de début.
 - Sors uniquement le JSON, sans explication ni texte additionnel. Utiliser des intitulés courtes.`;
 
             var MODIFY_SYSTEM_TEMPLATE = `Tu es un assistant qui modifie à partir du contexte suivant {{(contenu du id="prompt") }}
@@ -2898,7 +2984,7 @@ Réponds toujours avec un JSON qui contient :
 - \`timeline\` : \`{ start, end }\` au format ISO (YYYY-MM-DD).
 - \`groups\` : chaque groupe d'actions avec { id, label }.
 - \`items\` : chaque item { id, groupId, label, kind, start?, end?, date? }.
-- Les items de moins de 3 jours sont convertis en \`kind: "milestone"\` avec juste la date de début.
+- Les items de moins de 2 jours sont convertis en \`kind: "milestone"\` avec juste la date de début.
 - Sors seulement le JSON, sans explication ni texte additionnel. Utiliser des intitulés courtes.`;
 
             customSystemTemplates.create = customSystemTemplates.create || CREATE_SYSTEM_TEMPLATE;
@@ -3069,6 +3155,9 @@ Réponds toujours avec un JSON qui contient :
 
             function getVisibleViewTypeIds() {
                 var seen = {};
+                Object.keys(typeDefinitions || {}).forEach(function (id) {
+                    if (id) seen[id] = true;
+                });
                 if (items && typeof items.get === "function") {
                     items.get().forEach(function (item) {
                         var kind = sanitizeTypeId(item.kind || item.type || "");
@@ -3081,6 +3170,16 @@ Réponds toujours avec un JSON qui contient :
                     seen["milestone"] = true;
                 }
                 return Object.keys(seen);
+            }
+
+            function getFirstNonMilestoneTypeId() {
+                var ordered = getOrderedTypeIds(Object.keys(typeDefinitions));
+                for (var i = 0; i < ordered.length; i++) {
+                    if (ordered[i] !== "milestone") {
+                        return ordered[i];
+                    }
+                }
+                return "feature";
             }
 
             function getFocusedItemKind() {
@@ -3307,6 +3406,16 @@ Réponds toujours avec un JSON qui contient :
                         if (!normalized) return;
                         updateTypeColorValue(typeId, normalized, preview, colorPicker, hexInput);
                     });
+                    if (typeId !== "milestone") {
+                        var deleteBtn = document.createElement("button");
+                        deleteBtn.type = "button";
+                        deleteBtn.className = "btn-small danger";
+                        deleteBtn.textContent = "🗑️";
+                        deleteBtn.addEventListener("click", function () {
+                            removeTypeFromColorModal(typeId);
+                        });
+                        controls.appendChild(deleteBtn);
+                    }
                     controls.appendChild(preview);
                     controls.appendChild(colorPicker);
                     controls.appendChild(hexInput);
@@ -3314,6 +3423,55 @@ Réponds toujours avec un JSON qui contient :
                     row.appendChild(controls);
                     colorTypeList.appendChild(row);
                 });
+            }
+
+            function removeTypeFromColorModal(typeId) {
+                if (typeId === "milestone") return;
+                var typedItems = [];
+                if (items && typeof items.get === "function") {
+                    typedItems = items.get().filter(function (it) {
+                        var kind = sanitizeTypeId(it.kind || it.type || "");
+                        return kind === typeId;
+                    });
+                }
+
+                var names = typedItems.map(function (it) {
+                    return (it.content || it.label || it.id || "").toString().trim() || it.id;
+                });
+                var listPreview = names.slice(0, 8).map(function (n) { return " - " + n; }).join("\n");
+                var extra = names.length > 8 ? "\n... (" + (names.length - 8) + " de plus)" : "";
+                var message = typedItems.length
+                    ? "Supprimer le type \"" + typeId + "\" et " + typedItems.length + " élément(s) ?\n" + listPreview + extra
+                    : "Supprimer le type \"" + typeId + "\" ? (aucun élément associé)";
+
+                if (!confirm(message)) return;
+
+                if (typedItems.length && items && typeof items.remove === "function") {
+                    var idsToRemove = typedItems.map(function (it) { return it.id; });
+                    items.remove(idsToRemove);
+                    if (selectedItemId && idsToRemove.indexOf(selectedItemId) !== -1) {
+                        selectedItemId = null;
+                        updateSelectionButtons();
+                        renderTypeSwitcherOptions();
+                    }
+                }
+
+                delete typeDefinitions[typeId];
+                delete colorModalState.types[typeId];
+                delete colorModalState.labels[typeId];
+                views.forEach(function (view) {
+                    if (!view.filterState || !view.filterState.kinds) return;
+                    delete view.filterState.kinds[typeId];
+                });
+                if (filterState && filterState.kinds) {
+                    delete filterState.kinds[typeId];
+                }
+                rebuildTypeStyles();
+                syncFiltersForActiveView(getVisibleViewTypeIds());
+                renderColorModalContent();
+                updateTimelineFilter();
+                updateEmptyViewMessage();
+                persistTimelineState();
             }
 
             function openColorModal() {
@@ -4792,6 +4950,22 @@ Réponds toujours avec un JSON qui contient :
                     createTimelineItem("milestone");
                 });
             }
+            if (btnAddType) {
+                btnAddType.addEventListener("click", function () {
+                    var label = window.prompt("Nom du nouveau type");
+                    if (label === null) return;
+                    label = (label || "").trim();
+                    if (!label) return;
+                    var id = sanitizeTypeId(label);
+                    if (!id) return;
+                    ensureTypeDefinition({ id: id, label: label });
+                    ensureKindFilter(id);
+                    rebuildTypeStyles();
+                    syncFiltersForActiveView(getVisibleViewTypeIds());
+                    renderColorModalContent();
+                    persistTimelineState();
+                });
+            }
             if (btnRenameSelected) {
                 btnRenameSelected.addEventListener("click", function () {
                     if (!selectedItemId) return;
@@ -4858,8 +5032,19 @@ Réponds toujours avec un JSON qui contient :
             // ============================================================
             function isoToDate(str) {
                 if (!str) return null;
-                var d = new Date(str);
-                return isNaN(d.getTime()) ? null : d;
+                var value = typeof str === "string" ? str.trim() : (str + "");
+                if (!value) return null;
+                // Parse plain YYYY-MM-DD as local midnight to avoid timezone shifts
+                var dateOnlyMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                if (dateOnlyMatch) {
+                    var y = parseInt(dateOnlyMatch[1], 10);
+                    var m = parseInt(dateOnlyMatch[2], 10) - 1;
+                    var d = parseInt(dateOnlyMatch[3], 10);
+                    var localDate = new Date(y, m, d, 0, 0, 0, 0);
+                    return isNaN(localDate.getTime()) ? null : localDate;
+                }
+                var d2 = new Date(value);
+                return isNaN(d2.getTime()) ? null : d2;
             }
 
             function toDate(iso) {
@@ -4915,7 +5100,14 @@ Réponds toujours avec un JSON qui contient :
                                 base.className = "type-milestone milestone-class";
                             } else {
                                 base.start = isoToDate(it.start);
-                                base.end = isoToDate(it.end) || new Date(base.start.getTime() + oneWeek);
+                                var inclusiveEnd = isoToDate(it.end);
+                                if (inclusiveEnd) {
+                                    inclusiveEnd = new Date(inclusiveEnd.getTime() + oneDay);
+                                }
+                                base.end = inclusiveEnd || new Date(base.start.getTime() + oneDay);
+                                if (base.end < base.start) {
+                                    base.end = new Date(base.start.getTime() + oneDay);
+                                }
                                 base.className = "type-" + base.kind;
                             }
                             items.add(base);
@@ -4978,8 +5170,16 @@ Réponds toujours avec un JSON qui contient :
                         if (ds2) {
                             if (!minStart || ds2 < minStart) minStart = ds2;
                         }
+
+                        var inclusiveEndForExport = null;
                         if (de2) {
-                            if (!maxEnd || de2 > maxEnd) maxEnd = de2;
+                            inclusiveEndForExport = new Date(de2.getTime() - oneDay);
+                            if (ds2 && inclusiveEndForExport < ds2) {
+                                inclusiveEndForExport = ds2;
+                            }
+                            if (!maxEnd || inclusiveEndForExport > maxEnd) {
+                                maxEnd = inclusiveEndForExport;
+                            }
                         } else if (ds2) {
                             if (!maxEnd || ds2 > maxEnd) maxEnd = ds2;
                         }
@@ -4991,7 +5191,7 @@ Réponds toujours avec un JSON qui contient :
                             label: item.content || "",
                             kind: kind,
                             start: dateToIso(item.start),
-                            end: dateToIso(item.end)
+                            end: dateToIso(inclusiveEndForExport || ds2)
                         };
                     }
                 });
@@ -5374,18 +5574,21 @@ Réponds toujours avec un JSON qui contient :
                     waitingTimerId = null;
                 }
                 updateIaButtonLabel(false);
+                setEmptyStateLoading(false);
             }
 
             function startWaitingTimer() {
                 stopWaitingTimer();
                 waitingCounter = 30;
                 updateIaButtonLabel(true, waitingCounter);
+                setEmptyStateLoading(true, waitingCounter);
                 waitingTimerId = setInterval(function () {
                     waitingCounter--;
                     if (waitingCounter < 0) {
                         waitingCounter = 30;
                     }
                     updateIaButtonLabel(true, waitingCounter);
+                    setEmptyStateLoading(true, waitingCounter);
                 }, 1000);
             }
 
