@@ -3410,7 +3410,7 @@ Réponds toujours avec un JSON qui contient :
                         var deleteBtn = document.createElement("button");
                         deleteBtn.type = "button";
                         deleteBtn.className = "btn-small danger";
-                        deleteBtn.textContent = "🗑️";
+                        deleteBtn.textContent = "❌";
                         deleteBtn.addEventListener("click", function () {
                             removeTypeFromColorModal(typeId);
                         });
@@ -5257,6 +5257,18 @@ Réponds toujours avec un JSON qui contient :
                 timeline.setWindow(newStart, newEnd, { animation: true });
             });
 
+            function zoomTimelineByFactor(factor) {
+                if (!timeline || typeof timeline.getWindow !== "function") return;
+                var r = timeline.getWindow();
+                var interval = r.end - r.start;
+                if (interval <= 0) return;
+                var newInterval = interval * factor;
+                var center = (r.start.getTime() + r.end.getTime()) / 2;
+                var newStart = new Date(center - newInterval / 2);
+                var newEnd = new Date(center + newInterval / 2);
+                timeline.setWindow(newStart, newEnd, { animation: false });
+            }
+
             var btnWeek = document.getElementById("btn-scale-week");
             var btnDay = document.getElementById("btn-scale-day");
             var btnMonth = document.getElementById("btn-scale-month");
@@ -5285,6 +5297,15 @@ Réponds toujours avec un JSON qui contient :
             btnWeek.addEventListener("click", function () { setScale("week"); });
             btnDay.addEventListener("click", function () { setScale("day"); });
             btnMonth.addEventListener("click", function () { setScale("month"); });
+
+            // Global wheel zoom (Ctrl + wheel anywhere) targeting the timeline
+            document.addEventListener("wheel", function (event) {
+                if (!event.ctrlKey) return; // avoid hijacking normal scroll
+                if (!timeline) return;
+                event.preventDefault();
+                var zoomFactor = event.deltaY < 0 ? 0.8 : 1.25;
+                zoomTimelineByFactor(zoomFactor);
+            }, { passive: false });
 
             function detectScaleFromRange(start, end) {
                 if (!start || !end) return null;
