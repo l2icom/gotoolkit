@@ -540,6 +540,12 @@
                 <p class="section-label">Mes partages</p>
                 <button id="refreshShares" class="ghost-button" type="button">↻</button>
             </div>
+            <div id="pinnedBlock" hidden>
+                <div class="section-title-row" style="margin-top: 4px;">
+                    <p class="section-label">Mes favoris</p>
+                </div>
+                <div id="pinnedGallery" class="share-gallery" aria-live="polite"></div>
+            </div>
             <div id="shareGallery" class="share-gallery" aria-live="polite"></div>
             <p id="shareLoading" class="share-helper">Chargement des galeries...</p>
             <p id="shareEmpty" class="share-helper" hidden>Aucun partage enregistré pour cette session.</p>
@@ -603,6 +609,8 @@
     <script>
         (function () {
             const gallery = document.getElementById("shareGallery");
+            const pinnedGallery = document.getElementById("pinnedGallery");
+            const pinnedBlock = document.getElementById("pinnedBlock");
             const loadingLabel = document.getElementById("shareLoading");
             const emptyLabel = document.getElementById("shareEmpty");
             const errorLabel = document.getElementById("shareError");
@@ -616,12 +624,15 @@
                 draw: { emoji: "◇", name: "Go-Draw", page: "draw.html", collection: "diagrams" }
             };
 
-            function setState({ loading = false, hasData = false, error = "" }) {
+            function setState({ loading = false, hasData = false, hasPinned = false, hasRegular = false, error = "" }) {
                 if (loadingLabel) {
                     loadingLabel.hidden = !loading;
                 }
                 if (emptyLabel) {
-                    emptyLabel.hidden = loading || hasData || Boolean(error);
+                    emptyLabel.hidden = loading || hasRegular || Boolean(error) || hasPinned;
+                }
+                if (pinnedBlock) {
+                    pinnedBlock.hidden = !hasPinned;
                 }
                 if (errorLabel) {
                     errorLabel.hidden = !error;
@@ -777,33 +788,39 @@
                     setState({ loading: false, hasData: false, error: "Service de partage indisponible." });
                     return;
                 }
-                setState({ loading: true, hasData: false, error: "" });
+                setState({ loading: true, hasData: false, error: "", hasPinned: false, hasRegular: false });
                 gallery.innerHTML = "";
+                if (pinnedGallery) pinnedGallery.innerHTML = "";
                 const entries = getStoredRecords();
                 if (!entries.length) {
-                    setState({ loading: false, hasData: false, error: "" });
+                    setState({ loading: false, hasData: false, error: "", hasPinned: false, hasRegular: false });
                     return;
                 }
                 const cards = await Promise.all(entries.map(({ app, record }) => buildShareCard(app, record)));
                 const validCards = cards.filter(Boolean);
                 if (!validCards.length) {
-                    setState({ loading: false, hasData: false, error: "" });
+                    setState({ loading: false, hasData: false, error: "", hasPinned: false, hasRegular: false });
                     return;
                 }
-                const sorted = validCards.sort((a, b) => {
-                    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
-                    if (a.isPinned && b.isPinned) {
-                        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-                    }
-                    const nameA = (a.preview?.tabName || "").toLowerCase();
-                    const nameB = (b.preview?.tabName || "").toLowerCase();
-                    if (nameA && nameB) {
-                        return nameA.localeCompare(nameB, "fr");
-                    }
-                    return 0;
-                });
-                sorted.forEach(item => gallery.appendChild(item.card));
-                setState({ loading: false, hasData: true, error: "" });
+                const pinned = validCards
+                    .filter(item => item.isPinned)
+                    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+                const regular = validCards
+                    .filter(item => !item.isPinned)
+                    .sort((a, b) => {
+                        const nameA = (a.preview?.tabName || "").toLowerCase();
+                        const nameB = (b.preview?.tabName || "").toLowerCase();
+                        if (nameA && nameB) return nameA.localeCompare(nameB, "fr");
+                        return 0;
+                    });
+
+                if (pinnedGallery) {
+                    pinned.forEach(item => pinnedGallery.appendChild(item.card));
+                }
+                regular.forEach(item => gallery.appendChild(item.card));
+                const hasPinned = pinned.length > 0;
+                const hasRegular = regular.length > 0;
+                setState({ loading: false, hasData: hasPinned || hasRegular, hasPinned, hasRegular, error: "" });
             }
 
             refreshBtn?.addEventListener("click", () => {
