@@ -38,9 +38,15 @@ Chaque outil tient dans un simple fichier HTML : ouvrez, personnalisez, exportez
 - **Go-Pitch** : assembler en 5 minutes un pitch client/investisseur cohérent avec vos slides et votre roadmap.
 
 ## Comment démarrer
-1. Ouvrez `public/index.html` (slides), `public/draw.html` (draw) ou `public/timeline.html` (timelines) depuis votre navigateur.
-2. Ajoutez votre clé OpenAI dans l'interface si vous souhaitez les suggestions IA.
-3. Personnalisez : blocs, couleurs, images, jalons. Tout se fait directement dans la page.
-4. Exportez en un clic ou partagez via le proxy si vous travaillez à plusieurs.
+1. Ouvrez `public/index.html` (slides), `public/draw.html` (draw) ou `public/plan.html` (timelines) depuis votre navigateur. En local, servez le dossier `public/` (ex. `npx serve public`).
+2. Ajoutez votre clé OpenAI dans l'interface si vous souhaitez les suggestions IA. Chaque outil a désormais un sélecteur "Effort de raisonnement" (minimal/low/medium, défaut : low) dans son modal IA.
+3. L'IA appelle l'API OpenAI **Responses** (`/v1/responses`) avec le modèle `gpt-5-nano`, streaming activé, et passe par le worker proxy si aucune clé n'est saisie.
+4. Personnalisez : blocs, couleurs, images, jalons. Tout se fait directement dans la page.
+5. Exportez en un clic ou partagez via le proxy si vous travaillez à plusieurs.
+
+## Notes techniques (IA & proxy)
+- Les appels front (draw/think/plan) utilisent le nouvel endpoint `/v1/responses`; le proxy Cloudflare (`workers/openai-proxy`) relaie vers OpenAI et accepte localhost pour les tests.
+- Le proxy applique des gardes (taille payload ~10KB, limite messages, quotas KV) et forwarde `reasoning: { effort }` sans convertir `reasoning_effort`.
+- Modèle par défaut : `gpt-5-nano`, température 1, streaming SSE côté client.
 
 Go-Toolkit vous aide à passer de l'idée à un support partageable en quelques minutes. Bonne exploration !
