@@ -1702,6 +1702,14 @@
                         rel="noreferrer">OpenAI API key</a>
                     <input type="password" id="apiKeyInput" autocomplete="off" placeholder="sk-...">
                 </label>
+                <label>
+                    <span>Effort de raisonnement</span>
+                    <select id="reasoningEffortSelect" style="border: 1px solid #d0c3ad; font-size: 13px; font-family: inherit; color: inherit;">
+                        <option value="minimal">minimal</option>
+                        <option value="low" selected>low</option>
+                        <option value="medium">medium</option>
+                    </select>
+                </label>
                 <div class="ia-mode-toggle" id="iaModeToggle">
                     <div class="ia-mode-label">IA Mode</div>
                     <button type="button" data-ia-mode="express">⚡ Express</button>
@@ -2093,6 +2101,9 @@
         const fileMenu = document.getElementById("fileMenu");
         const shareMenu = document.getElementById("shareMenu");
         const apiKeyInput = document.getElementById("apiKeyInput");
+        const reasoningEffortSelect = document.getElementById("reasoningEffortSelect");
+        const reasoningEffortKey = "think-reasoning-effort";
+        const reasoningEfforts = ["minimal", "low", "medium"];
         const fontSelect = document.getElementById("fontSelect");
         const fontSizeInput = document.getElementById("fontSizeInput");
         const ratioGrid = document.getElementById("ratioGrid");
@@ -2400,7 +2411,7 @@
             };
             return acc;
         }, {});
-        const PLACEHOLDER_COOLDOWN_DURATION = 60;
+        const PLACEHOLDER_COOLDOWN_DURATION = 30;
         let suggestionCooldownTimer = null;
         let isGeneratingSuggestions = false;
 
@@ -2427,6 +2438,10 @@
                 const apiKeyValue = hasSavedApiKey ? payload.apiKey || "" : readSharedApiKey();
                 apiKeyInput.value = apiKeyValue;
                 writeSharedApiKey(apiKeyInput.value.trim());
+            }
+            const storedReasoning = localStorage.getItem(reasoningEffortKey) || "low";
+            if (reasoningEffortSelect && reasoningEfforts.includes(storedReasoning)) {
+                reasoningEffortSelect.value = storedReasoning;
             }
             const globalContextValue = payload.globalContext ?? payload.context ?? "";
             if (globalContextField) {
@@ -2631,6 +2646,13 @@
                 setActiveIaMode(button.dataset.iaMode);
                 schedulePersist();
             });
+        });
+
+        reasoningEffortSelect?.addEventListener("change", () => {
+            const value = reasoningEffortSelect.value;
+            if (reasoningEfforts.includes(value)) {
+                localStorage.setItem(reasoningEffortKey, value);
+            }
         });
 
         function showColumnPlaceholders(column) {
@@ -4404,6 +4426,11 @@
             ];
         }
 
+        function getReasoningEffort() {
+            const value = reasoningEffortSelect?.value || "low";
+            return reasoningEfforts.includes(value) ? value : "low";
+        }
+
         async function callOpenAI(messages) {
             try {
                 if (!window.GoToolkitOpenAI) {
@@ -4413,8 +4440,8 @@
                 const useProxy = !apiKey;
                 console.warn(useProxy ? "Appel OpenAI via le proxy gotoolkit.workers.dev" : "Appel OpenAI officiel");
                 const endpoint = useProxy
-                    ? "https://openai.gotoolkit.workers.dev/v1/chat/completions"
-                    : "https://api.openai.com/v1/chat/completions";
+                    ? "https://openai.gotoolkit.workers.dev/v1/responses"
+                    : "https://api.openai.com/v1/responses";
                 console.log(
                     "send request",
                     messages.map(message => ({
@@ -4428,7 +4455,7 @@
                     payload: {
                         model: "gpt-5-nano",
                         messages,
-                        reasoning_effort: "minimal",
+                        reasoning: { effort: getReasoningEffort() },
                         temperature: 1,
                         stream: true
                     }

@@ -6,10 +6,20 @@ export default {
     ];
 
     const origin = request.headers.get("Origin") || "";
-    const corsOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+    const allowLocal =
+      !origin ||
+      origin.startsWith("http://localhost") ||
+      origin.startsWith("http://127.0.0.1") ||
+      origin.startsWith("http://192.168.");
 
-    // 1) Vérifier l'origine autorisée
-    if (!allowedOrigins.includes(origin)) {
+    const corsOrigin = allowLocal
+      ? origin || "*"
+      : allowedOrigins.includes(origin)
+        ? origin
+        : allowedOrigins[0];
+
+    // 1) Vérifier l'origine autorisée (autoriser localhost en dev)
+    if (!allowLocal && !allowedOrigins.includes(origin)) {
       return new Response("Forbidden", {
         status: 403,
         headers: {
@@ -125,13 +135,19 @@ async function forwardToOpenAI(request, env, corsOrigin) {
     return jsonError(corsOrigin, 400, "BAD_JSON", "Invalid JSON payload.");
   }
 
-  // Sécurité sur messages
+  // Sécurité sur messages / input
   const messages = Array.isArray(payload.messages) ? payload.messages : [];
+  const inputFromPayload = Array.isArray(payload.input) ? payload.input : null;
 
   const maxMessages = 50;
   const maxContentLength = 7500; // chars par message
 
-  if (messages.length > maxMessages) {
+  const safeMessages = (inputFromPayload || messages).map(m => ({
+    role: m?.role || "user",
+    content: m?.content ?? ""
+  }));
+
+  if (safeMessages.length > maxMessages) {
     return jsonError(
       corsOrigin,
       413,
@@ -140,9 +156,10 @@ async function forwardToOpenAI(request, env, corsOrigin) {
     );
   }
 
-  for (const m of messages) {
+  for (const m of safeMessages) {
     const content = (m && m.content) || "";
-    if (content.length > maxContentLength) {
+    const length = typeof content === "string" ? content.length : JSON.stringify(content || {}).length;
+    if (length > maxContentLength) {
       return jsonError(
         corsOrigin,
         413,
@@ -152,11 +169,33 @@ async function forwardToOpenAI(request, env, corsOrigin) {
     }
   }
 
+  const input = inputFromPayload
+    ? inputFromPayload
+    : safeMessages.length
+      ? safeMessages.map(msg => ({
+        role: msg.role,
+        content: Array.isArray(msg.content)
+          ? msg.content.map(part => {
+            if (typeof part === "string") {
+              return { type: "input_text", text: part };
+            }
+            if (part && typeof part === "object") {
+              if (part.type && part.type.startsWith("input_")) {
+                return part;
+              }
+              if (typeof part.text === "string") {
+                return { type: "input_text", text: part.text };
+              }
+            }
+            return { type: "input_text", text: String(part ?? "") };
+          })
+          : [{ type: "input_text", text: String(msg.content ?? "") }]
+      }))
+      : [{ role: "user", content: [{ type: "input_text", text: "Hello" }] }];
+
   const upstreamPayload = {
     model: payload.model ?? "gpt-5-nano",
-    messages: messages.length
-      ? messages
-      : [{ role: "user", content: "Hello" }],
+    input,
     temperature: payload.temperature ?? 1
   };
 
@@ -164,9 +203,13 @@ async function forwardToOpenAI(request, env, corsOrigin) {
     upstreamPayload.stream = true;
   }
 
+  if (!upstreamPayload.reasoning && payload.reasoning?.effort) {
+    upstreamPayload.reasoning = { effort: payload.reasoning.effort };
+  }
+
   let upstreamResponse;
   try {
-    upstreamResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    upstreamResponse = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${env.OPENAI_API_KEY}`,

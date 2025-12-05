@@ -162,6 +162,7 @@
 
         .ia-header-actions {
             width: 100%;
+            padding: 5px 0px;
         }
 
         .tab {
@@ -915,7 +916,7 @@
         .ia-prompt-field {
             display: none;
             width: 100%;
-            min-height: 300px;
+            max-height: 300px;
             resize: vertical;
         }
 
@@ -1012,7 +1013,7 @@
             background: var(--surface);
             border-radius: 18px;
             padding: 16px 18px 20px;
-            width: min(480px, 100%);
+            width: min(800px, 100%);
             box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
             display: flex;
             flex-direction: column;
@@ -1733,6 +1734,15 @@
                                 rel="noreferrer">OpenAI API key</a>
                             <input type="password" id="iaApiKeyInput" autocomplete="off" placeholder="sk-...">
                         </label>
+                        <label>
+                            <span>Effort de raisonnement</span>
+                            <select id="reasoningEffortSelect"
+                                style="border: 1px solid #d0c3ad; font-size: 13px; font-family: inherit; color: inherit;">
+                                <option value="minimal">minimal</option>
+                                <option value="low" selected>low</option>
+                                <option value="medium">medium</option>
+                            </select>
+                        </label>
                     </div>
                     <button class="btn" id="btn-call">
                         <span>✨ Envoyer</span>
@@ -1899,7 +1909,7 @@
             var timeline = null;
             var emptyStateElement = document.getElementById("timelineEmptyState");
             var emptyStateAction = document.getElementById("timelineEmptyAction");
-            var OPENAI_PROXY_URL = "https://openai.gotoolkit.workers.dev/v1/chat/completions";
+            var OPENAI_PROXY_URL = "https://openai.gotoolkit.workers.dev/v1/responses";
             var OPENAI_MODEL = "gpt-5-nano";
             var OPENAI_TEMPERATURE = 1;
             var LOCAL_STORAGE_KEY = "timeline-planning-state";
@@ -5072,6 +5082,9 @@
             var btnCall = document.getElementById("btn-call");
             var IA_API_KEY_STORAGE_KEY = "go-toolkit-api-key";
             var iaApiKeyInput = document.getElementById("iaApiKeyInput");
+            var reasoningEffortSelect = document.getElementById("reasoningEffortSelect");
+            var REASONING_EFFORT_KEY = "plan-reasoning-effort";
+            var REASONING_EFFORTS = ["minimal", "low", "medium"];
 
             function readSharedTimelineApiKey() {
                 if (typeof window === "undefined" || !window.localStorage) {
@@ -5104,6 +5117,21 @@
             if (iaApiKeyInput && storedApiKey) {
                 iaApiKeyInput.value = storedApiKey;
             }
+
+            (function initializeReasoningEffort() {
+                if (!reasoningEffortSelect) return;
+                var stored = localStorage.getItem(REASONING_EFFORT_KEY) || "low";
+                if (REASONING_EFFORTS.indexOf(stored) === -1) {
+                    stored = "low";
+                }
+                reasoningEffortSelect.value = stored;
+                reasoningEffortSelect.addEventListener("change", function () {
+                    var value = reasoningEffortSelect.value;
+                    if (REASONING_EFFORTS.indexOf(value) !== -1) {
+                        localStorage.setItem(REASONING_EFFORT_KEY, value);
+                    }
+                });
+            })();
 
             if (iaApiKeyInput) {
                 iaApiKeyInput.addEventListener("input", function () {
@@ -5207,12 +5235,12 @@
 
             function startWaitingTimer() {
                 stopWaitingTimer();
-                waitingCounter = 60;
+                waitingCounter = 30;
                 updateIaButtonLabel(true, waitingCounter);
                 waitingTimerId = setInterval(function () {
                     waitingCounter--;
                     if (waitingCounter < 0) {
-                        waitingCounter = 60;
+                        waitingCounter = 30;
                     }
                     updateIaButtonLabel(true, waitingCounter);
                 }, 1000);
@@ -5242,7 +5270,7 @@
                         apiKey = readSharedTimelineApiKey();
                     }
                     var useProxy = !apiKey;
-                    var endpoint = useProxy ? OPENAI_PROXY_URL : "https://api.openai.com/v1/chat/completions";
+                    var endpoint = useProxy ? OPENAI_PROXY_URL : "https://api.openai.com/v1/responses";
                     console.log(
                         "OpenAI request content",
                         messages.map(function (m) {
@@ -5256,7 +5284,12 @@
                             model: OPENAI_MODEL,
                             temperature: OPENAI_TEMPERATURE,
                             messages: messages,
-                            reasoning_effort: "minimal",
+                            reasoning: {
+                                effort: (function () {
+                                    var value = reasoningEffortSelect ? reasoningEffortSelect.value : "low";
+                                    return REASONING_EFFORTS.indexOf(value) !== -1 ? value : "low";
+                                })()
+                            },
                             stream: true
                         }
                     });

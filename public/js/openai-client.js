@@ -2,13 +2,7 @@
     const hasStreamingSupport =
         typeof ReadableStream !== "undefined" && typeof TextDecoder !== "undefined";
 
-    function normalizeChunk(payload) {
-        const choice = payload?.choices && payload.choices[0];
-        if (!choice) {
-            return "";
-        }
-        const delta = choice.delta || {};
-        const content = delta.content;
+    function stringifyContent(content) {
         if (typeof content === "string") {
             return content;
         }
@@ -24,32 +18,71 @@
                     if (typeof part?.content === "string") {
                         return part.content;
                     }
+                    if (typeof part?.delta === "string") {
+                        return part.delta;
+                    }
                     return "";
                 })
                 .join("");
         }
-        if (typeof delta.text === "string") {
-            return delta.text;
+        if (typeof content?.text === "string") {
+            return content.text;
         }
-        if (typeof choice.text === "string") {
-            return choice.text;
+        if (typeof content?.delta === "string") {
+            return content.delta;
         }
+        return "";
+    }
+
+    function extractFromOutput(output) {
+        if (!output) {
+            return "";
+        }
+        if (typeof output === "string") {
+            return output;
+        }
+        if (Array.isArray(output)) {
+            return output.map(extractFromOutput).join("");
+        }
+        if (output.content) {
+            return stringifyContent(output.content);
+        }
+        if (output.message?.content) {
+            return stringifyContent(output.message.content);
+        }
+        return stringifyContent(output);
+    }
+
+    function normalizeChunk(payload) {
+        if (!payload) {
+            return "";
+        }
+
+        if (typeof payload.delta === "string") {
+            return payload.delta;
+        }
+
+        if (typeof payload.output_text === "string") {
+            return payload.output_text;
+        }
+
+        if (Array.isArray(payload.output)) {
+            return extractFromOutput(payload.output);
+        }
+
+        const choice = payload?.choices && payload.choices[0];
+        if (choice) {
+            const delta = choice.delta || {};
+            const content = delta.content ?? choice.text ?? choice.message?.content;
+            return stringifyContent(content);
+        }
+
         return "";
     }
 
     async function parseJsonResponse(response) {
         const payload = await response.json();
-        const choice = payload?.choices && payload.choices[0];
-        if (!choice) {
-            return "";
-        }
-        if (choice.message?.content) {
-            return String(choice.message.content).trim();
-        }
-        if (typeof choice.text === "string") {
-            return choice.text.trim();
-        }
-        return "";
+        return normalizeChunk(payload).trim();
     }
 
     function buildHeaders(apiKey, headers) {
@@ -113,7 +146,8 @@
                     return aggregated.trim();
                 }
                 try {
-                    const chunk = normalizeChunk(JSON.parse(dataLine));
+                    const payload = JSON.parse(dataLine);
+                    const chunk = normalizeChunk(payload);
                     if (chunk) {
                         aggregated += chunk;
                         if (typeof stopCondition === "function" && stopCondition(aggregated)) {
@@ -122,11 +156,55 @@
                             return aggregated.trim();
                         }
                     }
+                    if (
+                        payload?.type === "response.completed" ||
+                        payload?.type === "response.error" ||
+                        payload?.type === "response.output_text.done"
+                    ) {
+                        await cancelStream();
+                        releaseReader();
+                        return aggregated.trim();
+                    }
                 } catch (error) {
                     console.warn("OpenAI stream chunk parse failed", error);
                 }
             }
         }
+    }
+
+    function toResponsesPayload(payload) {
+        const next = { ...payload };
+
+        if (Array.isArray(next.messages) && !next.input) {
+            next.input = next.messages.map(message => ({
+                role: message.role || "user",
+                content: Array.isArray(message.content)
+                    ? message.content.map(part => {
+                        if (typeof part === "string") {
+                            return { type: "input_text", text: part };
+                        }
+                        if (part && typeof part === "object") {
+                            if (part.type && part.type.startsWith("input_")) {
+                                return part;
+                            }
+                            if (typeof part.text === "string") {
+                                return { type: "input_text", text: part.text };
+                            }
+                        }
+                        return { type: "input_text", text: String(part ?? "") };
+                    })
+                    : [{ type: "input_text", text: String(message.content ?? "") }]
+            }));
+        }
+
+        if (!next.reasoning && typeof next.reasoning_effort === "string") {
+            next.reasoning = { effort: next.reasoning_effort };
+        }
+
+        delete next.messages;
+        delete next.reasoning_effort;
+
+        return next;
     }
 
     async function chatCompletion({ endpoint, apiKey, payload, headers = {}, stopCondition }) {
@@ -136,7 +214,7 @@
         if (!payload || typeof payload !== "object") {
             throw new Error("Payload OpenAI invalide");
         }
-        const requestPayload = { ...payload };
+        const requestPayload = toResponsesPayload(payload);
         const wantsStream = hasStreamingSupport && requestPayload.stream === true;
         if (!wantsStream) {
             delete requestPayload.stream;

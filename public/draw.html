@@ -928,6 +928,14 @@
                 <input type="password" id="apiKeyField" placeholder="sk-...">
             </label>
             <label>
+                <span>Effort de raisonnement</span>
+                <select id="reasoningEffortSelect" style="border: 1px solid #d0c3ad; font-size: 13px; font-family: inherit; color: inherit;">
+                    <option value="minimal">minimal</option>
+                    <option value="low" selected>low</option>
+                    <option value="medium">medium</option>
+                </select>
+            </label>
+            <label>
                 <span>Prompt personnalisé</span>
                 <textarea id="promptTemplateField" rows="6"></textarea>
             </label>
@@ -981,7 +989,8 @@
                 pages: [],
                 activeIndex: 0,
                 apiKey: "",
-                promptTemplate: DEFAULT_PROMPT_TEMPLATE
+                promptTemplate: DEFAULT_PROMPT_TEMPLATE,
+                reasoningEffort: "low"
             };
             let pendingSceneCode = "";
             let bridgeDetectionPromise = null;
@@ -1049,6 +1058,7 @@
             const aiSettingsBtn = document.getElementById("aiSettingsBtn");
             const closeAiModalBtn = document.getElementById("closeAiModal");
             const apiKeyField = document.getElementById("apiKeyField");
+            const reasoningEffortSelect = document.getElementById("reasoningEffortSelect");
             const promptTemplateField = document.getElementById("promptTemplateField");
             const resetPromptBtn = document.getElementById("resetPromptBtn");
             const saveAiSettingsBtn = document.getElementById("saveAiSettingsBtn");
@@ -1146,6 +1156,7 @@
                     activeIndex: state.activeIndex,
                     apiKey: state.apiKey || "",
                     promptTemplate: state.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
+                    reasoningEffort: state.reasoningEffort || "low",
                     scene
                 };
             }
@@ -1161,6 +1172,7 @@
                 state.activeIndex = Math.max(0, Math.min(state.pages.length - 1, payload.activeIndex || 0));
                 state.apiKey = payload.apiKey || "";
                 state.promptTemplate = payload.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                state.reasoningEffort = payload.reasoningEffort || payload.reasoning?.effort || "low";
                 if (payload.scene && payload.scene.elements) {
                     sharedScenePayload = payload.scene;
                 }
@@ -1650,9 +1662,13 @@
                     generateCooldownTimer = null;
                 }
                 generateCooldownEndTime = 0;
+                if (generateBtn) {
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = generateDefaultLabel;
+                }
             }
 
-            function startGenerateCooldown(seconds = 60) {
+            function startGenerateCooldown(seconds = 30) {
                 if (!generateBtn) return;
                 clearGenerateCooldown();
                 const duration = Math.max(1, seconds);
@@ -1687,6 +1703,7 @@
                     promptInput.focus();
                     return;
                 }
+                startGenerateCooldown(30);
                 const drawType = page.drawType || DEFAULT_DRAW_TYPE;
                 const drawTypePrompt = getDrawTypePromptValue(drawType);
                 const templateBase = state.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
@@ -1698,8 +1715,6 @@
                     { role: "user", content: template }
                 ];
                 setStatus("Génération en cours...");
-                generateBtn.disabled = true;
-                generateBtn.textContent = "⏳";
                 try {
                     const aiText = await callOpenAI(messages);
                     if (!aiText) {
@@ -1716,7 +1731,7 @@
                     console.error(err);
                     setStatus(`Erreur: ${err.message || "imprévue"}`);
                 } finally {
-                    startGenerateCooldown(60);
+                    clearGenerateCooldown();
                 }
             }
 
@@ -1759,28 +1774,44 @@
                     throw new Error("Client OpenAI indisponible");
                 }
                 const apiKey = (state.apiKey || "").trim();
+                const proxyEndpoint = "https://openai.gotoolkit.workers.dev/v1/responses";
+                const directEndpoint = "https://api.openai.com/v1/responses";
+                const payload = {
+                    model: "gpt-5-nano",
+                    messages,
+                    reasoning: { effort: state.reasoningEffort || "low" },
+                    temperature: 1,
+                    stream: true
+                };
                 const useProxy = !apiKey;
-                const endpoint = useProxy
-                    ? "https://openai.gotoolkit.workers.dev/v1/chat/completions"
-                    : "https://api.openai.com/v1/chat/completions";
-                return GoToolkitOpenAI.chatCompletion({
-                    endpoint,
-                    apiKey: useProxy ? "" : apiKey,
-                    payload: {
-                        model: "gpt-5-nano",
-                        messages,
-                        reasoning_effort: "minimal",
-                        temperature: 1,
-                        stream: true
-                    },
-                    stopCondition: hasCompleteMermaidBlock
-                });
+                try {
+                    return await GoToolkitOpenAI.chatCompletion({
+                        endpoint: useProxy ? proxyEndpoint : directEndpoint,
+                        apiKey: useProxy ? "" : apiKey,
+                        payload,
+                        stopCondition: hasCompleteMermaidBlock
+                    });
+                } catch (err) {
+                    if (!useProxy) {
+                        console.warn("Direct OpenAI call failed, retrying via proxy", err);
+                        return GoToolkitOpenAI.chatCompletion({
+                            endpoint: proxyEndpoint,
+                            apiKey: "",
+                            payload,
+                            stopCondition: hasCompleteMermaidBlock
+                        });
+                    }
+                    throw err;
+                }
             }
 
             function openModal() {
                 aiModal.classList.add("open");
                 apiKeyField.value = state.apiKey || "";
                 promptTemplateField.value = state.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                if (reasoningEffortSelect) {
+                    reasoningEffortSelect.value = state.reasoningEffort || "low";
+                }
             }
 
             function closeModal() {
@@ -1794,6 +1825,9 @@
             function saveAiSettings() {
                 state.apiKey = apiKeyField.value.trim();
                 state.promptTemplate = promptTemplateField.value.trim() || DEFAULT_PROMPT_TEMPLATE;
+                if (reasoningEffortSelect) {
+                    state.reasoningEffort = reasoningEffortSelect.value || "low";
+                }
                 saveState();
                 closeModal();
             }
