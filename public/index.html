@@ -755,7 +755,7 @@
         <section class="section">
             <div id="pinnedBlock" hidden>
                 <div class="section-title-row" style="margin-top: 4px;">
-                    <p class="section-label">★ Capsules Favoris</p>
+                    <p class="section-label">★ Capsules Favorites</p>
                 </div>
                 <div id="pinnedGallery" class="share-gallery" aria-live="polite"></div>
             </div>
@@ -765,7 +765,7 @@
 
             <div id="shareGallery" class="share-gallery" aria-live="polite"></div>
             <p id="shareLoading" class="share-helper">Chargement des galeries...</p>
-            <p id="shareEmpty" class="share-helper" hidden>Aucun partage enregistré pour cette session.</p>
+            <p id="shareEmpty" class="share-helper" hidden>Aucune capsule enregistrée pour cette session.</p>
             <p id="shareError" class="share-helper share-helper-error" hidden></p>
         </section>
 
@@ -967,7 +967,7 @@
                         quotas). Dans les deux cas, seules les données isolées et utiles sont transmises.</p>
 
                     <p><strong>☁️ Stockage des données dans le cloud</strong><br>
-                        Vous pouvez partager vos ressources capsules via des liens URL uniques. Les données sont alors
+                        Vous pouvez partager vos capsules via des liens URL uniques. Les données sont alors
                         stockées dans le cloud et modifiables par les personnes disposant du lien. Elles peuvent
                         également être supprimés par son créateur depuis sa station Nexus. Aucun backup n’est
                         réalisée.</p>
@@ -1181,7 +1181,7 @@
                 try {
                     result = await shareService.fetchSharePayload(definition.collection, record.token);
                 } catch (err) {
-                    console.error(`Impossible de récupérer le partage ${app}`, err);
+                    console.error(`Impossible de récupérer la capsule ${app}`, err);
                     return null;
                 }
                 if (!result || !result.payload) {
@@ -1218,12 +1218,12 @@
                 const deleteBtn = document.createElement("button");
                 deleteBtn.type = "button";
                 deleteBtn.className = "share-card-delete";
-                deleteBtn.title = "Supprimer ce partage";
+                deleteBtn.title = "Supprimer cette capsule";
                 deleteBtn.textContent = "×";
                 deleteBtn.addEventListener("click", async event => {
                     event.preventDefault();
                     event.stopPropagation();
-                    const confirmed = window.confirm("Supprimer ce lien de partage ?");
+                    const confirmed = window.confirm("Supprimer cette capsule ?");
                     if (!confirmed) return;
                     try {
                         await shareService?.deleteSharePayload?.(definition.collection, record.token);
@@ -1241,11 +1241,11 @@
 
             async function refreshGallery() {
                 if (!shareHistory) {
-                    setState({ loading: false, hasData: false, error: "Historique des partages indisponible." });
+                    setState({ loading: false, hasData: false, error: "Historique des capsules indisponible." });
                     return;
                 }
                 if (!shareService?.isReady) {
-                    setState({ loading: false, hasData: false, error: "Service de partage indisponible." });
+                    setState({ loading: false, hasData: false, error: "Service de capsules indisponible." });
                     return;
                 }
                 setState({ loading: true, hasData: false, error: "", hasPinned: false, hasRegular: false });

@@ -1615,11 +1615,13 @@
                     </div>
 
                     <div class="menu-trigger">
-                        <button class="btn" id="fileMenuBtn" aria-label="Capsule">▣ Capsule</button>
+                        <button class="btn" id="fileMenuBtn" aria-label="Canal">⥂ Canal</button>
                         <div class="context-menu file-menu" id="fileMenu">
                             <div class="menu-panel" style="transform: translateX(10px);">
-                                <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
-                                <button id="exportJsonBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
+                                <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir
+                                    Capsule</button>
+                                <button id="exportJsonBtn" type="button" class="menu-panel-btn">⭳ Télécharger
+                                    Capsule</button>
                                 <button id="exportTextBtn" type="button" class="menu-panel-btn">¶ Texte</button>
                                 <button id="exportImageBtn" type="button" class="menu-panel-btn">◩ Image</button>
                                 <button id="exportExcelBtn" type="button" class="menu-panel-btn">▥ Excel</button>
@@ -1630,10 +1632,10 @@
 
                     <div class="menu-trigger">
                         <button id="shareBtn" class="info-button" type="button" aria-label="Partager"
-                            title="Lien de partage">☍ Nexus</button>
+                            title="Lien de la capsule">☍ Nexus</button>
                         <div class="context-menu share-menu" id="shareMenu">
                             <div class="menu-panel">
-                                <div class="menu-header">Lien de partage</div>
+                                <div class="menu-header">Lien de la capsule</div>
                                 <div class="share-link-line">
                                     <input id="shareLinkField" class="share-link-field" type="text" readonly
                                         placeholder="Appuie sur Créer pour générer un lien privé.">
@@ -3044,7 +3046,7 @@ Réponds toujours avec un JSON qui contient :
                     if (!parsed || typeof parsed !== "object") return null;
                     return parsed;
                 } catch (err) {
-                    console.warn("Impossible de lire le cache local du partage", err);
+                    console.warn("Impossible de lire le cache local de la capsule", err);
                     return null;
                 }
             }
@@ -3058,7 +3060,7 @@ Réponds toujours avec un JSON qui contient :
                     };
                     localStorage.setItem(getShareDraftKey(token), JSON.stringify(value));
                 } catch (err) {
-                    console.warn("Impossible de sauvegarder le cache local du partage", err);
+                    console.warn("Impossible de sauvegarder le cache local de la capsule", err);
                 }
             }
 
@@ -4133,13 +4135,13 @@ Réponds toujours avec un JSON qui contient :
                 }
 
                 if (!chosenPayload) {
-                    setShareStatus("Lien de partage introuvable.", "error");
+                    setShareStatus("Lien de la capsule introuvable.", "error");
                     return false;
                 }
 
                 var imported = applyImportedState(chosenPayload, { alertOnEmpty: false });
                 if (!imported) {
-                    setShareStatus("Lien de partage introuvable.", "error");
+                    setShareStatus("Lien de la capsule introuvable.", "error");
                     return false;
                 }
                 currentShareToken = token;

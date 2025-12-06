@@ -898,9 +898,10 @@
                 <button id="toggleDrawerBtn" class="drawer-toggle-btn" type="button">⸙ Gutenberg</button>
                 <button id="aiSettingsBtn" class="ai-button" type="button">⌘ Promptzilla</button>
                 <div class="share-menu-wrapper">
-                    <button id="shareBtn" class="info-button" type="button" title="Lien de partage">☍ Nexus</button>
+                    <button id="shareBtn" class="info-button" type="button" title="Lien de la capsule">☍
+                        Nexus</button>
                     <div id="shareMenu" class="share-menu" role="dialog" aria-live="polite">
-                        <div class="share-menu-header">Lien de partage</div>
+                        <div class="share-menu-header">Lien de la capsule</div>
                         <div class="share-link-line">
                             <input id="shareLinkField" class="share-link-field" type="text" readonly
                                 placeholder="Créer un lien privé">
@@ -1067,7 +1068,7 @@
                     if (!parsed || typeof parsed !== "object") return null;
                     return parsed;
                 } catch (err) {
-                    console.warn("Impossible de lire le cache local du partage", err);
+                    console.warn("Impossible de lire le cache local de la capsule", err);
                     return null;
                 }
             }
@@ -1081,7 +1082,7 @@
                     };
                     localStorage.setItem(getShareDraftKey(token), JSON.stringify(value));
                 } catch (err) {
-                    console.warn("Impossible de sauvegarder le cache local du partage", err);
+                    console.warn("Impossible de sauvegarder le cache local de la capsule", err);
                 }
             }
             const FIRESTORE_COLLECTION = "diagrams";

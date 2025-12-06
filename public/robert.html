@@ -1615,11 +1615,12 @@
                     </div>
                 </div>
                 <div class="menu-trigger" id="fileMenuTrigger">
-                    <button id="fileMenuBtn" type="button" aria-label="Capsule">▣ Capsule</button>
+                    <button id="fileMenuBtn" type="button" aria-label="Canal">⥂ Canal</button>
                     <div class="context-menu" id="fileMenu">
                         <div class="menu-panel">
-                            <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
-                            <button id="exportJsonBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
+                            <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir Capsule</button>
+                            <button id="exportJsonBtn" type="button" class="menu-panel-btn">⭳ Télécharger
+                                Capsule</button>
                             <button id="exportPptxBtn" type="button" class="menu-panel-btn">▭ Powerpoint</button>
                             <button id="exportTextBtn" type="button" class="menu-panel-btn">¶ Texte</button>
                             <button id="exportPngBtn" type="button" class="menu-panel-btn">◩ Image</button>
@@ -1632,7 +1633,7 @@
                         title="Lien de partage">☍ Nexus</button>
                     <div class="context-menu share-menu" id="shareMenu">
                         <div class="menu-panel">
-                            <div class="menu-header">Lien de partage</div>
+                            <div class="menu-header">Lien de la capsule</div>
                             <div class="share-link-line">
                                 <input id="shareLinkField" class="share-link-field" type="text" readonly
                                     placeholder="Créer un lien ">
@@ -2176,7 +2177,7 @@
                 if (!parsed || typeof parsed !== "object") return null;
                 return parsed;
             } catch (err) {
-                console.warn("Impossible de lire le cache local du partage", err);
+                console.warn("Impossible de lire le cache local de la capsule", err);
                 return null;
             }
         }
@@ -2192,7 +2193,7 @@
                 };
                 localStorage.setItem(getShareDraftKey(token), JSON.stringify(value));
             } catch (err) {
-                console.warn("Impossible de sauvegarder le cache local du partage", err);
+                console.warn("Impossible de sauvegarder le cache local de la capsule", err);
             }
         }
 
@@ -2444,7 +2445,7 @@
             }
 
             if (!chosenPayload || !Array.isArray(chosenPayload.slides)) {
-                setShareStatus("Lien de partage introuvable.", "error");
+                setShareStatus("Lien de la capsule introuvable.", "error");
                 return false;
             }
 
