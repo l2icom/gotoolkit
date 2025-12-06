@@ -118,7 +118,28 @@
             letter-spacing: 0.16em;
             text-transform: uppercase;
             color: var(--muted);
-            margin: 5px
+            margin: 5px 5px 15px 5px;
+        }
+
+        .section-helper {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin: 0;
+        }
+
+        .superpower-label {
+            border-bottom: 1px dashed currentColor;
+            cursor: pointer;
+            display: inline-flex;
+            gap: 4px;
+            padding-bottom: 2px;
+        }
+
+        .superpower-label:hover,
+        .superpower-label:focus-visible {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            outline: none;
         }
 
         .ghost-button {
@@ -153,7 +174,7 @@
             text-decoration: none;
             color: var(--text);
             border-radius: 8px;
-            padding: 20px 10px;
+            padding: 25px 10px;
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -180,9 +201,38 @@
             justify-content: center;
         }
 
+        @media (max-width: 640px) {
+            .launcher-grid {
+                justify-content: stretch;
+            }
+
+            .launcher {
+                flex: 1 1 100%;
+                padding: 14px;
+                gap: 10px;
+                height: auto;
+            }
+
+            .launcher-emoji {
+                font-size: 22px;
+                width: 28px;
+                height: 28px;
+            }
+        }
+
         .launcher-name {
             font-size: 15px;
             font-weight: 600;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .launcher-desc {
+            font-size: 0.85rem;
+            color: var(--muted);
+            font-weight: 400;
+            letter-spacing: 0;
         }
 
         .share-gallery {
@@ -371,6 +421,9 @@
             display: flex;
             flex-direction: column;
             gap: 14px;
+            max-height: 80vh;
+            overflow-y: auto;
+            font-size: 0.9rem;
         }
 
         .superpower-modal header {
@@ -405,11 +458,65 @@
             font-weight: 700;
         }
 
-        .superpower-list p {
+        .superpower-subtitle {
+            margin: 0;
+            color: #1f2a56;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .nexus-label {
+            border-bottom: 1px dashed currentColor;
+            cursor: pointer;
+            display: inline-flex;
+            gap: 4px;
+            padding-bottom: 2px;
+        }
+
+        .nexus-label:hover,
+        .nexus-label:focus-visible {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            outline: none;
+        }
+
+        .nexus-modal {
+            width: min(900px, 90vw);
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 22px 45px rgba(15, 23, 42, 0.25);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 75vh;
+            overflow-y: auto;
+            font-size: 0.9rem;
+        }
+
+        .nexus-modal header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 12px;
+            position: relative;
+        }
+
+        .nexus-modal header button {
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+
+        .nexus-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nexus-content p {
             margin: 0;
             line-height: 1.4;
-            color: #1f2a56;
-            font-size: 0.95rem;
         }
 
         .feedback-form {
@@ -576,21 +683,29 @@
 
         <section class="section">
             <div class="section-title-row">
-                <p class="section-label">✦ Super-pouvoirs</p>
-                <button id="openSuperpowerBtn" class="ghost-button" type="button">Superpouvoir</button>
+                <p class="section-label superpower-label" id="superpowerToggle">✦ Super-pouvoirs</p>
             </div>
             <div class="launcher-grid">
                 <a class="launcher" href="robert.html">
-                    <span class="launcher-emoji">◫</span>
-                    <span class="launcher-name">Petit Robert · Structure ton vocabulaire</span>
+                    <span class="launcher-emoji">¶</span>
+                    <span class="launcher-name">
+                        Petit Robert
+                        <div class="launcher-desc">Structure ton vocabulaire</div>
+                    </span>
                 </a>
                 <a class="launcher" href="roadmap.html">
-                    <span class="launcher-emoji">▷</span>
-                    <span class="launcher-name">Go-Roadmap · Suis ta feuille de route</span>
+                    <span class="launcher-emoji">⟴</span>
+                    <span class="launcher-name">
+                        Goal Digger
+                        <div class="launcher-desc">Trace ta feuille de route</div>
+                    </span>
                 </a>
                 <a class="launcher" href="cardinal.html">
-                    <span class="launcher-emoji">◇</span>
-                    <span class="launcher-name">Le Cardinal · Modélise tes idées</span>
+                    <span class="launcher-emoji">✶</span>
+                    <span class="launcher-name">
+                        Le Cardinal
+                        <div class="launcher-desc">Modélise tes idées</div>
+                    </span>
                 </a>
             </div>
         </section>
@@ -603,7 +718,7 @@
                 <div id="pinnedGallery" class="share-gallery" aria-live="polite"></div>
             </div>
             <div class="section-title-row">
-                <p class="section-label">☍ Nexus</p>
+                <p class="section-label nexus-label" id="nexusToggle" tabindex="0">☍ Nexus</p>
             </div>
 
             <div id="shareGallery" class="share-gallery" aria-live="polite"></div>
@@ -660,44 +775,133 @@
         <div id="superpowerModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
             <div class="superpower-modal">
                 <header>
-                    <h3>Superpouvoirs Go-Toolkit</h3>
+                    <h3>Superpouvoirs Go-Live</h3>
                     <button id="closeSuperpowerBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
                 </header>
                 <div class="superpower-list">
                     <section>
                         <h4>✶ Le Cardinal</h4>
-                        <p>Le pouvoir de modéliser avec clarté. Vulgariser des structures complexes, expliquer la cardinalité avec pédagogie, et co-créer des schémas métiers structurés. Transformer des brainstorms flous en artefacts limpides.</p>
+                        <div class="superpower-subtitle">Le pouvoir de modéliser avec clarté. Vulgariser des structures
+                            complexes, expliquer la cardinalité avec pédagogie, et co-créer des schémas métiers
+                            structurés. Transformer des brainstorms flous en artefacts limpides.</div>
                     </section>
                     <section>
                         <h4>¶ Petit Robert Downey Jr</h4>
-                        <p>Le pouvoir du discernement sémantique. Rétablir la clarté quand les mots se confondent. Forger un vocabulaire métier partagé, documenté et stable.</p>
+                        <div class="superpower-subtitle">Le pouvoir du discernement sémantique. Rétablir la clarté quand
+                            les mots se confondent. Forger un vocabulaire métier partagé, documenté et stable.</div>
                     </section>
                     <section>
                         <h4>⸙ Gutenberg</h4>
-                        <p>Le pouvoir de raconter le produit. Documenter le projet au fil de l’eau et le rendre lisible et inspirant. Transformer l’ordinaire du delivery en récit engageant.</p>
+                        <div class="superpower-subtitle">Le pouvoir de raconter le produit. Documenter le projet au fil
+                            de l’eau et le rendre lisible et inspirant. Transformer l’ordinaire du delivery en récit
+                            engageant.</div>
                     </section>
                     <section>
                         <h4>ʃ Indélébile</h4>
-                        <p>Le pouvoir de l’ancrage visuel. Facilitation graphique en réunion, ateliers et supports. Faire durer les idées grâce à l’image.</p>
+                        <div class="superpower-subtitle">Le pouvoir de l’ancrage visuel. Facilitation graphique en
+                            réunion, ateliers et supports. Faire durer les idées grâce à l’image.</div>
                     </section>
                     <section>
-                        <h4>⌁ ⋕ ⌻ ⌼ ⌖</h4>
-                        <p>Ϟ Protocop<br>Le pouvoir de prototyper vite et bien. Donner corps à l’idée avant le développement. Transformer l'intuition en objet de projection et d'envie.</p>
-                        <p>⌲ Tuto Tarantino<br>Le pouvoir de captiver par des tutoriels vidéo percutants. Rythme, narration, pédagogie : transmettre devient un art.</p>
-                        <p>⟴ Goal Digger<br>Le pouvoir de creuser au bon endroit pour faire émerger une vraie roadmap de valeur. Tracer une route claire autour d’objectifs d’impact.</p>
+                        <h4>Ϟ Protocop</h4>
+                        <div class="superpower-subtitle">Le pouvoir de prototyper vite et bien. Donner corps à l’idée
+                            avant le développement. Transformer l'intuition en objet de projection et d'envie.</div>
+                    </section>
+                    <section>
+                        <h4>⌲ Tuto Tarantino</h4>
+                        <div class="superpower-subtitle">Le pouvoir de captiver par des tutoriels vidéo percutants.
+                            Rythme, narration, pédagogie : transmettre devient un art.</div>
+                    </section>
+                    <section>
+                        <h4>⟴ Goal Digger</h4>
+                        <div class="superpower-subtitle">Le pouvoir de creuser au bon endroit pour faire émerger une
+                            vraie roadmap de valeur. Tracer une route claire autour d’objectifs d’impact.</div>
                     </section>
                     <section>
                         <h4>⌘ Promptzilla</h4>
-                        <p>Le pouvoir d'invoquer l'IA avec précision et créativité. Utiliser l'IA pour accélérer la production sans sacrifier la rigueur.</p>
+                        <p>Le pouvoir d'invoquer l'IA avec précision et créativité. Utiliser l'IA pour accélérer la
+                            production sans sacrifier la rigueur.</p>
                     </section>
                     <section>
                         <h4>λ Soulgorithm</h4>
-                        <p>Le pouvoir d’imaginer des fonctionnalités IA qui font vraiment sens. Prioriser l’impact utilisateur avant la techno.</p>
+                        <p>Le pouvoir d’imaginer des fonctionnalités IA qui font vraiment sens. Prioriser l’impact
+                            utilisateur avant la techno.</p>
                     </section>
                     <section>
                         <h4>⌬ Pôlène</h4>
-                        <p>Le pouvoir de concevoir des produits qui exposent leur valeur par la donnée. Anticiper APIs, événements métiers et données pivots pour polliniser l’écosystème.</p>
+                        <p>Le pouvoir de concevoir des produits qui exposent leur valeur par la donnée. Anticiper APIs,
+                            événements métiers et données pivots pour polliniser l’écosystème.</p>
                     </section>
+                </div>
+            </div>
+        </div>
+
+        <div id="nexusModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+            <div class="nexus-modal">
+                <header>
+                    <h2>🔐 Go-Toolkit — Politique de confidentialité</h2>
+                    <button id="closeNexusBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
+                </header>
+                <div class="nexus-content">
+
+                    <p><strong>🧾 Informations générales et usage professionnel</strong><br>
+                        Go-Toolkit est conçu pour un usage professionnel : animation d’ateliers, cadrages, documentation
+                        produit et
+                        collaboration. L’outil fonctionne sans compte et ne collecte aucune donnée personnelle par
+                        défaut.</p>
+
+                    <p><strong>📘 Usage sans compte</strong><br>
+                        Aucun compte n’est requis. Votre identité reste protégée. Vous êtes responsable du contenu que
+                        vous saisissez,
+                        notamment s’il contient des données personnelles.</p>
+
+                    <p><strong>🔒 Données traitées</strong><br>
+                        Go-Toolkit ne collecte aucune donnée personnelle automatiquement. Les seules informations
+                        personnelles pouvant être
+                        traitées le sont uniquement si vous choisissez de les fournir (ex. nom + e-mail pour un
+                        feedback).</p>
+
+                    <p><strong>🤖 Appels IA (OpenAI)</strong><br>
+                        Vos données restent dans votre navigateur sauf lorsque vous déclenchez un appel IA. Dans ce cas,
+                        seules les
+                        informations strictement nécessaires sont envoyées à OpenAI. Ne transmettez jamais de données
+                        sensibles.</p>
+
+                    <p><strong>🔑 Accès privé ou partagé</strong><br>
+                        Vous pouvez utiliser votre propre clé OpenAI (accès privé) ou l’accès partagé par défaut (avec
+                        quotas). Dans les
+                        deux cas, seules les données utiles à la fonctionnalité sont transmises.</p>
+
+                    <p><strong>☁️ Partage et collaboration Nexus (optionnelle)</strong><br>
+                        Vous pouvez activer la collaboration en hébergeant vos données sur Google Firestore. Elles
+                        restent supprimables à
+                        tout moment. Aucune duplication ou sauvegarde externe supplémentaire n’est réalisée.</p>
+
+                    <p><strong>⚠️ Risques de perte de données</strong><br>
+                        Les données locales peuvent être perdues en cas de nettoyage de navigateur, navigation privée ou
+                        crash. Firestore ou
+                        le proxy public OpenAI peuvent connaître des indisponibilités. Go-Live ne peut être tenu
+                        responsable des pertes ou
+                        interruptions liées à ces services tiers.</p>
+
+                    <p><strong>📤 Exportation et réutilisation</strong><br>
+                        Vos données peuvent être exportées librement pour archivage, partage ou intégration dans
+                        d’autres outils métiers.
+                        Cela renforce l’usage professionnel : traçabilité, capitalisation, documentation.</p>
+
+                    <p><strong>👤 Vos droits</strong><br>
+                        Conformément à la réglementation (RGPD), vous pouvez demander l’accès, la rectification ou la
+                        suppression des
+                        données personnelles que vous choisissez de fournir (ex. feedback). Contact possible via les
+                        coordonnées de
+                        l’éditeur.</p>
+
+                    <p><strong>✅ Bonnes pratiques</strong><br>
+                        Saisissez uniquement les informations pertinentes. Évitez les données sensibles (santé, opinions
+                        politiques, données
+                        financières personnelles) dans l’outil, notamment dans les appels IA ou la collaboration
+                        Firestore.</p>
+
+
                 </div>
             </div>
         </div>
@@ -714,7 +918,7 @@
     <script>
         (function () {
             const modal = document.getElementById("superpowerModal");
-            const openBtn = document.getElementById("openSuperpowerBtn");
+            const openBtn = document.getElementById("superpowerToggle");
             const closeBtn = document.getElementById("closeSuperpowerBtn");
             function close() {
                 if (!modal) return;
@@ -732,6 +936,51 @@
                 if (event.target === modal) {
                     close();
                 }
+            });
+        })();
+    </script>
+    <script>
+        (function () {
+            const modal = document.getElementById("nexusModal");
+            const openBtn = document.getElementById("nexusToggle");
+            const closeBtn = document.getElementById("closeNexusBtn");
+            function close() {
+                if (!modal) return;
+                modal.classList.remove("open");
+                modal.setAttribute("aria-hidden", "true");
+            }
+            function open() {
+                if (!modal) return;
+                modal.classList.add("open");
+                modal.setAttribute("aria-hidden", "false");
+            }
+            openBtn?.addEventListener("click", open);
+            openBtn?.addEventListener("keypress", event => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    open();
+                }
+            });
+            closeBtn?.addEventListener("click", close);
+            modal?.addEventListener("click", event => {
+                if (event.target === modal) {
+                    close();
+                }
+            });
+        })();
+    </script>
+    <script>
+        (function () {
+            function closeModalById(id) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.classList.remove("open");
+                el.setAttribute("aria-hidden", "true");
+            }
+            document.addEventListener("keydown", event => {
+                if (event.key !== "Escape" && event.key !== "Esc") return;
+                closeModalById("superpowerModal");
+                closeModalById("nexusModal");
             });
         })();
     </script>

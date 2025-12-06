@@ -67,7 +67,6 @@
         .app-home-link:hover,
         .app-home-link:focus-visible {
             border-color: #2a7a57;
-            box-shadow: 0 8px 20px rgba(42, 122, 87, 0.3);
             outline: none;
         }
 
@@ -164,17 +163,6 @@
             border: none;
             background: #2a7a57;
             color: #ffffff;
-        }
-
-        .global-actions button:hover,
-        .global-actions button:focus-visible,
-        .global-actions .info-button:hover,
-        .global-actions .info-button:focus-visible,
-        .reset-prompts-btn:hover,
-        .reset-prompts-btn:focus-visible,
-        .nav-switch-btn:hover,
-        .nav-switch-btn:focus-visible {
-            box-shadow: 0 6px 18px rgba(42, 122, 87, 0.32);
         }
 
         .share-menu-wrapper {
@@ -895,10 +883,10 @@
         <header class="app-header">
             <a class="app-home-link" href="index.html" title="Revenir à l'accueil">⌂</a>
             <div class="nav-switch">
-                <button id="navSwitcherBtn" class="nav-switch-btn" type="button">◇ Le Cardinal ▾</button>
+                <button id="navSwitcherBtn" class="nav-switch-btn" type="button">✶ Le Cardinal ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="robert.html">◫ Petit Robert</a>
-                    <a class="nav-switch-link" href="roadmap.html">▷ Go-Roadmap</a>
+                    <a class="nav-switch-link" href="robert.html">¶ Petit Robert</a>
+                    <a class="nav-switch-link" href="roadmap.html">⟴ Goal Digger</a>
                 </div>
             </div>
             <div class="tabs-actions">
@@ -910,7 +898,7 @@
                 <button id="toggleDrawerBtn" class="drawer-toggle-btn" type="button">⌸ Gutenberg</button>
                 <button id="aiSettingsBtn" class="ai-button" type="button">⌘ Promptzilla</button>
                 <div class="share-menu-wrapper">
-                <button id="shareBtn" class="info-button" type="button" title="Lien de partage">☍ Nexus</button>
+                    <button id="shareBtn" class="info-button" type="button" title="Lien de partage">☍ Nexus</button>
                     <div id="shareMenu" class="share-menu" role="dialog" aria-live="polite">
                         <div class="share-menu-header">Lien de partage</div>
                         <div class="share-link-line">
@@ -1257,7 +1245,7 @@ sequenceDiagram
                 },
                 {
                     title: "Actions globales",
-                    description: "Utilise les actions d'en-tête pour partager, gérer les pages ou accéder à l'IA.",
+                    description: "Utilise les actions d'en-tête pour ouvrir ☍ Nexus, gérer les pages ou accéder à l'IA.",
                     selector: ".app-header"
                 }
             ];
