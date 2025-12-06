@@ -895,7 +895,7 @@
                 <button id="deletePageBtn" class="tab-btn-remove" title="Supprimer la page">×</button>
             </div>
             <div class="global-actions">
-                <button id="toggleDrawerBtn" class="drawer-toggle-btn" type="button">⌸ Gutenberg</button>
+                <button id="toggleDrawerBtn" class="drawer-toggle-btn" type="button">⸙ Gutenberg</button>
                 <button id="aiSettingsBtn" class="ai-button" type="button">⌘ Promptzilla</button>
                 <div class="share-menu-wrapper">
                     <button id="shareBtn" class="info-button" type="button" title="Lien de partage">☍ Nexus</button>
@@ -1217,7 +1217,7 @@ sequenceDiagram
             const drawerMediaQuery = window.matchMedia("(max-width: 1200px)");
             const shareHistory = window.goToolkitShareHistory;
             const generateDefaultLabel = generateBtn?.textContent || "⌘ Générer";
-            const drawerDefaultLabel = toggleDrawerBtn?.textContent || "⌸ Gutenberg";
+            const drawerDefaultLabel = toggleDrawerBtn?.textContent || "⸙ Gutenberg";
             let generateCooldownTimer = null;
             let generateCooldownEndTime = 0;
             let currentTourIndex = 0;
