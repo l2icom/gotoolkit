@@ -1828,8 +1828,8 @@ sequenceDiagram
             function createPage(position) {
                 return {
                     id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
-                    label: `Page ${position}`,
-                    title: `Page ${position}`,
+                    label: `Bloc ${position}`,
+                    title: `Bloc ${position}`,
                     input: "",
                     mermaid: "",
                     drawType: DEFAULT_DRAW_TYPE
@@ -1869,13 +1869,13 @@ sequenceDiagram
                 state.pages.forEach((page, index) => {
                     const btn = document.createElement("button");
                     btn.className = `tab-btn${index === state.activeIndex ? " active" : ""}`;
-                    btn.textContent = page.label || `Page ${index + 1}`;
+                    btn.textContent = page.label || `Bloc ${index + 1}`;
                     btn.title = "Double-clique pour renommer";
                     btn.addEventListener("click", () => {
                         setActivePage(index);
                     });
                     btn.addEventListener("dblclick", () => {
-                        const name = prompt("Renommer la page", page.label || "Page");
+                        const name = prompt("Renommer le bloc", page.label || "Bloc");
                         if (name) {
                             page.label = name.trim();
                             renderTabs();
@@ -1941,7 +1941,7 @@ sequenceDiagram
                 promptInput.value = page?.input || "";
                 mermaidOutput.value = page?.mermaid || "";
                 if (diagramTitleInput) {
-                    diagramTitleInput.value = page?.title || page?.label || `Page ${state.activeIndex + 1}`;
+                    diagramTitleInput.value = page?.title || page?.label || `Bloc ${state.activeIndex + 1}`;
                     diagramTitleInput.readOnly = true;
                 }
                 updateDrawTypeSelector(page?.drawType || DEFAULT_DRAW_TYPE);

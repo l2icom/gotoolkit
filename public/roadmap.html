@@ -1549,7 +1549,7 @@
                     <button class="btn" id="openIaModal" aria-label="Ouvrir Promptzilla">⌘ Promptzilla</button>
 
                     <div class="menu-trigger">
-                        <button class="btn" id="optionsBtn" aria-label="Options d'affichage">🄰 Affichage</button>
+                        <button class="btn" id="optionsBtn" aria-label="Hublot">◯ Hublot</button>
                         <div class="context-menu" id="optionsMenu">
                             <div class="menu-panel">
                                 <label>
@@ -1615,7 +1615,7 @@
                     </div>
 
                     <div class="menu-trigger">
-                        <button class="btn" id="fileMenuBtn" aria-label="Fichier">↳ Fichier</button>
+                        <button class="btn" id="fileMenuBtn" aria-label="Capsule">▣ Capsule</button>
                         <div class="context-menu file-menu" id="fileMenu">
                             <div class="menu-panel" style="transform: translateX(10px);">
                                 <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
@@ -3691,6 +3691,17 @@ Réponds toujours avec un JSON qui contient :
                 }, 1000);
             }
 
+            function getExportFilename(ext) {
+                try {
+                    var rawTitle = (document.title || "export").toString().trim();
+                    var safe = rawTitle.replace(/[^a-z0-9\-_.]/gi, "_").replace(/_+/g, "_");
+                    var ts = new Date().toISOString().replace(/[:.]/g, "-");
+                    return safe + "_" + ts + "." + ext;
+                } catch (e) {
+                    return "export_" + Date.now() + "." + ext;
+                }
+            }
+
             function gatherExportState() {
                 persistCurrentPlanning();
                 return buildTimelineStatePayload();
@@ -3698,7 +3709,7 @@ Réponds toujours avec un JSON qui contient :
 
             function exportTimelineState() {
                 var payload = gatherExportState();
-                downloadJson("timeline-views.json", payload);
+                downloadJson(getExportFilename('json'), payload);
             }
 
             async function exportTimelineImage() {
@@ -3711,7 +3722,7 @@ Réponds toujours avec un JSON qui contient :
                     var canvas = await html2canvas(timelineCard, { scale: 2, backgroundColor: null, useCORS: true });
                     var link = document.createElement("a");
                     link.href = canvas.toDataURL("image/png");
-                    link.download = "go-roadmap-view.png";
+                    link.download = getExportFilename('png');
                     link.click();
                 } catch (err) {
                     console.error("Export image impossible", err);
@@ -3779,7 +3790,7 @@ Réponds toujours avec un JSON qui contient :
                     });
                     var workbook = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(workbook, worksheet, "Planning");
-                    XLSX.writeFile(workbook, "go-roadmap.xlsx");
+                    XLSX.writeFile(workbook, getExportFilename('xlsx'));
                 } catch (err) {
                     console.error("Export Excel failed", err);
                     alert("Export Excel impossible. Réessaie.");

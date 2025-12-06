@@ -1197,12 +1197,12 @@
             border-radius: 8px;
             font-size: 11px;
             white-space: pre-line;
-            max-width: 520px;
+            width: 300px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
             opacity: 0;
             visibility: hidden;
             transform: translateY(6px);
-            transition: opacity 0.2s ease, transform 0.2s ease;
+            transition: opacity 0.2s ease, transform 0.2s ease, max-width 0.2s ease;
             pointer-events: none;
             z-index: 60;
         }
@@ -1568,9 +1568,9 @@
                     aria-label="Restaurer les colonnes et sections">↺</button>
                 <button class="tab-btn-delete" id="deleteTabBtn" type="button">×</button>
                 <button class="tab-btn-suggest" id="generatePlaceholdersBtn" type="button"
-                    aria-label="Générer des suggestions pour les sections">?</button>
+                    aria-label="Générer des suggestions pour les sections">✱ Suggestions</button>
                 <button class="tab-btn-suggest" id="generateFullSlideBtn" type="button"
-                    aria-label="Générer toutes les sections et la synthèse">⌘</button>
+                    aria-label="Générer toutes les sections et la synthèse">⌘ Tout</button>
                 <span class="tab-btn-suggest-status" id="suggestionStatusLabel" aria-live="polite"></span>
             </div>
             <div class="global-actions">
@@ -1579,8 +1579,8 @@
                 <button id="contextBtn" type="button" aria-label="Promptzilla">⌘ Promptzilla</button>
 
                 <div class="menu-trigger" id="settingsMenuTrigger">
-                    <button id="templateBtn" type="button" aria-label="Modèles de grille">🗎 Modèle</button>
-                    <button id="textStyleBtn" type="button" aria-label="Options d'affichage">🄰 Affichage</button>
+                    <button id="templateBtn" type="button" aria-label="Choisir un blueprint">⧉ Blueprint</button>
+                    <button id="textStyleBtn" type="button" aria-label="Hublot">◯ Hublot</button>
                     <div class="context-menu" id="settingsMenu">
                         <div class="menu-panel">
                             <label>
@@ -1615,7 +1615,7 @@
                     </div>
                 </div>
                 <div class="menu-trigger" id="fileMenuTrigger">
-                    <button id="fileMenuBtn" type="button" aria-label="Fichier">↳ Fichier</button>
+                    <button id="fileMenuBtn" type="button" aria-label="Capsule">▣ Capsule</button>
                     <div class="context-menu" id="fileMenu">
                         <div class="menu-panel">
                             <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
@@ -1763,7 +1763,7 @@
     <div class="modal-overlay" id="templateModal">
         <div class="modal">
             <div class="modal-header">
-                <h3>Choisir un modèle</h3>
+                <h3>Choisir un blueprint</h3>
                 <button class="modal-close" data-close="templateModal">×</button>
             </div>
             <div class="modal-panel">
@@ -2012,7 +2012,7 @@
         };
         const bottomSectionPlaceholderText = "Synthèse, décisions clés ou résumé rapide";
         const bottomSectionDefaultPrompt = `Tu es un product owner expérimenté, sur la base du contexte "{{globalContext}}" et de "{{pageContext}}", et avec {{columnSections}}, répond à {{slideTitle}} en 2 phrases courtes (< 15 mots pour chaque).`;
-        const defaultSuggestionsPrompt = `Tu es un coach product owner expérimenté, sur la base du titre de la page {{slideTitle}}, et dans le cadre de {{columnTitle}}, formuler 3 instructions commençant par un verbe pour aider à trouver des {{sectionTitle}} synthétiques et pertinents (< 15 mots pour chaque et en commençant chacune par un -). Tout ça sans introduction préalable ni émoji`;
+        const defaultSuggestionsPrompt = `Tu es un product owner expérimenté, sur la base du contexte "{{globalContext}}" et de "{{pageContext}}", et dans le cadre de {{columnTitle}}, formuler 3 instructions commençant par un verbe pour aider à trouver des {{sectionTitle}} synthétiques et pertinents pour répondre à {{slideTitle}} (< 15 mots pour chaque et en commençant chacune par un -). Tout ça sans introduction préalable ni émoji`;
 
         function getTemplateById(id) {
             return templates.find(template => template.id === id) || templates[0];
@@ -2786,11 +2786,11 @@
             const disableButtons = onCooldown || isGeneratingSuggestions;
             if (generatePlaceholdersBtn) {
                 generatePlaceholdersBtn.disabled = disableButtons;
-                generatePlaceholdersBtn.textContent = "✱";
+                generatePlaceholdersBtn.textContent = "✱ Suggestions";
             }
             if (generateFullSlideBtn) {
                 generateFullSlideBtn.disabled = disableButtons;
-                generateFullSlideBtn.textContent = "⌘";
+                generateFullSlideBtn.textContent = "⌘ Bloc";
             }
             if (suggestionStatusLabel) {
                 suggestionStatusLabel.textContent = onCooldown ? `⏳ ${remaining}s` : "";
@@ -2852,7 +2852,7 @@
                         globalContext: globalContextValue,
                         contextField: globalContextValue,
                         pageContext: pageContextValue,
-                        pageTitle: slideTitle,
+                        slideTitle: slideTitle,
                         columnTitle,
                         sectionTitle: sectionLabel
                     };
@@ -2872,7 +2872,6 @@
                     generated = true;
                     if (labelEl) {
                         labelEl.dataset.suggestions = trimmed;
-                        labelEl.setAttribute("title", trimmed);
                     }
                     const textarea = sectionEl.querySelector("textarea");
                     if (textarea) {
@@ -2904,6 +2903,7 @@
             const templateId = slide.dataset.templateId || templates[0].id;
             const globalContextValue = globalContextField?.value.trim() || "";
             const pageContextValue = getSlidePageContext(slide).trim();
+            const slideTitle = slide.querySelector(".slide-title-input")?.value.trim() || slide.dataset.tabLabel || "";
             const tasks = [];
             Array.from(slide.querySelectorAll(".section")).forEach(sectionEl => {
                 const sectionKey = sectionEl.dataset.section;
@@ -2919,6 +2919,7 @@
                     globalContext: globalContextValue,
                     contextField: globalContextValue,
                     pageContext: pageContextValue,
+                    slideTitle: slideTitle,
                     columnTitle,
                     fieldValue: textarea.value.trim(),
                     sectionTitle: sectionLabel
@@ -3322,7 +3323,6 @@
                             if (label) {
                                 label.classList.add("has-suggestion");
                                 label.dataset.suggestions = suggestionValue;
-                                label.setAttribute("title", suggestionValue);
                             }
                             textarea.dataset.suggestionPlaceholder = suggestionValue;
                             if (!textarea.value.trim()) {
@@ -3344,17 +3344,13 @@
                 deleteColumn(column);
             });
 
+            // Always display textarea suggestion placeholders for this column
+            showColumnPlaceholders(column);
             column.addEventListener("focusin", () => {
                 column.classList.add("column-focused");
-                showColumnPlaceholders(column);
             });
             column.addEventListener("focusout", () => {
                 column.classList.remove("column-focused");
-                setTimeout(() => {
-                    if (!column.contains(document.activeElement)) {
-                        clearColumnPlaceholders(column);
-                    }
-                }, 0);
             });
 
             column.querySelectorAll("textarea").forEach(bindTextareaPlaceholder);
@@ -3433,7 +3429,6 @@
             const suggestionValue = seed.suggestions || "";
             if (suggestionValue) {
                 labelSpan.dataset.suggestions = suggestionValue;
-                labelSpan.setAttribute("title", suggestionValue);
                 textarea.dataset.suggestionPlaceholder = suggestionValue;
                 if (!textarea.value.trim()) {
                     textarea.placeholder = suggestionValue;
@@ -3539,11 +3534,11 @@
                 titleInput.value = cleanTitle;
             }
             if (cleanTitle) {
-                slide.dataset.tabLabel = cleanTitle;
+                // Set slide title but DO NOT overwrite the tab label (user requested)
                 slide.dataset.title = cleanTitle;
-                const activeTabBtn = tabsContainer.querySelector(`.tab-btn[data-index="${activeIndex}"]`);
-                if (activeTabBtn) {
-                    activeTabBtn.textContent = cleanTitle;
+                if (titleInput) {
+                    // keep title input updated (visible in slide header)
+                    titleInput.value = cleanTitle;
                 }
             }
 
@@ -3605,7 +3600,7 @@
             const titleValue = (seed.title || getDefaultTitle(templateId)).replace(/"/g, '&quot;');
             const subtitleValue = (seed.subtitle || defaultSubtitle).replace(/"/g, '&quot;');
             slide.dataset.templateId = templateId;
-            slide.dataset.tabLabel = seed.tabLabel || `Page ${index + 1}`;
+            slide.dataset.tabLabel = seed.tabLabel || `Bloc ${index + 1}`;
             slide.dataset.pageContext = seed.pageContext ?? seed.context ?? "";
             const hasBottomSection = !seed.bottomSection?.deleted;
             const bottomSectionMarkup = hasBottomSection
@@ -3727,7 +3722,7 @@
             btn.className = "tab-btn";
             btn.dataset.index = index;
             const slide = slidesContainer.querySelector(`.slide[data-index="${index}"]`);
-            const label = (slide?.dataset.tabLabel || `Page ${index + 1}`).trim();
+            const label = (slide?.dataset.tabLabel || `Bloc ${index + 1}`).trim();
             btn.textContent = label;
             btn.addEventListener("click", () => setActiveTab(index));
             btn.addEventListener("dblclick", () => {
@@ -4099,11 +4094,22 @@
             const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = "go-roadmap.json";
+            link.download = getExportFilename("json");
             link.click();
             URL.revokeObjectURL(link.href);
             closeContextMenus();
         });
+
+        function getExportFilename(ext) {
+            try {
+                const rawTitle = (document.title || "export").toString().trim();
+                const safe = rawTitle.replace(/[^a-z0-9\-_.]/gi, "_").replace(/_+/g, "_");
+                const ts = new Date().toISOString().replace(/[:.]/g, "-");
+                return `${safe}_${ts}.${ext}`;
+            } catch (e) {
+                return `export_${Date.now()}.${ext}`;
+            }
+        }
 
         function importSlidesFromData(slidesData, settings = {}) {
             const slideList = Array.isArray(slidesData) ? slidesData : [];
@@ -4356,8 +4362,8 @@
                     try {
                         const canvas = await html2canvas(clone, { scale: 2, backgroundColor: null, useCORS: true });
                         const link = document.createElement("a");
-                        link.download = `go-roadmap-page-${activeIndex + 1}.png`;
                         link.href = canvas.toDataURL("image/png");
+                        link.download = getExportFilename('png');
                         link.click();
                     } finally {
                         wrapper.remove();
@@ -4463,7 +4469,7 @@
                     bold: true
                 });
             }
-            await pptx.writeFile({ fileName: "go-roadmap.pptx" });
+            await pptx.writeFile({ fileName: getExportFilename('pptx') });
         }
 
         exportPptxBtn.addEventListener("click", async () => {
