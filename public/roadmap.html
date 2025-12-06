@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Go-Plan</title>
+    <title>Go-Roadmap</title>
 
     <!-- Vis Timeline -->
     <link rel="stylesheet" href="https://unpkg.com/vis-timeline@latest/styles/vis-timeline-graph2d.min.css"
@@ -1526,13 +1526,13 @@
     <div class="app">
         <div class="app-header">
             <div class="tabs-actions">
-                <a class="app-home-link" href="index.html" title="Revenir à l'accueil">⌘</a>
+                <a class="app-home-link" href="index.html" title="Revenir à l'accueil">⌂</a>
                 <div class="nav-switch">
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
-                        aria-expanded="false">▷ Go-Plan ▾</button>
+                        aria-expanded="false">▷ Go-Roadmap ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                        <a class="nav-switch-link" href="think.html" role="menuitem">◫ Go-Think</a>
-                        <a class="nav-switch-link" href="draw.html" role="menuitem">◇ Go-Draw</a>
+                        <a class="nav-switch-link" href="robert.html" role="menuitem">◫ Petit Robert</a>
+                        <a class="nav-switch-link" href="cardinal.html" role="menuitem">◇ Le Cardinal</a>
                     </div>
                 </div>
 
@@ -1540,18 +1540,18 @@
                     <div id="viewTabs" class="tabs"></div>
                     <div class="tab-actions">
                         <button class="tab-btn-add" id="addViewBtn" type="button"
-                            aria-label="Ajouter une vue">➕</button>
+                            aria-label="Ajouter une vue">+</button>
                         <button class="tab-btn-delete" id="deleteViewBtn" type="button"
-                            aria-label="Supprimer la vue active">🗑️</button>
+                            aria-label="Supprimer la vue active">×</button>
                     </div>
                 </div>
 
                 <div class="header-actions">
-                    <button class="btn" id="openContextModal" aria-label="Ouvrir le contexte">💬 Contexte</button>
-                    <button class="btn" id="openIaModal" aria-label="Ouvrir Promptzilla">🤖 Promptzilla</button>
+                    <button class="btn" id="openContextModal" aria-label="Ouvrir Gutenberg">⌸ Gutenberg</button>
+                    <button class="btn" id="openIaModal" aria-label="Ouvrir Promptzilla">⌘ Promptzilla</button>
 
                     <div class="menu-trigger">
-                        <button class="btn" id="optionsBtn" aria-label="Options d'affichage">📐 Affichage</button>
+                        <button class="btn" id="optionsBtn" aria-label="Options d'affichage">🄰 Affichage</button>
                         <div class="context-menu" id="optionsMenu">
                             <div class="menu-panel">
                                 <label>
@@ -1617,22 +1617,22 @@
                     </div>
 
                     <div class="menu-trigger">
-                        <button class="btn" id="fileMenuBtn" aria-label="Fichier">Fichier 📄</button>
+                        <button class="btn" id="fileMenuBtn" aria-label="Fichier">↳ Fichier</button>
                         <div class="context-menu file-menu" id="fileMenu">
                             <div class="menu-panel" style="transform: translateX(10px);">
-                                <button id="importJsonBtn" type="button" class="menu-panel-btn">📂 Open</button>
-                                <button id="exportJsonBtn" type="button" class="menu-panel-btn">💾 Save</button>
-                                <button id="exportTextBtn" type="button" class="menu-panel-btn">📋 Texte</button>
-                                <button id="exportImageBtn" type="button" class="menu-panel-btn">🖼️ Image</button>
-                                <button id="exportExcelBtn" type="button" class="menu-panel-btn">📊 Excel</button>
-                                <button id="aboutTimelineBtn" type="button" class="menu-panel-btn">ℹ️ À propos</button>
+                                <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
+                                <button id="exportJsonBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
+                                <button id="exportTextBtn" type="button" class="menu-panel-btn">¶ Texte</button>
+                                <button id="exportImageBtn" type="button" class="menu-panel-btn">◩ Image</button>
+                                <button id="exportExcelBtn" type="button" class="menu-panel-btn">▥ Excel</button>
+                                <button id="aboutTimelineBtn" type="button" class="menu-panel-btn">🛈 À propos</button>
                             </div>
                         </div>
                     </div>
 
                     <div class="menu-trigger">
                         <button id="shareBtn" class="info-button" type="button" aria-label="Partager"
-                            title="Lien de partage">🔗 Partage</button>
+                            title="Lien de partage">☍ Nexus</button>
                         <div class="context-menu share-menu" id="shareMenu">
                             <div class="menu-panel">
                                 <div class="menu-header">Lien de partage</div>
@@ -1643,7 +1643,7 @@
                                 <div class="share-actions">
                                     <button id="shareUpdateBtn" type="button" class="menu-panel-btn">🔄️
                                         Actualiser</button>
-                                    <button id="shareCreateBtn" type="button" class="menu-panel-btn primary">🔗
+                                    <button id="shareCreateBtn" type="button" class="menu-panel-btn primary">☍
                                         Créer</button>
                                 </div>
                                 <p class="share-menu-status" id="shareMenuStatus"></p>
@@ -1678,13 +1678,13 @@
                 </div>
                 <div class="btn-group item-actions">
                     <button class="btn-small" id="btn-rename-selected" aria-label="Renommer l’élément sélectionné">
-                        ✏️
+                        ✎
                     </button>
                     <button class="btn-small" id="btn-delete-selected" aria-label="Supprimer l’élément sélectionné">
-                        ❌
+                        ×
                     </button>
                     <div class="type-selector" aria-label="Type d’action" role="group">
-                        <span class="type-selector-icon" aria-hidden="true">🏷️</span>
+                        <span class="type-selector-icon" aria-hidden="true">#</span>
                         <select id="itemTypeSelect" aria-label="Changer le type d’action">
                             <option value="">Type d'action</option>
                         </select>
@@ -1702,7 +1702,7 @@
                     </button>
                 </div>
                 <div class="btn-group">
-                    <button class="btn-small" id="openColorPaletteBtn" aria-label="Gérer les types">⚙️
+                    <button class="btn-small" id="openColorPaletteBtn" aria-label="Gérer les types">⚙
                         Réglages</button>
                 </div>
             </div>
@@ -1722,7 +1722,7 @@
                         Cette page est vide.
                     </p>
                     <a href="#openContextModal" role="button" class="timeline-empty-link" id="timelineEmptyAction">
-                        ✨ Renseigner le contexte
+                        ⌘ Renseigner le contexte
                     </a>
                 </div>
             </div>
@@ -1732,29 +1732,29 @@
             aria-labelledby="contextModalTitle">
             <div class="filter-modal">
                 <div class="modal-header">
-                    <h3 id="contextModalTitle">💬 Contexte</h3>
+                    <h3 id="contextModalTitle">⌸ Gutenberg</h3>
                     <button class="modal-close" id="contextModalClose" type="button"
                         aria-label="Fermer le contexte">×</button>
                 </div>
                 <div class="ia-actions">
                     <div class="header-row  ia-header-actions">
-                        <label for="mode">Mode de saisie</label>
+                        <label for="mode">Narration</label>
                         <select id="mode">
-                            <option value="create">🤖 Magique</option>
-                            <option value="modify">✍️ Guidé</option>
+                            <option value="create">⌘ Libre</option>
+                            <option value="modify">⌗ Structuré</option>
                         </select>
                     </div>
                     <div class="header-row ia-header-actions">
-                        <label for="promptCreate">Demande</label>
+                        <label for="promptCreate">Vision</label>
                         <div class="ia-prompt-fields">
                             <textarea id="promptCreate" class="ia-prompt-field active" rows="20"
-                                placeholder="Décris ici le planning complet : période couverte, objectifs, jalons clés, contraintes de temps, dépendances, acteurs impliqués, livrables attendus et rythme général (quotidien, hebdo, sprint, etc.). Donne la vision d'ensemble et ce qui doit absolument tenir dans le temps imparti."></textarea>
+                                placeholder="Décris ici ta vision idéale du produit ou du projet dans 6 à 10 mois : ce que les utilisateurs pourront faire de nouveau, ce qui aura changé dans leurs usages, l’impact concret sur leur quotidien, les grands piliers atteints, et ce qui rendra cela inspirant pour l’équipe."></textarea>
                             <textarea id="promptModify" class="ia-prompt-field" rows="20" aria-hidden="true"></textarea>
                         </div>
                     </div>
                     <div class="ia-actions-footer">
                         <button class="btn" id="btn-call">
-                            <span>✨ Créer le planning</span>
+                            <span>⌘ Créer la roadmap</span>
                         </button>
                     </div>
                 </div>
@@ -1764,15 +1764,15 @@
         <div class="modal-overlay" id="iaModalOverlay" role="dialog" aria-modal="true" aria-labelledby="iaModalTitle">
             <div class="filter-modal">
                 <div class="modal-header">
-                    <h3 id="iaModalTitle">🤖 Promptzilla</h3>
+                    <h3 id="iaModalTitle">⌘ Promptzilla</h3>
                     <button class="modal-close" id="iaModalClose" type="button" aria-label="Fermer l'IA">×</button>
                 </div>
                 <div class="ia-actions">
                     <div class="header-row  ia-header-actions">
-                        <label for="templateModeSelect">Mode de saisie</label>
+                        <label for="templateModeSelect">Narration</label>
                         <select id="templateModeSelect">
-                            <option value="create">🤖 Magique</option>
-                            <option value="modify">✍️ Guidé</option>
+                            <option value="create">⌘ Libre</option>
+                            <option value="modify">⌗ Structuré</option>
                         </select>
                     </div>
                     <div class="header-row ia-header-actions">
@@ -1786,12 +1786,13 @@
                             <input type="password" id="iaApiKeyInput" autocomplete="off" placeholder="sk-...">
                         </label>
                         <label>
-                            <span>Effort de raisonnement</span>
+                            <span>Vitesse</span>
                             <select id="reasoningEffortSelect"
                                 style="border: 1px solid #d0c3ad; font-size: 13px; font-family: inherit; color: inherit;">
-                                <option value="minimal">minimal</option>
-                                <option value="low" selected>low</option>
-                                <option value="medium">medium</option>
+                                <option value="minimal">Éclair</option>
+                                <option value="low" selected>Rapide</option>
+                                <option value="medium">Fluide</option>
+                                <option value="high">Turbo</option>
                             </select>
                         </label>
                     </div>
@@ -2966,27 +2967,27 @@
                 });
             }
 
-            var CREATE_SYSTEM_TEMPLATE = `Tu es un assistant qui va générer un planning à partir des instructions suivantes {{(contenu du id="prompt") }}
+            var CREATE_SYSTEM_TEMPLATE = `Tu es un assistant product owner qui va générer une feuille de route produit à partir des instructions suivantes {{(contenu du id="prompt") }}
 Réponds toujours avec un JSON qui contient :
 - \`page\` : le titre de la page courante (utilisé pour le header).
-- \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des types d'actions différentes. Ajouter un type spécifique aux milestones.
+- \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des natures d'actions différentes entre 3 et 6 dont un type spécifique aux milestones.
 - \`timeline\` : \`{ start, end }\` au format ISO (YYYY-MM-DD).
-- \`groups\` : chaque groupe d'actions avec { id, label }.
-- \`items\` : chaque item { id, groupId, label, kind, start?, end?, date? }.
-- Les items de moins de 5 jours sont convertis en \`kind: "milestone"\` avec juste la date de début.
-- Décomposer en plusieurs items, ceux qui ont plus de 30 jours
+- \`groups\` : chaque groupe d'actions avec { id, label } entre 3 et 6 (ex : par équipe, thème, stream produit, enjeu, objectif.).
+- \`items\` : chaque action ou livrable ou résultat avec { id, groupId, label, kind, start?, end?, date? }.
+- Les livrables ou résultats sont convertis en \`kind: "milestone"\` avec juste la date de début.
+- Décomposer en plusieurs actions, ceux qui ont plus de 21 jours
 - Sors uniquement le JSON, sans explication ni texte additionnel. Utiliser des intitulés courtes.`;
 
-            var MODIFY_SYSTEM_TEMPLATE = `Tu es un assistant qui modifie à partir du contexte suivant {{(contenu du id="prompt") }}
+            var MODIFY_SYSTEM_TEMPLATE = `Tu es un assistant product owner qui va générer une feuille de route produit à partir des instructions suivantes {{(contenu du id="prompt") }}
 Réponds toujours avec un JSON qui contient :
 - \`page\` : le titre de la page courante (utilisé pour le header).
-- \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des types d'actions différentes. Ajouter un type spécifique aux milestones.
+- \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des natures d'actions différentes entre 3 et 6 dont un type spécifique aux milestones.
 - \`timeline\` : \`{ start, end }\` au format ISO (YYYY-MM-DD).
-- \`groups\` : chaque groupe d'actions avec { id, label }.
-- \`items\` : chaque item { id, groupId, label, kind, start?, end?, date? }.
-- Les items de moins de 5 jours sont convertis en \`kind: "milestone"\` avec juste la date de début.
-- Décomposer en plusieurs items, ceux qui ont plus de 30 jours
-- Sors seulement le JSON, sans explication ni texte additionnel. Utiliser des intitulés courtes.`;
+- \`groups\` : chaque groupe d'actions avec { id, label } entre 3 et 6 (ex : par équipe, thème, stream produit, enjeu, objectif.).
+- \`items\` : chaque action ou livrable ou résultat avec { id, groupId, label, kind, start?, end?, date? }.
+- Les livrables ou résultats sont convertis en \`kind: "milestone"\` avec juste la date de début.
+- Décomposer en plusieurs actions, ceux qui ont plus de 21 jours
+- Sors uniquement le JSON, sans explication ni texte additionnel. Utiliser des intitulés courtes.`;
 
             customSystemTemplates.create = customSystemTemplates.create || CREATE_SYSTEM_TEMPLATE;
             customSystemTemplates.modify = customSystemTemplates.modify || MODIFY_SYSTEM_TEMPLATE;
@@ -3063,7 +3064,7 @@ Réponds toujours avec un JSON qui contient :
                 }
             }
 
-            function getPlanSharePreview() {
+            function getRoadmapSharePreview() {
                 var firstView = Array.isArray(views) && views.length ? views[0] : null;
                 var title = (firstView && (firstView.title || firstView.name)) || "Planning";
                 var desc = getTimelineBrief()
@@ -3078,20 +3079,20 @@ Réponds toujours avec un JSON qui contient :
                 };
             }
 
-            function persistPlanShareRecord(token, updatedAt) {
+            function persistRoadmapShareRecord(token, updatedAt) {
                 if (!shareHistory || !token) {
                     return;
                 }
                 try {
-                    var preview = getPlanSharePreview();
-                    shareHistory.upsertRecord("plan", {
+                    var preview = getRoadmapSharePreview();
+                    shareHistory.upsertRecord("roadmap", {
                         token: token,
                         updatedAt: updatedAt || new Date().toISOString(),
                         title: preview.title,
                         description: preview.description
                     });
                 } catch (err) {
-                    console.warn("Impossible d'archiver le lien Go-Plan", err);
+                    console.warn("Impossible d'archiver le lien Go-Roadmap", err);
                 }
             }
             var navSwitcherBtn = document.getElementById("navSwitcherBtn");
@@ -3712,7 +3713,7 @@ Réponds toujours avec un JSON qui contient :
                     var canvas = await html2canvas(timelineCard, { scale: 2, backgroundColor: null, useCORS: true });
                     var link = document.createElement("a");
                     link.href = canvas.toDataURL("image/png");
-                    link.download = "go-plan-view.png";
+                    link.download = "go-roadmap-view.png";
                     link.click();
                 } catch (err) {
                     console.error("Export image impossible", err);
@@ -3780,7 +3781,7 @@ Réponds toujours avec un JSON qui contient :
                     });
                     var workbook = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(workbook, worksheet, "Planning");
-                    XLSX.writeFile(workbook, "go-plan.xlsx");
+                    XLSX.writeFile(workbook, "go-roadmap.xlsx");
                 } catch (err) {
                     console.error("Export Excel failed", err);
                     alert("Export Excel impossible. Réessaie.");
@@ -4136,7 +4137,7 @@ Réponds toujours avec un JSON qui contient :
                 shareLoadedFromRemote = true;
                 shareLastUpdatedAt = chosenUpdatedAt || new Date().toISOString();
                 setShareStatus(formatRelativeTime(shareLastUpdatedAt));
-                persistPlanShareRecord(token, shareLastUpdatedAt);
+                persistRoadmapShareRecord(token, shareLastUpdatedAt);
                 writeShareDraft(token, chosenPayload, shareLastUpdatedAt);
                 updateShareMenuUI();
                 return true;
@@ -4236,7 +4237,7 @@ Réponds toujours avec un JSON qui contient :
                     updateUrlWithShareToken(token);
                     setShareStatus(formatRelativeTime(updatedAt));
                     updateShareMenuUI();
-                    persistPlanShareRecord(token, updatedAt);
+                    persistRoadmapShareRecord(token, updatedAt);
                     writeShareDraft(token, payload, updatedAt);
                     await copyCurrentShareLinkToClipboard();
                 } catch (err) {
@@ -4271,7 +4272,7 @@ Réponds toujours avec un JSON qui contient :
                     shareLastUpdatedAt = updatedAt;
                     setShareStatus(formatRelativeTime(updatedAt));
                     updateShareMenuUI();
-                    persistPlanShareRecord(currentShareToken, updatedAt);
+                    persistRoadmapShareRecord(currentShareToken, updatedAt);
                     writeShareDraft(currentShareToken, payload, updatedAt);
                     await copyCurrentShareLinkToClipboard();
                 } catch (err) {
@@ -5539,7 +5540,7 @@ Réponds toujours avec un JSON qui contient :
             var iaApiKeyInput = document.getElementById("iaApiKeyInput");
             var reasoningEffortSelect = document.getElementById("reasoningEffortSelect");
             var REASONING_EFFORT_KEY = "plan-reasoning-effort";
-            var REASONING_EFFORTS = ["minimal", "low", "medium"];
+            var REASONING_EFFORTS = ["minimal", "low", "medium", "high"];
 
             function readSharedTimelineApiKey() {
                 if (typeof window === "undefined" || !window.localStorage) {
@@ -5597,7 +5598,7 @@ Réponds toujours avec un JSON qui contient :
             var waitingCounter = 60;
             var iaModalButtonDefaultLabel = iaModalButton
                 ? iaModalButton.textContent.trim()
-                : "✨";
+                : "⌘";
             var EMPTY_MODIFY_PROMPT_TEXT =
                 "Page : Planning 2026\n" +
                 "\n" +
@@ -5835,13 +5836,13 @@ Réponds toujours avec un JSON qui contient :
 
             var timelineTourSteps = [
                 {
-                    title: "Go-Plan, ton copilote planning",
-                    description: "Go-Plan aide les consultants à générer des plannings de projet clairs et rapides pour cadrer leurs prochaines étapes.",
+                    title: "Go-Roadmap, ton copilote planning",
+                    description: "Go-Roadmap aide les consultants à générer des plannings de projet clairs et rapides pour cadrer leurs prochaines étapes.",
                     selectors: ["#timeline"]
                 },
                 {
                     title: "Démarre par le Contexte 💬",
-                    description: "Clique sur 💬, choisis Magique ou Guidé, saisis ton contexte puis lance \"✨ Créer le planning\".",
+                    description: "Clique sur 💬, choisis Magique ou Guidé, saisis ton contexte puis lance \"⌘ Créer le planning\".",
                     selectors: ["#openContextModal"]
                 },
                 {

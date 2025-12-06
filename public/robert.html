@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Go-Think</title>
+    <title>Petit Robert</title>
     <style>
         * {
             box-sizing: border-box;
@@ -1554,35 +1554,35 @@
     <div class="app">
         <div class="app-header">
             <div class="tabs-actions">
-                <a class="app-home-link" href="index.html" title="Revenir à l'accueil">⌘</a>
+                <a class="app-home-link" href="index.html" title="Revenir à l'accueil">⌂</a>
                 <div class="nav-switch">
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
-                        aria-expanded="false">◫ Go-Think ▾</button>
+                        aria-expanded="false">◫ Petit Robert ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                        <a class="nav-switch-link" href="plan.html" role="menuitem">▷ Go-Plan</a>
-                        <a class="nav-switch-link" href="draw.html" role="menuitem">◇ Go-Draw</a>
+                        <a class="nav-switch-link" href="roadmap.html" role="menuitem">▷ Go-Roadmap</a>
+                        <a class="nav-switch-link" href="cardinal.html" role="menuitem">◇ Le Cardinal</a>
                     </div>
                 </div>
 
                 <div id="tabs"></div>
-                <button class="tab-btn-add" id="addTabBtn" type="button">➕</button>
+                <button class="tab-btn-add" id="addTabBtn" type="button">+</button>
                 <button class="tab-btn-reset" id="restoreStructureBtn" type="button"
-                    aria-label="Restaurer les colonnes et sections">🔄</button>
-                <button class="tab-btn-delete" id="deleteTabBtn" type="button">🗑️</button>
+                    aria-label="Restaurer les colonnes et sections">↺</button>
+                <button class="tab-btn-delete" id="deleteTabBtn" type="button">×</button>
                 <button class="tab-btn-suggest" id="generatePlaceholdersBtn" type="button"
-                    aria-label="Générer des suggestions pour les sections">💡</button>
+                    aria-label="Générer des suggestions pour les sections">?</button>
                 <button class="tab-btn-suggest" id="generateFullSlideBtn" type="button"
-                    aria-label="Générer toutes les sections et la synthèse">✨</button>
+                    aria-label="Générer toutes les sections et la synthèse">⌘</button>
                 <span class="tab-btn-suggest-status" id="suggestionStatusLabel" aria-live="polite"></span>
             </div>
             <div class="global-actions">
-                <button id="contextEditorBtn" class="info-button" type="button" aria-label="Ouvrir le contexte">💬
-                    Contexte</button>
-                <button id="contextBtn" type="button" aria-label="Promptzilla">🤖 Promptzilla</button>
+                <button id="contextEditorBtn" class="info-button" type="button" aria-label="Ouvrir Gutenberg">⌸
+                    Gutenberg</button>
+                <button id="contextBtn" type="button" aria-label="Promptzilla">⌘ Promptzilla</button>
 
                 <div class="menu-trigger" id="settingsMenuTrigger">
-                    <button id="templateBtn" type="button" aria-label="Modèles de grille">📝 Modèle</button>
-                    <button id="textStyleBtn" type="button" aria-label="Options d'affichage">📐 Affichage</button>
+                    <button id="templateBtn" type="button" aria-label="Modèles de grille">🗎 Modèle</button>
+                    <button id="textStyleBtn" type="button" aria-label="Options d'affichage">🄰 Affichage</button>
                     <div class="context-menu" id="settingsMenu">
                         <div class="menu-panel">
                             <label>
@@ -1617,21 +1617,21 @@
                     </div>
                 </div>
                 <div class="menu-trigger" id="fileMenuTrigger">
-                    <button id="fileMenuBtn" type="button" aria-label="Fichier">📄 Fichier</button>
+                    <button id="fileMenuBtn" type="button" aria-label="Fichier">↳ Fichier</button>
                     <div class="context-menu" id="fileMenu">
                         <div class="menu-panel">
-                            <button id="importJsonBtn" type="button" class="menu-panel-btn">📂 Ouvrir</button>
-                            <button id="exportJsonBtn" type="button" class="menu-panel-btn">💾 Enregistrer</button>
-                            <button id="exportPptxBtn" type="button" class="menu-panel-btn">📊 Powerpoint</button>
-                            <button id="exportTextBtn" type="button" class="menu-panel-btn">📋 Texte</button>
-                            <button id="exportPngBtn" type="button" class="menu-panel-btn">🖼️ Image</button>
-                            <button id="infoButton" type="button" class="menu-panel-btn">ℹ️ À propos</button>
+                            <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
+                            <button id="exportJsonBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
+                            <button id="exportPptxBtn" type="button" class="menu-panel-btn">▭ Powerpoint</button>
+                            <button id="exportTextBtn" type="button" class="menu-panel-btn">¶ Texte</button>
+                            <button id="exportPngBtn" type="button" class="menu-panel-btn">◩ Image</button>
+                            <button id="infoButton" type="button" class="menu-panel-btn">🛈 À propos</button>
                         </div>
                     </div>
                 </div>
                 <div class="menu-trigger" id="shareMenuTrigger">
                     <button id="shareBtn" class="info-button" type="button" aria-label="Partager"
-                        title="Lien de partage">🔗 Partage</button>
+                        title="Lien de partage">☍ Nexus</button>
                     <div class="context-menu share-menu" id="shareMenu">
                         <div class="menu-panel">
                             <div class="menu-header">Lien de partage</div>
@@ -1640,8 +1640,8 @@
                                     placeholder="Créer un lien ">
                             </div>
                             <div class="share-actions">
-                                <button id="shareUpdateBtn" type="button" class="menu-panel-btn">🔄️ Actualiser</button>
-                                <button id="shareCreateBtn" type="button" class="menu-panel-btn primary">🔗
+                                <button id="shareUpdateBtn" type="button" class="menu-panel-btn">⟳ Actualiser</button>
+                                <button id="shareCreateBtn" type="button" class="menu-panel-btn primary">☍
                                     Créer</button>
                             </div>
                             <p class="share-menu-status" id="shareMenuStatus"></p>
@@ -1668,7 +1668,7 @@
                 <p>
                     Cette page est vide.
                 </p>
-                <button id="slideContextLink" type="button">✨ Ouvrir l’IA contexte</button>
+                <button id="slideContextLink" type="button">⌘ Ouvrir l’IA contexte</button>
             </div>
             <div id="slides" class="slide-wrapper"></div>
         </div>
@@ -1693,8 +1693,8 @@
 
     <div class="modal-overlay" id="contextModal">
         <div class="modal">
-                <div class="modal-header">
-                    <h3>🤖 Promptzilla</h3>
+            <div class="modal-header">
+                <h3>⌘ Promptzilla</h3>
                 <button class="modal-close" data-close="contextModal">×</button>
             </div>
             <div class="modal-panel hide" data-panel="settings">
@@ -1704,18 +1704,19 @@
                     <input type="password" id="apiKeyInput" autocomplete="off" placeholder="sk-...">
                 </label>
                 <label>
-                    <span>Effort de raisonnement</span>
+                    <span>Vitesse</span>
                     <select id="reasoningEffortSelect"
                         style="border: 1px solid #d0c3ad; font-size: 13px; font-family: inherit; color: inherit;">
-                        <option value="minimal">minimal</option>
-                        <option value="low" selected>low</option>
-                        <option value="medium">medium</option>
+                        <option value="minimal">Éclair</option>
+                        <option value="low" selected>Rapide</option>
+                        <option value="medium">Fluide</option>
+                        <option value="high">Turbo</option>
                     </select>
                 </label>
                 <div class="ia-mode-toggle" id="iaModeToggle">
                     <div class="ia-mode-label">IA Mode</div>
-                    <button type="button" data-ia-mode="express">⚡ Express</button>
-                    <button type="button" data-ia-mode="experimental">🧪 Expérimental</button>
+                    <button type="button" data-ia-mode="express">⚡︎ Express</button>
+                    <button type="button" data-ia-mode="experimental">⟡ Personalisé</button>
                 </div>
                 <div id="promptCustomizationArea">
                     <label>
@@ -1741,19 +1742,19 @@
     <div class="modal-overlay" id="contextEditorModal">
         <div class="modal">
             <div class="modal-header">
-                <h3>Contexte</h3>
+                <h3>⌸ Gutenberg</h3>
                 <button class="modal-close" data-close="contextEditorModal">×</button>
             </div>
             <div class="modal-panel">
                 <label>
-                    <span>Contexte global</span>
+                    <span>Récit</span>
                     <textarea id="globalContextField" rows="10"
                         placeholder="Décris ici le cadre global : le domaine, l’objectif principal, les utilisateurs concernés, la problématique à résoudre et le niveau d’enjeu. Décris aussi l’intention globale (pourquoi on fait ça) et l’état actuel (où on en est)."></textarea>
                 </label>
             </div>
             <div class="modal-panel">
                 <label>
-                    <span>Contexte de la page</span>
+                    <span>Scène</span>
                     <textarea id="pageContextField" rows="10"
                         placeholder="Ajoute les éléments précis : la situation réelle, les contraintes connues, les choix déjà faits, les dépendances, les deadlines, les acteurs impliqués, les données chiffrées utiles, les points de vigilance et la condition de succès de ce cas particulier."></textarea>
                 </label>
@@ -1784,7 +1785,7 @@
             </div>
             <div class="prompt-editor-context hidden" id="promptEditorContextPreview" aria-live="polite"></div>
             <div class="prompt-editor-preview-wrapper">
-                <div class="prompt-label-text">Prompt expérimental</div>
+                <div class="prompt-label-text">Prompt personalisé</div>
                 <div id="promptEditorPreview" class="prompt-editor-preview hidden" aria-live="polite"
                     contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true"
                     aria-label="Modifier le prompt expérimental"></div>
@@ -1858,12 +1859,12 @@
         const templates = [
             {
                 id: "roadmap",
-                name: "🗺️ Roadmap",
-                defaultTitle: "Roadmap",
+                name: "🗺️ Go-Roadmap",
+                defaultTitle: "Go-Roadmap",
                 columns: [
-                    { stage: "first-col", label: "Aujourd'hui" },
-                    { stage: "second-col", label: "Prochainement" },
-                    { stage: "third-col", label: "Plus tard" }
+                    { stage: "first-col", label: "NOW - Maintenant" },
+                    { stage: "second-col", label: "NEXT - Prochainement" },
+                    { stage: "third-col", label: "LATER - Plus tard" }
                 ],
                 sections: [
                     { key: "objectif", label: "Objectif", examples: "" },
@@ -2102,8 +2103,8 @@
         const shareMenu = document.getElementById("shareMenu");
         const apiKeyInput = document.getElementById("apiKeyInput");
         const reasoningEffortSelect = document.getElementById("reasoningEffortSelect");
-        const reasoningEffortKey = "think-reasoning-effort";
-        const reasoningEfforts = ["minimal", "low", "medium"];
+        const reasoningEffortKey = "robert-reasoning-effort";
+        const reasoningEfforts = ["minimal", "low", "medium", "high"];
         const fontSelect = document.getElementById("fontSelect");
         const fontSizeInput = document.getElementById("fontSizeInput");
         const ratioGrid = document.getElementById("ratioGrid");
@@ -2622,14 +2623,7 @@
 
         function bindTextareaPlaceholder(textarea) {
             const example = textarea.dataset.placeholder || "";
-            textarea.addEventListener("focus", () => {
-                if (!textarea.value) {
-                    textarea.placeholder = example;
-                }
-            });
-            textarea.addEventListener("blur", () => {
-                textarea.placeholder = "";
-            });
+            textarea.placeholder = example;
         }
 
         function promptKeyFromMode(mode) {
@@ -2654,7 +2648,7 @@
                 suggestionPromptField.value = library.suggestions || defaultSuggestionsPrompt;
             }
             if (promptModeLabel) {
-                const modeName = activeIaMode === IA_MODE_EXPRESS ? "Express" : "Expérimental";
+                const modeName = activeIaMode === IA_MODE_EXPRESS ? "Express" : "Personalisé";
                 promptModeLabel.textContent = `Mode ${modeName}`;
             }
         }
@@ -2794,11 +2788,11 @@
             const disableButtons = onCooldown || isGeneratingSuggestions;
             if (generatePlaceholdersBtn) {
                 generatePlaceholdersBtn.disabled = disableButtons;
-                generatePlaceholdersBtn.textContent = "💡";
+                generatePlaceholdersBtn.textContent = "✱";
             }
             if (generateFullSlideBtn) {
                 generateFullSlideBtn.disabled = disableButtons;
-                generateFullSlideBtn.textContent = "✨";
+                generateFullSlideBtn.textContent = "⌘";
             }
             if (suggestionStatusLabel) {
                 suggestionStatusLabel.textContent = onCooldown ? `⏳ ${remaining}s` : "";
@@ -3256,12 +3250,12 @@
         <div class="section" data-section="${sectionKey}">
           <div class="section-label-row">
             <span class="section-label" data-section="${sectionKey}" contenteditable="true">${labelText}</span>
-            <button type="button" class="section-delete-btn" aria-label="Supprimer la section">🗑️</button>
+            <button type="button" class="section-delete-btn" aria-label="Supprimer la section">×</button>
           </div>
           <div class="section-text-row">
             <div class="textarea-wrapper">
               <textarea class="editable" data-section="${sectionKey}" data-placeholder="${placeholder}"></textarea>
-              <button class="field-ai-btn inside" type="button" data-field="section-text" data-section="${sectionKey}" title="Générer le contenu" aria-label="Générer le contenu">✨</button>
+              <button class="field-ai-btn inside" type="button" data-field="section-text" data-section="${sectionKey}" title="Générer le contenu" aria-label="Générer le contenu">⌘</button>
             </div>
           </div>
         </div>
@@ -3274,7 +3268,7 @@
         <div class="column-header-main">
           <div class="column-title-row">
             <span class="column-title" contenteditable="true">${fallbackStage}</span>
-            <button type="button" class="column-delete-btn" aria-label="Supprimer la colonne">🗑️</button>
+            <button type="button" class="column-delete-btn" aria-label="Supprimer la colonne">×</button>
           </div>
         </div>
       </div>
@@ -3454,7 +3448,7 @@
             aiButton.dataset.section = sectionKey;
             aiButton.title = "Générer le contenu";
             aiButton.setAttribute("aria-label", "Générer le contenu");
-            aiButton.textContent = "✨";
+            aiButton.textContent = "⌘";
             textareaWrapper.append(textarea, aiButton);
             textRow.appendChild(textareaWrapper);
 
@@ -3621,11 +3615,11 @@
   <div class="slide-bottom-section">
     <div class="bottom-section-header">
       <span class="bottom-section-title"></span>
-      <button type="button" class="bottom-section-delete" aria-label="Supprimer la synthèse">🗑️</button>
+    <button type="button" class="bottom-section-delete" aria-label="Supprimer la synthèse">×</button>
     </div>
     <div class="textarea-wrapper">
       <textarea class="editable bottom-section-text" rows="3"></textarea>
-      <button class="field-ai-btn inside" type="button" data-section="bottom-section" title="Générer la synthèse IA" aria-label="Synthèse IA">✨</button>
+    <button class="field-ai-btn inside" type="button" data-section="bottom-section" title="Générer la synthèse IA" aria-label="Synthèse IA">⌘</button>
     </div>
   </div>
   `
@@ -4518,7 +4512,7 @@
 
         function buildAssistantMessages(messageText) {
             return [
-                { role: "system", content: "Tu es un assistant produit." },
+                { role: "system", content: "Tu es un assistant product owner." },
                 { role: "user", content: messageText }
             ];
         }
@@ -4806,7 +4800,7 @@
                     if (countdownInterval) {
                         clearInterval(countdownInterval);
                     }
-                    button.textContent = "✨";
+                    button.textContent = "⌘";
                     button.disabled = false;
                 }
             })();
@@ -4962,7 +4956,7 @@
         const shareUpdateBtn = document.getElementById("shareUpdateBtn");
         const shareHistory = window.goToolkitShareHistory;
 
-        function getThinkSharePreview() {
+        function getRobertSharePreview() {
             const slides = collectAllSlides();
             const firstSlide = Array.isArray(slides) && slides.length ? slides[0] : null;
             const title = (firstSlide?.title || "Sans titre").trim();
@@ -4983,15 +4977,15 @@
                 return;
             }
             try {
-                const preview = getThinkSharePreview();
-                shareHistory.upsertRecord("think", {
+                const preview = getRobertSharePreview();
+                shareHistory.upsertRecord("robert", {
                     token,
                     updatedAt: updatedAt || new Date().toISOString(),
                     title: preview.title,
                     description: preview.description
                 });
             } catch (err) {
-                console.warn("Impossible d'archiver le lien Go-Think", err);
+                console.warn("Impossible d'archiver le lien Petit Robert", err);
             }
         }
 
@@ -5233,13 +5227,13 @@
 
         const tourSteps = [
             {
-                title: "Go-Think, ton assistant rédaction",
-                description: "Go-Think permet de structurer ses idées en vue de faire des présentations plus claires et pertinentes",
+                title: "Petit Robert, ton assistant vocabulaire",
+                description: "Petit Robert t'aide à structurer ton vocabulaire pour des présentations claires et pertinentes",
                 selector: null
             },
             {
                 title: "Navigation des pages",
-                description: "Navigue page par page via les onglets et utilise les icônes ➕/🗑️ pour ajouter, renommer ou supprimer une page à tout moment.",
+                description: "Navigue page par page via les onglets et utilise les icônes +/× pour ajouter, renommer ou supprimer une page à tout moment.",
                 selectors: ["#tabs", ".tab-btn-add", ".tab-btn-delete"]
             },
             {
@@ -5249,17 +5243,17 @@
             },
             {
                 title: "Exports",
-                description: "Le bouton 📄 permet d'exporter en texte ou image (courant) ou en PowerPoint (texte) pour l'intégrer dans tes livrables.",
+                description: "Le bouton ↳ permet d'exporter en texte ou image (courant) ou en PowerPoint (texte) pour l'intégrer dans tes livrables.",
                 selector: "#fileMenuTrigger"
             },
             {
-                title: "Assistant ✨IA",
+                title: "Assistant ⌘IA",
                 description: "Avant d'utiliser l'IA, décris ton contexte et remplis les éléments de ton mieux",
                 selector: "#contextBtn"
             },
             {
                 title: "IA sur chaque champ",
-                description: "Le bouton ✨ te renvoie une réponse claire et structuré en 15-30 secondes à partir des éléments renseignés",
+                description: "Le bouton ⌘ te renvoie une réponse claire et structuré en 15-30 secondes à partir des éléments renseignés",
                 selector: ".field-ai-btn"
             },
         ];

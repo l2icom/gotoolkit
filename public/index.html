@@ -511,26 +511,26 @@
             <p>La boîte à outils IA pour les Product Owners</p>
             <div class="hero-meta">
                 <span class="hero-version">version 2025.12.05</span>
-                <button id="openFeedbackBtn" class="feedback-button" type="button">💬 Donne ton avis</button>
+                <button id="openFeedbackBtn" class="feedback-button" type="button">❛ ❜ Donne ton avis</button>
             </div>
         </header>
 
         <section class="section">
             <div class="section-title-row">
-                <p class="section-label">Nouveau</p>
+                <p class="section-label">✦ Super-pouvoirs</p>
             </div>
             <div class="launcher-grid">
-                <a class="launcher" href="think.html">
+                <a class="launcher" href="robert.html">
                     <span class="launcher-emoji">◫</span>
-                    <span class="launcher-name">Go-Think · Structure tes idées</span>
+                    <span class="launcher-name">Petit Robert · Structure ton vocabulaire</span>
                 </a>
-                <a class="launcher" href="plan.html">
+                <a class="launcher" href="roadmap.html">
                     <span class="launcher-emoji">▷</span>
-                    <span class="launcher-name">Go-Plan · Organise tes actions</span>
+                    <span class="launcher-name">Go-Roadmap · Suis ta feuille de route</span>
                 </a>
-                <a class="launcher" href="draw.html">
+                <a class="launcher" href="cardinal.html">
                     <span class="launcher-emoji">◇</span>
-                    <span class="launcher-name">Go-Draw · Schématise tes pensées</span>
+                    <span class="launcher-name">Le Cardinal · Modélise tes pensées</span>
                 </a>
             </div>
         </section>
@@ -543,8 +543,7 @@
                 <div id="pinnedGallery" class="share-gallery" aria-live="polite"></div>
             </div>
             <div class="section-title-row">
-                <p class="section-label">Mes partages</p>
-                <button id="refreshShares" class="ghost-button" type="button">↻</button>
+                <p class="section-label">☍ Nexus</p>
             </div>
 
             <div id="shareGallery" class="share-gallery" aria-live="polite"></div>
@@ -620,9 +619,9 @@
             const shareService = window.goToolkitShareWorker;
 
             const APP_DEFINITIONS = {
-                think: { emoji: "◫", name: "Go-Think", page: "think.html", collection: "slides" },
-                plan: { emoji: "▷", name: "Go-Plan", page: "plan.html", collection: "timelines" },
-                draw: { emoji: "◇", name: "Go-Draw", page: "draw.html", collection: "diagrams" }
+                robert: { emoji: "◫", name: "Petit Robert", page: "robert.html", collection: "slides" },
+                plan: { emoji: "▷", name: "Go-Roadmap", page: "roadmap.html", collection: "timelines" },
+                draw: { emoji: "◇", name: "Le Cardinal", page: "cardinal.html", collection: "diagrams" }
             };
 
             function setState({ loading = false, hasData = false, hasPinned = false, hasRegular = false, error = "" }) {
@@ -676,7 +675,7 @@
             }
 
             function extractPreview(app, payload) {
-                if (app === "think") {
+                if (app === "robert") {
                     const firstSlide = payload?.slides?.[0];
                     const tabName = firstSlide?.title || "Sans titre";
                     const context = payload?.settings?.globalContext || payload?.settings?.context || "";
@@ -748,7 +747,7 @@
                 pinBtn.className = "share-card-pin";
                 const isPinned = Boolean(record.pinned);
                 pinBtn.title = isPinned ? "Retirer l'épingle" : "Épingler ce partage";
-                pinBtn.textContent = "📌";
+                pinBtn.textContent = "✩";
                 pinBtn.addEventListener("click", event => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -760,7 +759,7 @@
                 deleteBtn.type = "button";
                 deleteBtn.className = "share-card-delete";
                 deleteBtn.title = "Supprimer ce partage";
-                deleteBtn.textContent = "🗑️";
+                deleteBtn.textContent = "×";
                 deleteBtn.addEventListener("click", async event => {
                     event.preventDefault();
                     event.stopPropagation();

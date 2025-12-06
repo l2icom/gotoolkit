@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Go-Draw</title>
+    <title>Le Cardinal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
@@ -893,24 +893,24 @@
 <body>
     <div class="app">
         <header class="app-header">
-            <a class="app-home-link" href="index.html" title="Revenir à l'accueil">⌘</a>
+            <a class="app-home-link" href="index.html" title="Revenir à l'accueil">⌂</a>
             <div class="nav-switch">
-                <button id="navSwitcherBtn" class="nav-switch-btn" type="button">◇ Go-Draw ▾</button>
+                <button id="navSwitcherBtn" class="nav-switch-btn" type="button">◇ Le Cardinal ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="think.html">◫ Go-Think</a>
-                    <a class="nav-switch-link" href="plan.html">▷ Go-Plan</a>
+                    <a class="nav-switch-link" href="robert.html">◫ Petit Robert</a>
+                    <a class="nav-switch-link" href="roadmap.html">▷ Go-Roadmap</a>
                 </div>
             </div>
             <div class="tabs-actions">
                 <div id="pageTabs" class="tabs"></div>
-                <button id="addPageBtn" class="tab-btn-add" title="Ajouter une page">➕</button>
-                <button id="deletePageBtn" class="tab-btn-remove" title="Supprimer la page">🗑️</button>
+                <button id="addPageBtn" class="tab-btn-add" title="Ajouter une page">+</button>
+                <button id="deletePageBtn" class="tab-btn-remove" title="Supprimer la page">×</button>
             </div>
             <div class="global-actions">
-                <button id="toggleDrawerBtn" class="drawer-toggle-btn" type="button">📄 Contexte</button>
-                <button id="aiSettingsBtn" class="ai-button" type="button">🤖 Promptzilla</button>
+                <button id="toggleDrawerBtn" class="drawer-toggle-btn" type="button">⌸ Gutenberg</button>
+                <button id="aiSettingsBtn" class="ai-button" type="button">⌘ Promptzilla</button>
                 <div class="share-menu-wrapper">
-                    <button id="shareBtn" class="info-button" type="button" title="Lien de partage">🔗 Partage</button>
+                <button id="shareBtn" class="info-button" type="button" title="Lien de partage">☍ Nexus</button>
                     <div id="shareMenu" class="share-menu" role="dialog" aria-live="polite">
                         <div class="share-menu-header">Lien de partage</div>
                         <div class="share-link-line">
@@ -920,13 +920,13 @@
                         <div class="share-actions">
                             <button id="shareUpdateBtn" type="button" class="share-action-btn primary">🔄
                                 Actualiser</button>
-                            <button id="shareCreateBtn" type="button" class="share-action-btn primary">🔗
+                            <button id="shareCreateBtn" type="button" class="share-action-btn primary">☍
                                 Créer</button>
                         </div>
                         <p class="share-menu-status" id="shareMenuStatus"></p>
                     </div>
                 </div>
-                <button id="infoButton" class="info-button" type="button" title="À propos">ℹ️ À propos</button>
+                <button id="infoButton" class="info-button" type="button" title="À propos">🛈 À propos</button>
 
             </div>
         </header>
@@ -935,7 +935,7 @@
 
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
-            <strong>Go-Draw</strong>
+            <strong>Le Cardinal</strong>
             <span>Version 2025.12.05</span>
             <span>Développé par Quang TRAN.</span>
             <span>Usage réservé à Savane Consulting.</span>
@@ -959,18 +959,18 @@
             <section class="connect-left">
                 <div class="prompt-input-card" id="prompt-input-card">
                     <div class="card-title-row">
-                        <div class="card-title">Contexte</div>
-                        <button id="generateBtn" class="generate-btn" type="button">✨ Générer</button>
+                        <div class="card-title">Récit</div>
+                        <button id="generateBtn" class="generate-btn" type="button">⌘ Générer</button>
                     </div>
                     <div class="draw-type-control">
-                        <span class="draw-type-control-label">Type de diagramme</span>
+                        <span class="draw-type-control-label">Type de scénario</span>
                         <div class="draw-type-selector" role="group" aria-label="Type de diagramme">
                             <button class="draw-type-btn active" type="button" data-draw-type="sequence"
-                                aria-pressed="true">↦ Séquence</button>
+                                aria-pressed="true">↦ Acteurs</button>
                             <button class="draw-type-btn" type="button" data-draw-type="flow" aria-pressed="false">△
-                                Flux</button>
+                                Processus</button>
                             <button class="draw-type-btn" type="button" data-draw-type="class" aria-pressed="false">⌬
-                                Classe</button>
+                                Objets</button>
                         </div>
                     </div>
                     <textarea id="promptInput" rows="5"
@@ -978,7 +978,7 @@
                 </div>
                 <div class="mermaid-output-card">
                     <div class="card-title-row">
-                        <div class="card-title">Code Mermaid reçu</div>
+                        <div class="card-title">Script</div>
                         <button id="refreshExcalidrawBtn" class="refresh-btn" type="button">↻ Rafraîchir</button>
                     </div>
                     <textarea id="mermaidOutput" placeholder="Le code généré apparaitra ici"></textarea>
@@ -1007,7 +1007,7 @@
     <div class="ai-modal-overlay" id="aiModal">
         <div class="ai-modal">
             <header>
-                <h3>🤖 Promptzilla</h3>
+                <h3>⌘ Promptzilla</h3>
                 <button id="closeAiModal" class="btn-secondary" type="button">✕</button>
             </header>
             <label>
@@ -1016,12 +1016,13 @@
                 <input type="password" id="apiKeyField" placeholder="sk-...">
             </label>
             <label>
-                <span>Effort de raisonnement</span>
+                <span>Vitesse</span>
                 <select id="reasoningEffortSelect"
                     style="border: 1px solid #d0c3ad; font-size: 13px; font-family: inherit; color: inherit;">
-                    <option value="minimal">minimal</option>
-                    <option value="low" selected>low</option>
-                    <option value="medium">medium</option>
+                    <option value="minimal">Éclair</option>
+                    <option value="low" selected>Rapide</option>
+                    <option value="medium">Fluide</option>
+                    <option value="high">Turbo</option>
                 </select>
             </label>
             <label>
@@ -1147,7 +1148,7 @@
                         description: preview.description
                     });
                 } catch (err) {
-                    console.warn("Impossible d'archiver le lien Go-Draw", err);
+                    console.warn("Impossible d'archiver le lien Le Cardinal", err);
                 }
             }
 
@@ -1227,16 +1228,16 @@ sequenceDiagram
             const connectRight = document.querySelector(".connect-right");
             const drawerMediaQuery = window.matchMedia("(max-width: 1200px)");
             const shareHistory = window.goToolkitShareHistory;
-            const generateDefaultLabel = generateBtn?.textContent || "✨ Générer";
-            const drawerDefaultLabel = toggleDrawerBtn?.textContent || "📄 Contexte";
+            const generateDefaultLabel = generateBtn?.textContent || "⌘ Générer";
+            const drawerDefaultLabel = toggleDrawerBtn?.textContent || "⌸ Gutenberg";
             let generateCooldownTimer = null;
             let generateCooldownEndTime = 0;
             let currentTourIndex = 0;
             let isDrawerOpen = !drawerMediaQuery.matches;
             const tourSteps = [
                 {
-                    title: "Intention Go-Draw",
-                    description: "Go-Draw aide les consultants à illustrer rapidement des idées en diagrammes clairs.",
+                    title: "Intention Le Cardinal",
+                    description: "Le Cardinal aide les consultants à illustrer rapidement des idées en diagrammes clairs.",
                     selector: null
                 },
                 {
