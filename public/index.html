@@ -417,13 +417,13 @@
             background: #fff;
             border-radius: 18px;
             box-shadow: 0 22px 45px rgba(15, 23, 42, 0.25);
-            padding: 16px;
+            padding: 10px 14px;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 10px;
             max-height: 80vh;
             overflow-y: auto;
-            font-size: 0.9rem;
+            font-size: 0.78rem;
         }
 
         .superpower-modal header {
@@ -441,6 +441,48 @@
             display: flex;
             flex-direction: column;
             gap: 14px;
+        }
+
+        .superpower-intro {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        .superpower-head {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .superpower-tag-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .superpower-tag {
+            font-size: 0.65rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(42, 122, 87, 0.25);
+            background: rgba(42, 122, 87, 0.08);
+            color: #2a7a57;
+        }
+
+        .superpower-tag--development {
+            border-color: #f5c04c;
+            background: rgba(245, 192, 76, 0.2);
+            color: #a56d00;
+        }
+
+        .superpower-tag--soon {
+            border-color: rgba(15, 23, 42, 0.35);
+            background: rgba(15, 23, 42, 0.08);
+            color: #373b43;
         }
 
         .superpower-list section {
@@ -461,8 +503,8 @@
         .superpower-subtitle {
             margin: 0;
             color: #1f2a56;
-            font-size: 0.85rem;
-            line-height: 1.5;
+            font-size: 0.78rem;
+            line-height: 1.4;
         }
 
         .nexus-label {
@@ -676,7 +718,7 @@
             <h1>Go-Toolkit</h1>
             <p>La boîte à outils IA pour les Product Owners</p>
             <div class="hero-meta">
-                <span class="hero-version">version 2025.12.05</span>
+                <span class="hero-version">version 2025.12.06</span>
                 <button id="openFeedbackBtn" class="feedback-button" type="button">✻ Feedback</button>
             </div>
         </header>
@@ -779,57 +821,115 @@
                     <button id="closeSuperpowerBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
                 </header>
                 <div class="superpower-list">
+                    <p class="superpower-intro">
+                        La Go-Toolkit illustre les compétences-clés du Product Owner, dénommées super-pouvoirs. Certains
+                        disposent de leur outil dédié, d’autres s’imiscent directement dans l’usage ou dans le
+                        développement de l’outil.
+                    </p>
                     <section>
-                        <h4>✶ Le Cardinal</h4>
+                        <div class="superpower-head">
+                            <h4>✶ Le Cardinal</h4>
+                            <div class="superpower-tag-row">
+                                <span class="superpower-tag">Outil</span>
+                            </div>
+                        </div>
                         <div class="superpower-subtitle">Le pouvoir de modéliser avec clarté. Vulgariser des structures
                             complexes, expliquer la cardinalité avec pédagogie, et co-créer des schémas métiers
                             structurés. Transformer des brainstorms flous en artefacts limpides.</div>
                     </section>
                     <section>
-                        <h4>¶ Petit Robert Downey Jr</h4>
+                        <div class="superpower-head">
+                            <h4>¶ Petit Robert Downey Jr</h4>
+                            <div class="superpower-tag-row">
+                                <span class="superpower-tag">Outil</span>
+                            </div>
+                        </div>
                         <div class="superpower-subtitle">Le pouvoir du discernement sémantique. Rétablir la clarté quand
                             les mots se confondent. Forger un vocabulaire métier partagé, documenté et stable.</div>
                     </section>
                     <section>
-                        <h4>⸙ Gutenberg</h4>
+                        <div class="superpower-head">
+                            <h4>⸙ Gutenberg</h4>
+                            <div class="superpower-tag-row">
+                                <span class="superpower-tag">Usage</span>
+                            </div>
+                        </div>
                         <div class="superpower-subtitle">Le pouvoir de raconter le produit. Documenter le projet au fil
                             de l’eau et le rendre lisible et inspirant. Transformer l’ordinaire du delivery en récit
                             engageant.</div>
                     </section>
                     <section>
-                        <h4>ʃ Indélébile</h4>
+                        <div class="superpower-head">
+                            <h4>ʃ Indélébile</h4>
+                            <div class="superpower-tag-row">
+                                <span class="superpower-tag superpower-tag--soon">Bientôt</span>
+                            </div>
+                        </div>
                         <div class="superpower-subtitle">Le pouvoir de l’ancrage visuel. Facilitation graphique en
                             réunion, ateliers et supports. Faire durer les idées grâce à l’image.</div>
                     </section>
                     <section>
-                        <h4>Ϟ Protocop</h4>
+                        <div class="superpower-head">
+                            <h4>Ϟ Protocop</h4>
+                            <div class="superpower-tag-row">
+                                <span class="superpower-tag superpower-tag--soon">Bientôt</span>
+                            </div>
+                        </div>
                         <div class="superpower-subtitle">Le pouvoir de prototyper vite et bien. Donner corps à l’idée
                             avant le développement. Transformer l'intuition en objet de projection et d'envie.</div>
                     </section>
                     <section>
-                        <h4>⌲ Tuto Tarantino</h4>
+                        <div class="superpower-head">
+                            <h4>⌲ Tuto Tarantino</h4>
+                            <div class="superpower-tag-row">
+                                <span class="superpower-tag superpower-tag--soon">Bientôt</span>
+                            </div>
+                        </div>
                         <div class="superpower-subtitle">Le pouvoir de captiver par des tutoriels vidéo percutants.
                             Rythme, narration, pédagogie : transmettre devient un art.</div>
                     </section>
                     <section>
-                        <h4>⟴ Goal Digger</h4>
+                        <div class="superpower-head">
+                            <h4>⟴ Goal Digger</h4>
+                            <div class="superpower-tag-row">
+                                <span class="superpower-tag">Outil</span>
+                            </div>
+                        </div>
                         <div class="superpower-subtitle">Le pouvoir de creuser au bon endroit pour faire émerger une
                             vraie roadmap de valeur. Tracer une route claire autour d’objectifs d’impact.</div>
                     </section>
                     <section>
-                        <h4>⌘ Promptzilla</h4>
-                        <p>Le pouvoir d'invoquer l'IA avec précision et créativité. Utiliser l'IA pour accélérer la
-                            production sans sacrifier la rigueur.</p>
+                        <div class="superpower-head">
+                            <h4>⌘ Promptzilla</h4>
+                            <div class="superpower-tag-row">
+                                <span class="superpower-tag">Usage
+                                </span>
+                            </div>
+                        </div>
+                        <div class="superpower-subtitle">Le pouvoir d'invoquer l'IA avec précision et créativité.
+                            Utiliser
+                            l'IA pour accélérer la production sans sacrifier la rigueur.</div>
                     </section>
                     <section>
-                        <h4>λ Soulgorithm</h4>
-                        <p>Le pouvoir d’imaginer des fonctionnalités IA qui font vraiment sens. Prioriser l’impact
-                            utilisateur avant la techno.</p>
+                        <div class="superpower-head">
+                            <h4>λ Soulgorithm</h4>
+                            <div class="superpower-tag-row">
+                                <span class="superpower-tag superpower-tag--development">Développement</span>
+                            </div>
+                        </div>
+                        <div class="superpower-subtitle">Le pouvoir d’imaginer des fonctionnalités IA qui font vraiment
+                            sens. Prioriser l’impact utilisateur avant la techno.</div>
                     </section>
                     <section>
-                        <h4>⌬ Pôlène</h4>
-                        <p>Le pouvoir de concevoir des produits qui exposent leur valeur par la donnée. Anticiper APIs,
-                            événements métiers et données pivots pour polliniser l’écosystème.</p>
+                        <div class="superpower-head">
+                            <h4>⌬ Pôlène</h4>
+                            <div class="superpower-tag-row">
+                                <span class="superpower-tag superpower-tag--development">Développement</span>
+                            </div>
+                        </div>
+                        <div class="superpower-subtitle">Le pouvoir de concevoir des produits qui exposent leur valeur
+                            par la donnée. Anticiper APIs, événements métiers et données pivots pour polliniser
+                            l’écosystème.</div>
                     </section>
                 </div>
             </div>
