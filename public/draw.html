@@ -8,66 +8,16 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="styles/app-shell.css">
     <link rel="stylesheet" href="https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.min.css">
     <style>
         :root {
-            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             font-size: 12px;
-            color: #101428;
-            background-color: #f3f4f6;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            min-height: 100vh;
-            background: #f3f4f6;
-        }
-
-        .app {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            padding: 10px 0px;
-        }
-
-        .app-header {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 2px;
-            flex-wrap: wrap;
-            width: 100%;
-            margin: 4px 0 auto;
-            padding: 0 20px;
-            border-radius: 0;
-            border: none;
-            box-shadow: none;
-            background: transparent;
-        }
-
-        .app-home-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            border: 1px solid #cdd4ed;
-            background: #ffffff;
-            font-size: 16px;
-            color: #1f2a56;
-            text-decoration: none;
-            transition: box-shadow 0.2s ease, border-color 0.2s ease;
-        }
-
-        .app-home-link:hover,
-        .app-home-link:focus-visible {
-            border-color: #2a7a57;
-            outline: none;
+            --app-text: #101428;
+            --app-bg: #f3f4f6;
+            --app-border: #cdd4ed;
+            --app-border-strong: #cdd4ed;
+            --app-primary-strong: #1f2a56;
         }
 
         .tabs-actions {
@@ -76,87 +26,6 @@
             gap: 8px;
             flex: 1;
             flex-wrap: wrap;
-        }
-
-        .tabs {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-
-        .tab-btn {
-            border: 1px solid #cdd4ed;
-            background: #f7f8ff;
-            color: #1f2a56;
-            padding: 4px 10px;
-            border-radius: 9999px;
-            font-weight: 500;
-            font-size: 12px;
-            cursor: pointer;
-            transition: background 0.2s ease, color 0.2s ease;
-        }
-
-        .tab-btn.active {
-            background: #2a7a57;
-            border-color: #2a7a57;
-            color: #ffffff;
-        }
-
-        .tab-btn-add,
-        .tab-btn-remove {
-            border: 1px solid #ebe0d1;
-            background: #ffffff;
-            color: #1f2a56;
-            font-size: 12px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background 0.2s ease;
-            padding: 4px 8px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 32px;
-        }
-
-        .tab-btn-add:hover,
-        .tab-btn-remove:hover {
-            background: #dbe2ff;
-        }
-
-        .global-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-left: auto;
-        }
-
-        .global-actions button,
-        .global-actions .info-button,
-        .reset-prompts-btn,
-        .nav-switch-btn {
-            border-radius: 999px;
-            border: 1px solid #ebe0d1;
-            background: #ffffff;
-            padding: 0 6px;
-            min-height: 24px;
-            font-size: 12px;
-            line-height: 24px;
-            cursor: pointer;
-            box-shadow: none;
-        }
-
-        .drawer-toggle-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            border-radius: 8px;
-            border: 1px solid #dfe3f5;
-            background: #ffffff;
-            padding: 4px 8px;
-            font-size: 12px;
-            line-height: 18px;
-            cursor: pointer;
         }
 
         .global-actions button.primary {
@@ -349,7 +218,7 @@
         /* Gutenberg card defaults (monospace, smaller text) */
         .connect-left textarea {
             font-size: 11px;
-            font-family: monospace;
+            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
         }
 
         .connect-left {
@@ -601,130 +470,6 @@
             margin: 0;
         }
 
-        .ai-modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.4);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            z-index: 40;
-        }
-
-        .ai-modal-overlay.open {
-            display: flex;
-        }
-
-        .ai-modal {
-            width: min(520px, 92vw);
-            background: #ffffff;
-            border-radius: 14px;
-            padding: 18px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .ai-modal header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 4px;
-        }
-
-        .ai-modal header h3 {
-            margin: 0;
-            font-size: 18px;
-        }
-
-        .ai-modal header button {
-            border: none;
-            background: transparent;
-            font-size: 18px;
-            cursor: pointer;
-            color: #6b7280;
-        }
-
-        .ai-modal input,
-        .ai-modal textarea {
-            width: 100%;
-            border-radius: 8px;
-            border: 1px solid #d0c3ad;
-            padding: 10px 12px;
-            background: #ffffff;
-            font-size: 13px;
-            font-family: inherit;
-        }
-
-        .ai-modal textarea {
-            min-height: 110px;
-        }
-
-        .ai-modal-actions {
-            display: flex;
-            justify-content: flex-start;
-            gap: 10px;
-        }
-
-        .ai-modal-actions button {
-            border-radius: 8px;
-            border: 1px solid #ebe0d1;
-            background: #ffffff;
-            color: #0f172a;
-            padding: 6px 12px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        .ai-modal-actions .btn-primary {
-            border: none;
-            background: #2a7a57;
-            color: #ffffff;
-        }
-
-        /* Promptzilla grid & cards */
-        .blueprint-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin: 10px 0 12px;
-        }
-
-        .blueprint-card {
-            border: 1px solid #ebe0d1;
-            border-radius: 12px;
-            background: #fffdf8;
-            padding: 12px 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            cursor: pointer;
-            transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
-        }
-
-        .blueprint-card:hover {
-            border-color: #cbbda7;
-            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
-        }
-
-        .blueprint-card.selected {
-            border: 2px solid #2a7a57;
-            box-shadow: 0 10px 22px rgba(42, 122, 87, 0.12);
-        }
-
-        .blueprint-card h4 {
-            margin: 0;
-            font-size: 13px;
-        }
-
-        .blueprint-card p {
-            margin: 0;
-            font-size: 12px;
-            color: #4b4b43
-        }
-
         .info-popup {
             position: absolute;
             top: 56px;
@@ -912,13 +657,11 @@
         .btn-secondary {
             background: #eef0ff;
             color: #2a7a57;
-            font-weight: 300;
         }
 
         .btn-primary {
             background: #2a7a57;
             color: #ffffff;
-            font-weight: 600;
         }
 
         /* Ajuste le menu latéral Excalidraw (selected-shape-actions) */
@@ -970,7 +713,7 @@
     </style>
 </head>
 
-<body>
+<body class="app-body">
     <div class="app">
         <header class="app-header">
             <a class="app-home-link" href="index.html" title="Revenir à l'accueil">☍</a>
@@ -984,7 +727,7 @@
 
             <!-- Promptzilla modal: 9 diagram choices -->
             <div class="ai-modal-overlay" id="promptzillaModal" aria-hidden="true">
-                <div class="ai-modal" style="width:900px; max-width:calc(100% - 40px);">
+                <div class="ai-modal promptzilla-modal">
                     <header>
                         <h3>⛶ Promptzilla</h3>
                         <button id="closePromptzillaModal" class="btn-secondary" type="button">✕</button>
@@ -994,14 +737,14 @@
                         <!-- cards rendered by JS -->
                     </div>
                     <div class="ai-modal-actions">
-                        <button id="promptzillaApplyBtn" class="btn-primary" type="button">Utiliser</button>
+                        <button id="promptzillaApplyBtn" class="btn primary" type="button">Appliquer</button>
                     </div>
                 </div>
             </div>
             <div class="tabs-actions">
                 <div id="pageTabs" class="tabs"></div>
-                <button id="addPageBtn" class="tab-btn-add" title="Ajouter une page">+</button>
-                <button id="deletePageBtn" class="tab-btn-remove" title="Supprimer la page">×</button>
+                <button id="addPageBtn" class="tab-btn-action tab-btn-add" title="Ajouter une page">+</button>
+                <button id="deletePageBtn" class="tab-btn-action tab-btn-remove" title="Supprimer la page">×</button>
             </div>
             <div class="global-actions">
                 <button id="promptzillaBtn" class="drawer-toggle-btn" type="button">⛶ Promptzilla</button>
@@ -1126,10 +869,12 @@
             </label>
             <label>
                 <span>Prompt personnalisé</span>
-                <textarea id="promptTemplateField" rows="6"></textarea>
+                <textarea id="promptTemplateField" rows="6"
+                    style="font-family: Menlo, Consolas, 'Courier New', monospace;"></textarea>
             </label>
             <div class="ai-modal-actions">
                 <button id="resetPromptBtn" class="btn-secondary" type="button">↺ Réinitialiser</button>
+                <button id="applyAiSettingsBtn" class="btn primary" type="button">Appliquer</button>
             </div>
         </div>
     </div>
@@ -1156,11 +901,11 @@
     <script>
         (() => {
             const DEFAULT_PROMPT_TEMPLATE =
-                "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code mermaid sous forme d'un diagramme de {{draw_type}}. Les intitulés font moins de 4 mots. Ajoute un titre en commentaire %% Title dans la réponse. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
+                "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code strictement mermaid sous forme d'un diagramme rigoureux de {{draw_type}}. Les intitulés font moins de 4 mots. Ajoute un titre en commentaire %% Title dans la réponse. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
             const DRAW_TYPES = [
-                { id: "sequence", label: "↦ Séquence", promptValue: "sequenceDiagram" },
-                { id: "flow", label: "△ Flux", promptValue: "flowchart" },
-                { id: "class", label: "⌬ Classe", promptValue: "classDiagram" }
+                { id: "sequence", label: "↦ Séquence", promptValue: "sequenceDiagram LR" },
+                { id: "flow", label: "△ Flux", promptValue: "flowchart LR" },
+                { id: "class", label: "⌬ Classe", promptValue: "classDiagram LR" }
             ];
             const DEFAULT_DRAW_TYPE = DRAW_TYPES[0].id;
             const STORAGE_KEY = "connect-ai-state";
@@ -1262,7 +1007,7 @@
             };
             const mermaidPlaceholders = {
                 flow: `%% FLOW DIAGRAM PLACEHOLDER
-flowchart TD
+flowchart LR
     A[Décris ici la première étape du flux] --> B[Explique l'étape suivante]
     B --> C{Décris la décision ou le choix possible}
     C -->|Option 1| D[Décris ce qui arrive si on choisit cette option]
@@ -1309,7 +1054,7 @@ sequenceDiagram
                 const sel = selectedId || selectedPromptzillaId;
                 DIAGRAM_PROMPTZILLA.forEach(bp => {
                     const card = document.createElement("div");
-                    card.className = "blueprint-card";
+                    card.className = "promptzilla-card";
                     card.dataset.bpId = bp.id;
                     card.tabIndex = 0;
                     if (bp.id === sel) card.classList.add("selected");
@@ -1324,21 +1069,10 @@ sequenceDiagram
                     card.appendChild(desc);
                     card.appendChild(tag);
                     card.addEventListener("click", () => {
-                        // visual selection
-                        list.querySelectorAll(".blueprint-card").forEach(c => c.classList.remove("selected"));
+                        // visual selection only; apply on explicit action
+                        list.querySelectorAll(".promptzilla-card").forEach(c => c.classList.remove("selected"));
                         card.classList.add("selected");
                         selectedPromptzillaId = bp.id;
-                        // apply immediately: set prompt input and draw type
-                        const promptInputEl = document.getElementById("promptInput");
-                        if (promptInputEl) {
-                            promptInputEl.value = bp.description;
-                        }
-                        try {
-                            updateActivePageDrawType(bp.drawType);
-                        } catch (err) { }
-                        // close modal and focus input
-                        closePromptzillaModal();
-                        if (promptInputEl) promptInputEl.focus();
                     });
                     card.addEventListener("keydown", (ev) => {
                         if (ev.key === "Enter" || ev.key === " ") {
@@ -2210,7 +1944,9 @@ sequenceDiagram
                     }
                     const remainingMs = generateCooldownEndTime - Date.now();
                     const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
-                    const label = `⏳ ${remainingSeconds}s`;
+                    const frames = ["◴", "◷", "◶", "◵"];
+                    const frame = frames[remainingSeconds % frames.length];
+                    const label = `${frame} ${remainingSeconds}s`;
                     generateBtn.textContent = label;
                     if (toggleDrawerBtn) {
                         toggleDrawerBtn.textContent = label;
@@ -2342,7 +2078,7 @@ sequenceDiagram
                     model: "gpt-5-nano",
                     messages,
                     reasoning: { effort: state.reasoningEffort || "low" },
-                    temperature: 1,
+                    temperature: 0,
                     stream: true
                 };
                 const useProxy = !apiKey;
@@ -3249,6 +2985,8 @@ sequenceDiagram
                         closeModal();
                     }
                 });
+                const applyAiSettingsBtn = document.getElementById("applyAiSettingsBtn");
+                applyAiSettingsBtn?.addEventListener("click", closeModal);
                 resetPromptBtn.addEventListener("click", resetPrompt);
                 apiKeyField?.addEventListener("input", () => {
                     state.apiKey = apiKeyField.value.trim();

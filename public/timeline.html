@@ -13,6 +13,10 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment-with-locales.min.js"></script>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="styles/app-shell.css">
     <style>
         :root {
             --bg: #f3f4f6;
@@ -35,23 +39,22 @@
             --radius-sm: 10px;
 
             --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.12);
-            --app-font: "Inter", system-ui;
+            --app-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
             --global-font-size: 14px;
-        }
-
-        * {
-            box-sizing: border-box;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --app-border: #e5e7eb;
+            --app-border-strong: #e5e7eb;
+            --app-primary-strong: #1f4f3d;
+            --app-bg: var(--bg);
+            --app-text: var(--text);
+            font-family: var(--app-font);
         }
 
         body {
-            margin: 0;
             padding: 0;
-            min-height: 100vh;
             height: 100vh;
             background: #f3f4f6;
             color: var(--text);
-            font-family: var(--app-font, "Inter");
+            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
             overflow: hidden;
         }
 
@@ -59,7 +62,7 @@
             white-space: normal !important;
             word-break: break-word;
             overflow-wrap: anywhere;
-            padding: 2px 0px;
+            padding: 0px 0px;
         }
 
         .type-milestone .vis-item-content {
@@ -70,19 +73,6 @@
             margin-left: -20px;
         }
 
-
-        .app {
-            width: 100%;
-            max-width: none;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            align-items: stretch;
-            min-height: 100vh;
-            height: 100vh;
-            padding: 12px;
-        }
 
         .app-main {
             display: flex;
@@ -106,50 +96,12 @@
             z-index: -1;
         }
 
-
-
-
-        .app-header {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 2px;
-            flex-wrap: wrap;
+        .app {
             width: 100%;
-            margin: 4px 0 auto;
-            padding: 0;
-            border-radius: 0;
-            border: none;
-            box-shadow: none;
-        }
-
-        .app-home-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: #ffffff;
-            font-size: 16px;
-            color: var(--primary-strong);
-            text-decoration: none;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .app-home-link:hover,
-        .app-home-link:focus-visible {
-            border-color: var(--primary);
-            outline: none;
-        }
-
-        .tabs {
-            flex: 0 1 auto;
-            min-width: 0;
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
+            max-width: none;
+            margin: 0 auto;
+            align-items: stretch;
+            height: 100vh;
         }
 
         .tabs-wrapper {
@@ -158,6 +110,11 @@
             gap: 4px;
             flex: 1;
             min-width: 40px;
+        }
+
+        .tabs {
+            flex: 0 1 auto;
+            min-width: 0;
         }
 
         .tabs-actions {
@@ -206,7 +163,7 @@
             align-items: center;
         }
 
-        .header-actions {
+        .global-actions {
             margin-left: auto;
             display: flex;
             gap: 8px;
@@ -216,12 +173,7 @@
 
         .tab-btn-add,
         .tab-btn-delete {
-            border-radius: 999px;
-            border: 1px solid rgba(15, 23, 42, 0.2);
-            background: #fff;
             padding: 4px 10px;
-            font-size: 12px;
-            cursor: pointer;
         }
 
         h1 {
@@ -249,11 +201,16 @@
             border: 1px solid var(--border-strong);
             padding: 6px 8px;
             font-size: 11px;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono";
+            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
             resize: none;
             min-height: 80px;
             scrollbar-width: none;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        /* Récit / Script conservent leur police monospace pour la saisie structurée */
+        .ia-prompt-field {
+            font-family: Menlo, Consolas, "Courier New", monospace;
         }
 
         textarea:focus {
@@ -324,22 +281,6 @@
             margin-right: 6px;
         }
 
-        .nav-switch-btn {
-            border-radius: 999px;
-            border: 1px solid rgba(15, 23, 42, 0.2);
-            background: #fff;
-            color: #0f172a;
-            padding: 5px 12px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        .nav-switch-btn:hover,
-        .nav-switch-btn:focus-visible {
-            color: #2a7a57;
-            border-color: #2a7a57;
-        }
-
         .nav-switch-menu {
             position: absolute;
             top: calc(100% + 6px);
@@ -351,6 +292,7 @@
             padding: 6px;
             display: none;
             z-index: 50;
+            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif) !important;
         }
 
         .nav-switch-menu.open {
@@ -367,6 +309,7 @@
             border-radius: 10px;
             padding: 8px 12px;
             font-size: 12px;
+            font-family: inherit;
             cursor: pointer;
             text-decoration: none;
             color: #1f2a56;
@@ -514,7 +457,11 @@
             overflow-y: auto;
             transition: transform 0.18s ease, opacity 0.18s ease;
             font-size: 11px;
-            font-family: monospace;
+            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+        }
+
+        .gutenberg-card * {
+            font-family: inherit;
         }
 
         .gutenberg-card.open {
@@ -714,23 +661,22 @@
             font-size: 14px;
         }
 
-        .header-actions .btn,
-        .header-actions .info-button {
+        .global-actions .btn,
+        .global-actions .info-button {
             background: #ffffff;
             border-radius: 999px;
             border: 1px solid rgba(15, 23, 42, 0.08);
             padding: 0 10px;
-            min-height: 32px;
             color: #0f172a;
             font-size: 12px;
-            line-height: 32px;
         }
 
-        .header-actions .btn:hover,
-        .header-actions .info-button:hover,
-        .header-actions .btn:focus-visible,
-        .header-actions .info-button:focus-visible {
-            box-shadow: 0 6px 18px rgba(42, 122, 87, 0.32);
+        .global-actions .btn:hover,
+        .global-actions .info-button:hover,
+        .global-actions .btn:focus-visible,
+        .global-actions .info-button:focus-visible {
+            box-shadow: none;
+            border-color: rgba(15, 23, 42, 0.08);
         }
 
         .info-button {
@@ -914,6 +860,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
         }
 
         .tour-panel h4 {
@@ -1004,7 +951,7 @@
             background: rgba(42, 122, 87, 0.08);
         }
 
-        .header-actions {
+        .global-actions {
             display: flex;
             flex-direction: row;
             gap: 8px;
@@ -1022,7 +969,7 @@
             flex-wrap: wrap;
         }
 
-        .header-actions .header-row {
+        .global-actions .header-row {
             display: flex;
             flex-direction: column;
             gap: 4px;
@@ -1048,10 +995,10 @@
             font-family: inherit;
         }
 
-        .header-actions .header-row label,
-        .header-actions .header-row textarea,
-        .header-actions .header-row select,
-        .header-actions .header-row button {
+        .global-actions .header-row label,
+        .global-actions .header-row textarea,
+        .global-actions .header-row select,
+        .global-actions .header-row button {
             width: 100%;
         }
 
@@ -1077,12 +1024,12 @@
             justify-content: flex-start;
         }
 
-        .header-actions textarea {
+        .global-actions textarea {
             max-height: 30px;
             font-size: 14px;
         }
 
-        .header-actions button {
+        .global-actions button {
             align-self: flex-end;
             background: #fff;
             border: 1px solid rgba(15, 23, 42, 0.2);
@@ -1150,7 +1097,7 @@
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.55);
+            background: rgba(0, 0, 0, 0.4);
             display: none;
             align-items: center;
             justify-content: center;
@@ -1164,10 +1111,10 @@
 
         .filter-modal {
             background: var(--surface);
-            border-radius: 18px;
-            padding: 16px 18px 20px;
+            border-radius: 14px;
+            padding: 18px;
             width: min(800px, 100%);
-            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+            box-shadow: 0 18px 32px rgba(15, 23, 42, 0.22);
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -1185,35 +1132,6 @@
         .filter-modal h3 {
             margin: 0;
             font-size: 15px;
-        }
-
-        /* Promptzilla card grid */
-        .promptzilla-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin: 8px 0 0 0;
-        }
-
-        .promptzilla-card {
-            background: var(--surface-soft);
-            border-radius: 10px;
-            padding: 12px;
-            border: 1px solid var(--border-strong);
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            min-height: 84px;
-        }
-
-        .promptzilla-card:hover {
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
-        }
-
-        .promptzilla-card.selected {
-            border: 2px solid #2a7a57;
-            box-shadow: 0 10px 30px rgba(42, 122, 87, 0.12);
         }
 
         .modal-close {
@@ -1616,7 +1534,7 @@
         }
 
         .vis-item .vis-item-content {
-            padding: 2px 2px 2px 4px;
+            padding: 0px 0px 0px 0px;
         }
 
         .type-milestone .vis-item-content {
@@ -1694,7 +1612,7 @@
             }
 
             .gutenberg-card {
-                display: flex;
+                display: none;
                 position: absolute;
                 top: 0;
                 right: 0;
@@ -1711,6 +1629,7 @@
             }
 
             .gutenberg-card.open {
+                display: flex;
                 transform: translateX(0);
                 opacity: 1;
                 pointer-events: auto;
@@ -1720,7 +1639,7 @@
     </style>
 </head>
 
-<body>
+<body class="app-body">
     <div class="app">
         <div class="app-header">
             <div class="tabs-actions">
@@ -1737,33 +1656,32 @@
                 <div class="tabs-wrapper">
                     <div id="viewTabs" class="tabs"></div>
                     <div class="tab-actions">
-                        <button class="tab-btn-add" id="addViewBtn" type="button"
+                        <button class="tab-btn-action tab-btn-add" id="addViewBtn" type="button"
                             aria-label="Ajouter une vue">+</button>
-                        <button class="tab-btn-delete" id="deleteViewBtn" type="button"
+                        <button class="tab-btn-action tab-btn-delete" id="deleteViewBtn" type="button"
                             aria-label="Supprimer la vue active">×</button>
                     </div>
                 </div>
 
                 <!-- Promptzilla modal (6 choices) -->
-                <div class="modal-overlay" id="promptzillaOverlay" role="dialog" aria-modal="true"
+                <div class="modal-overlay ai-modal-overlay" id="promptzillaOverlay" role="dialog" aria-modal="true"
                     aria-labelledby="promptzillaTitle">
-                    <div class="filter-modal promptzilla-modal" style="width: min(900px, 96vw);">
+                    <div class="filter-modal promptzilla-modal ai-modal">
                         <div class="modal-header">
                             <h3 id="promptzillaTitle">⛶ Promptzilla</h3>
                             <button class="modal-close" id="promptzillaClose" type="button"
                                 aria-label="Fermer Promptzilla">×</button>
                         </div>
-                        <div class="promptzilla-grid" id="promptzillaList"
-                            style="display:grid; grid-template-columns: repeat(3,1fr); gap:12px;">
+                        <div class="promptzilla-grid" id="promptzillaList">
                             <!-- cards rendered by JS -->
                         </div>
-                        <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px;">
-                            <button id="promptzillaValidateBtn" class="btn">Valider</button>
+                        <div class="ai-modal-actions">
+                            <button id="promptzillaValidateBtn" class="btn-primary">Appliquer</button>
                         </div>
                     </div>
                 </div>
 
-                <div class="header-actions">
+                <div class="global-actions">
                     <button class="btn" id="openPromptzillaBtn" aria-label="Ouvrir Promptzilla">⛶ Promptzilla</button>
                     <button class="btn" id="openContextModal" aria-label="Ouvrir Gutenberg">⸙ Gutenberg</button>
                     <button class="btn" id="openIaModal" aria-label="Ouvrir Soulgorithm">⌘ Soulgorithm</button>
@@ -1775,12 +1693,12 @@
                                 <label>
                                     Taille (px)
                                     <select id="fontSizeInput">
+                                        <option value="8">8</option>
                                         <option value="9">9</option>
                                         <option value="10">10</option>
                                         <option value="11">11</option>
                                         <option value="12">12</option>
                                         <option value="13">13</option>
-                                        <option value="14">14</option>
                                     </select>
                                 </label>
                                 <label>
@@ -1818,7 +1736,7 @@
                                 <label>
                                     Afficher les durées
                                     <select id="itemDurationSelect">
-                                        <option value="none">Masquer</option>
+                                        <option value="none" selected>Masquer</option>
                                         <option value="days">Afficher (jours)</option>
                                         <option value="weeks">Afficher (semaines)</option>
                                     </select>
@@ -1980,8 +1898,9 @@
             </div>
         </div>
 
-        <div class="modal-overlay" id="iaModalOverlay" role="dialog" aria-modal="true" aria-labelledby="iaModalTitle">
-            <div class="filter-modal">
+        <div class="modal-overlay ai-modal-overlay" id="iaModalOverlay" role="dialog" aria-modal="true"
+            aria-labelledby="iaModalTitle">
+            <div class="filter-modal ai-modal">
                 <div class="modal-header">
                     <h3 id="iaModalTitle">⌘ Soulgorithm</h3>
                     <button class="modal-close" id="iaModalClose" type="button" aria-label="Fermer l'IA">×</button>
@@ -1989,7 +1908,8 @@
                 <div class="ia-actions">
                     <div class="header-row ia-header-actions">
                         <label for="iaTemplateEditor">Prompt système</label>
-                        <textarea id="iaTemplateEditor" rows="18"></textarea>
+                        <textarea id="iaTemplateEditor" rows="18"
+                            style="font-family: Menlo, Consolas, 'Courier New', monospace;"></textarea>
                     </div>
                     <div class="header-row ia-header-actions ia-key-row">
                         <label>
@@ -2009,7 +1929,10 @@
                         </label>
                     </div>
                     <div class="ia-actions-footer ia-template-footer">
-                        <button class="btn white-btn" type="button" id="resetTemplatesBtn">↺ Réinitialiser</button>
+                        <div class="ai-modal-actions" style="width:100%; justify-content:flex-end;">
+                            <button class="btn white-btn" type="button" id="resetTemplatesBtn">↺ Réinitialiser</button>
+                            <button class="btn-primary" type="button" id="iaApplyBtn">Appliquer</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2746,7 +2669,9 @@
             function setEmptyStateLoading(isLoading, counter) {
                 if (!emptyStateTextEl) return;
                 if (isLoading) {
-                    var label = "⏳ Attente" + (typeof counter === "number" ? " " + counter + "s" : "");
+                    var frames = ["◴", "◷", "◶", "◵"];
+                    var frame = frames[(typeof counter === "number" ? counter : 0) % frames.length];
+                    var label = frame + " Attente" + (typeof counter === "number" ? " " + counter + "s" : "");
                     emptyStateTextEl.textContent = label;
                     if (emptyStateAction) {
                         emptyStateAction.style.display = "none";
@@ -3144,6 +3069,9 @@
             if (iaModalClose) {
                 iaModalClose.addEventListener("click", closeIaModal);
             }
+            if (iaApplyBtn) {
+                iaApplyBtn.addEventListener("click", closeIaModal);
+            }
             if (iaModalOverlay) {
                 iaModalOverlay.addEventListener("click", function (event) {
                     if (event.target === iaModalOverlay) {
@@ -3215,6 +3143,7 @@
             var roadmapPromptzillaClose = document.getElementById("promptzillaClose");
             var roadmapPromptzillaValidate = document.getElementById("promptzillaValidateBtn");
             var openPromptzillaBtn = document.getElementById("openPromptzillaBtn");
+            var iaApplyBtn = document.getElementById("iaApplyBtn");
             var selectedPromptzillaId = null;
 
             var ROADMAP_PROMPTZILLA = [
@@ -3276,6 +3205,7 @@
 
             function openRoadmapPromptzilla() {
                 if (!roadmapPromptzillaOverlay) return;
+                if (timelineTourOverlay && timelineTourOverlay.classList.contains("visible")) return;
                 renderRoadmapPromptzilla();
                 selectedPromptzillaId = null;
                 roadmapPromptzillaOverlay.classList.add("open");
@@ -3458,7 +3388,7 @@ Réponds toujours avec un JSON qui contient :
             var colorTypeList = document.getElementById("colorTypeList");
             var saveColorPreferencesBtn = document.getElementById("saveColorPreferencesBtn");
             var randomizeColorsBtn = document.getElementById("randomizeColorsBtn");
-            var fontSizeChoices = [9, 10, 11, 12, 13, 14, 15, 16];
+            var fontSizeChoices = [8, 9, 10, 11, 12, 13];
             var borderLightModes = {
                 blanc: "#ffffff",
                 clair: "var(--border)",
@@ -3525,9 +3455,21 @@ Réponds toujours avec un JSON qui contient :
                 }
             });
 
-            // Désactiver le menu contextuel du navigateur pour cette page
+            // Désactiver le menu contextuel uniquement sur la timeline (laisser le reste de la page libre)
+            // mais autoriser en mode dev-tools (URL ?devtools=1 ou localStorage goToolkitDevTools=1)
+            var isDevToolsMode = false;
+            try {
+                var params = new URLSearchParams(window.location.search || "");
+                isDevToolsMode = params.has("devtools") || window.localStorage?.getItem("goToolkitDevTools") === "1";
+            } catch (err) {
+                isDevToolsMode = false;
+            }
             document.addEventListener("contextmenu", function (ev) {
-                ev.preventDefault();
+                var target = ev.target;
+                var withinTimeline = target && target.closest && target.closest(".timeline-card");
+                if (withinTimeline && !isDevToolsMode) {
+                    ev.preventDefault();
+                }
             });
 
             // Permettre de fermer les modals avec la touche Échap
@@ -4093,7 +4035,9 @@ Réponds toujours avec un JSON qui contient :
                 closeContextMenus();
                 var initialLabel = exportImageBtn.textContent;
                 exportImageBtn.disabled = true;
-                exportImageBtn.textContent = "⏳";
+                const frames = ["◴", "◷", "◶", "◵"];
+                let frameIndex = 0;
+                exportImageBtn.textContent = frames[frameIndex];
                 try {
                     var canvas = await html2canvas(timelineCard, { scale: 2, backgroundColor: null, useCORS: true });
                     var link = document.createElement("a");
@@ -4151,7 +4095,9 @@ Réponds toujours avec un JSON qui contient :
                 closeContextMenus();
                 exportExcelBtn.disabled = true;
                 var initialLabel = exportExcelBtn.textContent;
-                exportExcelBtn.textContent = "⏳";
+                const frames = ["◴", "◷", "◶", "◵"];
+                let frameIndex = 0;
+                exportExcelBtn.textContent = frames[frameIndex];
                 try {
                     persistCurrentPlanning();
                     var currentView = views[activeViewIndex];
@@ -4862,7 +4808,7 @@ Réponds toujours avec un JSON qui contient :
             function updateFontSize(size) {
                 var normalized = parseInt(size, 10);
                 if (isNaN(normalized)) {
-                    normalized = 14;
+                    normalized = 11;
                 }
                 var value = normalized + "px";
                 document.documentElement.style.setProperty("--global-font-size", value);
@@ -6116,13 +6062,17 @@ Réponds toujours avec un JSON qui contient :
                 var displayCounter = typeof counter === "number" ? counter : waitingCounter;
                 if (targetEl) {
                     try {
-                        targetEl.textContent = "⏳" + displayCounter + "s";
+                        const frames = ["◴", "◷", "◶", "◵"];
+                        const frame = frames[displayCounter % frames.length];
+                        targetEl.textContent = frame + " " + displayCounter + "s";
                     } catch (e) { }
                     return;
                 }
                 if (!iaModalButton) return;
                 if (isLoading) {
-                    iaModalButton.textContent = "⏳ Attente " + displayCounter + "s";
+                    const frames = ["◴", "◷", "◶", "◵"];
+                    const frame = frames[displayCounter % frames.length];
+                    iaModalButton.textContent = frame + " Attente " + displayCounter + "s";
                 } else {
                     iaModalButton.textContent = iaModalButtonDefaultLabel;
                 }
@@ -6744,6 +6694,7 @@ Réponds toujours avec un JSON qui contient :
             function openTimelineTour(startIndex) {
                 hideTimelineAbout();
                 if (!timelineTourOverlay) return;
+                closeRoadmapPromptzilla();
                 timelineCurrentTourIndex = typeof startIndex === "number" ? startIndex : 0;
                 timelineTourOverlay.classList.add("visible");
                 timelineTourOverlay.setAttribute("aria-hidden", "false");

@@ -4,7 +4,16 @@
 <head>
     <meta charset="UTF-8" />
     <title>Petit Robert Downrey Jr | Go-Toolkit</title>
+    <link rel="stylesheet" href="styles/app-shell.css">
     <style>
+        :root {
+            --app-bg: #f3f4f6;
+            --app-border: #cdd4ed;
+            --app-border-strong: #cdd4ed;
+            --app-primary-strong: #1f2a56;
+            --app-text: #101428;
+        }
+
         * {
             box-sizing: border-box;
         }
@@ -37,44 +46,6 @@
             max-height: 92vh;
             min-height: 520px;
             overflow-y: auto;
-        }
-
-        .template-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 10px;
-            margin: 6px 0 12px;
-        }
-
-        .template-row {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 6px;
-            padding: 12px 14px;
-            border: 1px solid #ebe0d1;
-            border-radius: 12px;
-            background: #fffdf8;
-            align-items: center;
-            direction: ltr;
-            cursor: pointer;
-            transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-        }
-
-        .template-row h4 {
-            margin: 0;
-            font-size: 14px;
-        }
-
-        .template-row p {
-            margin: 0;
-            font-size: 12px;
-            color: var(--muted);
-        }
-
-        .template-row.selected {
-            border-color: #d3c3a7;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-            background: #fffaf0;
         }
 
         .template-actions {
@@ -133,7 +104,7 @@
             display: flex;
             flex-direction: column;
             gap: 0;
-            padding: 0;
+            padding: 6px;
         }
 
         .menu-header {
@@ -500,7 +471,7 @@
         body {
             margin: 0;
             padding: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
             background: #f3f4f6;
             color: var(--text-main);
             display: flex;
@@ -519,7 +490,7 @@
             align-items: stretch;
             min-height: 100vh;
             height: 100vh;
-            padding: 10px;
+            padding: 12px;
             overflow: hidden;
         }
 
@@ -624,7 +595,7 @@
             border: 1px solid #d0c3ad;
             padding: 8px;
             font-size: 11px;
-            font-family: monospace;
+            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
             min-height: 120px;
             resize: none;
             overflow: auto;
@@ -788,41 +759,6 @@
             z-index: -1;
         }
 
-        .app-header {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 2px;
-            flex-wrap: wrap;
-            width: 100%;
-            margin: 4px 0 auto;
-            padding: 0;
-            border-radius: 0;
-            border: none;
-            box-shadow: none;
-        }
-
-        .app-home-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            border: 1px solid rgba(15, 23, 42, 0.2);
-            background: #fff;
-            font-size: 16px;
-            color: #1f2a56;
-            text-decoration: none;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-        }
-
-        .app-home-link:hover,
-        .app-home-link:focus-visible {
-            border-color: #2a7a57;
-            outline: none;
-        }
-
         .tabs-actions {
             display: flex;
             align-items: center;
@@ -831,41 +767,16 @@
             flex-wrap: wrap;
         }
 
-        .global-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-left: auto;
-        }
-
-        .global-actions button,
-        .global-actions .info-button,
         .reset-prompts-btn {
             border-radius: 999px;
             border: 1px solid #ebe0d1;
             background: #fff;
-            padding: 0 10px;
-            min-height: 32px;
+            padding: 0 6px;
+            min-height: 24px;
             font-size: 12px;
-            line-height: 32px;
+            line-height: 24px;
             cursor: pointer;
             box-shadow: none;
-        }
-
-        .global-actions button.primary {
-            border: none;
-            background: #2a7a57;
-            color: #fff;
-        }
-
-        .global-actions button:hover,
-        .global-actions button:focus-visible,
-        .global-actions .info-button:hover,
-        .global-actions .info-button:focus-visible,
-        .reset-prompts-btn:hover,
-        .reset-prompts-btn:focus-visible {
-            box-shadow: 0 6px 18px rgba(42, 122, 87, 0.32);
         }
 
         .info-popup {
@@ -1058,23 +969,6 @@
             flex-wrap: wrap;
         }
 
-        .tab-btn {
-            border-radius: 999px;
-            border: 1px solid transparent;
-            background: transparent;
-            padding: 4px 10px;
-            cursor: pointer;
-            color: var(--muted);
-            font-size: 12px;
-        }
-
-        .tab-btn.active {
-            background: #2a7a57;
-            color: #fff;
-            border-color: #2a7a57;
-        }
-
-
         #generatePlaceholdersBtn {
             border: none;
             background: #2a7a57;
@@ -1096,13 +990,7 @@
         .tab-btn-delete,
         .tab-btn-reset,
         .tab-btn-suggest {
-            border-radius: 999px;
-            border: 1px solid #ebe0d1;
-            background: #fff;
             padding: 4px 12px;
-            cursor: pointer;
-            font-size: 12px;
-            color: var(--text-main);
         }
 
         .tab-btn-suggest-status {
@@ -1117,25 +1005,6 @@
             position: relative;
             display: inline-flex;
             align-items: center;
-        }
-
-        .nav-switch-btn {
-            border-radius: 999px;
-            border: 1px solid #ebe0d1;
-            background: #fff;
-            padding: 4px 12px;
-            cursor: pointer;
-            font-size: 12px;
-            color: var(--text-main);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .nav-switch-btn:hover,
-        .nav-switch-btn:focus-visible {
-            border-color: #2a7a57;
-            color: #2a7a57;
         }
 
         .nav-switch-menu {
@@ -1298,7 +1167,7 @@
             border: 1px solid #dcd0c1;
             background: var(--slide-bg, transparent);
             color: var(--slide-text-color, var(--text-main));
-            font-family: var(--slide-font-family, "Segoe UI", sans-serif);
+            font-family: var(--slide-font-family, var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif));
             font-size: var(--slide-font-size, 16px);
             margin: 4px 0px 4px 0px;
             line-height: 1.5;
@@ -1433,7 +1302,7 @@
         .column-title {
             font-size: calc(var(--slide-font-size) + 3px);
             font-weight: 500;
-            font-family: var(--slide-font-family, "Segoe UI", sans-serif);
+            font-family: var(--slide-font-family, var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif));
             padding: 0px 4px;
             border-radius: 4px;
             border: 1px solid transparent;
@@ -1469,7 +1338,7 @@
             align-items: center;
             gap: 0px;
             min-height: 22px;
-            font-family: var(--slide-font-family, "Segoe UI", sans-serif);
+            font-family: var(--slide-font-family, var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif));
             border-radius: 8px;
             border: 1px solid transparent;
             padding: 2px 4px;
@@ -1609,7 +1478,7 @@
             border: none;
             background: var(--slide-bg, transparent);
             color: var(--slide-text-color, #2f2922);
-            font-family: var(--slide-font-family, "Segoe UI", sans-serif);
+            font-family: var(--slide-font-family, var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif));
             overflow: auto;
             scrollbar-width: none;
             -ms-overflow-style: none;
@@ -1847,7 +1716,7 @@
     </style>
 </head>
 
-<body>
+<body class="app-body">
     <div class="app">
         <div class="app-header">
             <div class="tabs-actions">
@@ -1862,10 +1731,10 @@
                 </div>
 
                 <div id="tabs"></div>
-                <button class="tab-btn-add" id="addTabBtn" type="button">+</button>
-                <button class="tab-btn-reset" id="restoreStructureBtn" type="button"
+                <button class="tab-btn-action tab-btn-add" id="addTabBtn" type="button">+</button>
+                <button class="tab-btn-action tab-btn-reset" id="restoreStructureBtn" type="button"
                     aria-label="Restaurer les colonnes et sections">↺</button>
-                <button class="tab-btn-delete" id="deleteTabBtn" type="button">×</button>
+                <button class="tab-btn-action tab-btn-delete" id="deleteTabBtn" type="button">×</button>
             </div>
             <div class="global-actions">
 
@@ -1976,20 +1845,20 @@
                 </div>
                 <div class="gutenberg-card-body">
                     <div class="gutenberg-card-actions-row">
-                        <button class="tab-btn-suggest" id="generatePlaceholdersBtn" type="button"
+                        <button class="tab-btn-action tab-btn-suggest" id="generatePlaceholdersBtn" type="button"
                             aria-label="Générer des suggestions pour les sections">✧ Suggérer</button>
-                        <button class="tab-btn-suggest" id="generateFullSlideBtn" type="button"
+                        <button class="tab-btn-action tab-btn-suggest" id="generateFullSlideBtn" type="button"
                             aria-label="Générer toutes les sections et la synthèse">⌘ Générer</button>
                         <span class="tab-btn-suggest-status gutenberg-status" id="suggestionStatusLabel"
                             aria-live="polite"></span>
                     </div>
                     <label>
-                        <span style="font-size:15px;">Récit (Canvas)</span>
+                        <span style="font-size:15px;">Récit du canvas</span>
                         <textarea id="globalContextField" rows="10"
                             placeholder="Décris ici le cadre global : le domaine, l’objectif principal, les utilisateurs concernés, la problématique à résoudre et le niveau d’enjeu. Décris aussi l’intention globale (pourquoi on fait ça) et l’état actuel (où on en est)."></textarea>
                     </label>
                     <label>
-                        <span style="font-size:15px;">Récit (Bloc)</span>
+                        <span style="font-size:15px;">Récit du bloc</span>
                         <textarea id="pageContextField" rows="10"
                             placeholder="Ajoute les éléments précis : la situation réelle, les contraintes connues, les choix déjà faits, les dépendances, les deadlines, les acteurs impliqués, les données chiffrées utiles, les points de vigilance et la condition de succès de ce cas particulier."></textarea>
                     </label>
@@ -2016,8 +1885,8 @@
         <div id="errorToast" class="error-toast" role="status" aria-live="polite" aria-atomic="true"></div>
     </div>
 
-    <div class="modal-overlay" id="contextModal">
-        <div class="modal">
+    <div class="modal-overlay ai-modal-overlay" id="contextModal">
+        <div class="modal ai-modal promptzilla-modal">
             <div class="modal-header">
                 <h3>⌘ Soulgorithm</h3>
                 <button class="modal-close" data-close="contextModal">×</button>
@@ -2046,35 +1915,42 @@
                 <div id="promptCustomizationArea">
                     <label>
                         <span class="prompt-label-text">Prompt - Sections</span>
-                        <textarea id="mainPromptField" rows="5" class="prompt-editor"></textarea>
+                        <textarea id="mainPromptField" rows="5" class="prompt-editor"
+                            style="font-family: Menlo, Consolas, 'Courier New', monospace;"></textarea>
                     </label>
                     <label>
                         <span class="prompt-label-text">Prompt - Synthèse</span>
-                        <textarea id="bottomPromptField" rows="4" class="prompt-editor"></textarea>
+                        <textarea id="bottomPromptField" rows="4" class="prompt-editor"
+                            style="font-family: Menlo, Consolas, 'Courier New', monospace;"></textarea>
                     </label>
                     <label>
                         <span class="prompt-label-text">Prompt - Suggestions</span>
-                        <textarea id="suggestionPromptField" rows="5" class="prompt-editor"></textarea>
+                        <textarea id="suggestionPromptField" rows="5" class="prompt-editor"
+                            style="font-family: Menlo, Consolas, 'Courier New', monospace;"></textarea>
                     </label>
                     <div class="prompt-actions">
                         <button id="resetPromptsBtn" type="button" class="reset-prompts-btn">↺ Réinitialiser</button>
                     </div>
                 </div>
+                <div class="ai-modal-actions">
+                    <button id="contextApplyBtn" type="button" class="btn primary">Appliquer</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="modal-overlay" id="templateModal">
-        <div class="modal">
+    <div class="modal-overlay ai-modal-overlay" id="templateModal">
+        <div class="modal ai-modal">
             <div class="modal-header">
                 <h3>⛶ Promptzilla</h3>
                 <button class="modal-close" data-close="templateModal">×</button>
             </div>
             <div class="modal-panel">
-                <div id="templateList" class="template-list" role="radiogroup" aria-label="Modèles disponibles"></div>
+                <div id="templateList" class="promptzilla-grid" role="radiogroup" aria-label="Modèles disponibles">
+                </div>
             </div>
             <div class="modal-footer">
-                <button id="templateApplyBtn" type="button" class="primary">Appliquer</button>
+                <button id="templateApplyBtn" type="button" class="btn primary">Appliquer</button>
             </div>
         </div>
     </div>
@@ -2092,7 +1968,8 @@
                     contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true"
                     aria-label="Modifier le prompt expérimental"></div>
             </div>
-            <textarea id="promptEditorTextarea" rows="5" class="prompt-editor prompt-editor-textarea" hidden></textarea>
+            <textarea id="promptEditorTextarea" rows="5" class="prompt-editor prompt-editor-textarea" hidden
+                style="font-family: Menlo, Consolas, 'Courier New', monospace;"></textarea>
             <div class="modal-footer">
                 <button type="button" class="secondary" id="promptEditorCancelBtn">Annuler</button>
                 <button type="button" class="primary" id="promptEditorSendBtn">Envoyer</button>
@@ -2467,6 +2344,7 @@
         const promptEditorContextPreview = document.getElementById("promptEditorContextPreview");
         const promptEditorPreview = document.getElementById("promptEditorPreview");
         let promptEditorCurrentContext = null;
+        const contextApplyBtn = document.getElementById("contextApplyBtn");
         promptEditorPreview?.addEventListener("input", () => {
             if (!promptEditorTextarea) return;
             promptEditorTextarea.value = collectTemplateFromPreview();
@@ -3205,7 +3083,9 @@
                 generateFullSlideBtn.textContent = "⌘ Générer";
             }
             if (suggestionStatusLabel) {
-                suggestionStatusLabel.textContent = onCooldown ? `⏳ ${remaining}s` : "";
+                const frames = ["◴", "◷", "◶", "◵"];
+                const frame = frames[remaining % frames.length];
+                suggestionStatusLabel.textContent = onCooldown ? `${frame} ${remaining}s` : "";
             }
         }
 
@@ -4546,7 +4426,7 @@
 
         function handleTemplateSelection(templateId) {
             selectedTemplateId = templateId || templates[0].id;
-            templateList?.querySelectorAll(".template-row").forEach(row => {
+            templateList?.querySelectorAll(".promptzilla-card").forEach(row => {
                 const isActive = row.dataset.templateId === selectedTemplateId;
                 row.setAttribute("aria-checked", isActive ? "true" : "false");
                 row.classList.toggle("selected", isActive);
@@ -4559,7 +4439,7 @@
             templateList.innerHTML = "";
             templates.forEach(template => {
                 const row = document.createElement("div");
-                row.className = "template-row";
+                row.className = "promptzilla-card";
                 row.dataset.templateId = template.id;
                 row.setAttribute("role", "radio");
                 row.setAttribute("aria-checked", template.id === selectedTemplateId ? "true" : "false");
@@ -4590,6 +4470,9 @@
 
         function openTemplateModal() {
             if (!templateModal) return;
+            if (tourOverlay?.classList.contains("visible")) {
+                return;
+            }
             renderTemplateList(lastAppliedTemplateId || currentTemplateId || selectedTemplateId || templates[0].id);
             templateModal.classList.add("open");
         }
@@ -4773,7 +4656,9 @@
             const slide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
             if (!slide) return;
             const oldText = exportBtn.textContent;
-            exportBtn.textContent = "⏳";
+            const frames = ["◴", "◷", "◶", "◵"];
+            let frameIndex = 0;
+            exportBtn.textContent = frames[frameIndex];
             exportBtn.disabled = true;
             try {
                 await withExportMode(async () => {
@@ -5200,7 +5085,9 @@
                 let remainingSeconds = countdownDuration;
                 let countdownInterval = null;
                 const updateCountdownLabel = () => {
-                    button.textContent = `⏳ ${remainingSeconds}s`;
+                    const frames = ["◴", "◷", "◶", "◵"];
+                    const frame = frames[remainingSeconds % frames.length];
+                    button.textContent = `${frame} ${remainingSeconds}s`;
                 };
                 updateCountdownLabel();
                 countdownInterval = setInterval(() => {
@@ -5341,6 +5228,7 @@
                 closeModal(contextModal);
             }
         });
+        contextApplyBtn?.addEventListener("click", () => closeModal(contextModal));
         contextEditorBtn?.addEventListener("click", () => {
             toggleGutenberg();
         });
@@ -5816,6 +5704,7 @@
 
         function openTour(startIndex = 0) {
             if (!tourOverlay) return;
+            closeTemplateModal();
             closeInfoPopup();
             currentTourIndex = startIndex;
             tourOverlay.classList.add("visible");
