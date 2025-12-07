@@ -808,11 +808,11 @@
                         <span class="draw-type-control-label">Type de scénario</span>
                         <div class="draw-type-selector" role="group" aria-label="Type de diagramme">
                             <button class="draw-type-btn active" type="button" data-draw-type="sequence"
-                                aria-pressed="true">△ Échanges</button>
+                                aria-pressed="true">⇄ Échanges</button>
                             <button class="draw-type-btn" type="button" data-draw-type="flow" aria-pressed="false">◇
                                 Processus</button>
-                            <button class="draw-type-btn" type="button" data-draw-type="class" aria-pressed="false">⎔
-                                Objets</button>
+                            <button class="draw-type-btn" type="button" data-draw-type="class" aria-pressed="false">⁂
+                                Structure</button>
                         </div>
                     </div>
                     <textarea id="promptInput" rows="5"
@@ -903,9 +903,9 @@
             const DEFAULT_PROMPT_TEMPLATE =
                 "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code strictement mermaid sous forme d'un diagramme rigoureux de {{draw_type}}. Les intitulés font moins de 4 mots. Ajoute un titre en commentaire %% Title dans la réponse. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
             const DRAW_TYPES = [
-                { id: "sequence", label: "↦ Séquence", promptValue: "sequenceDiagram LR" },
-                { id: "flow", label: "△ Flux", promptValue: "flowchart LR" },
-                { id: "class", label: "⌬ Classe", promptValue: "classDiagram LR" }
+                { id: "sequence", label: "Séquence", promptValue: "sequenceDiagram" },
+                { id: "flow", label: "Flux", promptValue: "flowchart LR" },
+                { id: "class", label: "Classe", promptValue: "classDiagram" }
             ];
             const DEFAULT_DRAW_TYPE = DRAW_TYPES[0].id;
             const STORAGE_KEY = "connect-ai-state";
@@ -2078,7 +2078,7 @@ sequenceDiagram
                     model: "gpt-5-nano",
                     messages,
                     reasoning: { effort: state.reasoningEffort || "low" },
-                    temperature: 0,
+                    temperature: 1,
                     stream: true
                 };
                 const useProxy = !apiKey;
