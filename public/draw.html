@@ -14,7 +14,7 @@
             font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             font-size: 12px;
             color: #101428;
-            background-color: #eef0f6;
+            background-color: #f3f4f6;
         }
 
         * {
@@ -24,7 +24,7 @@
         body {
             margin: 0;
             min-height: 100vh;
-            background: #eef0f6;
+            background: #f3f4f6;
         }
 
         .app {
@@ -386,7 +386,7 @@
             width: 100%;
             border-radius: 4px;
             border: 1px solid #d6dbf2;
-            padding: 12px;
+            padding: 8px;
             resize: none;
             font-family: inherit;
             font-size: 12px;
@@ -418,8 +418,8 @@
         }
 
         .draw-type-control-label {
-            font-size: 11px;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 500;
             color: #566188;
         }
 
@@ -435,7 +435,7 @@
             background: #ffffff;
             padding: 6px 10px;
             font-size: 12px;
-            font-weight: 600;
+            font-weight: 500;
             color: #1f2a56;
             cursor: pointer;
             transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
@@ -788,6 +788,7 @@
             flex-wrap: wrap;
         }
 
+        /* Harmonized tour styles */
         .tour-overlay {
             position: fixed;
             inset: 0;
@@ -823,7 +824,7 @@
             border-radius: 14px;
             padding: 16px;
             width: min(480px, 92vw);
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -853,19 +854,32 @@
         }
 
         .tour-step-footer button {
-            border-radius: 8px;
+            border-radius: 10px;
             border: 1px solid rgba(15, 23, 42, 0.15);
             background: #fff;
             color: #0f172a;
-            padding: 6px 10px;
+            padding: 8px 12px;
             font-size: 12px;
             cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .tour-step-footer button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
         }
 
         .tour-step-footer button.primary {
             background: #2a7a57;
             color: #fff;
             border-color: #2a7a57;
+        }
+
+        .tour-step-footer button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         .tour-skip {
@@ -877,6 +891,12 @@
             color: #fff;
             font-size: 18px;
             cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .tour-skip:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         }
 
         .btn-secondary,
@@ -955,10 +975,10 @@
         <header class="app-header">
             <a class="app-home-link" href="index.html" title="Revenir à l'accueil">☍</a>
             <div class="nav-switch">
-                <button id="navSwitcherBtn" class="nav-switch-btn" type="button">✶ Le Cardinal ▾</button>
+                <button id="navSwitcherBtn" class="nav-switch-btn" type="button">◇ Le Cardinal ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="robert.html"> ¶ Petit Robert</a>
-                    <a class="nav-switch-link" href="roadmap.html">⟴Goal Digger</a>
+                    <a class="nav-switch-link" href="canvas.html"> ⊞ Petit Robert</a>
+                    <a class="nav-switch-link" href="timeline.html">⇥ Goal Digger</a>
                 </div>
             </div>
 
@@ -1058,7 +1078,7 @@
                 <div class="mermaid-output-card">
                     <div class="card-title-row">
                         <div class="card-title">Script</div>
-                        <button id="refreshExcalidrawBtn" class="refresh-btn" type="button">↻ Rafraîchir</button>
+                        <button id="refreshExcalidrawBtn" class="refresh-btn" type="button">⌗ Modifier</button>
                     </div>
                     <textarea id="mermaidOutput" placeholder="Le code généré apparaitra ici"></textarea>
                 </div>
@@ -1086,7 +1106,7 @@
     <div class="ai-modal-overlay" id="aiModal">
         <div class="ai-modal">
             <header>
-                <h3>⌘ Promptzilla</h3>
+                <h3>⌘ Soulgorithm</h3>
                 <button id="closeAiModal" class="btn-secondary" type="button">✕</button>
             </header>
             <label>
@@ -1435,25 +1455,26 @@ sequenceDiagram
                     selector: null
                 },
                 {
+                    title: "Choisir un cas métier",
+                    description: "Ouvre ⛶ Promptzilla pour sélectionner le modèle de diagramme le plus adapté à ton contexte.",
+                    selector: "#promptzillaBtn"
+                },
+                {
                     title: "Décris et choisis",
                     description: "Décris le contexte, choisis le type de diagramme puis clique sur Générer.",
                     selector: "#prompt-input-card"
                 },
                 {
-                    title: "Code généré",
-                    description: "Attends la réponse dans le bloc Mermaid et ajuste le texte si besoin.",
-                    selector: "#mermaidOutput"
-                },
-                {
-                    title: "Visualisation en direct",
-                    description: "Observe les changements dans la zone de droite et affine visuellement flèches et formes.",
+                    title: "Édition visuelle",
+                    description: "Tu peux ajouter, modifier et supprimer flèches, texte, forme et stype à ta convenance",
                     selector: ".connect-right"
                 },
                 {
-                    title: "Actions globales",
-                    description: "Utilise les actions d'en-tête pour ouvrir ⧉ Capsule, gérer les pages ou accéder à l'IA.",
-                    selector: ".app-header"
-                }
+                    title: "Édition en texte",
+                    description: "Tu peux également éditer le contenud dans le bloc Script et ajuste le texte si besoin.",
+                    selector: ".mermaid-output-card"
+                },
+
             ];
 
             function syncDrawerToggleUi() {

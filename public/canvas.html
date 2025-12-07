@@ -501,7 +501,7 @@
             margin: 0;
             padding: 0;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #f7f7f7;
+            background: #f3f4f6;
             color: var(--text-main);
             display: flex;
             justify-content: center;
@@ -970,9 +970,9 @@
             max-width: 460px;
             width: calc(100% - 40px);
             background: #fff;
-            border-radius: 16px;
+            border-radius: 14px;
             padding: 18px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28);
             color: #1f1f1f;
             display: flex;
             flex-direction: column;
@@ -1005,12 +1005,13 @@
         }
 
         .tour-panel button {
-            border-radius: 8px;
+            border-radius: 10px;
             border: 1px solid #ebe0d1;
             background: #fff;
-            padding: 6px 12px;
+            padding: 8px 12px;
             cursor: pointer;
             font-size: 13px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
 
         .tour-panel button.primary {
@@ -1022,6 +1023,13 @@
         .tour-panel button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .tour-panel button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
         }
 
         .tour-skip {
@@ -1035,6 +1043,12 @@
             padding: 6px 12px;
             font-size: 12px;
             cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .tour-skip:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         }
 
         #tabs {
@@ -1290,6 +1304,7 @@
             line-height: 1.5;
             resize: vertical;
             overflow: auto;
+            padding: 0px 6px;
         }
 
         .slide-bottom-section .textarea-wrapper textarea {
@@ -1839,10 +1854,10 @@
                 <a class="app-home-link" href="index.html" title="Revenir à l'accueil">☍</a>
                 <div class="nav-switch">
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
-                        aria-expanded="false">¶ Petit Robert ▾</button>
+                        aria-expanded="false">⊞ Petit Robert ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                        <a class="nav-switch-link" href="roadmap.html" role="menuitem">⟴ Goal Digger</a>
-                        <a class="nav-switch-link" href="cardinal.html" role="menuitem">✶ Le Cardinal</a>
+                        <a class="nav-switch-link" href="timeline.html" role="menuitem">⇥ Goal Digger</a>
+                        <a class="nav-switch-link" href="draw.html" role="menuitem">◇ Le Cardinal</a>
                     </div>
                 </div>
 
@@ -1969,12 +1984,12 @@
                             aria-live="polite"></span>
                     </div>
                     <label>
-                        <span style="font-size:15px;">Récit</span>
+                        <span style="font-size:15px;">Récit (Canvas)</span>
                         <textarea id="globalContextField" rows="10"
                             placeholder="Décris ici le cadre global : le domaine, l’objectif principal, les utilisateurs concernés, la problématique à résoudre et le niveau d’enjeu. Décris aussi l’intention globale (pourquoi on fait ça) et l’état actuel (où on en est)."></textarea>
                     </label>
                     <label>
-                        <span style="font-size:15px;">Scène</span>
+                        <span style="font-size:15px;">Récit (Bloc)</span>
                         <textarea id="pageContextField" rows="10"
                             placeholder="Ajoute les éléments précis : la situation réelle, les contraintes connues, les choix déjà faits, les dépendances, les deadlines, les acteurs impliqués, les données chiffrées utiles, les points de vigilance et la condition de succès de ce cas particulier."></textarea>
                     </label>
@@ -2025,8 +2040,8 @@
                 </label>
                 <div class="ia-mode-toggle" id="iaModeToggle">
                     <div class="ia-mode-label">IA Mode</div>
-                    <button type="button" data-ia-mode="express">⚡︎ Express</button>
-                    <button type="button" data-ia-mode="experimental">⟡ Personalisé</button>
+                    <button type="button" data-ia-mode="express">🛫︎ Auto</button>
+                    <button type="button" data-ia-mode="experimental">✋︎ Manuel</button>
                 </div>
                 <div id="promptCustomizationArea">
                     <label>
@@ -2052,7 +2067,7 @@
     <div class="modal-overlay" id="templateModal">
         <div class="modal">
             <div class="modal-header">
-                <h3>Choisir un Promptzilla</h3>
+                <h3>⛶ Promptzilla</h3>
                 <button class="modal-close" data-close="templateModal">×</button>
             </div>
             <div class="modal-panel">
@@ -5641,13 +5656,13 @@
         const tourSteps = [
             {
                 title: "Petit Robert, ton assistant vocabulaire",
-                description: "Petit Robert t'aide à structurer ton vocabulaire pour des présentations claires et pertinentes",
+                description: "Petit Robert t'aide à structurer et aligner ton vocabulaire avec les intérêts de tes interlocuteurs",
                 selector: null
             },
             {
-                title: "Navigation des pages",
-                description: "Navigue page par page via les onglets et utilise les icônes +/× pour ajouter, renommer ou supprimer une page à tout moment.",
-                selectors: ["#tabs", ".tab-btn-add", ".tab-btn-delete"]
+                title: "Choisis un modèle",
+                description: "Ouvre ⛶ Promptzilla pour parcourir et appliquer différents modèles de canvas.",
+                selector: "#promptzillaBtn"
             },
             {
                 title: "Structure entièrement personnalisable",
@@ -5655,19 +5670,19 @@
                 selectors: [".slide-title-input", ".column-title", ".section-label"]
             },
             {
-                title: "Exports",
-                description: "Le bouton ↳ permet d'exporter en texte ou image (courant) ou en PowerPoint (texte) pour l'intégrer dans tes livrables.",
-                selector: "#fileMenuTrigger"
-            },
-            {
-                title: "Assistant ⌘IA",
-                description: "Avant d'utiliser l'IA, décris ton contexte et remplis les éléments de ton mieux",
-                selector: "#contextBtn"
+                title: "Gutenberg",
+                description: "Alimente le contexte et récupère des suggestions de saisie ou génère tout le contenu depuis la carte Gutenberg.",
+                selector: ".gutenberg-card"
             },
             {
                 title: "IA sur chaque champ",
-                description: "Le bouton ⌘ te renvoie une réponse claire et structuré en 15-30 secondes à partir des éléments renseignés",
+                description: "Le bouton ⌘ te renvoie une réponse claire et structurée en 15-30 secondes à partir des éléments renseignés.",
                 selector: ".field-ai-btn"
+            },
+            {
+                title: "Exports",
+                description: "Le bouton ⥂ Canal ouvre le menu d’export : texte, image, PowerPoint ou capsule JSON.",
+                selector: "#fileMenuTrigger"
             },
         ];
 

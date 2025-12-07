@@ -2,7 +2,7 @@ const path = require("path");
 const { chromium } = require("playwright");
 
 (async () => {
-    const defaultUrl = `file:///${path.resolve(__dirname, "../public/cardinal.html").replace(/\\/g, "/")}`;
+    const defaultUrl = `file:///${path.resolve(__dirname, "../public/draw.html").replace(/\\/g, "/")}`;
     const targetUrl = process.argv[2] || defaultUrl;
     const browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();

@@ -1,9 +1,9 @@
 # Go-Toolkit : la boîte à idées IA des Product Owners
 
 Go-Toolkit est un trio d'apps front-only qui tournent dans le navigateur (pas de build requis) pour produire vite des supports produit :
-- **Petit Robert** (`public/robert.html`) : grille de slides éditables avec IA pour générer contenus, suggestions par section et export PPTX/PNG/JSON.
-- **Le Cardinal** (`public/cardinal.html`) : générateur de diagrammes Mermaid/Excalidraw avec titre détecté automatiquement et partage optionnel.
-- **Go-Roadmap** (`public/roadmap.html`) : timeline interactive (Vis.js) avec IA pour créer/modifier un planning, export texte/image/Excel/JSON.
+- **Petit Robert** (`public/canvas.html`) : grille de slides éditables avec IA pour générer contenus, suggestions par section et export PPTX/PNG/JSON.
+- **Le Cardinal** (`public/draw.html`) : générateur de diagrammes Mermaid/Excalidraw avec titre détecté automatiquement et partage optionnel.
+- **Go-Roadmap** (`public/timeline.html`) : timeline interactive (Vis.js) avec IA pour créer/modifier un planning, export texte/image/Excel/JSON.
 
 Les trois pages fonctionnent en local via un simple serveur statique, conservent l'état dans le navigateur et peuvent utiliser un proxy OpenAI/partage fourni dans `workers/`.
 
@@ -39,7 +39,7 @@ Les trois pages fonctionnent en local via un simple serveur statique, conservent
 
 ## Comment démarrer
 1. Cloner puis servir `public/` : `npx serve public` (ou ouvrir les fichiers directement, certaines features nécessitent un serveur pour les exports).
-2. Ouvrir une app : `robert.html` (Petit Robert), `cardinal.html` (Le Cardinal), `roadmap.html` (Roadmap).
+2. Ouvrir une app : `canvas.html` (Petit Robert), `draw.html` (Le Cardinal), `timeline.html` (Roadmap).
 3. Renseigner une clé OpenAI dans le modal IA ou laisser vide pour passer par `https://openai.gotoolkit.workers.dev/v1/responses` (proxy Cloudflare).
 4. Choisir l'effort de raisonnement (minimal/low/medium), lancer la génération, éditer, puis exporter ou partager.
 5. Activer le partage (optionnel) en déployant `workers/share-proxy` avec une clé de service Firebase, en définissant `GOOGLE_SERVICE_ACCOUNT_JSON` et `SHARE_ALLOWED_ORIGINS` (localhost autorisé par défaut).

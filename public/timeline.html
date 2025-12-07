@@ -49,7 +49,7 @@
             padding: 0;
             min-height: 100vh;
             height: 100vh;
-            background: #f7f7f7;
+            background: #f3f4f6;
             color: var(--text);
             font-family: var(--app-font, "Inter");
             overflow: hidden;
@@ -309,18 +309,12 @@
         }
 
         .white-btn {
-            border-color: rgba(15, 23, 42, 0.2);
-            background: #fff;
-            color: #0f172a;
-            margin-right: 6px;
-        }
-
-        .white-btn:hover,
-        .white-btn:focus-visible {
-            border-color: #2a7a57;
-            background: #fff;
-            color: #2a7a57;
-            box-shadow: none;
+            border: 1px solid #cec9c9;
+            background: white;
+            color: #1f2a56;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 8px;
         }
 
         .nav-switch {
@@ -663,7 +657,6 @@
 
         .timeline-empty-link:hover,
         .timeline-empty-link:focus-visible {
-            text-decoration: underline;
             border-bottom-color: rgba(42, 122, 87, 0.6);
         }
 
@@ -874,6 +867,7 @@
             flex-wrap: wrap;
         }
 
+        /* Harmonized tour styles */
         .tour-overlay {
             position: fixed;
             inset: 0;
@@ -913,9 +907,9 @@
             max-width: 460px;
             width: calc(100% - 40px);
             background: #fff;
-            border-radius: 16px;
+            border-radius: 14px;
             padding: 18px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28);
             color: #1f1f1f;
             display: flex;
             flex-direction: column;
@@ -948,12 +942,18 @@
         }
 
         .tour-panel button {
-            border-radius: 8px;
+            border-radius: 10px;
             border: 1px solid var(--border);
             background: #fff;
-            padding: 6px 12px;
+            padding: 8px 12px;
             cursor: pointer;
             font-size: 13px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .tour-panel button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
         }
 
         .tour-panel button.primary {
@@ -965,6 +965,8 @@
         .tour-panel button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         .tour-skip {
@@ -978,6 +980,12 @@
             padding: 6px 12px;
             font-size: 12px;
             cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .tour-skip:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         }
 
         .menu-panel-btn {
@@ -1719,10 +1727,10 @@
                 <a class="app-home-link" href="index.html" title="Revenir à l'accueil">☍</a>
                 <div class="nav-switch">
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
-                        aria-expanded="false">⟴ Goal Digger ▾</button>
+                        aria-expanded="false">⇥ Goal Digger ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                        <a class="nav-switch-link" href="robert.html" role="menuitem"> ¶ Petit Robert</a>
-                        <a class="nav-switch-link" href="cardinal.html" role="menuitem">✶Le Cardinal</a>
+                        <a class="nav-switch-link" href="canvas.html" role="menuitem"> ⊞ Petit Robert</a>
+                        <a class="nav-switch-link" href="draw.html" role="menuitem">◇ Le Cardinal</a>
                     </div>
                 </div>
 
@@ -1921,7 +1929,7 @@
                 </div>
                 <div class="timeline-header">
                     <div class="header-text">
-                        <h1>Page 1</h1>
+                        <h1>Bloc 1</h1>
                     </div>
                     <div class="header-buttons">
                         <div class="type-filter-panel" id="typeFilterPanel" role="group" aria-label="Filtrer par type">
@@ -1932,10 +1940,10 @@
                     <div id="timeline"></div>
                     <div class="timeline-empty-state" id="timelineEmptyState" role="status" aria-live="polite">
                         <p class="timeline-empty-text">
-                            Cette page est vide.
+                            Ce bloc est vide.
                         </p>
                         <a href="#openContextModal" role="button" class="timeline-empty-link" id="timelineEmptyAction">
-                            ⌘ Renseigner le contexte
+                            ⌘ Renseigner le récit
                         </a>
                     </div>
                 </div>
@@ -1958,8 +1966,12 @@
                         </div>
                     </div>
                     <div class="header-row ia-header-actions gutenberg-script">
-                        <label for="promptModify"
-                            style="margin-top:0;display:block;font-size:13px;color:var(--muted)">Script</label>
+                        <div class="gutenberg-recette-header">
+                            <label for="promptModify"
+                                style="margin-top:0;display:block;font-size:13px;color:var(--muted)">Script</label>
+                            <button id="openModifyPromptBtn" class="white-btn" type="button" style="margin-left:8px;">⌗
+                                Modifier</button>
+                        </div>
                         <div class="ia-prompt-fields">
                             <textarea id="promptModify" class="ia-prompt-field" rows="20"></textarea>
                         </div>
@@ -1971,17 +1983,10 @@
         <div class="modal-overlay" id="iaModalOverlay" role="dialog" aria-modal="true" aria-labelledby="iaModalTitle">
             <div class="filter-modal">
                 <div class="modal-header">
-                    <h3 id="iaModalTitle">⌘ Promptzilla</h3>
+                    <h3 id="iaModalTitle">⌘ Soulgorithm</h3>
                     <button class="modal-close" id="iaModalClose" type="button" aria-label="Fermer l'IA">×</button>
                 </div>
                 <div class="ia-actions">
-                    <div class="header-row  ia-header-actions">
-                        <label for="templateModeSelect">Narration</label>
-                        <select id="templateModeSelect">
-                            <option value="create">⌘ Libre</option>
-                            <option value="modify">⌗ Structuré</option>
-                        </select>
-                    </div>
                     <div class="header-row ia-header-actions">
                         <label for="iaTemplateEditor">Prompt système</label>
                         <textarea id="iaTemplateEditor" rows="18"></textarea>
@@ -2192,8 +2197,7 @@
                 }
             };
             var customSystemTemplates = {
-                create: "",
-                modify: ""
+                create: ""
             };
             var allowedBackgroundValues = ["transparent", "#ffffff"];
             function deepClone(value) {
@@ -2537,8 +2541,7 @@
                     displayPreferences: Object.assign({}, displayPreferences),
                     types: snapshotTypeDefinitions(),
                     templates: {
-                        create: customSystemTemplates.create,
-                        modify: customSystemTemplates.modify
+                        create: customSystemTemplates.create
                     },
                     brief: getTimelineBrief()
                 };
@@ -2678,14 +2681,14 @@
                 if (Array.isArray(persistedState.views) && persistedState.views.length) {
                     views = persistedState.views.map(function (view, index) {
                         return {
-                            name: view.name || view.title || ("Page " + (index + 1)),
-                            title: view.title || view.name || ("Page " + (index + 1)),
+                            name: view.name || view.title || ("Bloc " + (index + 1)),
+                            title: view.title || view.name || ("Bloc " + (index + 1)),
                             planning: view.planning || null,
                             context: normalizeContextState(view.context)
                         };
                     });
                 } else if (persistedState.groups) {
-                    var defaultLabel = persistedState.label || persistedState.name || "Page 1";
+                    var defaultLabel = persistedState.label || persistedState.name || "Bloc 1";
                     views = [{
                         name: defaultLabel,
                         title: defaultLabel,
@@ -2703,9 +2706,6 @@
                     if (typeof persistedState.templates.create === "string") {
                         customSystemTemplates.create = persistedState.templates.create;
                     }
-                    if (typeof persistedState.templates.modify === "string") {
-                        customSystemTemplates.modify = persistedState.templates.modify;
-                    }
                 }
             } else {
                 if (Array.isArray(DEMO_STATE.views) && DEMO_STATE.views.length) {
@@ -2718,7 +2718,7 @@
                 }
             }
             if (!views.length) {
-                views = [{ name: "Page 1", title: "Page 1", planning: null, context: cloneDefaultContext() }];
+                views = [{ name: "Bloc 1", title: "Bloc 1", planning: null, context: cloneDefaultContext() }];
             }
             views.forEach(ensureViewFilterState);
             views.forEach(ensureViewContext);
@@ -3126,11 +3126,6 @@
             }
 
             function openIaModal() {
-                var defaultTemplateMode = "create";
-                if (templateModeSelect) {
-                    templateModeSelect.value = defaultTemplateMode;
-                    syncTemplateEditor(defaultTemplateMode);
-                }
                 if (iaModalOverlay) iaModalOverlay.classList.add("open");
             }
 
@@ -3153,6 +3148,54 @@
                 iaModalOverlay.addEventListener("click", function (event) {
                     if (event.target === iaModalOverlay) {
                         closeIaModal();
+                    }
+                });
+            }
+            var openModifyPromptBtn = document.getElementById("openModifyPromptBtn");
+            if (openModifyPromptBtn) {
+                openModifyPromptBtn.addEventListener("click", function () {
+                    // Instead of calling OpenAI, parse the current script textarea and apply it
+                    try {
+                        ensureModifyPrompt({ refreshModify: true });
+                        var scriptText = txtPromptModify && txtPromptModify.value ? txtPromptModify.value.toString() : "";
+                        if (!scriptText || !scriptText.trim()) {
+                            alert("Le script est vide — rien à parser.");
+                            return;
+                        }
+                        var parsedPlanning = null;
+                        try {
+                            parsedPlanning = parseScriptToPlanning(scriptText);
+                        } catch (err) {
+                            console.error('Erreur parsing script', err);
+                            alert(err && err.message ? err.message : "Impossible de parser le script en planning. Vérifie le format.");
+                            parsedPlanning = null;
+                        }
+                        if (!parsedPlanning) {
+                            return;
+                        }
+                        // If the parsed planning contains a page title, update view
+                        if (parsedPlanning && typeof parsedPlanning.page === 'string' && parsedPlanning.page.trim()) {
+                            var currentView = views[activeViewIndex];
+                            if (currentView) {
+                                currentView.title = parsedPlanning.page.trim();
+                                refreshHeaderText();
+                            }
+                        }
+                        applyPlanningFromJson(parsedPlanning);
+                        // persist the parsed planning into the active view
+                        persistCurrentPlanning();
+                        // persist the script into context
+                        try {
+                            var ctx = ensureViewContext(views[activeViewIndex]);
+                            ctx.prompts = ctx.prompts || {};
+                            ctx.prompts.modify = scriptText;
+                            persistTimelineState();
+                        } catch (e) {
+                            console.warn('Cannot persist context after modify-parse', e);
+                        }
+                    } catch (e) {
+                        console.warn('Erreur lors du parsing local depuis Modifier', e);
+                        alert('Erreur lors du parsing du script.');
                     }
                 });
             }
@@ -3179,38 +3222,32 @@
                 {
                     "id": "product",
                     "title": "🎯 Roadmap Produit",
-                    "text": "Génère une roadmap produit sur 6 mois avec 4 jalons majeurs (MVP, beta, release, amélioration), 3 acteurs (PO, UX, Dev), 3 domaines (fonctionnel, UX, data) et une timeline mensuelle. Inclure risques, dépendances et livrables clés",
-                    "script": "Page : 🎯 Roadmap Produit\n\nÉléments :\n\nCadrage & définition MVP (PO, UX)\nDate: 2026-01-01 → 2026-01-31\nGroupe: MVP\nType: fonctionnel\n\nImplémentation MVP cœur de valeur (PO, Dev)\nDate: 2026-02-01 → 2026-02-29\nGroupe: MVP\nType: data\n\nGo/No-Go MVP et ouverture beta privée\nDate: 2026-03-01\nGroupe: Beta\nType: milestone\n\nItérations UX & analytics sur beta (UX, Dev)\nDate: 2026-03-02 → 2026-04-15\nGroupe: Beta\nType: UX\n\nRelease publique + communication produit\nDate: 2026-04-16 → 2026-05-15\nGroupe: Release\nType: fonctionnel\n\nAméliorations data & optimisation parcours\nDate: 2026-05-16 → 2026-06-30\nGroupe: Amélioration continue\nType: data\n\nRisque: dépendance forte à une équipe back\nDate: 2026-01-01 → 2026-06-30\nGroupe: Risques & dépendances\nType: risque\n\nLivrable clé: backlog roadmap 6 mois verrouillé\nDate: 2026-01-15\nGroupe: Livrables\nType: livrable"
+                    "text": "Génère une roadmap produit sur 6 mois avec 4 jalons majeurs (MVP, beta, release, amélioration), 3 acteurs (PO, UX, Dev), 3 domaines (fonctionnel, UX, data) et une timeline mensuelle. Inclure risques, dépendances et livrables clés"
                 },
                 {
                     "id": "tech",
                     "title": "🛠️ Roadmap Technique",
-                    "text": "Crée une roadmap technique annuelle en 4 phases (audit, refonte, migration, optimisation), positionne les jalons trimestriels, les responsabilités (Tech Lead, Infra, SecOps) et les types d’initiatives (perf, sécurité, scalabilité) sur 1 an",
-                    "script": "Page : 🛠️ Roadmap Technique\n\nÉléments :\n\nAudit architecture & dette technique (Tech Lead)\nDate: 2026-01-01 → 2026-03-31\nGroupe: Audit\nType: scalabilité\n\nJalon T1: restitution audit & priorisation\nDate: 2026-03-31\nGroupe: Jalons trimestriels\nType: milestone\n\nRefonte modules critiques (Tech Lead, Infra)\nDate: 2026-04-01 → 2026-06-30\nGroupe: Refonte\nType: perf\n\nJalon T2: validation perf & coût infra\nDate: 2026-06-30\nGroupe: Jalons trimestriels\nType: milestone\n\nMigration vers nouvelle stack/plateforme (Infra)\nDate: 2026-07-01 → 2026-09-30\nGroupe: Migration\nType: scalabilité\n\nJalon T3: bascule production contrôlée\nDate: 2026-09-30\nGroupe: Jalons trimestriels\nType: milestone\n\nDurcissement sécurité & observabilité (SecOps)\nDate: 2026-10-01 → 2026-12-15\nGroupe: Optimisation\nType: sécurité\n\nJalon T4: revue annuelle risques & SLA\nDate: 2026-12-15\nGroupe: Jalons trimestriels\nType: milestone"
+                    "text": "Crée une roadmap technique annuelle en 4 phases (audit, refonte, migration, optimisation), positionne les jalons trimestriels, les responsabilités (Tech Lead, Infra, SecOps) et les types d’initiatives (perf, sécurité, scalabilité) sur 1 an"
                 },
                 {
                     "id": "sprint",
                     "title": "⚡Calendrier de sprints",
-                    "text": "Propose une planification sur 4 sprints de 2 semaines avec objectifs, stories clés, critères de réussite, dépendances internes et rôles (Dev, QA, UX). Ajoute jalons de revue et rituels agiles.",
-                    "script": "Page : ⚡Calendrier de sprints\n\nÉléments :\n\nSprint 1: cadrage fonctionnel & skeleton UI\nDate: 2026-01-05 → 2026-01-18\nGroupe: Sprint 1\nType: dev\n\nRevue & rétro Sprint 1 (PO, Dev, QA, UX)\nDate: 2026-01-19\nGroupe: Jalons de revue\nType: milestone\n\nSprint 2: flux principaux + premiers tests QA\nDate: 2026-01-20 → 2026-02-02\nGroupe: Sprint 2\nType: QA\n\nRevue & démo utilisateurs internes\nDate: 2026-02-03\nGroupe: Jalons de revue\nType: milestone\n\nSprint 3: optimisation UX & intégration data\nDate: 2026-02-04 → 2026-02-17\nGroupe: Sprint 3\nType: UX\n\nSprint 4: hardening, corrections & préparation release\nDate: 2026-02-18 → 2026-03-03\nGroupe: Sprint 4\nType: dev\n\nDépendance: disponibilité environnement de test commun\nDate: 2026-01-05 → 2026-03-03\nGroupe: Dépendances\nType: dépendance\n\nRituels agiles: dailies & planning poker\nDate: 2026-01-05 → 2026-03-03\nGroupe: Rituels\nType: rituel"
+                    "text": "Propose une planification sur 4 sprints de 2 semaines avec objectifs, stories clés, critères de réussite, dépendances internes et rôles (Dev, QA, UX). Ajoute jalons de revue et rituels agiles."
                 },
                 {
                     "id": "strategy",
                     "title": "💼 Vision stratégique",
-                    "text": "Génère une vision stratégique en 3 horizons (H1/H2/H3) sur 24 mois, avec thèmes structurants, jalons annuels, domaines (produit, tech, business), impacts attendus et types d’investissements",
-                    "script": "Page : 💼 Vision stratégique\n\nÉléments :\n\nH1: poser les fondations produit & tech\nDate: 2026-01-01 → 2026-06-30\nGroupe: H1\nType: produit\n\nH2: accélération croissance & scalabilité\nDate: 2026-07-01 → 2027-06-30\nGroupe: H2\nType: business\n\nH3: diversification offres & écosystème\nDate: 2027-07-01 → 2027-12-31\nGroupe: H3\nType: tech\n\nJalon annuel: revue stratégique année 1\nDate: 2026-12-15\nGroupe: Jalons annuels\nType: milestone\n\nJalon annuel: revue stratégique année 2\nDate: 2027-12-15\nGroupe: Jalons annuels\nType: milestone\n\nInvestissements: équipe produit/UX & discovery\nDate: 2026-01-01 → 2026-12-31\nGroupe: Investissements H1/H2\nType: investissement\n\nInvestissements: plateforme data & partenariats\nDate: 2027-01-01 → 2027-12-31\nGroupe: Investissements H2/H3\nType: investissement"
+                    "text": "Génère une vision stratégique en 3 horizons (H1/H2/H3) sur 24 mois, avec thèmes structurants, jalons annuels, domaines (produit, tech, business), impacts attendus et types d’investissements"
                 },
                 {
                     "id": "research",
                     "title": "🔎 Plan de recherche",
-                    "text": "Construis un plan de recherche en phase discovery sur 6 mois : recherche utilisateur, cadrage problème, prototypage, test d’hypothèses, restitution. Mentionne acteurs (PO, UX, clients), jalons et décisions Go/No-Go.",
-                    "script": "Page : 🔎 Plan de recherche\n\nÉléments :\n\nEntretiens exploratoires utilisateurs (PO, UX)\nDate: 2026-01-01 → 2026-02-15\nGroupe: Recherche utilisateur\nType: discovery\n\nCadrage problème & mapping opportunités\nDate: 2026-02-16 → 2026-03-15\nGroupe: Cadrage problème\nType: atelier\n\nPrototypage low-fi & scénarios clé\nDate: 2026-03-16 → 2026-04-15\nGroupe: Prototypage\nType: UX\n\nTests d’hypothèses avec clients pilotes\nDate: 2026-04-16 → 2026-05-31\nGroupe: Tests\nType: expérimentation\n\nRestitution & décision Go/No-Go\nDate: 2026-06-15\nGroupe: Décisions\nType: milestone\n\nJalon intermédiaire: partage insights mi-parcours\nDate: 2026-03-31\nGroupe: Jalons\nType: milestone"
+                    "text": "Construis un plan de recherche en phase discovery sur 6 mois : recherche utilisateur, cadrage problème, prototypage, test d’hypothèses, restitution. Mentionne acteurs (PO, UX, clients), jalons et décisions Go/No-Go."
                 },
                 {
                     "id": "project",
                     "title": "🧩 Projet d'intégration'",
-                    "text": "Génére un projet d’intégration sur 4 mois avec phases (design, dev API, tests, déploiement), jalons critiques, interactions partenaires, risques liés aux environnements et validations métiers.",
-                    "script": "Page : 🧩 Projet de réalisation\n\nÉléments :\n\nDesign détaillé & contrats d’interface\nDate: 2026-01-01 → 2026-01-31\nGroupe: Design\nType: fonctionnel\n\nDéveloppement API & intégrations partenaires\nDate: 2026-02-01 → 2026-03-15\nGroupe: Dev API\nType: tech\n\nJalon critique: environnement d’intégration stable\nDate: 2026-02-15\nGroupe: Jalons critiques\nType: milestone\n\nCampagne de tests end-to-end & non régression\nDate: 2026-03-16 → 2026-04-05\nGroupe: Tests\nType: QA\n\nDéploiement progressif & validation métier\nDate: 2026-04-06 → 2026-04-30\nGroupe: Déploiement\nType: métier\n\nRisque: instabilité environnements partenaires\nDate: 2026-02-01 → 2026-04-30\nGroupe: Risques\nType: risque"
+                    "text": "Génére un projet d’intégration sur 4 mois avec phases (design, dev API, tests, déploiement), jalons critiques, interactions partenaires, risques liés aux environnements et validations métiers."
                 }
             ];
 
@@ -3272,7 +3309,7 @@
                             visionField.value = tpl.text;
                         }
                         if (scriptField) {
-                            scriptField.value = tpl.script || "";
+                            scriptField.value = tpl.text || "";
                         }
                         // Persist into active view context so opening the Gutenberg modal won't overwrite values
                         if (typeof persistActiveContext === "function") {
@@ -3297,30 +3334,18 @@
                 });
             }
 
-            var CREATE_SYSTEM_TEMPLATE = `Tu es un assistant product owner qui va générer une feuille de route produit à partir des instructions suivantes {{(contenu du id="prompt") }}
+            var CREATE_SYSTEM_TEMPLATE = `Tu es un assistant product owner qui va générer une feuille de route produit à partir des instructions suivantes {{contenu_script}}
 Réponds toujours avec un JSON qui contient :
 - \`page\` : le titre de la page courante (utilisé pour le header).
 - \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des natures d'actions différentes entre 3 et 6 dont un type spécifique aux milestones.
 - \`timeline\` : \`{ start, end }\` au format ISO (YYYY-MM-DD).
 - \`groups\` : chaque groupe d'actions avec { id, label } entre 3 et 6 (ex : par équipe, thème, stream produit, enjeu, objectif.).
-- \`items\` : chaque action ou livrable ou résultat avec { id, groupId, label, kind, start?, end?, date? }.
+- \`items\` : chaque action ou livrable ou résultat avec { id, groupId, label, kind, start?, end?, date? }. Utiliser un label de 4-5 mots max.
 - Les livrables ou résultats sont convertis en \`kind: "milestone"\` avec juste la date de début.
-- Décomposer en plusieurs actions, ceux qui ont plus de 21 jours
-- Sors uniquement le JSON, sans explication ni texte additionnel. Utiliser des intitulés courtes.`;
-
-            var MODIFY_SYSTEM_TEMPLATE = `Tu es un assistant product owner qui va générer une feuille de route produit à partir des instructions suivantes {{(contenu du id="prompt") }}
-Réponds toujours avec un JSON qui contient :
-- \`page\` : le titre de la page courante (utilisé pour le header).
-- \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des natures d'actions différentes entre 3 et 6 dont un type spécifique aux milestones.
-- \`timeline\` : \`{ start, end }\` au format ISO (YYYY-MM-DD).
-- \`groups\` : chaque groupe d'actions avec { id, label } entre 3 et 6 (ex : par équipe, thème, stream produit, enjeu, objectif.).
-- \`items\` : chaque action ou livrable ou résultat avec { id, groupId, label, kind, start?, end?, date? }.
-- Les livrables ou résultats sont convertis en \`kind: "milestone"\` avec juste la date de début.
-- Décomposer en plusieurs actions, ceux qui ont plus de 21 jours
-- Sors uniquement le JSON, sans explication ni texte additionnel. Utiliser des intitulés courtes.`;
+- Décomposer en plusieurs actions (P1..Pn) de moins de 21 jours, ceux qui ont plus de 21 jours
+- Sors uniquement le JSON, sans explication ni texte additionnel.`;
 
             customSystemTemplates.create = customSystemTemplates.create || CREATE_SYSTEM_TEMPLATE;
-            customSystemTemplates.modify = customSystemTemplates.modify || MODIFY_SYSTEM_TEMPLATE;
 
             var optionsBtn = document.getElementById("optionsBtn");
             var optionsMenu = document.getElementById("optionsMenu");
@@ -3497,6 +3522,25 @@ Réponds toujours avec un JSON qui contient :
                 }
                 if (shareMenu && !shareMenu.contains(event.target) && shareBtn !== event.target) {
                     shareMenu.classList.remove("open");
+                }
+            });
+
+            // Désactiver le menu contextuel du navigateur pour cette page
+            document.addEventListener("contextmenu", function (ev) {
+                ev.preventDefault();
+            });
+
+            // Permettre de fermer les modals avec la touche Échap
+            document.addEventListener("keydown", function (ev) {
+                if (!ev) return;
+                var key = ev.key || ev.keyIdentifier || ev.keyCode;
+                if (key === "Escape" || key === "Esc" || key === 27) {
+                    if (typeof closeIaModal === "function") try { closeIaModal(); } catch (e) { }
+                    if (typeof closeContextModal === "function") try { closeContextModal(); } catch (e) { }
+                    if (typeof closeColorModal === "function") try { closeColorModal(); } catch (e) { }
+                    if (typeof closeRoadmapPromptzilla === "function") try { closeRoadmapPromptzilla(); } catch (e) { }
+                    if (typeof closeTimelineInfoPopup === "function") try { closeTimelineInfoPopup(); } catch (e) { }
+                    if (typeof closeTimelineTour === "function") try { closeTimelineTour(true); } catch (e) { }
                 }
             });
 
@@ -4135,7 +4179,7 @@ Réponds toujours avec un JSON qui contient :
             function buildTextExport(planning, viewTitle) {
                 var lines = [];
                 if (viewTitle) {
-                    lines.push("Page : " + viewTitle);
+                    lines.push("Bloc : " + viewTitle);
                 }
                 if (planning && planning.timeline) {
                     var start = planning.timeline.start || "";
@@ -4160,27 +4204,37 @@ Réponds toujours avec un JSON qui contient :
                 if (groupLabels.length) {
                     lines.push("Groupes : " + groupLabels.join(", "));
                 }
+                var typeLabels = (planning && Array.isArray(planning.types) ? planning.types : [])
+                    .map(function (type) {
+                        if (!type) return null;
+                        var label = type.label || type.name || type.id;
+                        return label ? label.trim() : null;
+                    })
+                    .filter(Boolean);
+                if (typeLabels.length) {
+                    lines.push("Types : " + typeLabels.join(", "));
+                }
                 var items = planning && Array.isArray(planning.items) ? planning.items : [];
                 if (items.length) {
                     lines.push("");
-                    lines.push("Éléments :");
+                    lines.push("Actions :");
                     items.forEach(function (item, index) {
                         if (index) {
                             lines.push("");
                         }
                         var label = item.label || "Sans titre";
                         lines.push(label);
+                        var days = null;
                         if (item.kind === "milestone") {
                             if (item.date) {
-                                lines.push("Date: " + item.date);
+                                days = 1;
+                                lines.push("Date: " + item.date + " (1 jour)");
                             }
-                        } else {
-                            if (item.start || item.end) {
-                                var span = (item.start || "") + (item.start && item.end ? " → " : "") + (item.end || "");
-                                if (span) {
-                                    var days = computeDaySpan(item.start, item.end);
-                                    lines.push("Date: " + span + (days ? " (" + days + " jours)" : ""));
-                                }
+                        } else if (item.start || item.end) {
+                            days = computeDaySpan(item.start, item.end);
+                            if (item.start) {
+                                var dayLabel = days === 1 ? " jour" : " jours";
+                                lines.push("Date: " + item.start + (days ? " (" + days + dayLabel + ")" : ""));
                             }
                         }
                         var groupLabel = groupMap[item.groupId] || item.groupId;
@@ -4259,7 +4313,7 @@ Réponds toujours avec un JSON qui contient :
                 var importedViews = [];
                 if (Array.isArray(state.views) && state.views.length) {
                     importedViews = state.views.map(function (view, index) {
-                        var label = view.name || view.title || ("Page " + (index + 1));
+                        var label = view.name || view.title || ("Bloc " + (index + 1));
                         return {
                             name: label,
                             title: view.title || view.name || label,
@@ -4268,7 +4322,7 @@ Réponds toujours avec un JSON qui contient :
                         };
                     });
                 } else if (state.groups) {
-                    var label = state.label || state.name || "Page 1";
+                    var label = state.label || state.name || "Bloc 1";
                     importedViews = [{ name: label, title: label, planning: state, context: cloneDefaultContext() }];
                 }
                 if (!importedViews.length) {
@@ -4298,12 +4352,9 @@ Réponds toujours avec un JSON qui contient :
                     if (typeof state.templates.create === "string") {
                         customSystemTemplates.create = state.templates.create;
                     }
-                    if (typeof state.templates.modify === "string") {
-                        customSystemTemplates.modify = state.templates.modify;
-                    }
                 }
                 importedViews.forEach(ensureViewContext);
-                syncTemplateEditor(templateModeSelect ? templateModeSelect.value : "create");
+                syncTemplateEditor();
                 renderFontSizeOptions();
                 applyDisplayPreferences();
                 syncFontControls();
@@ -5013,8 +5064,8 @@ Réponds toujours avec un JSON qui contient :
 
             function ensureViewName(index) {
                 var view = views[index];
-                if (!view) return "Page " + (index + 1);
-                return view.name || view.title || ("Page " + (index + 1));
+                if (!view) return "Bloc " + (index + 1);
+                return view.name || view.title || ("Bloc " + (index + 1));
             }
 
             function refreshHeaderText() {
@@ -5114,7 +5165,7 @@ Réponds toujours avec un JSON qui contient :
 
             function addView() {
                 persistCurrentPlanning();
-                var label = "Page " + (views.length + 1);
+                var label = "Bloc " + (views.length + 1);
                 var newView = { name: label, title: label, planning: null, context: cloneDefaultContext() };
                 ensureViewFilterState(newView);
                 views.push(newView);
@@ -5134,7 +5185,14 @@ Réponds toujours avec un JSON qui contient :
             }
 
             addViewBtn && addViewBtn.addEventListener("click", addView);
-            deleteViewBtn && deleteViewBtn.addEventListener("click", deleteView);
+            if (deleteViewBtn) {
+                deleteViewBtn.addEventListener("click", function () {
+                    if (!views || views.length <= 1) return;
+                    var name = (views[activeViewIndex] && (views[activeViewIndex].title || views[activeViewIndex].name)) || ("Bloc " + (activeViewIndex + 1));
+                    var ok = confirm("Supprimer la vue '" + name + "' ? Cette action est irréversible.");
+                    if (ok) deleteView();
+                });
+            }
 
             renderViewTabs();
             activateView(activeViewIndex, true);
@@ -5770,7 +5828,6 @@ Réponds toujours avec un JSON qui contient :
             var txtPromptCreate = document.getElementById("promptCreate");
             var txtPromptModify = document.getElementById("promptModify");
             var btnCall = document.getElementById("btn-call");
-            var templateModeSelect = document.getElementById("templateModeSelect");
             var iaTemplateEditor = document.getElementById("iaTemplateEditor");
             var resetTemplatesBtn = document.getElementById("resetTemplatesBtn");
 
@@ -5867,47 +5924,61 @@ Réponds toujours avec un JSON qui contient :
                         ctx.prompts.modify = txtPromptModify.value || "";
                     });
                 });
+                // Refresh modify prompt content when user clicks the script textarea
+                txtPromptModify.addEventListener("click", function () {
+                    try {
+                        ensureModifyPrompt({ refreshModify: true });
+                    } catch (e) { }
+                });
+
+                // On focus, build a textual export of the current planning and put it into the script textarea
+                txtPromptModify.addEventListener("focus", function () {
+                    try {
+                        var currentView = views && views[activeViewIndex] ? views[activeViewIndex] : null;
+                        var planning = (currentView && currentView.planning) || exportPlanningToJson();
+                        var viewTitle = currentView && (currentView.title || currentView.name);
+                        try {
+                            var text = buildTextExport(planning, viewTitle);
+                            if (text && txtPromptModify) {
+                                txtPromptModify.value = text;
+                                persistActiveContext(function (ctx) {
+                                    ctx.prompts = ctx.prompts || {};
+                                    ctx.prompts.modify = txtPromptModify.value || "";
+                                });
+                            }
+                        } catch (e) {
+                            console.warn('Erreur lors de la génération du texte d\'export pour le script', e);
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                });
             }
 
-            function getSystemTemplateForMode(mode) {
-                return mode === "modify"
-                    ? (customSystemTemplates.modify || MODIFY_SYSTEM_TEMPLATE)
-                    : (customSystemTemplates.create || CREATE_SYSTEM_TEMPLATE);
+            function getSystemTemplate() {
+                return customSystemTemplates.create || CREATE_SYSTEM_TEMPLATE;
             }
 
             function resetSystemTemplates() {
                 customSystemTemplates.create = CREATE_SYSTEM_TEMPLATE;
-                customSystemTemplates.modify = MODIFY_SYSTEM_TEMPLATE;
-                syncTemplateEditor(templateModeSelect ? templateModeSelect.value : "create");
+                syncTemplateEditor();
                 persistTimelineState();
             }
 
-            function persistTemplateChange(mode, value) {
-                var target = mode === "modify" ? "modify" : "create";
-                customSystemTemplates[target] = value || getSystemTemplateForMode(target);
+            function persistTemplateChange(value) {
+                customSystemTemplates.create = value || getSystemTemplate();
                 persistTimelineState();
             }
 
-            function syncTemplateEditor(mode) {
-                var normalized = mode === "modify" ? "modify" : "create";
-                if (templateModeSelect) {
-                    templateModeSelect.value = normalized;
-                }
+            function syncTemplateEditor() {
                 if (iaTemplateEditor) {
-                    iaTemplateEditor.value = getSystemTemplateForMode(normalized);
+                    iaTemplateEditor.value = getSystemTemplate();
                 }
-            }
-
-            if (templateModeSelect) {
-                templateModeSelect.addEventListener("change", function () {
-                    syncTemplateEditor(this.value);
-                });
             }
 
             if (iaTemplateEditor) {
                 iaTemplateEditor.addEventListener("input", function () {
-                    var mode = templateModeSelect ? templateModeSelect.value : "create";
-                    persistTemplateChange(mode, iaTemplateEditor.value || "");
+                    persistTemplateChange(iaTemplateEditor.value || "");
                 });
             }
 
@@ -5916,6 +5987,8 @@ Réponds toujours avec un JSON qui contient :
                     resetSystemTemplates();
                 });
             }
+
+            syncTemplateEditor();
 
             var IA_API_KEY_STORAGE_KEY = "go-toolkit-api-key";
             var iaApiKeyInput = document.getElementById("iaApiKeyInput");
@@ -5983,12 +6056,12 @@ Réponds toujours avec un JSON qui contient :
             var EMPTY_MODIFY_PROMPT_TEXT = (function () {
                 if (Array.isArray(ROADMAP_PROMPTZILLA) && ROADMAP_PROMPTZILLA.length) {
                     var first = ROADMAP_PROMPTZILLA[0];
-                    if (first && typeof first.script === "string" && first.script.trim() !== "") {
-                        return first.script;
+                    if (first && typeof first.text === "string" && first.text.trim() !== "") {
+                        return first.text;
                     }
                 }
                 return (
-                    "Page : Planning 2026\n" +
+                    "Bloc : Planning 2026\n" +
                     "\n" +
                     "Éléments :\n" +
                     "\n" +
@@ -6036,10 +6109,19 @@ Réponds toujours avec un JSON qui contient :
                 return scriptText ? "modify" : "create";
             }
 
-            function updateIaButtonLabel(isLoading, counter) {
+            var waitingTarget = null;
+            var waitingTargetOriginalLabel = null;
+
+            function updateIaButtonLabel(isLoading, counter, targetEl) {
+                var displayCounter = typeof counter === "number" ? counter : waitingCounter;
+                if (targetEl) {
+                    try {
+                        targetEl.textContent = "⏳" + displayCounter + "s";
+                    } catch (e) { }
+                    return;
+                }
                 if (!iaModalButton) return;
                 if (isLoading) {
-                    var displayCounter = typeof counter === "number" ? counter : waitingCounter;
                     iaModalButton.textContent = "⏳ Attente " + displayCounter + "s";
                 } else {
                     iaModalButton.textContent = iaModalButtonDefaultLabel;
@@ -6051,34 +6133,420 @@ Réponds toujours avec un JSON qui contient :
                     clearInterval(waitingTimerId);
                     waitingTimerId = null;
                 }
-                updateIaButtonLabel(false);
+                if (waitingTarget) {
+                    try {
+                        waitingTarget.textContent = waitingTargetOriginalLabel || "";
+                    } catch (e) { }
+                    waitingTarget = null;
+                    waitingTargetOriginalLabel = null;
+                } else {
+                    updateIaButtonLabel(false);
+                }
                 setEmptyStateLoading(false);
             }
 
-            function startWaitingTimer() {
+            function startWaitingTimer(targetEl) {
                 stopWaitingTimer();
                 waitingCounter = 30;
-                updateIaButtonLabel(true, waitingCounter);
+                if (targetEl) {
+                    waitingTarget = targetEl;
+                    try {
+                        waitingTargetOriginalLabel = waitingTarget.textContent;
+                    } catch (e) {
+                        waitingTargetOriginalLabel = null;
+                    }
+                    updateIaButtonLabel(true, waitingCounter, waitingTarget);
+                } else {
+                    updateIaButtonLabel(true, waitingCounter);
+                }
                 setEmptyStateLoading(true, waitingCounter);
                 waitingTimerId = setInterval(function () {
                     waitingCounter--;
                     if (waitingCounter < 0) {
                         waitingCounter = 30;
                     }
-                    updateIaButtonLabel(true, waitingCounter);
+                    if (waitingTarget) {
+                        updateIaButtonLabel(true, waitingCounter, waitingTarget);
+                    } else {
+                        updateIaButtonLabel(true, waitingCounter);
+                    }
                     setEmptyStateLoading(true, waitingCounter);
                 }, 1000);
             }
 
-            function fillPromptTemplate(template, instructions, planningJson) {
-                var text = template.replace("{{(contenu du id=\"prompt\") }}", instructions || "");
+            function fillPromptTemplate(template, instructions, planningJson, mode) {
+                var text = template || "";
+                // Replace explicit placeholders with the appropriate textarea contents
+                try {
+                    if (text.indexOf("{{contenu_script}}") >= 0) {
+                        var createContent = txtPromptCreate && txtPromptCreate.value ? txtPromptCreate.value : "";
+                        text = text.replace(/\{\{contenu_script\}\}/g, createContent);
+                    }
+                    if (text.indexOf("{{contenu_recit}}") >= 0) {
+                        var modifyContent = txtPromptModify && txtPromptModify.value ? txtPromptModify.value : "";
+                        text = text.replace(/\{\{contenu_recit\}\}/g, modifyContent);
+                    }
+                    // Backwards compatibility: replace old generic placeholder
+                    if (text.indexOf("{{(contenu du id=\"prompt\") }}") >= 0) {
+                        text = text.replace("{{(contenu du id=\"prompt\") }}", instructions || "");
+                    }
+                } catch (e) {
+                    console.warn("Erreur lors du remplissage du template", e);
+                }
+
                 var placeholder = "{{(contenu au format JSON du planning existant)}}";
-                if (template.indexOf(placeholder) >= 0) {
-                    var planningContent =
-                        planningJson && planningJson.trim() ? planningJson : "(aucun planning existant)";
+                if (text.indexOf(placeholder) >= 0) {
+                    var planningContent = planningJson && planningJson.trim() ? planningJson : "(aucun planning existant)";
                     text = text.replace(placeholder, planningContent);
                 }
                 return text;
+            }
+
+            // Centralized generator used by both buttons
+            async function generateFromMode(triggerButton, mode) {
+                if (!triggerButton) triggerButton = null;
+                if (mode === "modify") {
+                    ensureModifyPrompt({ refreshModify: true });
+                }
+                var promptField = mode === "modify" ? txtPromptModify : txtPromptCreate;
+                var promptText = (promptField && promptField.value ? promptField.value.trim() : "");
+
+                if (!promptText && mode === "modify" && txtPromptCreate && txtPromptCreate.value.trim()) {
+                    mode = "create";
+                    promptField = txtPromptCreate;
+                    promptText = txtPromptCreate.value.trim();
+                }
+
+                if (!promptText) {
+                    alert("Ajoute un prompt avant d'appeler OpenAI 🙂");
+                    promptField && promptField.focus();
+                    return;
+                }
+
+                var currentPlanning = null;
+                var planningJson = "";
+                if (mode === "modify") {
+                    if (hasTimelineData()) {
+                        currentPlanning = exportPlanningToJson();
+                        planningJson = JSON.stringify(currentPlanning, null, 2);
+                    }
+                }
+
+                var systemContent = fillPromptTemplate(
+                    getSystemTemplate(),
+                    promptText,
+                    planningJson,
+                    mode
+                );
+
+                var payload = {
+                    schema: "planning-v1",
+                    mode: mode,
+                    prompt: promptText,
+                    planning: currentPlanning
+                };
+
+                var messages = [{ role: "system", content: systemContent }, { role: "user", content: JSON.stringify(payload, null, 2) }];
+
+                lastTimelineGenerationAt = Date.now();
+                startWaitingTimer(triggerButton);
+                if (triggerButton) triggerButton.disabled = true;
+                closeIaModal();
+                try {
+                    var aiResponse = await callOpenAI(messages);
+                    if (!aiResponse) return;
+                    var normalized = aiResponse.trim();
+                    console.log("OpenAI response body", normalized);
+
+                    var planning = null;
+                    // Try parse as JSON first
+                    try {
+                        planning = JSON.parse(normalized);
+                    } catch (err) {
+                        // If modify mode, try to parse a human-readable script into planning
+                        if (mode === "modify") {
+                            try {
+                                var parsed = parseScriptToPlanning(normalized);
+                                if (parsed) {
+                                    planning = parsed;
+                                } else {
+                                    throw new Error("Parsing script failed");
+                                }
+                            } catch (err2) {
+                                console.error("Impossible de parser la réponse IA en JSON ou script structuré", err2);
+                                alert(err2 && err2.message ? err2.message : "Réponse IA invalide : JSON attendu ou script structuré.");
+                                return;
+                            }
+                        } else {
+                            console.error("JSON OpenAI invalide", err);
+                            alert("Réponse OpenAI invalide : JSON attendu.");
+                            return;
+                        }
+                    }
+
+                    if (planning && typeof planning.page === "string") {
+                        var pageTitle = planning.page.trim();
+                        if (pageTitle) {
+                            var currentView = views[activeViewIndex];
+                            if (currentView) {
+                                currentView.title = pageTitle;
+                                refreshHeaderText();
+                                persistTimelineState();
+                            }
+                        }
+                    }
+
+                    // If the assistant also returned a textual script, update the script textarea
+                    try {
+                        if (planning && planning.script && txtPromptModify) {
+                            txtPromptModify.value = planning.script;
+                            // persist in context
+                            var ctx = ensureViewContext(views[activeViewIndex]);
+                            if (ctx && ctx.prompts) {
+                                ctx.prompts.modify = txtPromptModify.value;
+                                persistTimelineState();
+                            }
+                        }
+                        // If modify mode and we parsed from a textual script, update textarea with the raw text
+                        if (mode === "modify" && !planning.script && typeof normalized === "string" && txtPromptModify) {
+                            txtPromptModify.value = normalized;
+                            var ctx2 = ensureViewContext(views[activeViewIndex]);
+                            if (ctx2 && ctx2.prompts) {
+                                ctx2.prompts.modify = txtPromptModify.value;
+                                persistTimelineState();
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Impossible de mettre à jour le script depuis la réponse IA", e);
+                    }
+
+                    applyPlanningFromJson(planning);
+                } finally {
+                    if (triggerButton) triggerButton.disabled = false;
+                    stopWaitingTimer();
+                }
+            }
+
+            // Parse a human-readable script (as produced by buildTextExport) into a planning object.
+            function parseScriptToPlanning(text) {
+                if (!text || !text.toString) return null;
+                var raw = text.toString().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+                var lines = raw.split(/\n/).map(function (l) { return (l || "").trim(); });
+                // Remove leading/trailing empty lines
+                while (lines.length && lines[0] === "") lines.shift();
+                while (lines.length && lines[lines.length - 1] === "") lines.pop();
+
+                var planning = { page: "", timeline: {}, groups: [], types: [], items: [] };
+                var groupsMap = {};
+                var groupOrder = [];
+                var typesMap = {};
+                var typeOrder = [];
+                var hasDeclaredGroups = false;
+                var hasDeclaredTypes = false;
+                var unknownReferences = [];
+
+                function registerGroup(label) {
+                    var name = (label || "").toString().trim();
+                    if (!name) return null;
+                    var id = sanitizeTypeId(name) || name.replace(/\s+/g, "_").toLowerCase();
+                    if (!groupsMap[id]) {
+                        groupsMap[id] = { id: id, label: name };
+                        groupOrder.push(id);
+                    }
+                    return id;
+                }
+
+                function registerType(label) {
+                    var name = (label || "").toString().trim();
+                    if (!name) return null;
+                    var id = sanitizeTypeId(name) || name.replace(/\s+/g, "_").toLowerCase();
+                    if (!typesMap[id]) {
+                        typesMap[id] = { id: id, label: name };
+                        typeOrder.push(id);
+                    }
+                    return id;
+                }
+
+                // Parse header lines
+                var i = 0;
+                for (; i < lines.length; i++) {
+                    var line = lines[i];
+                    if (!line) continue;
+                    var mPage = line.match(/^(?:Page|Bloc)\s*[:\-–]?\s*(.+)$/i);
+                    if (mPage) {
+                        planning.page = mPage[1].trim();
+                        continue;
+                    }
+                    var mPeriod = line.match(/^P[eé]riode\s*[:]\s*(.+)$/i);
+                    if (mPeriod) {
+                        var range = mPeriod[1].split(/→|->|-|—/).map(function (s) { return s.trim(); }).filter(Boolean);
+                        if (range.length) {
+                            planning.timeline.start = range[0] || undefined;
+                            planning.timeline.end = range[1] || range[0] || undefined;
+                        }
+                        continue;
+                    }
+                    var mGroups = line.match(/^Groupes?\s*[:]\s*(.+)$/i);
+                    if (mGroups) {
+                        hasDeclaredGroups = true;
+                        var parts = mGroups[1].split(/,|;/).map(function (s) { return s.trim(); }).filter(Boolean);
+                        parts.forEach(function (p) {
+                            registerGroup(p);
+                        });
+                        continue;
+                    }
+                    var mTypes = line.match(/^Types?\s*[:]\s*(.+)$/i);
+                    if (mTypes) {
+                        hasDeclaredTypes = true;
+                        var typeParts = mTypes[1].split(/,|;/).map(function (s) { return s.trim(); }).filter(Boolean);
+                        typeParts.forEach(function (p) {
+                            registerType(p);
+                        });
+                        continue;
+                    }
+                    if (/^\s*(?:Actions?|Él[eé]ments?)\s*[:]?\s*$/i.test(line)) {
+                        i++;
+                        break;
+                    }
+                }
+
+                // Now parse items blocks until end
+                var currentBlock = [];
+                for (; i <= lines.length; i++) {
+                    var line = lines[i] || "";
+                    if (line === "") {
+                        if (currentBlock.length) {
+                            // process block
+                            var label = (currentBlock[0] || "").trim();
+                            var item = { id: null, groupId: null, label: label, kind: "", start: null, end: null, date: null };
+                            for (var j = 1; j < currentBlock.length; j++) {
+                                var l = currentBlock[j];
+                                var mDate = l.match(/^Date\s*[:]\s*(.+)$/i);
+                                if (mDate) {
+                                    var val = mDate[1].trim();
+                                    var durationMatch = val.match(/\((\d+)\s*jour[s]?\)/i);
+                                    var durationDays = durationMatch ? parseInt(durationMatch[1], 10) : null;
+                                    var cleaned = val.replace(/\s*\([^)]+\)\s*$/i, "").trim();
+                                    var range = cleaned.split(/→|->|-|—/).map(function (s) { return s.trim(); }).filter(Boolean);
+                                    if (range.length === 1) {
+                                        item.date = range[0];
+                                        item.start = range[0];
+                                        item.end = range[0];
+                                        if (durationDays && durationDays > 1) {
+                                            var parsedStart = new Date(range[0]);
+                                            if (!isNaN(parsedStart.getTime())) {
+                                                var calculatedEnd = new Date(parsedStart.getTime());
+                                                calculatedEnd.setDate(calculatedEnd.getDate() + (durationDays - 1));
+                                                item.end = calculatedEnd.toISOString().slice(0, 10);
+                                            }
+                                        }
+                                    } else if (range.length >= 2) {
+                                        item.start = range[0] || null;
+                                        item.end = range[1] || null;
+                                    }
+                                    continue;
+                                }
+                                var mGroup = l.match(/^Groupe\s*[:]\s*(.+)$/i);
+                                if (mGroup) {
+                                    var rawGroup = (mGroup[1] || "").trim();
+                                    var gid = sanitizeTypeId(rawGroup || "");
+                                    item.groupId = gid;
+                                    item.rawGroupLabel = rawGroup;
+                                    if (gid) {
+                                        if (hasDeclaredGroups && !groupsMap[gid]) {
+                                            unknownReferences.push({
+                                                action: label,
+                                                group: rawGroup,
+                                                type: item.kind || ""
+                                            });
+                                        } else if (!groupsMap[gid]) {
+                                            registerGroup(rawGroup);
+                                        }
+                                    }
+                                    continue;
+                                }
+                                var mType = l.match(/^Type\s*[:]\s*(.+)$/i);
+                                if (mType) {
+                                    var rawType = (mType[1] || "").trim();
+                                    var kind = sanitizeTypeId(rawType);
+                                    if (kind) {
+                                        item.kind = kind;
+                                        if (hasDeclaredTypes && !typesMap[kind]) {
+                                            unknownReferences.push({
+                                                action: label,
+                                                group: item.rawGroupLabel || item.groupId || "",
+                                                type: rawType
+                                            });
+                                        } else if (!typesMap[kind]) {
+                                            registerType(rawType);
+                                        }
+                                    }
+                                    continue;
+                                }
+                            }
+                            // default group if missing
+                            if (!item.groupId) {
+                                // assign to first group if exists or create 'default'
+                                var keys = Object.keys(groupsMap);
+                                if (keys.length) item.groupId = groupsMap[keys[0]].id;
+                                else {
+                                    var gid = registerGroup("Général");
+                                    item.groupId = gid;
+                                }
+                            }
+                            // default kind
+                            if (!item.kind) {
+                                if (item.date && item.start && item.end && item.start === item.end) {
+                                    item.kind = "milestone";
+                                } else {
+                                    item.kind = "feature";
+                                }
+                            }
+                            // generate id
+                            item.id = "item-" + Math.random().toString(36).slice(2, 9);
+                            // if start/end equal, set date for milestone
+                            if (item.kind === "milestone") {
+                                item.date = item.date || (item.start || null);
+                                item.start = null;
+                                item.end = null;
+                            }
+                            planning.items.push(item);
+                            currentBlock = [];
+                        }
+                        continue;
+                    }
+                    currentBlock.push(line);
+                }
+
+                if (unknownReferences.length) {
+                    var message = ["Groupes ou types inconnus détectés :"];
+                    unknownReferences.forEach(function (ref) {
+                        message.push(
+                            "- Action \"" + (ref.action || "Sans titre") + "\" (Groupe : " + (ref.group || "non précisé") + ", Type : " + (ref.type || "non précisé") + ")"
+                        );
+                    });
+                    throw new Error(message.join("\n"));
+                }
+
+                planning.groups = (groupOrder.length ? groupOrder : Object.keys(groupsMap)).map(function (k) {
+                    return groupsMap[k];
+                }).filter(Boolean);
+
+                // Ensure every used type exists in definitions
+                planning.items.forEach(function (it) {
+                    var kid = sanitizeTypeId(it.kind || it.type || "");
+                    if (!kid) return;
+                    if (!typesMap[kid]) {
+                        registerType(kid);
+                    }
+                });
+                planning.types = (typeOrder.length ? typeOrder : Object.keys(typesMap)).map(function (k) {
+                    return typesMap[k];
+                }).filter(Boolean);
+                if (!planning.types || !planning.types.length) {
+                    planning.types = [{ id: "feature", label: "feature" }, { id: "milestone", label: "milestone" }];
+                }
+                return planning;
             }
 
             async function callOpenAI(messages) {
@@ -6128,85 +6596,10 @@ Réponds toujours avec un JSON qui contient :
 
             btnCall.addEventListener("click", async function () {
                 var mode = determineGenerationMode();
-                if (mode === "modify") {
-                    ensureModifyPrompt({ refreshModify: true });
-                }
-                var promptField = mode === "modify" ? txtPromptModify : txtPromptCreate;
-                var promptText = (promptField && promptField.value ? promptField.value.trim() : "");
-
-                if (!promptText && mode === "modify" && txtPromptCreate && txtPromptCreate.value.trim()) {
-                    mode = "create";
-                    promptField = txtPromptCreate;
-                    promptText = txtPromptCreate.value.trim();
-                }
-
-                if (!promptText) {
-                    alert("Ajoute un prompt avant d'appeler OpenAI 🙂");
-                    promptField && promptField.focus();
-                    return;
-                }
-
-                var currentPlanning = null;
-                var planningJson = "";
-                if (mode === "modify") {
-                    if (hasTimelineData()) {
-                        currentPlanning = exportPlanningToJson();
-                        planningJson = JSON.stringify(currentPlanning, null, 2);
-                    }
-                }
-
-                var systemContent = fillPromptTemplate(
-                    getSystemTemplateForMode(mode),
-                    promptText,
-                    planningJson
-                );
-
-                var payload = {
-                    schema: "planning-v1",
-                    mode: mode,
-                    prompt: promptText,
-                    planning: currentPlanning
-                };
-
-                var messages = [
-                    { role: "system", content: systemContent },
-                    { role: "user", content: JSON.stringify(payload, null, 2) }
-                ];
-
-                lastTimelineGenerationAt = Date.now();
-                startWaitingTimer();
-                btnCall.disabled = true;
-                closeIaModal();
-                try {
-                    var aiResponse = await callOpenAI(messages);
-                    if (!aiResponse) return;
-                    var normalized = aiResponse.trim();
-                    console.log("OpenAI response body", normalized);
-                    var planning;
-                    try {
-                        planning = JSON.parse(normalized);
-                    } catch (err) {
-                        console.error("JSON OpenAI invalide", err);
-                        alert("Réponse OpenAI invalide : JSON attendu.");
-                        return;
-                    }
-                    if (planning && typeof planning.page === "string") {
-                        var pageTitle = planning.page.trim();
-                        if (pageTitle) {
-                            var currentView = views[activeViewIndex];
-                            if (currentView) {
-                                currentView.title = pageTitle;
-                                refreshHeaderText();
-                                persistTimelineState();
-                            }
-                        }
-                    }
-                    applyPlanningFromJson(planning);
-                } finally {
-                    btnCall.disabled = false;
-                    stopWaitingTimer();
-                }
+                await generateFromMode(btnCall, mode);
             });
+
+
 
             var timelineTourSteps = [
                 {
@@ -6215,9 +6608,9 @@ Réponds toujours avec un JSON qui contient :
                     selectors: ["#timeline"]
                 },
                 {
-                    title: "Démarre par le Contexte 💬",
-                    description: "Clique sur 💬, choisis Magique ou Guidé, saisis ton contexte puis lance \"⌘ Créer le planning\".",
-                    selectors: ["#openContextModal"]
+                    title: "Gutenberg en barre latérale",
+                    description: "Utilise la carte Gutenberg à droite : onglet Récit pour décrire le contexte puis bouton ⌘ Générer, onglet Script pour modifier le planning.",
+                    selectors: [".gutenberg-card"]
                 },
                 {
                     title: "Affiche, zoome, navigue",
@@ -6231,11 +6624,11 @@ Réponds toujours avec un JSON qui contient :
                 {
                     title: "Modifie librement le contenu",
                     description: "Ajoute, renomme, déplace, ajuste les durées ou supprime n’importe quel élément directement dans la timeline.",
-                    selectors: [".toolbar .item-actions"]
+                    selectors: [".toolbar .item-actions", "#btn-add-milestone", "#btn-add-item", "#btn-add-type", "#openColorPaletteBtn"]
                 },
                 {
                     title: "Exporte ta timeline",
-                    description: "Le menu 📄 permet de télécharger la vue courante en texte, image ou Excel et le bouton ⧉ Capsule génère un lien privé pour la partager rapidement.",
+                    description: "Le menu ⥂ Canal permet de télécharger la vue courante en texte, image ou Excel et le bouton ⧉ Capsule génère un lien privé pour la partager rapidement.",
                     selectors: ["#fileMenuBtn"]
                 }
             ];
