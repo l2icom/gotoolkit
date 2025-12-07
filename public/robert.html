@@ -48,14 +48,16 @@
 
         .template-row {
             display: grid;
-            grid-template-columns: 28px 1fr;
-            gap: 10px;
-            padding: 10px 12px;
+            grid-template-columns: 1fr;
+            gap: 6px;
+            padding: 12px 14px;
             border: 1px solid #ebe0d1;
             border-radius: 12px;
             background: #fffdf8;
             align-items: center;
             direction: ltr;
+            cursor: pointer;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
         }
 
         .template-row h4 {
@@ -69,20 +71,17 @@
             color: var(--muted);
         }
 
+        .template-row.selected {
+            border-color: #d3c3a7;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+            background: #fffaf0;
+        }
+
         .template-actions {
             display: flex;
             justify-content: flex-end;
             gap: 8px;
             flex-wrap: wrap;
-        }
-
-        .template-row input[type="radio"] {
-            grid-column: 1 / 2;
-            justify-self: center;
-            width: 18px;
-            height: 18px;
-            margin: 0;
-            accent-color: #2a7a57;
         }
 
         .menu-trigger {
@@ -524,6 +523,257 @@
             overflow: hidden;
         }
 
+        .app-main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 12px;
+            min-height: 0;
+            align-items: stretch;
+            position: relative;
+        }
+
+        .app-main.gutenberg-open {
+            /* make the right-hand card responsive: at most 350px, at least 200px */
+            grid-template-columns: minmax(0, 1fr) minmax(200px, 350px);
+        }
+
+        .gutenberg-card {
+            background: #fff;
+            border: 1px solid #ebe0d1;
+            border-radius: 8px;
+            box-shadow: var(--shadow-soft);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: calc(100%-10px);
+            min-height: 0;
+            max-height: 100%;
+            overflow: auto;
+            transition: transform 0.25s ease, opacity 0.25s ease;
+            z-index: 25;
+            font-size: 13px;
+            margin: 10px 0px 10px 0px;
+            padding-top: 0px;
+        }
+
+        .gutenberg-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0px;
+        }
+
+        .gutenberg-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .gutenberg-card-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .gutenberg-card-actions-row {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            margin-bottom: 6px;
+            flex-direction: row-reverse;
+        }
+
+        /* Make the full generate button primary green */
+        #generateFullSlideBtn {
+            border: none;
+            position: relative;
+            background: #2a7a57;
+            color: #ffffff;
+            padding: 6px 10px;
+            border-radius: 8px;
+        }
+
+        #generateFullSlideBtn:disabled {
+            opacity: 0.6;
+        }
+
+        .gutenberg-card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-height: 0;
+            height: 100%;
+            font-size: 13px
+        }
+
+        .gutenberg-card label {
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .gutenberg-card textarea {
+            border-radius: 8px;
+            border: 1px solid #d0c3ad;
+            padding: 8px;
+            font-size: 11px;
+            font-family: monospace;
+            min-height: 120px;
+            resize: none;
+            overflow: auto;
+            scrollbar-width: none;
+            line-height: 1.4;
+            /* Firefox: hide by default */
+        }
+
+        /* Layout: Récit fixed height, Scène fills remaining space */
+        .gutenberg-card-body>label:first-child textarea,
+        #globalContextField {
+            height: 200px;
+            flex: none;
+            min-height: 0;
+        }
+
+        .gutenberg-card-body>label:last-child {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        .gutenberg-card-body>label:last-child textarea,
+        #pageContextField {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+        }
+
+        /* Thin scrollbar only visible on focus */
+        .gutenberg-card textarea::-webkit-scrollbar {
+            width: 6px;
+            height: 0px;
+            /* hide horizontal by default */
+        }
+
+        .gutenberg-card textarea:focus::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+
+        .gutenberg-card textarea::-webkit-scrollbar-thumb {
+            background: rgba(15, 23, 42, 0.10);
+            border-radius: 999px;
+        }
+
+        .gutenberg-card textarea:focus::-webkit-scrollbar-thumb {
+            background: rgba(15, 23, 42, 0.22);
+        }
+
+        /* Firefox: show thin scrollbar only on focus */
+        .gutenberg-card textarea {
+            scrollbar-width: none;
+        }
+
+        .gutenberg-card textarea:focus {
+            scrollbar-width: thin;
+        }
+
+        .gutenberg-status {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .gutenberg-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.28);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            z-index: 24;
+        }
+
+        .gutenberg-backdrop.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        @media (min-width: 900px) {
+            .gutenberg-card {
+                /* responsive: fill the column but never exceed 350px */
+                width: 100%;
+                width: 350px;
+                flex: 0 0 auto;
+                display: none;
+                transform: none;
+                opacity: 1;
+                position: relative;
+            }
+
+            .gutenberg-card-actions-row {
+                display: flex;
+                gap: 8px;
+                justify-content: flex-start;
+                align-items: center;
+                width: 100%;
+                flex-direction: row-reverse;
+                flex-wrap: wrap;
+            }
+
+            .gutenberg-card-actions-row .tab-btn-suggest {
+                padding: 6px 10px;
+                border-radius: 8px;
+            }
+
+            .gutenberg-card.open {
+                display: flex;
+            }
+
+            .gutenberg-backdrop {
+                display: none;
+            }
+        }
+
+        @media (max-width: 899px) {
+            .app-main {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .gutenberg-card {
+                position: fixed;
+                top: 12px;
+                right: 12px;
+                bottom: 12px;
+                width: min(320px, 88vw);
+                max-height: calc(100vh - 24px);
+                transform: translateX(110%);
+                opacity: 0;
+                pointer-events: none;
+                visibility: hidden;
+            }
+
+            .gutenberg-card.open {
+                transform: translateX(0);
+                opacity: 1;
+                pointer-events: auto;
+                visibility: visible;
+            }
+
+            /* ensure actions row stacks nicely on small screens */
+            .gutenberg-card-actions-row {
+                justify-content: flex-start;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+        }
+
 
         .app::after {
             content: "";
@@ -810,6 +1060,24 @@
             border-color: #2a7a57;
         }
 
+
+        #generatePlaceholdersBtn {
+            border: none;
+            background: #2a7a57;
+            color: #ffffff;
+            padding: 6px 10px;
+            border-radius: 8px;
+        }
+
+        #generateFullSlideBtn {
+            background: #fff;
+            color: var(--text-main);
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid #1f1f1f;
+        }
+
+
         .tab-btn-add,
         .tab-btn-delete,
         .tab-btn-reset,
@@ -820,7 +1088,7 @@
             padding: 4px 12px;
             cursor: pointer;
             font-size: 12px;
-            color: var(--muted);
+            color: var(--text-main);
         }
 
         .tab-btn-suggest-status {
@@ -905,6 +1173,17 @@
             align-items: flex-start;
             overflow-y: auto;
             width: 100%;
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+
+        .slides-container::-webkit-scrollbar {
+            display: none;
+            /* Safari and Chrome */
+            width: 0px;
+            height: 0px;
         }
 
         .slide-empty-state {
@@ -954,7 +1233,7 @@
 
         .slide {
             background: var(--slide-bg, transparent);
-            border-radius: var(--radius-large);
+            border-radius: var(--radius);
             padding: 8px 8px 8px;
             box-shadow: var(--shadow-soft);
             border: 1px solid rgba(255, 255, 255, 0.7);
@@ -1540,6 +1819,11 @@
                 display: none;
             }
 
+            .gutenberg-card,
+            .gutenberg-backdrop {
+                display: none !important;
+            }
+
             .slide {
                 box-shadow: none;
                 border-radius: 0;
@@ -1567,19 +1851,16 @@
                 <button class="tab-btn-reset" id="restoreStructureBtn" type="button"
                     aria-label="Restaurer les colonnes et sections">↺</button>
                 <button class="tab-btn-delete" id="deleteTabBtn" type="button">×</button>
-                <button class="tab-btn-suggest" id="generatePlaceholdersBtn" type="button"
-                    aria-label="Générer des suggestions pour les sections">✱ Suggestions</button>
-                <button class="tab-btn-suggest" id="generateFullSlideBtn" type="button"
-                    aria-label="Générer toutes les sections et la synthèse">⌘ Tout</button>
-                <span class="tab-btn-suggest-status" id="suggestionStatusLabel" aria-live="polite"></span>
             </div>
             <div class="global-actions">
-                <button id="contextEditorBtn" class="info-button" type="button" aria-label="Ouvrir Gutenberg">⸙
-                    Gutenberg</button>
-                <button id="contextBtn" type="button" aria-label="Promptzilla">⌘ Promptzilla</button>
+
 
                 <div class="menu-trigger" id="settingsMenuTrigger">
-                    <button id="templateBtn" type="button" aria-label="Choisir un blueprint">⛶ Blueprint</button>
+                    <button id="templateBtn" type="button" aria-label="Choisir un Promptzilla">⛶ Promptzilla</button>
+                    <button id="contextEditorBtn" class="info-button" type="button" aria-label="Ouvrir Gutenberg">⸙
+                        Gutenberg</button>
+                    <button id="contextBtn" type="button" aria-label="Soulgorithm">⌘ Soulgorithm</button>
+
                     <button id="textStyleBtn" type="button" aria-label="Hublot">◯ Hublot</button>
                     <div class="context-menu" id="settingsMenu">
                         <div class="menu-panel">
@@ -1662,15 +1943,45 @@
             </div>
         </div>
 
-        <div class="slides-container">
-            <div class="slide-empty-state" id="slideEmptyState">
-                <p>
-                    Cette page est vide.
-                </p>
-                <button id="slideContextLink" type="button">⌘ Ouvrir l’IA contexte</button>
+        <div class="app-main">
+            <div class="slides-container">
+                <div class="slide-empty-state" id="slideEmptyState">
+                    <p>
+                        Cette page est vide.
+                    </p>
+                    <button id="slideContextLink" type="button">⌘ Ouvrir l’IA contexte</button>
+                </div>
+                <div id="slides" class="slide-wrapper"></div>
             </div>
-            <div id="slides" class="slide-wrapper"></div>
+            <aside class="gutenberg-card" id="gutenbergCard" aria-label="Gutenberg" aria-hidden="true">
+                <div class="gutenberg-card-header">
+                    <div class="gutenberg-card-actions">
+                        <!-- header left intentionally minimal; status and actions placed below -->
+                    </div>
+                </div>
+                <div class="gutenberg-card-body">
+                    <div class="gutenberg-card-actions-row">
+                        <button class="tab-btn-suggest" id="generatePlaceholdersBtn" type="button"
+                            aria-label="Générer des suggestions pour les sections">✧ Suggérer</button>
+                        <button class="tab-btn-suggest" id="generateFullSlideBtn" type="button"
+                            aria-label="Générer toutes les sections et la synthèse">⌘ Générer</button>
+                        <span class="tab-btn-suggest-status gutenberg-status" id="suggestionStatusLabel"
+                            aria-live="polite"></span>
+                    </div>
+                    <label>
+                        <span style="font-size:15px;">Récit</span>
+                        <textarea id="globalContextField" rows="10"
+                            placeholder="Décris ici le cadre global : le domaine, l’objectif principal, les utilisateurs concernés, la problématique à résoudre et le niveau d’enjeu. Décris aussi l’intention globale (pourquoi on fait ça) et l’état actuel (où on en est)."></textarea>
+                    </label>
+                    <label>
+                        <span style="font-size:15px;">Scène</span>
+                        <textarea id="pageContextField" rows="10"
+                            placeholder="Ajoute les éléments précis : la situation réelle, les contraintes connues, les choix déjà faits, les dépendances, les deadlines, les acteurs impliqués, les données chiffrées utiles, les points de vigilance et la condition de succès de ce cas particulier."></textarea>
+                    </label>
+                </div </aside>
         </div>
+
+        <div id="gutenbergBackdrop" class="gutenberg-backdrop"></div>
 
         <div id="tourOverlay" class="tour-overlay" aria-hidden="true">
             <div class="tour-highlight hidden" aria-hidden="true"></div>
@@ -1693,7 +2004,7 @@
     <div class="modal-overlay" id="contextModal">
         <div class="modal">
             <div class="modal-header">
-                <h3>⌘ Promptzilla</h3>
+                <h3>⌘ Soulgorithm</h3>
                 <button class="modal-close" data-close="contextModal">×</button>
             </div>
             <div class="modal-panel hide" data-panel="settings">
@@ -1738,33 +2049,10 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="contextEditorModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>⸙ Gutenberg</h3>
-                <button class="modal-close" data-close="contextEditorModal">×</button>
-            </div>
-            <div class="modal-panel">
-                <label>
-                    <span>Récit</span>
-                    <textarea id="globalContextField" rows="10"
-                        placeholder="Décris ici le cadre global : le domaine, l’objectif principal, les utilisateurs concernés, la problématique à résoudre et le niveau d’enjeu. Décris aussi l’intention globale (pourquoi on fait ça) et l’état actuel (où on en est)."></textarea>
-                </label>
-            </div>
-            <div class="modal-panel">
-                <label>
-                    <span>Scène</span>
-                    <textarea id="pageContextField" rows="10"
-                        placeholder="Ajoute les éléments précis : la situation réelle, les contraintes connues, les choix déjà faits, les dépendances, les deadlines, les acteurs impliqués, les données chiffrées utiles, les points de vigilance et la condition de succès de ce cas particulier."></textarea>
-                </label>
-            </div>
-        </div>
-    </div>
-
     <div class="modal-overlay" id="templateModal">
         <div class="modal">
             <div class="modal-header">
-                <h3>Choisir un blueprint</h3>
+                <h3>Choisir un Promptzilla</h3>
                 <button class="modal-close" data-close="templateModal">×</button>
             </div>
             <div class="modal-panel">
@@ -1802,6 +2090,32 @@
     <script>
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
+    </script>
+
+    <script>
+        (function () {
+            function updateGutenbergVisibility() {
+                var card = document.getElementById("gutenbergCard");
+                var appMain = document.querySelector(".app-main");
+                if (!card || !appMain) return;
+                if (window.innerWidth > 900) {
+                    card.classList.add("open");
+                    appMain.classList.add("gutenberg-open");
+                    card.setAttribute("aria-hidden", "false");
+                } else {
+                    card.classList.remove("open");
+                    appMain.classList.remove("gutenberg-open");
+                    card.setAttribute("aria-hidden", "true");
+                }
+            }
+
+            window.addEventListener("resize", updateGutenbergVisibility);
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", updateGutenbergVisibility);
+            } else {
+                updateGutenbergVisibility();
+            }
+        })();
     </script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
@@ -1860,10 +2174,11 @@
                 id: "roadmap",
                 name: "🗺️ Go-Roadmap",
                 defaultTitle: "Go-Roadmap",
+                description: "Plan en trois horizons : sécuriser maintenant, préparer les prochains chantiers et ouvrir les paris long terme, avec objectifs, moyens et indicateurs clés.",
                 columns: [
-                    { stage: "first-col", label: "NOW - Maintenant" },
-                    { stage: "second-col", label: "NEXT - Prochainement" },
-                    { stage: "third-col", label: "LATER - Plus tard" }
+                    { stage: "first-col", label: "Maintenant" },
+                    { stage: "second-col", label: "Prochainement" },
+                    { stage: "third-col", label: "Plus tard" }
                 ],
                 sections: [
                     { key: "objectif", label: "Objectif", examples: "" },
@@ -1875,6 +2190,7 @@
                 id: "arbitrage",
                 name: "⚖️ Arbitrage",
                 defaultTitle: "Arbitrage",
+                description: "Peser Pour/Contre et synthèse pour décider vite : données factuelles, impacts produits et ergonomie pour éclairer le choix.",
                 columns: [
                     { stage: "first-col", label: "Pour" },
                     { stage: "second-col", label: "Contre" },
@@ -1890,6 +2206,7 @@
                 id: "comparaison",
                 name: "🆚 Comparaison",
                 defaultTitle: "Comparaison",
+                description: "Comparer plusieurs options : décrire, lister avantages et inconvénients en croisant choix, fonctionnalités et solutions envisagées.",
                 columns: [
                     { stage: "first-col", label: "Choix A/B/C" },
                     { stage: "second-col", label: "Fonctionnalité A/B/C" },
@@ -1905,6 +2222,7 @@
                 id: "evaluation",
                 name: "📈 Évaluation",
                 defaultTitle: "Évaluation",
+                description: "Qualifier une initiative par impact et effort : cadrer les choix, les fonctionnalités et les pistes de solution pour prioriser.",
                 columns: [
                     { stage: "first-col", label: "Choix A/B/C" },
                     { stage: "second-col", label: "Fonctionnalité A/B/C" },
@@ -1920,6 +2238,7 @@
                 id: "parcours",
                 name: "🚶 Parcours",
                 defaultTitle: "Parcours",
+                description: "Cartographier un parcours : étapes clés, problématiques et opportunités avant/pendant/après pour révéler frictions et leviers.",
                 columns: [
                     { stage: "first-col", label: "Étape A/B/C" },
                     { stage: "second-col", label: "Problématique A/B/C" },
@@ -1935,6 +2254,7 @@
                 id: "alignement",
                 name: "🤝 Alignement",
                 defaultTitle: "Alignement",
+                description: "Aligner acteurs, besoins et contraintes : lecture business, tech et expérience pour clarifier attentes et zones de tension.",
                 columns: [
                     { stage: "first-col", label: "Acteur A/B/C" },
                     { stage: "second-col", label: "Besoin A/B/C" },
@@ -1950,6 +2270,7 @@
                 id: "priorisation",
                 name: "🎯 Priorisation",
                 defaultTitle: "Priorisation",
+                description: "Séquencer court/moyen/long terme : lister initiatives, peser impact vs effort et verrouiller l’ordre d’attaque.",
                 columns: [
                     { stage: "first-col", label: "Court terme" },
                     { stage: "second-col", label: "Moyen terme" },
@@ -1965,6 +2286,7 @@
                 id: "decision",
                 name: "🔎 Observation",
                 defaultTitle: "Observation",
+                description: "Structurer hypothèses, données et insights : croiser quanti/quali et formuler la synthèse qui guide la décision ou l’expérience à mener.",
                 columns: [
                     { stage: "first-col", label: "Hypothèse A/B/C" },
                     { stage: "second-col", label: "Donnée A/B/C" },
@@ -1980,6 +2302,7 @@
                 id: "default",
                 name: "🕊️ Libre",
                 defaultTitle: "Libre",
+                description: "Grille ouverte à trois colonnes et trois sections pour noter, esquisser ou brainstormer sans cadre imposé.",
                 columns: [
                     { stage: "first-col", label: "Colonne 1" },
                     { stage: "second-col", label: "Colonne 2" },
@@ -2089,10 +2412,13 @@
         const contextBtn = document.getElementById("contextBtn");
         const contextEditorBtn = document.getElementById("contextEditorBtn");
         const contextModal = document.getElementById("contextModal");
-        const contextEditorModal = document.getElementById("contextEditorModal");
+        const appMain = document.querySelector(".app-main");
+        const gutenbergCard = document.getElementById("gutenbergCard");
+        const gutenbergBackdrop = document.getElementById("gutenbergBackdrop");
         const templateModal = document.getElementById("templateModal");
         const templateList = document.getElementById("templateList");
         const templateApplyBtn = document.getElementById("templateApplyBtn");
+        let selectedTemplateId = null;
         const globalContextField = document.getElementById("globalContextField");
         const pageContextField = document.getElementById("pageContextField");
         const contextModalTabs = contextModal?.querySelectorAll(".modal-tab") ?? [];
@@ -2135,6 +2461,8 @@
         const slidesViewport = document.querySelector(".slides-container");
 
         let slideClampRaf = null;
+        const DESKTOP_GUTENBERG_BREAKPOINT = 900;
+        const GUTENBERG_SEEN_KEY = "robert-gutenberg-opened";
 
         function updateSlideClamp() {
             if (!slidesViewport) return;
@@ -2151,7 +2479,75 @@
             });
         }
 
-        window.addEventListener("resize", scheduleSlideClampUpdate);
+        function isDesktopGutenberg() {
+            return window.innerWidth >= DESKTOP_GUTENBERG_BREAKPOINT;
+        }
+
+        function isGutenbergOpen() {
+            return Boolean(gutenbergCard?.classList.contains("open"));
+        }
+
+        function markGutenbergSeen() {
+            try {
+                localStorage.setItem(GUTENBERG_SEEN_KEY, "1");
+            } catch (err) {
+                console.warn("Impossible de noter l'ouverture de Gutenberg", err);
+            }
+        }
+
+        function syncGutenbergLayoutState() {
+            const open = isGutenbergOpen();
+            const desktop = isDesktopGutenberg();
+            appMain?.classList.toggle("gutenberg-open", open && desktop);
+            gutenbergBackdrop?.classList.toggle("visible", open && !desktop);
+        }
+
+        function setGutenbergOpen(open, { auto = false } = {}) {
+            if (!gutenbergCard || !appMain) return;
+            const shouldOpen = Boolean(open);
+            gutenbergCard.classList.toggle("open", shouldOpen);
+            gutenbergCard.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
+            syncGutenbergLayoutState();
+            contextEditorBtn?.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+            contextEditorBtn?.setAttribute("aria-label", shouldOpen ? "Masquer Gutenberg" : "Ouvrir Gutenberg");
+            if (shouldOpen && !auto) {
+                markGutenbergSeen();
+            }
+        }
+
+        function toggleGutenberg(openValue = null) {
+            const shouldOpen = openValue === null ? !isGutenbergOpen() : Boolean(openValue);
+            if (shouldOpen) {
+                syncPageContextFieldWithActiveSlide();
+            }
+            setGutenbergOpen(shouldOpen);
+            if (shouldOpen) {
+                globalContextField?.focus();
+            }
+        }
+
+        function maybeAutoOpenGutenberg() {
+            if (!gutenbergCard || !appMain) return;
+            let seen = false;
+            try {
+                seen = localStorage.getItem(GUTENBERG_SEEN_KEY) === "1";
+            } catch (err) {
+                console.warn("Impossible de lire le statut de Gutenberg", err);
+            }
+            if (isDesktopGutenberg() && !seen) {
+                setGutenbergOpen(true, { auto: true });
+                markGutenbergSeen();
+            } else {
+                setGutenbergOpen(false);
+            }
+        }
+
+        function handleResize() {
+            scheduleSlideClampUpdate();
+            syncGutenbergLayoutState();
+        }
+
+        window.addEventListener("resize", handleResize);
 
         if (apiKeyInput) {
             apiKeyInput.addEventListener("input", () => {
@@ -2787,11 +3183,11 @@
             const disableButtons = onCooldown || isGeneratingSuggestions;
             if (generatePlaceholdersBtn) {
                 generatePlaceholdersBtn.disabled = disableButtons;
-                generatePlaceholdersBtn.textContent = "✱ Suggestions";
+                generatePlaceholdersBtn.textContent = "✧ Suggérer";
             }
             if (generateFullSlideBtn) {
                 generateFullSlideBtn.disabled = disableButtons;
-                generateFullSlideBtn.textContent = "⌘ Bloc";
+                generateFullSlideBtn.textContent = "⌘ Générer";
             }
             if (suggestionStatusLabel) {
                 suggestionStatusLabel.textContent = onCooldown ? `⏳ ${remaining}s` : "";
@@ -3964,8 +4360,8 @@
         });
 
         templateApplyBtn?.addEventListener("click", () => {
-            const checked = templateList?.querySelector('input[name="template-choice"]:checked');
-            const templateId = checked?.value || templates[0].id;
+            const templateId = selectedTemplateId || templates[0].id;
+            handleTemplateSelection(templateId);
             applyTemplateToActiveSlide(templateId);
             closeTemplateModal();
         });
@@ -3976,14 +4372,6 @@
             if (event.target === templateModal) {
                 closeTemplateModal();
             }
-        });
-
-        templateList?.addEventListener("change", () => {
-            const checked = templateList.querySelector('input[name="template-choice"]:checked');
-            templateList.querySelectorAll(".template-row").forEach(row => {
-                const input = row.querySelector('input[name="template-choice"]');
-                row.setAttribute("aria-checked", input === checked ? "true" : "false");
-            });
         });
 
         templateModal?.querySelectorAll(".modal-close").forEach(btn => {
@@ -4141,38 +4529,53 @@
             navSwitcherBtn?.setAttribute("aria-expanded", "false");
         }
 
+        function handleTemplateSelection(templateId) {
+            selectedTemplateId = templateId || templates[0].id;
+            templateList?.querySelectorAll(".template-row").forEach(row => {
+                const isActive = row.dataset.templateId === selectedTemplateId;
+                row.setAttribute("aria-checked", isActive ? "true" : "false");
+                row.classList.toggle("selected", isActive);
+            });
+        }
+
         function renderTemplateList(selectedId) {
             if (!templateList) return;
+            selectedTemplateId = selectedId || selectedTemplateId || templates[0].id;
             templateList.innerHTML = "";
             templates.forEach(template => {
-                const row = document.createElement("label");
+                const row = document.createElement("div");
                 row.className = "template-row";
+                row.dataset.templateId = template.id;
                 row.setAttribute("role", "radio");
-                row.setAttribute("aria-checked", template.id === selectedId ? "true" : "false");
+                row.setAttribute("aria-checked", template.id === selectedTemplateId ? "true" : "false");
+                row.tabIndex = 0;
 
-                const input = document.createElement("input");
-                input.type = "radio";
-                input.name = "template-choice";
-                input.value = template.id;
-                input.checked = template.id === selectedId;
-
-                const content = document.createElement("div");
                 const title = document.createElement("h4");
                 title.textContent = template.name;
                 const desc = document.createElement("p");
-                const columns = template.columns.map(col => col.label).join(" – ");
-                const rows = template.sections.map(sec => sec.label).join(" – ");
-                desc.textContent = `Colonnes : ${columns} | Lignes : ${rows}`;
-                content.append(title, desc);
+                desc.textContent = template.description ||
+                    `Colonnes : ${template.columns.map(col => col.label).join(" – ")} | Lignes : ${template.sections.map(sec => sec.label).join(" – ")}`;
 
-                row.append(input, content);
+                row.append(title, desc);
+
+                row.addEventListener("click", () => {
+                    handleTemplateSelection(template.id);
+                });
+                row.addEventListener("keydown", event => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        handleTemplateSelection(template.id);
+                    }
+                });
+
                 templateList.appendChild(row);
             });
+            handleTemplateSelection(selectedTemplateId);
         }
 
         function openTemplateModal() {
             if (!templateModal) return;
-            renderTemplateList(lastAppliedTemplateId || currentTemplateId || templates[0].id);
+            renderTemplateList(lastAppliedTemplateId || currentTemplateId || selectedTemplateId || templates[0].id);
             templateModal.classList.add("open");
         }
 
@@ -4586,9 +4989,8 @@
         });
 
         function openContextEditorModalForEmptyState() {
-            if (!contextEditorModal) return;
             syncPageContextFieldWithActiveSlide();
-            openModal(contextEditorModal);
+            toggleGutenberg(true);
             pageContextField?.focus();
         }
 
@@ -4907,6 +5309,9 @@
         document.addEventListener("keydown", event => {
             if (event.key === "Escape") {
                 document.querySelectorAll(".modal-overlay.open").forEach(modal => closeModal(modal));
+                if (isGutenbergOpen()) {
+                    setGutenbergOpen(false);
+                }
             }
         });
 
@@ -4922,14 +5327,10 @@
             }
         });
         contextEditorBtn?.addEventListener("click", () => {
-            syncPageContextFieldWithActiveSlide();
-            openModal(contextEditorModal);
-            globalContextField?.focus();
+            toggleGutenberg();
         });
-        contextEditorModal?.addEventListener("click", event => {
-            if (event.target === contextEditorModal) {
-                closeModal(contextEditorModal);
-            }
+        gutenbergBackdrop?.addEventListener("click", () => {
+            setGutenbergOpen(false);
         });
         switchModalTab("settings");
         slideContextLink?.addEventListener("click", event => {
@@ -4952,7 +5353,14 @@
                 openTemplateModal();
             }
         }
-        initializeAppState();
+        initializeAppState()
+            .then(() => {
+                maybeAutoOpenGutenberg();
+            })
+            .catch(err => {
+                console.error("Impossible d'initialiser l'état :", err);
+                maybeAutoOpenGutenberg();
+            });
 
         const shareBtn = document.getElementById("shareBtn");
         const shareLinkField = document.getElementById("shareLinkField");

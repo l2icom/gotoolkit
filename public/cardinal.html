@@ -313,7 +313,7 @@
 
         .connect-left {
             background: #ffffff;
-            border-radius: 4px;
+            border-radius: 8px;
             padding: 10px;
             border: 1px solid #dfe3f5;
             display: flex;
@@ -333,7 +333,7 @@
 
         .connect-right {
             background: #ffffff;
-            border-radius: 4px;
+            border-radius: 8px;
             padding: 0px;
             border: 1px solid #dfe3f5;
             display: flex;
@@ -344,6 +344,12 @@
         .connect-left,
         .connect-right {
             flex: 1;
+        }
+
+        /* Gutenberg card defaults (monospace, smaller text) */
+        .connect-left textarea {
+            font-size: 11px;
+            font-family: monospace;
         }
 
         .connect-left {
@@ -436,9 +442,10 @@
         }
 
         .draw-type-btn.active {
-            background: #2a7a57;
-            border-color: #2a7a57;
-            color: #ffffff;
+            background: #ffffff;
+            border: 2px solid #2a7a57;
+            color: #0f172a;
+            box-shadow: none;
         }
 
         .draw-type-btn:focus-visible {
@@ -464,6 +471,20 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
+        }
+
+        /* Primary style for generate button */
+        .generate-btn {
+            border: none;
+            background: #2a7a57;
+            color: #ffffff;
+            box-shadow: none;
+            border-radius: 8px;
+            padding: 6px 10px;
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
         }
 
         .status-label {
@@ -564,6 +585,16 @@
             display: none !important;
         }
 
+        /* Permanently hide library trigger, footer help and links group */
+        #excalidrawHost .default-sidebar-trigger,
+        #excalidrawHost .default-sidebar-trigger .sidebar-trigger__label,
+        #excalidrawHost .layer-ui__wrapper__footer-right .help-icon,
+        #excalidrawHost .dropdown-menu-group,
+        #excalidrawHost .dropdown-menu-group-title {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
         .placeholder {
             color: #9ca3c7;
             font-size: 14px;
@@ -651,6 +682,47 @@
             border: none;
             background: #2a7a57;
             color: #ffffff;
+        }
+
+        /* Promptzilla grid & cards */
+        .blueprint-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 10px 0 12px;
+        }
+
+        .blueprint-card {
+            border: 1px solid #ebe0d1;
+            border-radius: 12px;
+            background: #fffdf8;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            cursor: pointer;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
+        }
+
+        .blueprint-card:hover {
+            border-color: #cbbda7;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+        }
+
+        .blueprint-card.selected {
+            border: 2px solid #2a7a57;
+            box-shadow: 0 10px 22px rgba(42, 122, 87, 0.12);
+        }
+
+        .blueprint-card h4 {
+            margin: 0;
+            font-size: 13px;
+        }
+
+        .blueprint-card p {
+            margin: 0;
+            font-size: 12px;
+            color: #4b4b43
         }
 
         .info-popup {
@@ -885,8 +957,25 @@
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button">✶ Le Cardinal ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="robert.html">¶ Petit Robert</a>
-                    <a class="nav-switch-link" href="roadmap.html">⟴ Goal Digger</a>
+                    <a class="nav-switch-link" href="robert.html"> ¶ Petit Robert</a>
+                    <a class="nav-switch-link" href="roadmap.html">⟴Goal Digger</a>
+                </div>
+            </div>
+
+            <!-- Promptzilla modal: 9 diagram choices -->
+            <div class="ai-modal-overlay" id="promptzillaModal" aria-hidden="true">
+                <div class="ai-modal" style="width:900px; max-width:calc(100% - 40px);">
+                    <header>
+                        <h3>⛶ Promptzilla</h3>
+                        <button id="closePromptzillaModal" class="btn-secondary" type="button">✕</button>
+                    </header>
+                    <div class="blueprint-grid" id="promptzillaList" role="listbox"
+                        aria-label="Promptzilla de diagrammes">
+                        <!-- cards rendered by JS -->
+                    </div>
+                    <div class="ai-modal-actions">
+                        <button id="promptzillaApplyBtn" class="btn-primary" type="button">Utiliser</button>
+                    </div>
                 </div>
             </div>
             <div class="tabs-actions">
@@ -895,8 +984,9 @@
                 <button id="deletePageBtn" class="tab-btn-remove" title="Supprimer la page">×</button>
             </div>
             <div class="global-actions">
+                <button id="promptzillaBtn" class="drawer-toggle-btn" type="button">⛶ Promptzilla</button>
                 <button id="toggleDrawerBtn" class="drawer-toggle-btn" type="button">⸙ Gutenberg</button>
-                <button id="aiSettingsBtn" class="ai-button" type="button">⌘ Promptzilla</button>
+                <button id="aiSettingsBtn" class="ai-button" type="button">⌘ Soulgorithm</button>
                 <div class="share-menu-wrapper">
                     <button id="shareBtn" class="info-button" type="button" title="Lien de la capsule">☍
                         Nexus</button>
@@ -955,7 +1045,7 @@
                         <span class="draw-type-control-label">Type de scénario</span>
                         <div class="draw-type-selector" role="group" aria-label="Type de diagramme">
                             <button class="draw-type-btn active" type="button" data-draw-type="sequence"
-                                aria-pressed="true">△ Acteurs</button>
+                                aria-pressed="true">△ Échanges</button>
                             <button class="draw-type-btn" type="button" data-draw-type="flow" aria-pressed="false">◇
                                 Processus</button>
                             <button class="draw-type-btn" type="button" data-draw-type="class" aria-pressed="false">⎔
@@ -1177,6 +1267,121 @@ sequenceDiagram
     A->>B: Décris l’étape suivante
     Note over A,B: Ajoute ici une explication ou un contexte`
             };
+
+            const DIAGRAM_PROMPTZILLA = [
+                { id: "auth-seq", label: "Authentification – Séquentiel", description: "Décris pas à pas la vérification d’identité, de la saisie initiale jusqu’à la réponse finale.", drawType: "sequence" },
+                { id: "file-transfer", label: "Transfert de fichier – Séquentiel", description: "Montre le cheminement d’un fichier du client vers le serveur, avec contrôles et gestion d’erreurs.", drawType: "sequence" },
+                { id: "event-process", label: "Traitement d'événement – Séquentiel", description: "Décris les étapes successives déclenchées par un événement jusqu’à sa résolution.", drawType: "sequence" },
+                { id: "process-op", label: "Processus opérationnel – Flux", description: "Représente un enchaînement d’étapes métier : demande, traitement, validation, archivage.", drawType: "flow" },
+                { id: "process-validate", label: "Processus de validation – Flux", description: "Schématise un cycle incluant saisie, contrôle, approbation et clôture.", drawType: "flow" },
+                { id: "process-analytic", label: "Processus analytique – Flux", description: "Montre le parcours des données : source, ingestion, transformation, restitution.", drawType: "flow" },
+                { id: "users-model", label: "Gestion des utilisateurs – Classe", description: "Modélise les entités User, Role, Permission et leurs relations.", drawType: "class" },
+                { id: "catalog-model", label: "Modèle de catalogue – Classe", description: "Décris les entités Produit, Catégorie, Variation, Stock et leurs dépendances.", drawType: "class" },
+                { id: "resources-model", label: "Modèle de ressources – Classe", description: "Structure les entités Resource, Allocation, Group, Schedule ainsi que leurs liens fonctionnels.", drawType: "class" }
+            ];
+
+            let selectedPromptzillaId = DIAGRAM_PROMPTZILLA[0].id;
+
+            function renderPromptzillaList(selectedId) {
+                const list = document.getElementById("promptzillaList");
+                if (!list) return;
+                list.innerHTML = "";
+                const sel = selectedId || selectedPromptzillaId;
+                DIAGRAM_PROMPTZILLA.forEach(bp => {
+                    const card = document.createElement("div");
+                    card.className = "blueprint-card";
+                    card.dataset.bpId = bp.id;
+                    card.tabIndex = 0;
+                    if (bp.id === sel) card.classList.add("selected");
+                    const title = document.createElement("h4");
+                    title.textContent = bp.label;
+                    const desc = document.createElement("p");
+                    desc.textContent = bp.description;
+                    const tag = document.createElement("p");
+                    tag.className = "template-desc-line";
+                    tag.textContent = `Type : ${bp.drawType}`;
+                    card.appendChild(title);
+                    card.appendChild(desc);
+                    card.appendChild(tag);
+                    card.addEventListener("click", () => {
+                        // visual selection
+                        list.querySelectorAll(".blueprint-card").forEach(c => c.classList.remove("selected"));
+                        card.classList.add("selected");
+                        selectedPromptzillaId = bp.id;
+                        // apply immediately: set prompt input and draw type
+                        const promptInputEl = document.getElementById("promptInput");
+                        if (promptInputEl) {
+                            promptInputEl.value = bp.description;
+                        }
+                        try {
+                            updateActivePageDrawType(bp.drawType);
+                        } catch (err) { }
+                        // close modal and focus input
+                        closePromptzillaModal();
+                        if (promptInputEl) promptInputEl.focus();
+                    });
+                    card.addEventListener("keydown", (ev) => {
+                        if (ev.key === "Enter" || ev.key === " ") {
+                            ev.preventDefault();
+                            card.click();
+                        }
+                    });
+                    list.appendChild(card);
+                });
+            }
+
+            function openPromptzillaModal() {
+                const overlay = document.getElementById("promptzillaModal");
+                if (!overlay) return;
+                renderPromptzillaList(selectedPromptzillaId);
+                overlay.classList.add("open");
+                overlay.setAttribute("aria-hidden", "false");
+            }
+
+            function closePromptzillaModal() {
+                const overlay = document.getElementById("promptzillaModal");
+                if (!overlay) return;
+                overlay.classList.remove("open");
+                overlay.setAttribute("aria-hidden", "true");
+            }
+
+            document.addEventListener("click", (ev) => {
+                const target = ev.target;
+                // open button
+                if (target && target.id === "promptzillaBtn") {
+                    openPromptzillaModal();
+                    return;
+                }
+                // overlay click -> close
+                if (target && target.id === "promptzillaModal") {
+                    closePromptzillaModal();
+                    return;
+                }
+            });
+
+            document.addEventListener("keydown", (ev) => {
+                if (ev.key === "Escape") closePromptzillaModal();
+            });
+
+            // close / apply buttons
+            document.addEventListener("DOMContentLoaded", () => {
+                const closeBtn = document.getElementById("closePromptzillaModal");
+                const applyBtn = document.getElementById("promptzillaApplyBtn");
+                if (closeBtn) closeBtn.addEventListener("click", closePromptzillaModal);
+                if (applyBtn) applyBtn.addEventListener("click", () => {
+                    applyPromptzillaSelection();
+                });
+            });
+
+            function applyPromptzillaSelection() {
+                const bp = DIAGRAM_PROMPTZILLA.find(b => b.id === selectedPromptzillaId) || DIAGRAM_PROMPTZILLA[0];
+                const promptInputEl = document.getElementById("promptInput");
+                if (promptInputEl) promptInputEl.value = bp.description;
+                try { updateActivePageDrawType(bp.drawType); } catch (err) { }
+                closePromptzillaModal();
+                if (promptInputEl) promptInputEl.focus();
+            }
+
             const generateBtn = document.getElementById("generateBtn");
             const statusToast = document.getElementById("statusToast");
             const pageTabs = document.getElementById("pageTabs");

@@ -84,6 +84,15 @@
             padding: 12px;
         }
 
+        .app-main {
+            display: flex;
+            flex: 1 1 auto;
+            gap: 12px;
+            align-items: stretch;
+            min-height: 0;
+            position: relative;
+        }
+
         .app::after {
             content: "";
             position: absolute;
@@ -241,14 +250,30 @@
             padding: 6px 8px;
             font-size: 11px;
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono";
-            resize: vertical;
+            resize: none;
             min-height: 80px;
+            scrollbar-width: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         textarea:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.3);
+            scrollbar-width: thin;
+        }
+
+        textarea::-webkit-scrollbar {
+            width: 0;
+        }
+
+        textarea:focus::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        textarea::-webkit-scrollbar-thumb {
+            background: rgba(42, 122, 87, 0.35);
+            border-radius: 10px;
         }
 
         select,
@@ -414,6 +439,7 @@
             height: 100%;
             width: 100%;
             max-width: none;
+            min-width: 0;
             font-size: var(--global-font-size, 14px);
             aspect-ratio: auto;
         }
@@ -471,6 +497,120 @@
 
         .timeline-card[data-ratio="a4"] {
             aspect-ratio: 297 / 210;
+        }
+
+        /* Make timeline card corners rounded */
+        .timeline-card {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .gutenberg-card {
+            display: none;
+            flex: 0 0 350px;
+            width: 350px;
+            background: var(--surface);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            padding: 8px 8px 10px;
+            box-shadow: var(--shadow-soft);
+            gap: 8px;
+            height: 100%;
+            min-height: 0;
+            overflow-y: auto;
+            transition: transform 0.18s ease, opacity 0.18s ease;
+            font-size: 11px;
+            font-family: monospace;
+        }
+
+        .gutenberg-card.open {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gutenberg-card .modal-header {
+            padding: 0 0 4px;
+        }
+
+        .gutenberg-card .gutenberg-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .gutenberg-card .ia-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        .gutenberg-card .ia-header-actions {
+            padding: 0;
+        }
+
+        .gutenberg-card .ia-prompt-fields {
+            height: 100%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+        }
+
+        .gutenberg-card .ia-prompt-field {
+            height: 100%;
+            min-height: 0;
+        }
+
+        .gutenberg-card .gutenberg-recette {
+            /* reduced height: half of previous 250px */
+            flex: 0 0 200px;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .gutenberg-recette-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .btn-generate {
+            border-radius: 6px;
+            border: none;
+            background: #2a7a57;
+            color: #ffffff;
+            padding: 6px 10px;
+        }
+
+        .btn.btn-generate.primary {
+            background: #2a7a57;
+            color: #ffffff;
+            border: none;
+        }
+
+        /* Increase the label font size for Récit and Script by 2px */
+        .gutenberg-card label[for="promptCreate"],
+        .gutenberg-card label[for="promptModify"] {
+            font-size: 14px;
+        }
+
+        .gutenberg-card .gutenberg-script {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .gutenberg-card .gutenberg-actions {
+            margin-top: -4px;
         }
 
         .timeline-wrapper {
@@ -913,14 +1053,9 @@
         }
 
         .ia-prompt-field {
-            display: none;
-            width: 100%;
-            max-height: 250px;
-            resize: vertical;
-        }
-
-        .ia-prompt-field.active {
             display: block;
+            width: 100%;
+            max-height: none;
         }
 
         .ia-actions-footer {
@@ -1035,13 +1170,42 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding-bottom: 4px;
+            padding-bottom: 0px;
             border-bottom: 1px solid rgba(148, 163, 184, 0.3);
         }
 
         .filter-modal h3 {
             margin: 0;
             font-size: 15px;
+        }
+
+        /* Promptzilla card grid */
+        .promptzilla-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 8px 0 0 0;
+        }
+
+        .promptzilla-card {
+            background: var(--surface-soft);
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid var(--border-strong);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-height: 84px;
+        }
+
+        .promptzilla-card:hover {
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+        }
+
+        .promptzilla-card.selected {
+            border: 2px solid #2a7a57;
+            box-shadow: 0 10px 30px rgba(42, 122, 87, 0.12);
         }
 
         .modal-close {
@@ -1516,6 +1680,34 @@
             .app {
                 grid-template-columns: 1fr;
             }
+
+            .app-main {
+                position: relative;
+            }
+
+            .gutenberg-card {
+                display: flex;
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: min(360px, 90vw);
+                max-width: 100%;
+                flex: 0 0 auto;
+                box-shadow: var(--shadow-soft);
+                transform: translateX(110%);
+                opacity: 0;
+                pointer-events: none;
+                visibility: hidden;
+                z-index: 90;
+            }
+
+            .gutenberg-card.open {
+                transform: translateX(0);
+                opacity: 1;
+                pointer-events: auto;
+                visibility: visible;
+            }
         }
     </style>
 </head>
@@ -1529,8 +1721,8 @@
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                         aria-expanded="false">⟴ Goal Digger ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                        <a class="nav-switch-link" href="robert.html" role="menuitem">¶ Petit Robert</a>
-                        <a class="nav-switch-link" href="cardinal.html" role="menuitem">✶ Le Cardinal</a>
+                        <a class="nav-switch-link" href="robert.html" role="menuitem"> ¶ Petit Robert</a>
+                        <a class="nav-switch-link" href="cardinal.html" role="menuitem">✶Le Cardinal</a>
                     </div>
                 </div>
 
@@ -1544,9 +1736,29 @@
                     </div>
                 </div>
 
+                <!-- Promptzilla modal (6 choices) -->
+                <div class="modal-overlay" id="promptzillaOverlay" role="dialog" aria-modal="true"
+                    aria-labelledby="promptzillaTitle">
+                    <div class="filter-modal promptzilla-modal" style="width: min(900px, 96vw);">
+                        <div class="modal-header">
+                            <h3 id="promptzillaTitle">⛶ Promptzilla</h3>
+                            <button class="modal-close" id="promptzillaClose" type="button"
+                                aria-label="Fermer Promptzilla">×</button>
+                        </div>
+                        <div class="promptzilla-grid" id="promptzillaList"
+                            style="display:grid; grid-template-columns: repeat(3,1fr); gap:12px;">
+                            <!-- cards rendered by JS -->
+                        </div>
+                        <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px;">
+                            <button id="promptzillaValidateBtn" class="btn">Valider</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="header-actions">
+                    <button class="btn" id="openPromptzillaBtn" aria-label="Ouvrir Promptzilla">⛶ Promptzilla</button>
                     <button class="btn" id="openContextModal" aria-label="Ouvrir Gutenberg">⸙ Gutenberg</button>
-                    <button class="btn" id="openIaModal" aria-label="Ouvrir Promptzilla">⌘ Promptzilla</button>
+                    <button class="btn" id="openIaModal" aria-label="Ouvrir Soulgorithm">⌘ Soulgorithm</button>
 
                     <div class="menu-trigger">
                         <button class="btn" id="optionsBtn" aria-label="Hublot">◯ Hublot</button>
@@ -1654,108 +1866,103 @@
             </div>
         </div>
 
-        <!-- TIMELINE + TOOLBAR -->
-        <div class="timeline-card" data-spacing="dense" data-ratio="full">
+        <div class="app-main">
+            <!-- TIMELINE + TOOLBAR -->
+            <div class="timeline-card" data-spacing="dense" data-ratio="full">
 
 
-            <div class="toolbar">
-                <div class="btn-group">
-                    <button class="btn-small" id="btn-today">Aujourd'hui</button>
-                </div>
-
-                <div class="btn-group">
-                    <button class="btn-small" id="btn-zoom-in">+</button>
-                    <button class="btn-small" id="btn-fit">Auto</button>
-
-                    <button class="btn-small" id="btn-zoom-out">−</button>
-                </div>
-
-                <div class="btn-group">
-                    <button class="btn-small" id="btn-scale-day">Jour</button>
-
-                    <button class="btn-small btn-small-active" id="btn-scale-week">Semaine</button>
-                    <button class="btn-small" id="btn-scale-month">Mois</button>
-                </div>
-                <div class="btn-group item-actions">
-                    <button class="btn-small" id="btn-rename-selected" aria-label="Renommer l’élément sélectionné">
-                        ✎
-                    </button>
-                    <button class="btn-small" id="btn-delete-selected" aria-label="Supprimer l’élément sélectionné">
-                        ×
-                    </button>
-                    <div class="type-selector" aria-label="Type d’action" role="group">
-                        <span class="type-selector-icon" aria-hidden="true">#</span>
-                        <select id="itemTypeSelect" aria-label="Changer le type d’action">
-                            <option value="">Type d'action</option>
-                        </select>
+                <div class="toolbar">
+                    <div class="btn-group">
+                        <button class="btn-small" id="btn-today">Aujourd'hui</button>
                     </div>
-                </div>
-                <div class="btn-group">
-                    <button class="btn-small" id="btn-add-milestone" aria-label="Ajouter un jalon">
-                        + Repère
-                    </button>
-                    <button class="btn-small" id="btn-add-item" aria-label="Ajouter un élément">
-                        + Action
-                    </button>
-                    <button class="btn-small" id="btn-add-type" aria-label="Ajouter un type">
-                        + Type
-                    </button>
-                </div>
-                <div class="btn-group">
-                    <button class="btn-small" id="openColorPaletteBtn" aria-label="Gérer les types">⚙
-                        Réglages</button>
-                </div>
-            </div>
-            <div class="timeline-header">
-                <div class="header-text">
-                    <h1>Page 1</h1>
-                </div>
-                <div class="header-buttons">
-                    <div class="type-filter-panel" id="typeFilterPanel" role="group" aria-label="Filtrer par type">
-                    </div>
-                </div>
-            </div>
-            <div class="timeline-wrapper">
-                <div id="timeline"></div>
-                <div class="timeline-empty-state" id="timelineEmptyState" role="status" aria-live="polite">
-                    <p class="timeline-empty-text">
-                        Cette page est vide.
-                    </p>
-                    <a href="#openContextModal" role="button" class="timeline-empty-link" id="timelineEmptyAction">
-                        ⌘ Renseigner le contexte
-                    </a>
-                </div>
-            </div>
-        </div>
 
-        <div class="modal-overlay" id="contextModalOverlay" role="dialog" aria-modal="true"
-            aria-labelledby="contextModalTitle">
-            <div class="filter-modal">
-                <div class="modal-header">
-                    <h3 id="contextModalTitle">⸙ Gutenberg</h3>
-                    <button class="modal-close" id="contextModalClose" type="button"
-                        aria-label="Fermer le contexte">×</button>
-                </div>
-                <div class="ia-actions">
-                    <div class="header-row  ia-header-actions">
-                        <label for="mode">Narration</label>
-                        <select id="mode">
-                            <option value="create">⌘ Libre</option>
-                            <option value="modify">⌗ Structuré</option>
-                        </select>
+                    <div class="btn-group">
+                        <button class="btn-small" id="btn-zoom-in">+</button>
+                        <button class="btn-small" id="btn-fit">Auto</button>
+
+                        <button class="btn-small" id="btn-zoom-out">−</button>
                     </div>
-                    <div class="header-row ia-header-actions">
-                        <label for="promptCreate">Vision</label>
-                        <div class="ia-prompt-fields">
-                            <textarea id="promptCreate" class="ia-prompt-field active" rows="20"
-                                placeholder="Décris ici ta vision idéale du produit ou du projet dans 6 à 10 mois : ce que les utilisateurs pourront faire de nouveau, ce qui aura changé dans leurs usages, l’impact concret sur leur quotidien, les grands piliers atteints, et ce qui rendra cela inspirant pour l’équipe."></textarea>
-                            <textarea id="promptModify" class="ia-prompt-field" rows="20" aria-hidden="true"></textarea>
+
+                    <div class="btn-group">
+                        <button class="btn-small" id="btn-scale-day">Jour</button>
+
+                        <button class="btn-small btn-small-active" id="btn-scale-week">Semaine</button>
+                        <button class="btn-small" id="btn-scale-month">Mois</button>
+                    </div>
+                    <div class="btn-group item-actions">
+                        <button class="btn-small" id="btn-rename-selected" aria-label="Renommer l’élément sélectionné">
+                            ✎
+                        </button>
+                        <button class="btn-small" id="btn-delete-selected" aria-label="Supprimer l’élément sélectionné">
+                            ×
+                        </button>
+                        <div class="type-selector" aria-label="Type d’action" role="group">
+                            <span class="type-selector-icon" aria-hidden="true">#</span>
+                            <select id="itemTypeSelect" aria-label="Changer le type d’action">
+                                <option value="">Type d'action</option>
+                            </select>
                         </div>
                     </div>
-                    <div class="ia-actions-footer">
-                        <button class="btn" id="btn-call">
-                            <span>⌘ Créer la roadmap</span>
+                    <div class="btn-group">
+                        <button class="btn-small" id="btn-add-milestone" aria-label="Ajouter un jalon">
+                            + Repère
                         </button>
+                        <button class="btn-small" id="btn-add-item" aria-label="Ajouter un élément">
+                            + Action
+                        </button>
+                        <button class="btn-small" id="btn-add-type" aria-label="Ajouter un type">
+                            + Type
+                        </button>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn-small" id="openColorPaletteBtn" aria-label="Gérer les types">⚙
+                            Réglages</button>
+                    </div>
+                </div>
+                <div class="timeline-header">
+                    <div class="header-text">
+                        <h1>Page 1</h1>
+                    </div>
+                    <div class="header-buttons">
+                        <div class="type-filter-panel" id="typeFilterPanel" role="group" aria-label="Filtrer par type">
+                        </div>
+                    </div>
+                </div>
+                <div class="timeline-wrapper">
+                    <div id="timeline"></div>
+                    <div class="timeline-empty-state" id="timelineEmptyState" role="status" aria-live="polite">
+                        <p class="timeline-empty-text">
+                            Cette page est vide.
+                        </p>
+                        <a href="#openContextModal" role="button" class="timeline-empty-link" id="timelineEmptyAction">
+                            ⌘ Renseigner le contexte
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gutenberg-card" id="contextModalOverlay" role="complementary"
+                aria-labelledby="contextModalTitle" aria-hidden="true">
+
+                <div class="ia-actions">
+                    <div class="header-row ia-header-actions gutenberg-recette">
+                        <div class="gutenberg-recette-header">
+                            <label for="promptCreate">Récit</label>
+                            <button class="btn btn-generate primary" id="btn-call">
+                                <span>⌘ Générer</span>
+                            </button>
+                        </div>
+                        <div class="ia-prompt-fields">
+                            <textarea id="promptCreate" class="ia-prompt-field" rows="10"
+                                placeholder="Décris ici ta vision idéale dans 3 à 24 mois : les attendus, les changements, les impacts concrets."></textarea>
+                        </div>
+                    </div>
+                    <div class="header-row ia-header-actions gutenberg-script">
+                        <label for="promptModify"
+                            style="margin-top:0;display:block;font-size:13px;color:var(--muted)">Script</label>
+                        <div class="ia-prompt-fields">
+                            <textarea id="promptModify" class="ia-prompt-field" rows="20"></textarea>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1977,12 +2184,11 @@
             var contextUiReady = false;
             var lastTimelineGenerationAt = 0;
             var AUTO_CONTEXT_SUPPRESSION_MS = 15000;
-            var shouldOpenContextOnFirstLoad = true;
+            var shouldOpenContextOnFirstLoad = false;
             var DEFAULT_CONTEXT_STATE = {
-                mode: "create",
                 prompts: {
                     create: "",
-                    modify: ""
+                    modify: null
                 }
             };
             var customSystemTemplates = {
@@ -2341,7 +2547,7 @@
             function getTimelineBrief() {
                 var context = getActiveViewContext();
                 if (context && context.prompts) {
-                    var prompt = context.prompts[context.mode] || context.prompts.create || context.prompts.modify;
+                    var prompt = context.prompts.create || context.prompts.modify;
                     if (typeof prompt === "string") {
                         return prompt;
                     }
@@ -2409,11 +2615,10 @@
                     ? deepClone(context)
                     : cloneDefaultContext();
                 if (!base.prompts || typeof base.prompts !== "object") {
-                    base.prompts = { create: "", modify: "" };
+                    base.prompts = { create: "", modify: null };
                 }
                 base.prompts.create = typeof base.prompts.create === "string" ? base.prompts.create : "";
-                base.prompts.modify = typeof base.prompts.modify === "string" ? base.prompts.modify : "";
-                base.mode = base.mode === "modify" ? "modify" : "create";
+                base.prompts.modify = typeof base.prompts.modify === "string" ? base.prompts.modify : null;
                 return base;
             }
 
@@ -2892,28 +3097,32 @@
 
             var contextModalOverlay = document.getElementById("contextModalOverlay");
             var contextModalButton = document.getElementById("openContextModal");
-            var contextModalClose = document.getElementById("contextModalClose");
             var iaModalOverlay = document.getElementById("iaModalOverlay");
             var iaModalButton = document.getElementById("openIaModal");
             var iaModalClose = document.getElementById("iaModalClose");
 
             function openContextModal(options) {
-                var desiredMode =
-                    (options && options.mode) ||
-                    (selectMode && selectMode.value) ||
-                    (getActiveViewContext().mode || "create");
-                if (!desiredMode) {
-                    desiredMode = hasTimelineData() ? "modify" : "create";
+                ensureModifyPrompt({ refreshModify: true });
+                if (contextModalOverlay) {
+                    contextModalOverlay.classList.add("open");
+                    contextModalOverlay.setAttribute("aria-hidden", "false");
                 }
-                if (selectMode) {
-                    selectMode.value = desiredMode;
-                    updatePromptForMode(desiredMode, { refreshModify: true });
-                }
-                if (contextModalOverlay) contextModalOverlay.classList.add("open");
             }
 
             function closeContextModal() {
-                if (contextModalOverlay) contextModalOverlay.classList.remove("open");
+                if (contextModalOverlay) {
+                    contextModalOverlay.classList.remove("open");
+                    contextModalOverlay.setAttribute("aria-hidden", "true");
+                }
+            }
+
+            function toggleContextModal(options) {
+                if (!contextModalOverlay) return;
+                if (contextModalOverlay.classList.contains("open")) {
+                    closeContextModal();
+                } else {
+                    openContextModal(options);
+                }
             }
 
             function openIaModal() {
@@ -2931,17 +3140,7 @@
 
             if (contextModalButton) {
                 contextModalButton.addEventListener("click", function () {
-                    openContextModal();
-                });
-            }
-            if (contextModalClose) {
-                contextModalClose.addEventListener("click", closeContextModal);
-            }
-            if (contextModalOverlay) {
-                contextModalOverlay.addEventListener("click", function (event) {
-                    if (event.target === contextModalOverlay) {
-                        closeContextModal();
-                    }
+                    toggleContextModal();
                 });
             }
             if (iaModalButton) {
@@ -2963,6 +3162,137 @@
                     openContextModal();
                     if (contextModalButton) {
                         contextModalButton.focus();
+                    }
+                });
+            }
+
+            /* Roadmap Promptzilla: 6 templates + selection/validate flow */
+            var roadmapPromptzillaOverlay = document.getElementById("promptzillaOverlay");
+            var roadmapPromptzillaList = document.getElementById("promptzillaList");
+            var roadmapPromptzillaClose = document.getElementById("promptzillaClose");
+            var roadmapPromptzillaValidate = document.getElementById("promptzillaValidateBtn");
+            var openPromptzillaBtn = document.getElementById("openPromptzillaBtn");
+            var selectedPromptzillaId = null;
+
+            var ROADMAP_PROMPTZILLA = [
+
+                {
+                    "id": "product",
+                    "title": "🎯 Roadmap Produit",
+                    "text": "Génère une roadmap produit sur 6 mois avec 4 jalons majeurs (MVP, beta, release, amélioration), 3 acteurs (PO, UX, Dev), 3 domaines (fonctionnel, UX, data) et une timeline mensuelle. Inclure risques, dépendances et livrables clés",
+                    "script": "Page : 🎯 Roadmap Produit\n\nÉléments :\n\nCadrage & définition MVP (PO, UX)\nDate: 2026-01-01 → 2026-01-31\nGroupe: MVP\nType: fonctionnel\n\nImplémentation MVP cœur de valeur (PO, Dev)\nDate: 2026-02-01 → 2026-02-29\nGroupe: MVP\nType: data\n\nGo/No-Go MVP et ouverture beta privée\nDate: 2026-03-01\nGroupe: Beta\nType: milestone\n\nItérations UX & analytics sur beta (UX, Dev)\nDate: 2026-03-02 → 2026-04-15\nGroupe: Beta\nType: UX\n\nRelease publique + communication produit\nDate: 2026-04-16 → 2026-05-15\nGroupe: Release\nType: fonctionnel\n\nAméliorations data & optimisation parcours\nDate: 2026-05-16 → 2026-06-30\nGroupe: Amélioration continue\nType: data\n\nRisque: dépendance forte à une équipe back\nDate: 2026-01-01 → 2026-06-30\nGroupe: Risques & dépendances\nType: risque\n\nLivrable clé: backlog roadmap 6 mois verrouillé\nDate: 2026-01-15\nGroupe: Livrables\nType: livrable"
+                },
+                {
+                    "id": "tech",
+                    "title": "🛠️ Roadmap Technique",
+                    "text": "Crée une roadmap technique annuelle en 4 phases (audit, refonte, migration, optimisation), positionne les jalons trimestriels, les responsabilités (Tech Lead, Infra, SecOps) et les types d’initiatives (perf, sécurité, scalabilité) sur 1 an",
+                    "script": "Page : 🛠️ Roadmap Technique\n\nÉléments :\n\nAudit architecture & dette technique (Tech Lead)\nDate: 2026-01-01 → 2026-03-31\nGroupe: Audit\nType: scalabilité\n\nJalon T1: restitution audit & priorisation\nDate: 2026-03-31\nGroupe: Jalons trimestriels\nType: milestone\n\nRefonte modules critiques (Tech Lead, Infra)\nDate: 2026-04-01 → 2026-06-30\nGroupe: Refonte\nType: perf\n\nJalon T2: validation perf & coût infra\nDate: 2026-06-30\nGroupe: Jalons trimestriels\nType: milestone\n\nMigration vers nouvelle stack/plateforme (Infra)\nDate: 2026-07-01 → 2026-09-30\nGroupe: Migration\nType: scalabilité\n\nJalon T3: bascule production contrôlée\nDate: 2026-09-30\nGroupe: Jalons trimestriels\nType: milestone\n\nDurcissement sécurité & observabilité (SecOps)\nDate: 2026-10-01 → 2026-12-15\nGroupe: Optimisation\nType: sécurité\n\nJalon T4: revue annuelle risques & SLA\nDate: 2026-12-15\nGroupe: Jalons trimestriels\nType: milestone"
+                },
+                {
+                    "id": "sprint",
+                    "title": "⚡Calendrier de sprints",
+                    "text": "Propose une planification sur 4 sprints de 2 semaines avec objectifs, stories clés, critères de réussite, dépendances internes et rôles (Dev, QA, UX). Ajoute jalons de revue et rituels agiles.",
+                    "script": "Page : ⚡Calendrier de sprints\n\nÉléments :\n\nSprint 1: cadrage fonctionnel & skeleton UI\nDate: 2026-01-05 → 2026-01-18\nGroupe: Sprint 1\nType: dev\n\nRevue & rétro Sprint 1 (PO, Dev, QA, UX)\nDate: 2026-01-19\nGroupe: Jalons de revue\nType: milestone\n\nSprint 2: flux principaux + premiers tests QA\nDate: 2026-01-20 → 2026-02-02\nGroupe: Sprint 2\nType: QA\n\nRevue & démo utilisateurs internes\nDate: 2026-02-03\nGroupe: Jalons de revue\nType: milestone\n\nSprint 3: optimisation UX & intégration data\nDate: 2026-02-04 → 2026-02-17\nGroupe: Sprint 3\nType: UX\n\nSprint 4: hardening, corrections & préparation release\nDate: 2026-02-18 → 2026-03-03\nGroupe: Sprint 4\nType: dev\n\nDépendance: disponibilité environnement de test commun\nDate: 2026-01-05 → 2026-03-03\nGroupe: Dépendances\nType: dépendance\n\nRituels agiles: dailies & planning poker\nDate: 2026-01-05 → 2026-03-03\nGroupe: Rituels\nType: rituel"
+                },
+                {
+                    "id": "strategy",
+                    "title": "💼 Vision stratégique",
+                    "text": "Génère une vision stratégique en 3 horizons (H1/H2/H3) sur 24 mois, avec thèmes structurants, jalons annuels, domaines (produit, tech, business), impacts attendus et types d’investissements",
+                    "script": "Page : 💼 Vision stratégique\n\nÉléments :\n\nH1: poser les fondations produit & tech\nDate: 2026-01-01 → 2026-06-30\nGroupe: H1\nType: produit\n\nH2: accélération croissance & scalabilité\nDate: 2026-07-01 → 2027-06-30\nGroupe: H2\nType: business\n\nH3: diversification offres & écosystème\nDate: 2027-07-01 → 2027-12-31\nGroupe: H3\nType: tech\n\nJalon annuel: revue stratégique année 1\nDate: 2026-12-15\nGroupe: Jalons annuels\nType: milestone\n\nJalon annuel: revue stratégique année 2\nDate: 2027-12-15\nGroupe: Jalons annuels\nType: milestone\n\nInvestissements: équipe produit/UX & discovery\nDate: 2026-01-01 → 2026-12-31\nGroupe: Investissements H1/H2\nType: investissement\n\nInvestissements: plateforme data & partenariats\nDate: 2027-01-01 → 2027-12-31\nGroupe: Investissements H2/H3\nType: investissement"
+                },
+                {
+                    "id": "research",
+                    "title": "🔎 Plan de recherche",
+                    "text": "Construis un plan de recherche en phase discovery sur 6 mois : recherche utilisateur, cadrage problème, prototypage, test d’hypothèses, restitution. Mentionne acteurs (PO, UX, clients), jalons et décisions Go/No-Go.",
+                    "script": "Page : 🔎 Plan de recherche\n\nÉléments :\n\nEntretiens exploratoires utilisateurs (PO, UX)\nDate: 2026-01-01 → 2026-02-15\nGroupe: Recherche utilisateur\nType: discovery\n\nCadrage problème & mapping opportunités\nDate: 2026-02-16 → 2026-03-15\nGroupe: Cadrage problème\nType: atelier\n\nPrototypage low-fi & scénarios clé\nDate: 2026-03-16 → 2026-04-15\nGroupe: Prototypage\nType: UX\n\nTests d’hypothèses avec clients pilotes\nDate: 2026-04-16 → 2026-05-31\nGroupe: Tests\nType: expérimentation\n\nRestitution & décision Go/No-Go\nDate: 2026-06-15\nGroupe: Décisions\nType: milestone\n\nJalon intermédiaire: partage insights mi-parcours\nDate: 2026-03-31\nGroupe: Jalons\nType: milestone"
+                },
+                {
+                    "id": "project",
+                    "title": "🧩 Projet d'intégration'",
+                    "text": "Génére un projet d’intégration sur 4 mois avec phases (design, dev API, tests, déploiement), jalons critiques, interactions partenaires, risques liés aux environnements et validations métiers.",
+                    "script": "Page : 🧩 Projet de réalisation\n\nÉléments :\n\nDesign détaillé & contrats d’interface\nDate: 2026-01-01 → 2026-01-31\nGroupe: Design\nType: fonctionnel\n\nDéveloppement API & intégrations partenaires\nDate: 2026-02-01 → 2026-03-15\nGroupe: Dev API\nType: tech\n\nJalon critique: environnement d’intégration stable\nDate: 2026-02-15\nGroupe: Jalons critiques\nType: milestone\n\nCampagne de tests end-to-end & non régression\nDate: 2026-03-16 → 2026-04-05\nGroupe: Tests\nType: QA\n\nDéploiement progressif & validation métier\nDate: 2026-04-06 → 2026-04-30\nGroupe: Déploiement\nType: métier\n\nRisque: instabilité environnements partenaires\nDate: 2026-02-01 → 2026-04-30\nGroupe: Risques\nType: risque"
+                }
+            ];
+
+
+
+            function renderRoadmapPromptzilla() {
+                if (!roadmapPromptzillaList) return;
+                roadmapPromptzillaList.innerHTML = "";
+                ROADMAP_PROMPTZILLA.forEach(function (tpl) {
+                    var card = document.createElement("div");
+                    card.className = "promptzilla-card";
+                    card.setAttribute("role", "button");
+                    card.dataset.id = tpl.id;
+                    card.innerHTML = `<strong style="font-size:13px">${tpl.title}</strong><div style="font-size:12px;color:var(--muted);white-space:pre-wrap;word-break:break-word;margin-top:6px">${tpl.text}</div>`;
+                    card.addEventListener("click", function () {
+                        selectedPromptzillaId = tpl.id;
+                        // update visuals
+                        Array.from(roadmapPromptzillaList.children).forEach(function (c) { c.classList.remove("selected"); });
+                        card.classList.add("selected");
+                        // focus validate
+                        if (roadmapPromptzillaValidate) roadmapPromptzillaValidate.focus();
+                    });
+                    roadmapPromptzillaList.appendChild(card);
+                });
+            }
+
+            function openRoadmapPromptzilla() {
+                if (!roadmapPromptzillaOverlay) return;
+                renderRoadmapPromptzilla();
+                selectedPromptzillaId = null;
+                roadmapPromptzillaOverlay.classList.add("open");
+            }
+
+            function closeRoadmapPromptzilla() {
+                if (!roadmapPromptzillaOverlay) return;
+                roadmapPromptzillaOverlay.classList.remove("open");
+            }
+
+            if (openPromptzillaBtn) {
+                openPromptzillaBtn.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    openRoadmapPromptzilla();
+                });
+            }
+            if (roadmapPromptzillaClose) roadmapPromptzillaClose.addEventListener("click", closeRoadmapPromptzilla);
+            if (roadmapPromptzillaOverlay) {
+                roadmapPromptzillaOverlay.addEventListener("click", function (ev) {
+                    if (ev.target === roadmapPromptzillaOverlay) closeRoadmapPromptzilla();
+                });
+            }
+            if (roadmapPromptzillaValidate) {
+                roadmapPromptzillaValidate.addEventListener("click", function () {
+                    if (!selectedPromptzillaId) return;
+                    var tpl = ROADMAP_PROMPTZILLA.find(function (t) { return t.id === selectedPromptzillaId; });
+                    if (tpl) {
+                        var visionField = document.getElementById("promptCreate");
+                        var scriptField = document.getElementById("promptModify");
+                        if (visionField) {
+                            visionField.value = tpl.text;
+                        }
+                        if (scriptField) {
+                            scriptField.value = tpl.script || "";
+                        }
+                        // Persist into active view context so opening the Gutenberg modal won't overwrite values
+                        if (typeof persistActiveContext === "function") {
+                            persistActiveContext(function (ctx) {
+                                ctx.prompts = ctx.prompts || {};
+                                ctx.prompts.create = tpl.text || "";
+                                ctx.prompts.modify = tpl.script || "";
+                                ctx.mode = "create";
+                            });
+                        }
+                        closeRoadmapPromptzilla();
+                        // open Gutenberg/context modal in 'create' mode to avoid refresh-overwrite of modify
+                        if (typeof openContextModal === "function") {
+                            openContextModal({ mode: "create" });
+                            // focus the vision textarea
+                            setTimeout(function () {
+                                var v = document.getElementById("promptCreate");
+                                if (v) v.focus();
+                            }, 200);
+                        }
                     }
                 });
             }
@@ -5439,24 +5769,49 @@ Réponds toujours avec un JSON qui contient :
             // ============================================================
             var txtPromptCreate = document.getElementById("promptCreate");
             var txtPromptModify = document.getElementById("promptModify");
-            var selectMode = document.getElementById("mode");
             var btnCall = document.getElementById("btn-call");
             var templateModeSelect = document.getElementById("templateModeSelect");
             var iaTemplateEditor = document.getElementById("iaTemplateEditor");
             var resetTemplatesBtn = document.getElementById("resetTemplatesBtn");
 
-            function syncContextFieldsFromState(options) {
+            function ensureModifyPrompt(options) {
                 var context = getActiveViewContext();
-                if (selectMode) {
-                    selectMode.value = context.mode || "create";
-                }
-                if (txtPromptCreate) {
-                    txtPromptCreate.value = context.prompts.create || "";
+                context.prompts = context.prompts || {};
+                var shouldRefresh = options && options.refreshModify;
+                var hasExisting = typeof context.prompts.modify === "string";
+                if ((shouldRefresh && !hasExisting) || context.prompts.modify === undefined || context.prompts.modify === null) {
+                    context.prompts.modify = getModifyPromptContent();
                 }
                 if (txtPromptModify) {
                     txtPromptModify.value = context.prompts.modify || "";
                 }
-                updatePromptForMode(context.mode, Object.assign({ refreshModify: true }, options));
+                if (!options || !options.skipPersist) {
+                    persistTimelineState();
+                }
+            }
+
+            function syncContextFieldsFromState(options) {
+                var context = getActiveViewContext();
+                if (txtPromptCreate) {
+                    // Preserve existing textarea content if context has no prompt saved.
+                    var existing = (txtPromptCreate.value || "").toString();
+                    if (context.prompts && typeof context.prompts.create === "string" && context.prompts.create.trim() !== "") {
+                        txtPromptCreate.value = context.prompts.create;
+                    } else if (existing.trim() !== "") {
+                        // If the textarea already contains meaningful text (from HTML), copy it into context for the active view.
+                        context.prompts = context.prompts || {};
+                        context.prompts.create = existing;
+                    } else {
+                        txtPromptCreate.value = "";
+                    }
+                }
+                ensureModifyPrompt({
+                    refreshModify: options && options.refreshModify,
+                    skipPersist: true
+                });
+                if (!options || !options.skipPersist) {
+                    persistTimelineState();
+                }
             }
 
             function persistActiveContext(updateFn) {
@@ -5471,8 +5826,32 @@ Réponds toujours avec un JSON qui contient :
             syncContextFieldsFromState({ skipPersist: true, refreshModify: true });
             contextUiReady = true;
 
+            (function ensureGutenbergDefaultVisibility() {
+                var el = document.getElementById("contextModalOverlay");
+                if (!el) return;
+                var isDrawer = false;
+                try {
+                    isDrawer = window.matchMedia && window.matchMedia("(max-width: 900px)").matches;
+                } catch (e) {
+                    isDrawer = (window.innerWidth || 0) <= 900;
+                }
+                if (isDrawer) {
+                    el.classList.remove("open");
+                    el.setAttribute("aria-hidden", "true");
+                } else {
+                    el.classList.add("open");
+                    el.setAttribute("aria-hidden", "false");
+                }
+            })();
+
             if (shouldOpenContextOnFirstLoad && !hasTimelineData()) {
-                openContextModal({ mode: "create" });
+                // Do not auto-open Gutenberg at first load — open Promptzilla instead
+                if (typeof openRoadmapPromptzilla === "function") {
+                    openRoadmapPromptzilla();
+                } else if (typeof openContextModal === "function") {
+                    // fallback
+                    openContextModal({ mode: "create" });
+                }
             }
 
             if (txtPromptCreate) {
@@ -5487,15 +5866,6 @@ Réponds toujours avec un JSON qui contient :
                     persistActiveContext(function (ctx) {
                         ctx.prompts.modify = txtPromptModify.value || "";
                     });
-                });
-            }
-            if (selectMode) {
-                selectMode.addEventListener("change", function () {
-                    var value = this.value === "modify" ? "modify" : "create";
-                    persistActiveContext(function (ctx) {
-                        ctx.mode = value;
-                    });
-                    updatePromptForMode(value, { refreshModify: true });
                 });
             }
 
@@ -5610,26 +5980,35 @@ Réponds toujours avec un JSON qui contient :
             var iaModalButtonDefaultLabel = iaModalButton
                 ? iaModalButton.textContent.trim()
                 : "⌘";
-            var EMPTY_MODIFY_PROMPT_TEXT =
-                "Page : Planning 2026\n" +
-                "\n" +
-                "Éléments :\n" +
-                "\n" +
-                "Action 1 \n" +
-                "Date: 2026-01-01 → 2027-01-01\n" +
-                "Groupe: Phase 1\n" +
-                "Type:  Catégorie 1\n" +
-                "\n" +
-                "\n" +
-                "Repère 1 \n" +
-                "Date: 2025-03-22\n" +
-                "Groupe: Phase 2\n" +
-                "Type: milestone\n" +
-                "\n" +
-                "Action 2\n" +
-                "Date: 2026-03-01 → 2026-07-01 \n" +
-                "Groupe: Groupe 2\n" +
-                "Type:  Catégorie 2";
+            var EMPTY_MODIFY_PROMPT_TEXT = (function () {
+                if (Array.isArray(ROADMAP_PROMPTZILLA) && ROADMAP_PROMPTZILLA.length) {
+                    var first = ROADMAP_PROMPTZILLA[0];
+                    if (first && typeof first.script === "string" && first.script.trim() !== "") {
+                        return first.script;
+                    }
+                }
+                return (
+                    "Page : Planning 2026\n" +
+                    "\n" +
+                    "Éléments :\n" +
+                    "\n" +
+                    "Action 1 \n" +
+                    "Date: 2026-01-01 → 2027-01-01\n" +
+                    "Groupe: Phase 1\n" +
+                    "Type:  Catégorie 1\n" +
+                    "\n" +
+                    "\n" +
+                    "Repère 1 \n" +
+                    "Date: 2025-03-22\n" +
+                    "Groupe: Phase 2\n" +
+                    "Type: milestone\n" +
+                    "\n" +
+                    "Action 2\n" +
+                    "Date: 2026-03-01 → 2026-07-01 \n" +
+                    "Groupe: Groupe 2\n" +
+                    "Type:  Catégorie 2"
+                );
+            })();
 
             function hasTimelineData() {
                 if (!items || typeof items.get !== "function") {
@@ -5652,33 +6031,9 @@ Réponds toujours avec un JSON qui contient :
                 return buildTextExport(planning, title);
             }
 
-            function getPromptFieldByMode(mode) {
-                if (mode === "modify") {
-                    return txtPromptModify;
-                }
-                return txtPromptCreate;
-            }
-
-            function updatePromptForMode(mode, options) {
-                if (!txtPromptCreate || !txtPromptModify) {
-                    return;
-                }
-                options = options || {};
-                var isModify = mode === "modify";
-                var context = getActiveViewContext();
-                context.mode = isModify ? "modify" : "create";
-                if (isModify && (options.refreshModify || !context.prompts.modify)) {
-                    context.prompts.modify = getModifyPromptContent();
-                }
-                txtPromptCreate.value = context.prompts.create || "";
-                txtPromptModify.value = context.prompts.modify || "";
-                txtPromptCreate.classList.toggle("active", !isModify);
-                txtPromptModify.classList.toggle("active", isModify);
-                txtPromptCreate.setAttribute("aria-hidden", isModify);
-                txtPromptModify.setAttribute("aria-hidden", !isModify);
-                if (!options.skipPersist) {
-                    persistTimelineState();
-                }
+            function determineGenerationMode() {
+                var scriptText = (txtPromptModify && txtPromptModify.value ? txtPromptModify.value.trim() : "");
+                return scriptText ? "modify" : "create";
             }
 
             function updateIaButtonLabel(isLoading, counter) {
@@ -5772,9 +6127,18 @@ Réponds toujours avec un JSON qui contient :
             }
 
             btnCall.addEventListener("click", async function () {
-                var mode = selectMode.value;
-                var promptField = getPromptFieldByMode(mode);
+                var mode = determineGenerationMode();
+                if (mode === "modify") {
+                    ensureModifyPrompt({ refreshModify: true });
+                }
+                var promptField = mode === "modify" ? txtPromptModify : txtPromptCreate;
                 var promptText = (promptField && promptField.value ? promptField.value.trim() : "");
+
+                if (!promptText && mode === "modify" && txtPromptCreate && txtPromptCreate.value.trim()) {
+                    mode = "create";
+                    promptField = txtPromptCreate;
+                    promptText = txtPromptCreate.value.trim();
+                }
 
                 if (!promptText) {
                     alert("Ajoute un prompt avant d'appeler OpenAI 🙂");
@@ -5810,7 +6174,6 @@ Réponds toujours avec un JSON qui contient :
                 ];
 
                 lastTimelineGenerationAt = Date.now();
-                closeContextModal();
                 startWaitingTimer();
                 btnCall.disabled = true;
                 closeIaModal();
