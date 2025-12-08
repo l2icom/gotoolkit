@@ -411,3 +411,15 @@ label {
     font-size: 12px;
     color: #4b4b43;
 }
+
+@media (max-width: 899px) {
+    .gutenberg-card {
+        position: fixed;
+        top: 0px;
+        right: 0px;
+        bottom: 0px;
+        left: auto;
+        z-index: 80;
+        overflow: auto;
+    }
+}
