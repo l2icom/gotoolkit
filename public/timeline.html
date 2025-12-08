@@ -1248,7 +1248,8 @@
             color: #111827;
         }
 
-        .vis-item.milestone-class {
+        .vis-item.milestone-class,
+        .vis-item.marker-class {
             background: transparent;
             border-color: transparent;
             box-shadow: none;
@@ -1258,7 +1259,8 @@
             border-color: var(--primary-strong) !important;
         }
 
-        .type-milestone {
+        .type-milestone,
+        .type-marker {
             background: transparent;
             border: none;
             padding: 0;
@@ -1266,12 +1268,13 @@
             min-width: 0;
         }
 
-        .type-milestone .diamond {
+        .type-milestone .diamond,
+        .type-marker .diamond {
             width: 10px;
             height: 10px;
             border-radius: 3px;
             background: #fed7aa;
-            border: 1px solid var(--milestone);
+            border: 1px solid var(--marker-accent, var(--primary-color));
             transform: rotate(45deg);
             flex-shrink: 0;
         }
@@ -1290,7 +1293,7 @@
             left: 50%;
             transform: translate(calc(-50% + 6px), -50%) rotate(45deg);
             border-radius: 0;
-            background: var(--milestone-selected-background, rgba(37, 99, 235, 0.14));
+            background: var(--marker-selected-background, rgba(37, 99, 235, 0.14));
             box-shadow: 0 0 0 1px transparent;
 
         }
@@ -1310,7 +1313,8 @@
             padding: 0px 0px 0px 0px;
         }
 
-        .type-milestone .vis-item-content {
+        .type-milestone .vis-item-content,
+        .type-marker .vis-item-content {
             padding-left: 18px;
             /* pull the box left to cover the dot */
         }
@@ -1318,10 +1322,12 @@
 
 
         .vis-item.type-milestone.vis-selected,
-        .vis-item.milestone-class.vis-selected {
+        .vis-item.type-marker.vis-selected,
+        .vis-item.milestone-class.vis-selected,
+        .vis-item.marker-class.vis-selected {
             border-width: 2px;
             background: transparent;
-            border-color: var(--primary-strong);
+            border-color: var(--marker-selected-border, var(--primary-strong));
             border-style: solid;
             border-radius: 4px;
         }
@@ -1602,7 +1608,7 @@
                         </div>
                     </div>
                     <div class="btn-group">
-                        <button class="btn-small" id="btn-add-milestone" aria-label="Ajouter un jalon">
+                        <button class="btn-small" id="btn-add-milestone" aria-label="Ajouter un repère">
                             + Repère
                         </button>
                         <button class="btn-small" id="btn-add-item" aria-label="Ajouter un élément">
@@ -1780,17 +1786,23 @@
                     "end":   "2025-03-31"
                   },
                   "groups": [
-                    { "id": "milestones", "label": "Jalons PI" },
+                    { "id": "markers", "label": "Repères" },
                     { "id": "team-alpha", "label": "Team Alpha – Core Engine" },
                     ...
+                  ],
+                  "markers": [
+                    { "id": "jalon", "label": "Jalon" }
+                  ],
+                  "types": [
+                    { "id": "feature", "label": "Feature" }
                   ],
                   "items": [
                     // jalon ponctuel
                     {
                       "id": "ms-1",
-                      "groupId": "milestones",
+                      "groupId": "markers",
                       "label": "System Demo 1",
-                      "kind": "milestone",
+                      "kind": "jalon",
                       "date": "2025-01-15"
                     },
                     // tâche avec début / fin
@@ -1863,6 +1875,18 @@
             var snapMode = "week";
             var currentScaleMode = "week";
             var typeDefinitions = {};
+            function getTypeDefinition(id) {
+                var key = sanitizeTypeId(id || "");
+                return key ? typeDefinitions[key] : null;
+            }
+            function isMarkerKind(kindId) {
+                var key = sanitizeTypeId(kindId || "");
+                if (!key) return false;
+                var def = getTypeDefinition(key);
+                if (def && def.isMarker) return true;
+                // Legacy support for previously hard-coded milestone id
+                return key === "milestone";
+            }
             var filterState = { kinds: {} };
             var typeFilterPanel = document.getElementById("typeFilterPanel");
             var itemTypeSelect = document.getElementById("itemTypeSelect");
@@ -1918,9 +1942,8 @@
                 displayPreferences: null
             };
             function sanitizeTypeId(raw) {
-                var id = (raw || "").toLowerCase().trim();
-                if (!id) return "feature";
-                return id.replace(/[^a-z0-9_-]/g, "-");
+                var id = (raw || "").toString().trim();
+                return id || "feature";
             }
 
             function hslToHex(h, s, l) {
@@ -2135,40 +2158,29 @@
             function rebuildTypeStyles() {
                 var rules = Object.keys(typeDefinitions).map(function (key) {
                     var def = typeDefinitions[key];
-                    var background = def.background;
-                    if (key === "milestone") {
-                        background = "transparent";
-                    }
+                    var background = def.isMarker ? "transparent" : def.background;
                     var effectiveBorder = def.darkBorder || def.border;
                     var effectiveColor = def.contrastTextColor || def.darkText || def.color;
                     var ruleLines = [
                         ".vis-item.type-" + def.id + " {",
                         "  background: " + background + ";",
-                        // "  border-color: " + effectiveBorder + ";"
+                        "  --marker-selected-background: " + (def.background || "var(--primary-color)") + ";",
+                        "  --marker-selected-border: " + (def.border || "var(--primary-color)") + ";",
+                        "  --marker-accent: " + (def.border || "var(--primary-color)") + ";"
                     ];
-                    if (key !== "milestone") {
+                    if (!def.isMarker) {
                         ruleLines.push("  color: " + effectiveColor + ";");
                     }
                     ruleLines.push("}");
+                    if (def.isMarker) {
+                        ruleLines.push([
+                            ".vis-item.type-" + def.id + " .vis-item-content {",
+                            "  color: var(--text);",
+                            "}"
+                        ].join("\n"));
+                    }
                     return ruleLines.join("\n");
                 });
-                var milestoneDef = typeDefinitions["milestone"];
-                if (milestoneDef) {
-                    var highlightBackground = milestoneDef.background || "var(--primary-color)";
-                    var highlightBorder = milestoneDef.border || "var(--primary-color)";
-                    var milestoneRule = [
-                        ":root {",
-                        "  --milestone-selected-background: " + highlightBackground + ";",
-                        "  --milestone-selected-border: " + highlightBorder + ";",
-                        "}"
-                    ].join("\n");
-                    rules.push(milestoneRule);
-                    rules.push([
-                        ".vis-item.type-milestone .vis-item-content {",
-                        "  color: var(--text);",
-                        "}"
-                    ].join("\n"));
-                }
                 typeStyleElement.textContent = rules.join("\n");
             }
 
@@ -2181,13 +2193,20 @@
                     colors.background || base.background || existing.background || getRainbowColor();
                 var border = colors.border || base.border || existing.border || "var(--primary-color)";
                 var textColor = colors.text || base.color || existing.color || "#111827";
-                var label = base.label || base.name || existing.label || id;
+                var originalLabel = typeof base.label === "string"
+                    ? base.label
+                    : (typeof base.name === "string"
+                        ? base.name
+                        : (existing.label || base.id || id));
+                var label = (originalLabel || "").trim() || id;
+                var isMarker = !!base.isMarker || id === "milestone" || existing.isMarker === true;
                 var entry = {
                     id: id,
                     label: label,
                     background: background,
                     border: border,
-                    color: textColor
+                    color: textColor,
+                    isMarker: isMarker
                 };
                 updateTypeShades(entry);
                 typeDefinitions[id] = entry;
@@ -2196,30 +2215,94 @@
                 return id;
             }
 
-            function applyTypeDefinitions(defs) {
-                if (!Array.isArray(defs)) return;
-                defs.forEach(function (def) {
-                    ensureTypeDefinition({
+            function ensureMarkerDefinition(def) {
+                var base = Object.assign({}, def, { isMarker: true });
+                return ensureTypeDefinition(base);
+            }
+
+            function formatKindLabel(def) {
+                if (!def) return "";
+                var label = def.label || def.id || "";
+                return def.isMarker ? label + "+" : label;
+            }
+
+            function getKindLabel(kindId) {
+                if (!kindId) return "";
+                var def = getTypeDefinition(kindId);
+                if (def) return formatKindLabel(def);
+                return kindId;
+            }
+
+            function parseKindLabelInput(raw) {
+                var input = (raw || "").trim();
+                var isMarker = false;
+                if (input.endsWith("+")) {
+                    isMarker = true;
+                    input = input.replace(/\++\s*$/, "").trim();
+                }
+                var id = sanitizeTypeId(input);
+                if (!id) {
+                    id = sanitizeTypeId(raw);
+                }
+                return {
+                    id: id,
+                    label: input || id,
+                    isMarker: isMarker
+                };
+            }
+
+            function normalizeTypeCollection(defs) {
+                if (Array.isArray(defs)) return defs;
+                if (defs && typeof defs === "object") {
+                    return Object.keys(defs).map(function (key) {
+                        var value = defs[key] || {};
+                        return {
+                            id: key,
+                            label: value.label || value.name || value.title || key,
+                            background: value.background,
+                            border: value.border,
+                            color: value.color,
+                            isMarker: value.isMarker
+                        };
+                    });
+                }
+                return [];
+            }
+
+            function applyTypeDefinitions(defs, options) {
+                var list = normalizeTypeCollection(defs);
+                if (!Array.isArray(list)) return;
+                var forceMarker = options && options.isMarker;
+                list.forEach(function (def) {
+                    var target = {
                         id: def.id,
                         label: def.label,
                         background: def.background,
                         border: def.border,
-                        color: def.color
-                    });
+                        color: def.color,
+                        isMarker: forceMarker || def.isMarker === true
+                    };
+                    if (target.isMarker) {
+                        ensureMarkerDefinition(target);
+                    } else {
+                        ensureTypeDefinition(target);
+                    }
                 });
             }
 
-            function snapshotTypeDefinitions() {
+            function snapshotTypeDefinitions(isMarker) {
                 return Object.keys(typeDefinitions)
                     .map(function (key) {
                         var def = typeDefinitions[key];
                         if (!def) return null;
+                        if (!!def.isMarker !== !!isMarker) return null;
                         return {
                             id: def.id,
                             label: def.label,
                             background: def.background,
                             border: def.border,
-                            color: def.color
+                            color: def.color,
+                            isMarker: def.isMarker || undefined
                         };
                     })
                     .filter(Boolean);
@@ -2236,7 +2319,8 @@
                         };
                     }),
                     displayPreferences: Object.assign({}, displayPreferences),
-                    types: snapshotTypeDefinitions(),
+                    types: snapshotTypeDefinitions(false),
+                    markers: snapshotTypeDefinitions(true),
                     templates: {
                         create: customSystemTemplates.create
                     },
@@ -2399,6 +2483,9 @@
                 if (Array.isArray(persistedState.types)) {
                     applyTypeDefinitions(persistedState.types);
                 }
+                if (Array.isArray(persistedState.markers)) {
+                    applyTypeDefinitions(persistedState.markers, { isMarker: true });
+                }
                 if (persistedState.templates) {
                     if (typeof persistedState.templates.create === "string") {
                         customSystemTemplates.create = persistedState.templates.create;
@@ -2495,7 +2582,7 @@
                         usage[kind] = (usage[kind] || 0) + 1;
                     });
                 }
-                var orderedIds = getOrderedTypeIds(typeIds).filter(function (key) {
+                var orderedIds = getOrderedKindIds(typeIds).filter(function (key) {
                     return usage[key] > 0;
                 });
 
@@ -2529,7 +2616,7 @@
                     option.style.color = textColor;
                     var labelText = document.createElement("span");
                     labelText.className = "type-filter-label";
-                    labelText.textContent = def.label || key;
+                    labelText.textContent = formatKindLabel(def) || key;
 
                     checkbox.addEventListener("change", function () {
                         var enabled = checkbox.checked;
@@ -2602,6 +2689,7 @@
 
             function appendDurationToContent(content, item) {
                 var mode = displayPreferences.itemDurationMode || "none";
+                if (isMarkerKind(item.kind)) return content || "";
                 if (mode === "none") return content || "";
                 var suffix = formatItemDurationSuffix(item);
                 if (!suffix) return content || "";
@@ -2686,16 +2774,17 @@
                 var hasValidEnd = endDate && !isNaN(endDate.getTime());
                 var hasValidStart = startDate && !isNaN(startDate.getTime());
                 var durationMs = hasValidStart && hasValidEnd ? endDate.getTime() - startDate.getTime() : 0;
-                var isMilestone = (previous.kind || item.kind) === "milestone";
+                var isMilestone = isMarkerKind(previous.kind || item.kind);
                 var epsilon = 5 * 60 * 1000; // 5 minutes to avoid jitter around the threshold
                 var atOrBelowOneDay = hasValidStart && hasValidEnd && durationMs < (oneDay - epsilon);
 
-                // Constrain non-milestone items resized to a single day into milestones.
+                // Constrain non-marker items resized to a single day into markers.
                 if (!isMilestone && atOrBelowOneDay) {
                     var milestoneDate = hasValidStart ? startDate : (previous.start ? new Date(previous.start) : new Date());
-                    item.kind = "milestone";
+                    var markerKind = getFirstMarkerId() || ensureMarkerDefinition({ id: "marker", label: "Repère" });
+                    item.kind = markerKind;
                     item.type = "point";
-                    item.className = "type-milestone milestone-class";
+                    item.className = "type-" + markerKind + " type-marker marker-class";
                     item.date = milestoneDate;
                     delete item.end;
                     delete item.start;
@@ -2703,10 +2792,10 @@
                     return item;
                 }
 
-                // Allow milestones stretched beyond one day to become regular items.
+                // Allow markers stretched beyond one day to become regular items.
                 var beyondOneDay = hasValidStart && hasValidEnd && durationMs > (oneDay + epsilon);
                 if (isMilestone && beyondOneDay) {
-                    var nextKind = getFirstNonMilestoneTypeId();
+                    var nextKind = getFirstRegularTypeId();
                     ensureTypeDefinition({ id: nextKind });
                     item.kind = nextKind;
                     item.type = undefined;
@@ -2752,8 +2841,8 @@
                     return d;
                 },
                 template: function (item) {
-                    if (item.kind === "milestone") {
-                        var text = (item.content || "").trim() || "Jalon";
+                    if (isMarkerKind(item.kind)) {
+                        var text = (item.content || "").trim() || "Repère";
                         return (
                             '<div class="ms-pill">' +
                             '<span class="diamond"></span>' +
@@ -2844,12 +2933,26 @@
                 iaModalClose.addEventListener("click", closeIaModal);
             }
             if (iaApplyBtn) {
-                iaApplyBtn.addEventListener("click", closeIaModal);
+                iaApplyBtn.addEventListener("click", function () {
+                    if (iaTemplateEditor) {
+                        persistTemplateChange(iaTemplateEditor.value || "");
+                        persistTimelineState();
+                    }
+                    closeIaModal();
+                });
             }
             if (iaModalOverlay) {
                 iaModalOverlay.addEventListener("click", function (event) {
                     if (event.target === iaModalOverlay) {
                         closeIaModal();
+                    }
+                });
+            }
+
+            if (contextModalOverlay) {
+                contextModalOverlay.addEventListener("click", function (event) {
+                    if (event.target === contextModalOverlay) {
+                        closeContextModal();
                     }
                 });
             }
@@ -2920,42 +3023,10 @@
             var iaApplyBtn = document.getElementById("iaApplyBtn");
             var selectedPromptzillaId = null;
 
-            var FALLBACK_ROADMAP_PROMPTZILLA = [
-                {
-                    id: "product",
-                    title: "🎯 Roadmap Produit",
-                    text: "Génère une roadmap produit sur 6 mois avec 4 jalons majeurs (MVP, beta, release, amélioration), 3 acteurs (PO, UX, Dev), 3 domaines (fonctionnel, UX, data) et une timeline mensuelle. Inclure risques, dépendances et livrables clés"
-                },
-                {
-                    id: "tech",
-                    title: "🛠️ Roadmap Technique",
-                    text: "Crée une roadmap technique annuelle en 4 phases (audit, refonte, migration, optimisation), positionne les jalons trimestriels, les responsabilités (Tech Lead, Infra, SecOps) et les types d’initiatives (perf, sécurité, scalabilité) sur 1 an"
-                },
-                {
-                    id: "sprint",
-                    title: "⚡Calendrier de sprints",
-                    text: "Propose une planification sur 4 sprints de 2 semaines avec objectifs, stories clés, critères de réussite, dépendances internes et rôles (Dev, QA, UX). Ajoute jalons de revue et rituels agiles."
-                },
-                {
-                    id: "strategy",
-                    title: "💼 Vision stratégique",
-                    text: "Génère une vision stratégique en 3 horizons (H1/H2/H3) sur 24 mois, avec thèmes structurants, jalons annuels, domaines (produit, tech, business), impacts attendus et types d’investissements"
-                },
-                {
-                    id: "research",
-                    title: "🔎 Plan de recherche",
-                    text: "Construis un plan de recherche en phase discovery sur 6 mois : recherche utilisateur, cadrage problème, prototypage, test d’hypothèses, restitution. Mentionne acteurs (PO, UX, clients), jalons et décisions Go/No-Go."
-                },
-                {
-                    id: "project",
-                    title: "🧩 Projet d'intégration'",
-                    text: "Génére un projet d’intégration sur 4 mois avec phases (design, dev API, tests, déploiement), jalons critiques, interactions partenaires, risques liés aux environnements et validations métiers."
-                }
-            ];
             var ROADMAP_PROMPTZILLA =
                 (window.GoPrompts && Array.isArray(window.GoPrompts.timelinePromptzilla) && window.GoPrompts.timelinePromptzilla.length
                     ? window.GoPrompts.timelinePromptzilla
-                    : FALLBACK_ROADMAP_PROMPTZILLA);
+                    : []);
 
 
             function renderRoadmapPromptzilla() {
@@ -3042,18 +3113,8 @@
                 });
             }
 
-            var FALLBACK_CREATE_SYSTEM_TEMPLATE = `Tu es un assistant product owner qui va générer une feuille de route produit à partir des instructions suivantes {{contenu_script}}
-Réponds toujours avec un JSON qui contient :
-- \`page\` : le titre de la page courante (utilisé pour le header).
-- \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des natures d'actions différentes entre 3 et 6 dont un type spécifique aux milestones.
-- \`timeline\` : \`{ start, end }\` au format ISO (YYYY-MM-DD).
-- \`groups\` : chaque groupe d'actions avec { id, label } entre 3 et 6 (ex : par équipe, thème, stream produit, enjeu, objectif.).
-- \`items\` : chaque action ou livrable ou résultat avec { id, groupId, label, kind, start?, end?, date? }. Utiliser un label de 4-5 mots max.
-- Les livrables ou résultats sont convertis en \`kind: "milestone"\` avec juste la date de début.
-- Décomposer en plusieurs actions (P1..Pn) de moins de 21 jours, ceux qui ont plus de 21 jours
-- Sors uniquement le JSON, sans explication ni texte additionnel.`;
             var CREATE_SYSTEM_TEMPLATE =
-                (window.GoPrompts && window.GoPrompts.timelineCreateSystemTemplate) || FALLBACK_CREATE_SYSTEM_TEMPLATE;
+                (window.GoPrompts && window.GoPrompts.timelineCreateSystemTemplate) || "";
 
             customSystemTemplates.create = customSystemTemplates.create || CREATE_SYSTEM_TEMPLATE;
 
@@ -3276,6 +3337,17 @@ Réponds toujours avec un JSON qui contient :
                 });
             }
 
+            function getOrderedKindIds(typeIds) {
+                return getOrderedTypeIds(typeIds);
+            }
+
+            function getMarkerIds() {
+                return Object.keys(typeDefinitions).filter(function (id) {
+                    var def = typeDefinitions[id];
+                    return def && def.isMarker;
+                });
+            }
+
             function getVisibleViewTypeIds() {
                 var seen = {};
                 Object.keys(typeDefinitions || {}).forEach(function (id) {
@@ -3289,16 +3361,23 @@ Réponds toujours avec un JSON qui contient :
                         }
                     });
                 }
-                if (!seen["milestone"]) {
-                    seen["milestone"] = true;
-                }
                 return Object.keys(seen);
             }
 
-            function getFirstNonMilestoneTypeId() {
-                var ordered = getOrderedTypeIds(Object.keys(typeDefinitions));
+            function getFirstMarkerId() {
+                var markers = getMarkerIds();
+                if (markers.length) return markers[0];
+                // Legacy fallback: if a "milestone" type exists, treat it as marker
+                if (typeDefinitions["milestone"]) {
+                    return "milestone";
+                }
+                return null;
+            }
+
+            function getFirstRegularTypeId() {
+                var ordered = getOrderedKindIds(Object.keys(typeDefinitions));
                 for (var i = 0; i < ordered.length; i++) {
-                    if (ordered[i] !== "milestone") {
+                    if (!isMarkerKind(ordered[i])) {
                         return ordered[i];
                     }
                 }
@@ -3329,7 +3408,7 @@ Réponds toujours avec un JSON qui contient :
                         ensureTypeDefinition({ id: typeId });
                     }
                 });
-                var orderedIds = getOrderedTypeIds(typeIds);
+                var orderedIds = getOrderedKindIds(typeIds);
                 itemTypeSelect.innerHTML = "";
 
                 if (!orderedIds.length) {
@@ -3358,7 +3437,7 @@ Réponds toujours avec un JSON qui contient :
                     if (!def) return;
                     var option = document.createElement("option");
                     option.value = def.id;
-                    option.textContent = def.label || def.id;
+                    option.textContent = formatKindLabel(def) || def.id;
                     itemTypeSelect.appendChild(option);
                 });
 
@@ -3384,29 +3463,35 @@ Réponds toujours avec un JSON qui contient :
                 var currentKind = sanitizeTypeId(current.kind || current.type || "");
                 if (currentKind === desiredKind) return;
 
-                ensureTypeDefinition({ id: desiredKind });
+                var isMarkerTarget = isMarkerKind(desiredKind);
+                if (isMarkerTarget) {
+                    ensureMarkerDefinition({ id: desiredKind });
+                } else {
+                    ensureTypeDefinition({ id: desiredKind });
+                }
                 ensureKindFilter(desiredKind);
 
                 var updatePayload = {
                     id: selectedItemId,
                     kind: desiredKind,
                     className:
-                        desiredKind === "milestone"
-                            ? "type-milestone milestone-class"
+                        isMarkerTarget
+                            ? "type-" + desiredKind + " type-marker marker-class"
                             : "type-" + desiredKind,
-                    type: desiredKind === "milestone" ? "point" : null
+                    type: isMarkerTarget ? "point" : null
                 };
 
-                if (desiredKind === "milestone") {
+                if (isMarkerTarget) {
                     updatePayload.end = null;
-                    if (!current.start) {
-                        updatePayload.start = getTimelineCenter();
-                    }
+                    var markerStart = current.start || current.date || getTimelineCenter();
+                    updatePayload.start = updatePayload.start || markerStart;
+                    updatePayload.date = dateToIso(updatePayload.start) || dateToIso(markerStart);
                 } else {
-                    if (!current.start) {
+                    updatePayload.date = null;
+                    if (!current.start && !updatePayload.start) {
                         updatePayload.start = getTimelineCenter();
                     }
-                    if (!current.end) {
+                    if (!current.end && !updatePayload.end) {
                         updatePayload.end = computeDefaultEnd(current.start || updatePayload.start);
                     }
                 }
@@ -3468,7 +3553,7 @@ Réponds toujours avec un JSON qui contient :
                 var targetTypeIds = Array.isArray(colorModalState.typeIds) && colorModalState.typeIds.length
                     ? colorModalState.typeIds
                     : getVisibleViewTypeIds();
-                var typeIds = getOrderedTypeIds(targetTypeIds);
+                var typeIds = getOrderedKindIds(targetTypeIds);
                 typeIds.forEach(function (typeId) {
                     var def = typeDefinitions[typeId];
                     if (!def) return;
@@ -3499,10 +3584,6 @@ Réponds toujours avec un JSON qui contient :
                     labelInput.addEventListener("blur", function () {
                         labelInput.readOnly = true;
                     });
-                    if (typeId === "milestone") {
-                        labelInput.disabled = true;
-                        labelInput.title = "Nom du jalon non modifiable";
-                    }
                     labelInput.addEventListener("input", function () {
                         colorModalState.labels[typeId] = labelInput.value;
                     });
@@ -3529,16 +3610,14 @@ Réponds toujours avec un JSON qui contient :
                         if (!normalized) return;
                         updateTypeColorValue(typeId, normalized, preview, colorPicker, hexInput);
                     });
-                    if (typeId !== "milestone") {
-                        var deleteBtn = document.createElement("button");
-                        deleteBtn.type = "button";
-                        deleteBtn.className = "btn-small danger";
-                        deleteBtn.textContent = "❌";
-                        deleteBtn.addEventListener("click", function () {
-                            removeTypeFromColorModal(typeId);
-                        });
-                        controls.appendChild(deleteBtn);
-                    }
+                    var deleteBtn = document.createElement("button");
+                    deleteBtn.type = "button";
+                    deleteBtn.className = "btn-small danger";
+                    deleteBtn.textContent = "❌";
+                    deleteBtn.addEventListener("click", function () {
+                        removeTypeFromColorModal(typeId);
+                    });
+                    controls.appendChild(deleteBtn);
                     controls.appendChild(preview);
                     controls.appendChild(colorPicker);
                     controls.appendChild(hexInput);
@@ -3549,7 +3628,6 @@ Réponds toujours avec un JSON qui contient :
             }
 
             function removeTypeFromColorModal(typeId) {
-                if (typeId === "milestone") return;
                 var typedItems = [];
                 if (items && typeof items.get === "function") {
                     typedItems = items.get().filter(function (it) {
@@ -3621,7 +3699,6 @@ Réponds toujours avec un JSON qui contient :
                         def.background = background;
                         updateTypeShades(def);
                     }
-                    if (typeId === "milestone") return;
                     var updatedLabel = colorModalState.labels[typeId];
                     if (typeof updatedLabel !== "string") return;
                     var normalizedLabel = updatedLabel.trim();
@@ -3651,7 +3728,6 @@ Réponds toujours avec un JSON qui contient :
                     lockedIds.forEach(function (id) {
                         reserved[id] = true;
                     });
-                    reserved["milestone"] = true;
                     renameCandidates.forEach(function (task) {
                         var baseId = task.baseId || task.from;
                         var candidate = baseId;
@@ -3682,7 +3758,8 @@ Réponds toujours avec un JSON qui contient :
                         label: task.label,
                         background: def.background,
                         border: def.border,
-                        color: def.color
+                        color: def.color,
+                        isMarker: def.isMarker
                     };
                     delete typeDefinitions[task.from];
                     typeDefinitions[desiredId] = preserved;
@@ -3714,13 +3791,14 @@ Réponds toujours avec un JSON qui contient :
                     items.get().forEach(function (item) {
                         var currentKind = sanitizeTypeId(item.kind || item.type || "");
                         if (!currentKind || currentKind !== task.from) return;
+                        var targetDef = typeDefinitions[desiredId] || def;
+                        var markerClass = targetDef && targetDef.isMarker
+                            ? " type-marker marker-class"
+                            : "";
                         updates.push({
                             id: item.id,
                             kind: desiredId,
-                            className:
-                                desiredId === "milestone"
-                                    ? "type-milestone milestone-class"
-                                    : "type-" + desiredId
+                            className: "type-" + desiredId + markerClass
                         });
                     });
                     if (updates.length) {
@@ -3836,12 +3914,29 @@ Réponds toujours avec un JSON qui contient :
                     }
                 });
                 return planning.items.map(function (item) {
+                    var isMarker = isMarkerKind(item.kind);
+                    var endValue = isMarker ? "" : (item.end || "");
+                    var durationValue = "";
+                    if (!isMarker && item.start) {
+                        var startDate = isoToDate(item.start);
+                        var len = parseInt(item.length, 10);
+                        if (!endValue && startDate && !isNaN(len) && len > 0) {
+                            var inclusiveEnd = new Date(startDate.getTime());
+                            inclusiveEnd.setDate(inclusiveEnd.getDate() + (len - 1));
+                            endValue = dateToIso(inclusiveEnd);
+                        }
+                        var durationDays = !isNaN(len) && len > 0 ? len : getItemDurationInDays(item);
+                        if (durationDays && durationDays > 0) {
+                            durationValue = durationDays;
+                        }
+                    }
                     return {
                         Ligne: groupMap[item.groupId] || item.groupId || "",
                         Activité: item.label || "",
-                        Type: item.kind || "",
+                        Type: getKindLabel(item.kind) || item.kind || "",
                         Début: item.start || "",
-                        Fin: item.end || "",
+                        Fin: endValue,
+                        Durée: durationValue,
                         Date: item.date || ""
                     };
                 });
@@ -3882,7 +3977,7 @@ Réponds toujours avec un JSON qui contient :
                         return;
                     }
                     var worksheet = XLSX.utils.json_to_sheet(rows, {
-                        header: ["Ligne", "Activité", "Type", "Début", "Fin", "Date"]
+                        header: ["Ligne", "Activité", "Type", "Début", "Fin", "Durée", "Date"]
                     });
                     var workbook = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(workbook, worksheet, "Planning");
@@ -3894,6 +3989,39 @@ Réponds toujours avec un JSON qui contient :
                     exportExcelBtn.textContent = initialLabel;
                     exportExcelBtn.disabled = false;
                 }
+            }
+
+            function getTypeLabelListForPlanning(planning) {
+                var items = Array.isArray(planning && planning.items) ? planning.items : [];
+                var usedKinds = {};
+                items.forEach(function (item) {
+                    var k = sanitizeTypeId(item.kind || item.type || "");
+                    if (k) usedKinds[k] = true;
+                });
+                var labels = [];
+                var added = {};
+                var candidates = []
+                    .concat(Array.isArray(planning && planning.types) ? planning.types : [])
+                    .concat(Array.isArray(planning && planning.markers) ? planning.markers : []);
+                candidates.forEach(function (def) {
+                    if (!def || !def.id) return;
+                    if (!usedKinds[sanitizeTypeId(def.id)]) return;
+                    var text = def.label || def.name || def.id;
+                    if (!text) return;
+                    var suffix = def.isMarker ? "+" : "";
+                    var finalLabel = text.trim() + suffix;
+                    if (added[def.id]) return;
+                    added[def.id] = true;
+                    labels.push(finalLabel);
+                });
+                Object.keys(usedKinds).forEach(function (kindId) {
+                    if (added[kindId]) return;
+                    var def = typeDefinitions[kindId];
+                    var label = formatKindLabel(def) || kindId;
+                    added[kindId] = true;
+                    labels.push(label);
+                });
+                return labels;
             }
 
             function buildTextExport(planning, viewTitle) {
@@ -3924,13 +4052,7 @@ Réponds toujours avec un JSON qui contient :
                 if (groupLabels.length) {
                     lines.push("Groupes : " + groupLabels.join(", "));
                 }
-                var typeLabels = (planning && Array.isArray(planning.types) ? planning.types : [])
-                    .map(function (type) {
-                        if (!type) return null;
-                        var label = type.label || type.name || type.id;
-                        return label ? label.trim() : null;
-                    })
-                    .filter(Boolean);
+                var typeLabels = getTypeLabelListForPlanning(planning);
                 if (typeLabels.length) {
                     lines.push("Types : " + typeLabels.join(", "));
                 }
@@ -3945,13 +4067,18 @@ Réponds toujours avec un JSON qui contient :
                         var label = item.label || "Sans titre";
                         lines.push(label);
                         var days = null;
-                        if (item.kind === "milestone") {
+                        if (isMarkerKind(item.kind)) {
                             if (item.date) {
                                 days = 1;
                                 lines.push("Date: " + item.date + " (1 jour)");
                             }
-                        } else if (item.start || item.end) {
-                            days = computeDaySpan(item.start, item.end);
+                        } else {
+                            var parsedLength = parseInt(item.length, 10);
+                            if (!isNaN(parsedLength) && parsedLength > 0) {
+                                days = parsedLength;
+                            } else if (item.start && item.end) {
+                                days = computeDaySpan(item.start, item.end);
+                            }
                             if (item.start) {
                                 var dayLabel = days === 1 ? " jour" : " jours";
                                 lines.push("Date: " + item.start + (days ? " (" + days + dayLabel + ")" : ""));
@@ -3962,7 +4089,7 @@ Réponds toujours avec un JSON qui contient :
                             lines.push("Groupe: " + groupLabel);
                         }
                         if (item.kind) {
-                            lines.push("Type: " + item.kind);
+                            lines.push("Type: " + getKindLabel(item.kind));
                         }
                     });
                 } else {
@@ -4834,6 +4961,46 @@ Réponds toujours avec un JSON qui contient :
                 syncContextUIForActiveView();
             }
 
+            function clearActiveView(options) {
+                var clearRecit = options && options.clearRecit;
+                var view = views[activeViewIndex];
+                if (!view) return;
+                ensureViewContext(view);
+                var ctx = view.context || {};
+                ctx.prompts = ctx.prompts || {};
+                if (clearRecit) {
+                    ctx.prompts.create = "";
+                    if (txtPromptCreate) txtPromptCreate.value = "";
+                }
+                ctx.prompts.modify = "";
+                if (txtPromptModify) txtPromptModify.value = "";
+                view.context = ctx;
+                view.planning = null;
+                view.filterState = { kinds: {} };
+                filterState = view.filterState;
+                typeDefinitions = {};
+                rebuildTypeStyles();
+                persistenceLocked = true;
+                groups.clear();
+                items.clear();
+                persistenceLocked = false;
+                syncFiltersForActiveView(getVisibleViewTypeIds());
+                resetTimelineForEmptyView();
+                updateEmptyViewMessage();
+                persistTimelineState();
+            }
+
+            function clearPromptsForActiveView() {
+                var ctx = ensureViewContext(views[activeViewIndex]);
+                if (ctx && ctx.prompts) {
+                    ctx.prompts.create = "";
+                    ctx.prompts.modify = "";
+                }
+                if (txtPromptCreate) txtPromptCreate.value = "";
+                if (txtPromptModify) txtPromptModify.value = "";
+                persistTimelineState();
+            }
+
             if (headerTitleElement) {
                 headerTitleElement.addEventListener("dblclick", function () {
                     var currentLabel = (headerTitleElement.textContent || "").trim();
@@ -4886,22 +5053,40 @@ Réponds toujours avec un JSON qui contient :
             function addView() {
                 persistCurrentPlanning();
                 var label = "Bloc " + (views.length + 1);
-                var newView = { name: label, title: label, planning: null, context: cloneDefaultContext() };
+                var newView = { name: label, title: label, planning: null, context: cloneDefaultContext(), clearedOnce: false };
                 ensureViewFilterState(newView);
                 views.push(newView);
                 persistTimelineState();
                 activateView(views.length - 1, true);
+                clearPromptsForActiveView();
                 openContextModal({ mode: "create" });
             }
 
             function deleteView() {
-                if (views.length <= 1) return;
-                views.splice(activeViewIndex, 1);
-                if (activeViewIndex >= views.length) {
-                    activeViewIndex = views.length - 1;
+                var view = views[activeViewIndex];
+                if (!view) return;
+                var isSingle = views.length <= 1;
+                if (isSingle) {
+                    if (view.clearedOnce) {
+                        clearActiveView({ clearRecit: true });
+                        view.clearedOnce = false;
+                    } else {
+                        clearActiveView({ clearRecit: false });
+                        view.clearedOnce = true;
+                    }
+                    return;
                 }
-                persistTimelineState();
-                activateView(activeViewIndex, true);
+                if (view.clearedOnce) {
+                    views.splice(activeViewIndex, 1);
+                    if (activeViewIndex >= views.length) {
+                        activeViewIndex = views.length - 1;
+                    }
+                    persistTimelineState();
+                    activateView(activeViewIndex, true);
+                } else {
+                    view.clearedOnce = true;
+                    clearActiveView({ clearRecit: false });
+                }
             }
 
             addViewBtn && addViewBtn.addEventListener("click", addView);
@@ -4983,18 +5168,23 @@ Réponds toujours avec un JSON qui contient :
                 var groupId = item.group || "team-alpha";
                 var id, newItem;
 
-                if (groupId === "milestones") {
+                var isMarkerGroup = groupId === "markers" || groupId === "milestones";
+                if (isMarkerGroup) {
+                    var markerKind = getFirstMarkerId() || ensureMarkerDefinition({ id: "marker", label: "Repère" });
+                    ensureMarkerDefinition({ id: markerKind });
                     id = "ms-" + Date.now();
                     newItem = {
                         id: id,
-                        group: "milestones",
+                        group: groupId === "milestones" ? "milestones" : "markers",
                         content: "",
                         start: start,
                         type: "point",
-                        kind: "milestone",
-                        className: "type-milestone milestone-class"
+                        kind: markerKind,
+                        className: "type-" + markerKind + " type-marker marker-class"
                     };
                 } else {
+                    var defaultKind = getFirstRegularTypeId();
+                    ensureTypeDefinition({ id: defaultKind });
                     id = "it-" + Date.now();
                     newItem = {
                         id: id,
@@ -5002,8 +5192,8 @@ Réponds toujours avec un JSON qui contient :
                         content: "",
                         start: start,
                         end: new Date(start.getTime() + oneWeek),
-                        kind: "feature",
-                        className: "type-feature"
+                        kind: defaultKind,
+                        className: "type-" + defaultKind
                     };
                 }
                 items.add(newItem);
@@ -5054,15 +5244,18 @@ Réponds toujours avec un JSON qui contient :
                 return new Date(mid);
             }
 
-            function getGroupForNewItem(isMilestone) {
+            function getGroupForNewItem(isMarkerItem) {
                 if (!groups || typeof groups.get !== "function") {
                     return null;
                 }
-                if (isMilestone) {
-                    var milestoneGroup = groups.get("milestones");
-                    if (milestoneGroup) {
-                        return "milestones";
+                if (isMarkerItem) {
+                    var markerGroup = groups.get("markers") || groups.get("milestones");
+                    if (markerGroup) {
+                        return markerGroup.id;
                     }
+                    var fallbackMarkerId = "markers";
+                    groups.add({ id: fallbackMarkerId, content: "Repères" });
+                    return fallbackMarkerId;
                 }
                 if (selectedItemId) {
                     var selectedItem = items.get(selectedItemId);
@@ -5090,20 +5283,28 @@ Réponds toujours avec un JSON qui contient :
 
             function createTimelineItem(kind) {
                 if (!items) return;
-                var isMilestone = kind === "milestone";
-                var groupId = getGroupForNewItem(isMilestone);
+                var isMarker = kind === "marker" || isMarkerKind(kind);
+                var groupId = getGroupForNewItem(isMarker);
                 if (!groupId) return;
                 var baseStart = getTimelineCenter();
-                var newItemId = (isMilestone ? "ms-" : "it-") + Date.now();
+                var newItemId = (isMarker ? "ms-" : "it-") + Date.now();
+                var resolvedKind = isMarker
+                    ? (isMarkerKind(kind) ? kind : (getFirstMarkerId() || ensureMarkerDefinition({ id: "marker", label: "Repère" })))
+                    : (kind && !isMarkerKind(kind) ? kind : getFirstRegularTypeId());
+                if (isMarker) {
+                    ensureMarkerDefinition({ id: resolvedKind });
+                } else {
+                    ensureTypeDefinition({ id: resolvedKind });
+                }
                 var newItem = {
                     id: newItemId,
                     group: groupId,
                     content: "",
                     start: baseStart,
-                    kind: isMilestone ? "milestone" : "feature",
-                    className: isMilestone ? "type-milestone milestone-class" : "type-feature"
+                    kind: resolvedKind,
+                    className: isMarker ? ("type-" + resolvedKind + " type-marker marker-class") : ("type-" + resolvedKind)
                 };
-                if (isMilestone) {
+                if (isMarker) {
                     newItem.type = "point";
                 } else {
                     newItem.end = computeDefaultEnd(baseStart);
@@ -5156,19 +5357,21 @@ Réponds toujours avec un JSON qui contient :
 
             if (btnAddMilestone) {
                 btnAddMilestone.addEventListener("click", function () {
-                    createTimelineItem("milestone");
+                    createTimelineItem("marker");
                 });
             }
             if (btnAddType) {
                 btnAddType.addEventListener("click", function () {
-                    var label = window.prompt("Nom du nouveau type");
+                    var label = window.prompt("Nom du nouveau type (ajoute un + à la fin pour un repère)");
                     if (label === null) return;
-                    label = (label || "").trim();
-                    if (!label) return;
-                    var id = sanitizeTypeId(label);
-                    if (!id) return;
-                    ensureTypeDefinition({ id: id, label: label });
-                    ensureKindFilter(id);
+                    var parsed = parseKindLabelInput(label);
+                    if (!parsed.id) return;
+                    if (parsed.isMarker) {
+                        ensureMarkerDefinition({ id: parsed.id, label: parsed.label });
+                    } else {
+                        ensureTypeDefinition({ id: parsed.id, label: parsed.label });
+                    }
+                    ensureKindFilter(parsed.id);
                     rebuildTypeStyles();
                     syncFiltersForActiveView(getVisibleViewTypeIds());
                     renderColorModalContent();
@@ -5279,6 +5482,7 @@ Réponds toujours avec un JSON qui contient :
                 persistenceLocked = true;
                 try {
                     applyTypeDefinitions(planning.types);
+                    applyTypeDefinitions(planning.markers, { isMarker: true });
                     // groups
                     if (Array.isArray(planning.groups)) {
                         groups.clear();
@@ -5301,19 +5505,25 @@ Réponds toujours avec un JSON qui contient :
                                 content: it.label || "",
                                 kind: kind
                             };
-                            ensureTypeDefinition({ id: kind });
-
-                            if (base.kind === "milestone") {
-                                base.start = isoToDate(it.date || it.start);
+                            var isMarkerItem = isMarkerKind(kind) || it.isMarker || (!!it.date && !it.end);
+                            if (isMarkerItem) {
+                                ensureMarkerDefinition({ id: kind });
+                                base.start = isoToDate(it.date || it.start) || new Date();
                                 base.type = "point";
-                                base.className = "type-milestone milestone-class";
+                                base.className = "type-" + kind + " type-marker marker-class";
                             } else {
-                                base.start = isoToDate(it.start);
+                                ensureTypeDefinition({ id: kind });
+                                base.start = isoToDate(it.start) || new Date();
+                                var lengthDays = parseInt(it.length, 10);
                                 var inclusiveEnd = isoToDate(it.end);
-                                if (inclusiveEnd) {
+                                if (!isNaN(lengthDays) && lengthDays > 0) {
+                                    base.end = new Date(base.start.getTime() + lengthDays * oneDay);
+                                } else if (inclusiveEnd) {
                                     inclusiveEnd = new Date(inclusiveEnd.getTime() + oneDay);
+                                    base.end = inclusiveEnd;
+                                } else {
+                                    base.end = new Date(base.start.getTime() + oneDay);
                                 }
-                                base.end = inclusiveEnd || new Date(base.start.getTime() + oneDay);
                                 if (base.end < base.start) {
                                     base.end = new Date(base.start.getTime() + oneDay);
                                 }
@@ -5360,7 +5570,8 @@ Réponds toujours avec un JSON qui contient :
                 });
 
                 var outItems = it.map(function (item) {
-                    if (item.kind === "milestone") {
+                    var itemKind = item.kind || "feature";
+                    if (isMarkerKind(itemKind)) {
                         if (item.start) {
                             var ds = new Date(item.start);
                             if (!minStart || ds < minStart) minStart = ds;
@@ -5370,52 +5581,34 @@ Réponds toujours avec un JSON qui contient :
                             id: item.id,
                             groupId: item.group,
                             label: item.content || "",
-                            kind: "milestone",
+                            kind: itemKind,
                             date: dateToIso(item.start)
                         };
                     } else {
                         var ds2 = item.start ? new Date(item.start) : null;
-                        var de2 = item.end ? new Date(item.end) : null;
+                        var durationDays = getItemDurationInDays(item) || 1;
                         if (ds2) {
                             if (!minStart || ds2 < minStart) minStart = ds2;
-                        }
-
-                        var inclusiveEndForExport = null;
-                        if (de2) {
-                            inclusiveEndForExport = new Date(de2.getTime() - oneDay);
-                            if (ds2 && inclusiveEndForExport < ds2) {
-                                inclusiveEndForExport = ds2;
+                            var inclusiveEnd = new Date(ds2.getTime());
+                            inclusiveEnd.setDate(inclusiveEnd.getDate() + (durationDays - 1));
+                            if (!maxEnd || inclusiveEnd > maxEnd) {
+                                maxEnd = inclusiveEnd;
                             }
-                            if (!maxEnd || inclusiveEndForExport > maxEnd) {
-                                maxEnd = inclusiveEndForExport;
-                            }
-                        } else if (ds2) {
-                            if (!maxEnd || ds2 > maxEnd) maxEnd = ds2;
                         }
-
-                        var kind = item.kind || "feature";
+                        var kind = itemKind;
                         return {
                             id: item.id,
                             groupId: item.group,
                             label: item.content || "",
                             kind: kind,
                             start: dateToIso(item.start),
-                            end: dateToIso(inclusiveEndForExport || ds2)
+                            length: durationDays
                         };
                     }
                 });
 
-                var typeEntries = Object.keys(typeDefinitions).map(function (key) {
-                    var def = typeDefinitions[key];
-                    if (!def) return null;
-                    return {
-                        id: def.id,
-                        label: def.label,
-                        background: def.background,
-                        border: def.border,
-                        color: def.color
-                    };
-                }).filter(Boolean);
+                var typeEntries = snapshotTypeDefinitions(false);
+                var markerEntries = snapshotTypeDefinitions(true);
 
                 var planning = {
                     timeline: {
@@ -5428,6 +5621,9 @@ Réponds toujours avec un JSON qui contient :
 
                 if (typeEntries.length) {
                     planning.types = typeEntries;
+                }
+                if (markerEntries.length) {
+                    planning.markers = markerEntries;
                 }
 
                 return planning;
@@ -5682,7 +5878,6 @@ Réponds toujours avec un JSON qui contient :
             function resetSystemTemplates() {
                 customSystemTemplates.create = CREATE_SYSTEM_TEMPLATE;
                 syncTemplateEditor();
-                persistTimelineState();
             }
 
             function persistTemplateChange(value) {
@@ -5694,12 +5889,6 @@ Réponds toujours avec un JSON qui contient :
                 if (iaTemplateEditor) {
                     iaTemplateEditor.value = getSystemTemplate();
                 }
-            }
-
-            if (iaTemplateEditor) {
-                iaTemplateEditor.addEventListener("input", function () {
-                    persistTemplateChange(iaTemplateEditor.value || "");
-                });
             }
 
             if (resetTemplatesBtn) {
@@ -5794,7 +5983,7 @@ Réponds toujours avec un JSON qui contient :
                     "Repère 1 \n" +
                     "Date: 2025-03-22\n" +
                     "Groupe: Phase 2\n" +
-                    "Type: milestone\n" +
+                    "Type: jalon+\n" +
                     "\n" +
                     "Action 2\n" +
                     "Date: 2026-03-01 → 2026-07-01 \n" +
@@ -5934,6 +6123,7 @@ Réponds toujours avec un JSON qui contient :
                 }
                 var promptField = mode === "modify" ? txtPromptModify : txtPromptCreate;
                 var promptText = (promptField && promptField.value ? promptField.value.trim() : "");
+                var scriptText = (txtPromptModify && txtPromptModify.value ? txtPromptModify.value.trim() : "");
 
                 if (!promptText && mode === "modify" && txtPromptCreate && txtPromptCreate.value.trim()) {
                     mode = "create";
@@ -5967,6 +6157,7 @@ Réponds toujours avec un JSON qui contient :
                     schema: "planning-v1",
                     mode: mode,
                     prompt: promptText,
+                    script: scriptText,
                     planning: currentPlanning
                 };
 
@@ -6060,13 +6251,16 @@ Réponds toujours avec un JSON qui contient :
                 while (lines.length && lines[0] === "") lines.shift();
                 while (lines.length && lines[lines.length - 1] === "") lines.pop();
 
-                var planning = { page: "", timeline: {}, groups: [], types: [], items: [] };
+                var planning = { page: "", timeline: {}, groups: [], types: [], markers: [], items: [] };
                 var groupsMap = {};
                 var groupOrder = [];
                 var typesMap = {};
                 var typeOrder = [];
+                var markersMap = {};
+                var markerOrder = [];
                 var hasDeclaredGroups = false;
                 var hasDeclaredTypes = false;
+                var hasDeclaredMarkers = false;
                 var unknownReferences = [];
 
                 function registerGroup(label) {
@@ -6087,6 +6281,17 @@ Réponds toujours avec un JSON qui contient :
                     if (!typesMap[id]) {
                         typesMap[id] = { id: id, label: name };
                         typeOrder.push(id);
+                    }
+                    return id;
+                }
+
+                function registerMarker(label) {
+                    var name = (label || "").toString().trim();
+                    if (!name) return null;
+                    var id = sanitizeTypeId(name) || name.replace(/\s+/g, "_").toLowerCase();
+                    if (!markersMap[id]) {
+                        markersMap[id] = { id: id, label: name, isMarker: true };
+                        markerOrder.push(id);
                     }
                     return id;
                 }
@@ -6119,10 +6324,19 @@ Réponds toujours avec un JSON qui contient :
                         });
                         continue;
                     }
-                    var mTypes = line.match(/^Types?\s*[:]\s*(.+)$/i);
+                    var mMarkers = line.match(/^Rep[eè]res?\s*[:]\s*(.+)$/i);
+                    if (mMarkers) {
+                        hasDeclaredMarkers = true;
+                        var markerParts = mMarkers[1].split(/,|;/).map(function (s) { return s.trim(); }).filter(Boolean);
+                        markerParts.forEach(function (p) {
+                            registerMarker(p);
+                        });
+                        continue;
+                    }
+                    var mTypes = line.match(/^(Types?|Cat[ée]gories?)\s*[:]\s*(.+)$/i);
                     if (mTypes) {
                         hasDeclaredTypes = true;
-                        var typeParts = mTypes[1].split(/,|;/).map(function (s) { return s.trim(); }).filter(Boolean);
+                        var typeParts = mTypes[2].split(/,|;/).map(function (s) { return s.trim(); }).filter(Boolean);
                         typeParts.forEach(function (p) {
                             registerType(p);
                         });
@@ -6192,17 +6406,31 @@ Réponds toujours avec un JSON qui contient :
                                 var mType = l.match(/^Type\s*[:]\s*(.+)$/i);
                                 if (mType) {
                                     var rawType = (mType[1] || "").trim();
-                                    var kind = sanitizeTypeId(rawType);
+                                    var parsedType = parseKindLabelInput(rawType);
+                                    var kind = parsedType.id;
                                     if (kind) {
                                         item.kind = kind;
-                                        if (hasDeclaredTypes && !typesMap[kind]) {
-                                            unknownReferences.push({
-                                                action: label,
-                                                group: item.rawGroupLabel || item.groupId || "",
-                                                type: rawType
-                                            });
-                                        } else if (!typesMap[kind]) {
-                                            registerType(rawType);
+                                        item.isMarker = parsedType.isMarker;
+                                        if (parsedType.isMarker) {
+                                            if (hasDeclaredMarkers && !markersMap[kind]) {
+                                                unknownReferences.push({
+                                                    action: label,
+                                                    group: item.rawGroupLabel || item.groupId || "",
+                                                    type: rawType
+                                                });
+                                            } else if (!markersMap[kind]) {
+                                                registerMarker(rawType);
+                                            }
+                                        } else {
+                                            if (hasDeclaredTypes && !typesMap[kind]) {
+                                                unknownReferences.push({
+                                                    action: label,
+                                                    group: item.rawGroupLabel || item.groupId || "",
+                                                    type: rawType
+                                                });
+                                            } else if (!typesMap[kind]) {
+                                                registerType(rawType);
+                                            }
                                         }
                                     }
                                     continue;
@@ -6220,16 +6448,21 @@ Réponds toujours avec un JSON qui contient :
                             }
                             // default kind
                             if (!item.kind) {
+                                var defaultMarkerId = markerOrder.length ? markerOrder[0] : registerMarker("Repère") || "repere";
+                                var defaultTypeId = typeOrder.length ? typeOrder[0] : registerType("feature") || "feature";
                                 if (item.date && item.start && item.end && item.start === item.end) {
-                                    item.kind = "milestone";
+                                    item.kind = defaultMarkerId;
+                                    item.isMarker = true;
                                 } else {
-                                    item.kind = "feature";
+                                    item.kind = defaultTypeId;
+                                    item.isMarker = false;
                                 }
                             }
                             // generate id
                             item.id = "item-" + Math.random().toString(36).slice(2, 9);
-                            // if start/end equal, set date for milestone
-                            if (item.kind === "milestone") {
+                            // if start/end equal, set date for markers
+                            var itemIsMarker = item.isMarker || markersMap[item.kind];
+                            if (itemIsMarker) {
                                 item.date = item.date || (item.start || null);
                                 item.start = null;
                                 item.end = null;
@@ -6260,15 +6493,26 @@ Réponds toujours avec un JSON qui contient :
                 planning.items.forEach(function (it) {
                     var kid = sanitizeTypeId(it.kind || it.type || "");
                     if (!kid) return;
-                    if (!typesMap[kid]) {
-                        registerType(kid);
+                    var looksLikeMarker = it.isMarker || (it.date && (!it.end || it.start === it.end)) || markersMap[kid];
+                    if (!typesMap[kid] && !markersMap[kid]) {
+                        if (looksLikeMarker) {
+                            registerMarker(kid);
+                        } else {
+                            registerType(kid);
+                        }
                     }
                 });
                 planning.types = (typeOrder.length ? typeOrder : Object.keys(typesMap)).map(function (k) {
                     return typesMap[k];
                 }).filter(Boolean);
+                planning.markers = (markerOrder.length ? markerOrder : Object.keys(markersMap)).map(function (k) {
+                    return markersMap[k];
+                }).filter(Boolean);
                 if (!planning.types || !planning.types.length) {
-                    planning.types = [{ id: "feature", label: "feature" }, { id: "milestone", label: "milestone" }];
+                    planning.types = [{ id: "feature", label: "feature" }];
+                }
+                if (!planning.markers || !planning.markers.length) {
+                    planning.markers = [{ id: "repere", label: "Repère", isMarker: true }];
                 }
                 return planning;
             }

@@ -158,6 +158,13 @@
     const drawDefaultPromptTemplate =
         "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code strictement mermaid sous forme d'un diagramme rigoureux de {{draw_type}}. Les intitulés font moins de 4 mots. Ajoute un titre en commentaire %% Title dans la réponse. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
 
+    const canvasDefaultPromptTemplate =
+        `Tu es un product owner expérimenté, sur la base de "{{slideTitle}}", du contexte "{{globalContext}}" et "{{pageContext}}" et dans le cadre de "{{columnTitle}}", reformuler "{{fieldValue}}" sous forme de 2 à 3 "{{sectionTitle}}" (un • de < 15 mots pour chaque) sans introduction préalable ni émoji`;
+    const canvasBottomPromptTemplate =
+        `Tu es un product owner expérimenté, sur la base du contexte "{{globalContext}}" et de "{{pageContext}}", et avec {{columnSections}}, répond à {{slideTitle}} en 2 phrases courtes (< 15 mots pour chaque).`;
+    const canvasSuggestionsPromptTemplate =
+        `Tu es un product owner expérimenté, sur la base du contexte "{{globalContext}}" et de "{{pageContext}}", et dans le cadre de {{columnTitle}}, formuler 3 instructions commençant par un verbe pour aider à trouver des {{sectionTitle}} synthétiques et pertinents pour répondre à {{slideTitle}} (< 15 mots pour chaque et en commençant chacune par un -). Tout ça sans introduction préalable ni émoji`;
+
     const drawPromptzilla = [
         {
             id: "sequence-service",
@@ -257,13 +264,33 @@
         }
     ];
 
-    const timelineCreateSystemTemplate = `Tu es un assistant product owner qui va générer une feuille de route produit à partir des instructions suivantes {{contenu_script}}
-Assure toi d'abord d'avoir nettoyé le brief et la demande, puis génère une proposition structurée avec groupes, items, types et dates cohérentes.`;
+    const timelineCreateSystemTemplate = `Tu es un assistant product owner qui va générer une feuille de route produit à partir des instructions suivantes.
+Réponds toujours avec un JSON qui contient :
+- \`page\` : le titre de la page courante (utilisé pour le header).
+- \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des natures d'actions différentes (fonction, compétence, rôle...). 
+- \`markers\`: un tableau d’objets \`{ id, label}\` pour représenter des actions à la journée ou des repères de date (étape, événement, livrable, résultat, risque...). L'id doit être différent de ceux des types.
+- \`groups\` : chaque groupe d'actions avec { id, label } (ex : par équipe, thème, stream produit, enjeu, objectif.)  
+- \`items\` : chaque action ou livrable ou résultat avec { id, groupId, label, kind, start, length? }. On envoie dans le kind l'id de la nature d'action ou de marker.  
+- \`start\` est au format ISO (YYYY-MM-DD) 
+- \`length\` est exprimé en jours  
+- Les items avec comme valeur \`kind:\` un type marker n'ont pas de \`length\`.
+- Sors uniquement le JSON, sans explication ni texte additionnel.
+- On essaie d'optimiser un maximum la feuille de route et réduire la duréee totale. Les actions doivent s'enchainer logiquement sans pause.
+- Les actions peuvent s'enchaîner en parallèle si besoin. Mais les dépendances implicites doivent être prises en compte.
+- Pour une action longue avec \`length\` supérieur à 21 jours, faire plusieurs items de moins de 21 joursen ajoutant dans le nom (P1, P2...Pn)
+- Un seul mot pour le label d'un \`markers\` ou un \`type\`.
+- Entre 2-4 mots pour le label d'un \`group\`.
+- On a entre 1 et 3 \`markers\`, entre 2-6 \`types\`, entre 2 et 4 \`groups\` et entre 10 et 20 \`items\`.
+`
 
+        ;
     global.GoPrompts = {
         canvasTemplates,
         drawPromptzilla,
         drawDefaultPromptTemplate,
+        canvasDefaultPromptTemplate,
+        canvasBottomPromptTemplate,
+        canvasSuggestionsPromptTemplate,
         timelinePromptzilla,
         timelineCreateSystemTemplate
     };

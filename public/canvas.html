@@ -2000,7 +2000,8 @@
         };
         const promptPreviewMaskedKeys = new Set(["fieldValue", "globalContext", "pageContext"]);
 
-        const defaultPromptTemplate = `Tu es un product owner expérimenté, sur la base de "{{slideTitle}}", du contexte "{{globalContext}}" et "{{pageContext}}" et dans le cadre de "{{columnTitle}}", reformuler "{{fieldValue}}" sous forme de 2 à 3 "{{sectionTitle}}" (un • de < 15 mots pour chaque) sans introduction préalable ni émoji`;
+        const defaultPromptTemplate =
+            (window.GoPrompts && window.GoPrompts.canvasDefaultPromptTemplate) || "";
         const IA_MODE_EXPRESS = "express";
         const IA_MODE_EXPERIMENTAL = "experimental";
         const promptModeMap = {
@@ -2008,8 +2009,10 @@
             [IA_MODE_EXPERIMENTAL]: "lab"
         };
         const bottomSectionPlaceholderText = "Synthèse, décisions clés ou résumé rapide";
-        const bottomSectionDefaultPrompt = `Tu es un product owner expérimenté, sur la base du contexte "{{globalContext}}" et de "{{pageContext}}", et avec {{columnSections}}, répond à {{slideTitle}} en 2 phrases courtes (< 15 mots pour chaque).`;
-        const defaultSuggestionsPrompt = `Tu es un product owner expérimenté, sur la base du contexte "{{globalContext}}" et de "{{pageContext}}", et dans le cadre de {{columnTitle}}, formuler 3 instructions commençant par un verbe pour aider à trouver des {{sectionTitle}} synthétiques et pertinents pour répondre à {{slideTitle}} (< 15 mots pour chaque et en commençant chacune par un -). Tout ça sans introduction préalable ni émoji`;
+        const bottomSectionDefaultPrompt =
+            (window.GoPrompts && window.GoPrompts.canvasBottomPromptTemplate) || "";
+        const defaultSuggestionsPrompt =
+            (window.GoPrompts && window.GoPrompts.canvasSuggestionsPromptTemplate) || "";
 
         function getTemplateById(id) {
             return templates.find(template => template.id === id) || templates[0];
@@ -2750,7 +2753,6 @@
                 const library = getPromptLibraryForTemplate(activePromptTemplateId);
                 const modeKey = promptKeyFromMode(activeIaMode);
                 library[modeKey] = mainPromptField.value || defaultPromptTemplate;
-                schedulePersist();
             });
         }
         if (bottomPromptField) {
@@ -2760,7 +2762,6 @@
             bottomPromptField.addEventListener("input", () => {
                 const library = getPromptLibraryForTemplate(activePromptTemplateId);
                 library.bottom = bottomPromptField.value || bottomSectionDefaultPrompt;
-                schedulePersist();
             });
         }
         if (suggestionPromptField) {
@@ -2770,7 +2771,6 @@
             suggestionPromptField.addEventListener("input", () => {
                 const library = getPromptLibraryForTemplate(activePromptTemplateId);
                 library.suggestions = suggestionPromptField.value || defaultSuggestionsPrompt;
-                schedulePersist();
             });
         }
         globalContextField?.addEventListener("input", () => {
@@ -4055,20 +4055,56 @@
         });
 
 
+        function clearActiveSlide(options = {}) {
+            const clearRecits = !!options.clearRecits;
+            const slide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
+            if (!slide) return;
+            slide.querySelectorAll(".editable").forEach(el => {
+                if (el.tagName === "TEXTAREA" || el.tagName === "INPUT") {
+                    el.value = "";
+                } else {
+                    el.textContent = "";
+                }
+            });
+            const bottomSection = slide.querySelector(".bottom-section-text");
+            if (bottomSection) bottomSection.value = "";
+            if (clearRecits) {
+                if (globalContextField) globalContextField.value = "";
+                if (pageContextField) pageContextField.value = "";
+                slide.dataset.pageContext = "";
+            }
+            slide.dataset.clearedOnce = "true";
+        }
+
         deleteTabBtn.addEventListener("click", () => {
-            if (slideCount <= 1) {
+            const slide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
+            if (!slide) return;
+            const isSingle = slideCount <= 1;
+            const wasCleared = slide.dataset.clearedOnce === "true";
+            if (isSingle) {
+                if (wasCleared) {
+                    clearActiveSlide({ clearRecits: true });
+                    slide.dataset.clearedOnce = "false";
+                } else {
+                    clearActiveSlide({ clearRecits: false });
+                }
+                schedulePersist();
                 return;
             }
-            const currentSlide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
-            if (currentSlide) {
-                currentSlide.remove();
+            if (wasCleared) {
+                slide.remove();
+                slideCount--;
+                refreshTabs();
+                if (activeIndex >= slideCount) {
+                    activeIndex = slideCount - 1;
+                }
+                setActiveTab(activeIndex);
+                schedulePersist();
+            } else {
+                clearActiveSlide({ clearRecits: false });
+                slide.dataset.clearedOnce = "true";
+                schedulePersist();
             }
-            refreshTabs();
-            if (activeIndex >= slideCount) {
-                activeIndex = slideCount - 1;
-            }
-            setActiveTab(activeIndex);
-            schedulePersist();
         });
 
         textStyleBtn.addEventListener("click", event => {
@@ -5009,7 +5045,10 @@
                 closeModal(contextModal);
             }
         });
-        contextApplyBtn?.addEventListener("click", () => closeModal(contextModal));
+        contextApplyBtn?.addEventListener("click", () => {
+            persistState();
+            closeModal(contextModal);
+        });
         contextEditorBtn?.addEventListener("click", () => {
             toggleGutenberg();
         });

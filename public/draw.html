@@ -863,10 +863,8 @@
     <script src="js/connect.bundle.js" data-excalidraw-bundle="true"></script>
     <script>
         (() => {
-            const FALLBACK_DRAW_PROMPT =
-                "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code strictement mermaid sous forme d'un diagramme rigoureux de {{draw_type}}. Les intitulés font moins de 4 mots. Ajoute un titre en commentaire %% Title dans la réponse. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
             const DEFAULT_PROMPT_TEMPLATE =
-                (window.GoPrompts && window.GoPrompts.drawDefaultPromptTemplate) || FALLBACK_DRAW_PROMPT;
+                (window.GoPrompts && window.GoPrompts.drawDefaultPromptTemplate) || "";
             const DRAW_TYPES = [
                 { id: "sequence", label: "Échange", promptValue: "sequenceDiagram", emoji: "⇄" },
                 { id: "flow", label: "Processus", promptValue: "flowchart LR", emoji: "◇" },
@@ -998,21 +996,10 @@ sequenceDiagram
     Note over A,B: Ajoute ici une explication ou un contexte`
             };
 
-            const FALLBACK_DRAW_PROMPTZILLA = [
-                { id: "auth-seq", label: "Authentification – Séquentiel", description: "Décris pas à pas la vérification d’identité, de la saisie initiale jusqu’à la réponse finale.", drawType: "sequence" },
-                { id: "file-transfer", label: "Transfert de fichier – Séquentiel", description: "Montre le cheminement d’un fichier du client vers le serveur, avec contrôles et gestion d’erreurs.", drawType: "sequence" },
-                { id: "event-process", label: "Traitement d'événement – Séquentiel", description: "Décris les étapes successives déclenchées par un événement jusqu’à sa résolution.", drawType: "sequence" },
-                { id: "process-op", label: "Processus opérationnel – Flux", description: "Représente un enchaînement d’étapes métier : demande, traitement, validation, archivage.", drawType: "flow" },
-                { id: "process-validate", label: "Processus de validation – Flux", description: "Schématise un cycle incluant saisie, contrôle, approbation et clôture.", drawType: "flow" },
-                { id: "process-analytic", label: "Processus analytique – Flux", description: "Montre le parcours des données : source, ingestion, transformation, restitution.", drawType: "flow" },
-                { id: "users-model", label: "Gestion des utilisateurs – Classe", description: "Modélise les entités User, Role, Permission et leurs relations.", drawType: "class" },
-                { id: "catalog-model", label: "Modèle de catalogue – Classe", description: "Décris les entités Produit, Catégorie, Variation, Stock et leurs dépendances.", drawType: "class" },
-                { id: "resources-model", label: "Modèle de ressources – Classe", description: "Structure les entités Resource, Allocation, Group, Schedule ainsi que leurs liens fonctionnels.", drawType: "class" }
-            ];
             const DIAGRAM_PROMPTZILLA =
                 (window.GoPrompts && Array.isArray(window.GoPrompts.drawPromptzilla) && window.GoPrompts.drawPromptzilla.length
                     ? window.GoPrompts.drawPromptzilla
-                    : FALLBACK_DRAW_PROMPTZILLA);
+                    : []);
 
             let selectedPromptzillaId = DIAGRAM_PROMPTZILLA[0]?.id || null;
 
@@ -1787,7 +1774,8 @@ sequenceDiagram
                     title: page?.title || page?.label || fallback.title,
                     input: page?.input || "",
                     mermaid: page?.mermaid || "",
-                    drawType
+                    drawType,
+                    clearedOnce: !!page?.clearedOnce
                 };
             }
 
@@ -2096,8 +2084,6 @@ sequenceDiagram
 
             function resetPrompt() {
                 promptTemplateField.value = DEFAULT_PROMPT_TEMPLATE;
-                state.promptTemplate = DEFAULT_PROMPT_TEMPLATE;
-                saveState();
             }
 
             const EXCALIDRAW_STYLESHEET_URL = "https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw-assets/index.css";
@@ -2911,14 +2897,48 @@ sequenceDiagram
                     setActivePage(state.pages.length - 1);
                     saveState();
                 });
+                function clearActivePage(options = {}) {
+                    const clearRecit = !!options.clearRecit;
+                    const page = getActivePage();
+                    if (!page) return;
+                    if (!clearRecit) {
+                        promptInput.value = page.input || promptInput.value;
+                    } else {
+                        promptInput.value = "";
+                        page.input = "";
+                    }
+                    page.mermaid = "";
+                    page.title = page.label;
+                    page.drawType = DEFAULT_DRAW_TYPE;
+                    mermaidOutput.value = "";
+                    diagramTitleInput.value = page.title;
+                    updateActivePageDrawType(DEFAULT_DRAW_TYPE);
+                    updateExcalidrawScene("");
+                }
                 deletePageBtn.addEventListener("click", () => {
-                    if (state.pages.length <= 1) {
-                        setStatus("Au moins une page est requise");
+                    const page = getActivePage();
+                    if (!page) return;
+                    const isSingle = state.pages.length <= 1;
+                    if (isSingle) {
+                        if (page.clearedOnce) {
+                            clearActivePage({ clearRecit: true });
+                            page.clearedOnce = false;
+                        } else {
+                            clearActivePage({ clearRecit: false });
+                            page.clearedOnce = true;
+                        }
+                        saveState();
                         return;
                     }
-                    state.pages.splice(state.activeIndex, 1);
-                    setActivePage(Math.max(0, state.activeIndex - 1));
-                    saveState();
+                    if (page.clearedOnce) {
+                        state.pages.splice(state.activeIndex, 1);
+                        setActivePage(Math.max(0, state.activeIndex - 1));
+                        saveState();
+                    } else {
+                        clearActivePage({ clearRecit: false });
+                        page.clearedOnce = true;
+                        saveState();
+                    }
                 });
                 refreshExcalidrawBtn.addEventListener("click", () => {
                     updateExcalidrawScene(mermaidOutput.value);
@@ -2964,14 +2984,16 @@ sequenceDiagram
                     }
                 });
                 const applyAiSettingsBtn = document.getElementById("applyAiSettingsBtn");
-                applyAiSettingsBtn?.addEventListener("click", closeModal);
+                applyAiSettingsBtn?.addEventListener("click", () => {
+                    state.apiKey = apiKeyField?.value.trim() || "";
+                    state.promptTemplate = promptTemplateField?.value.trim() || DEFAULT_PROMPT_TEMPLATE;
+                    state.reasoningEffort = reasoningEffortSelect?.value || "low";
+                    saveState();
+                    closeModal();
+                });
                 resetPromptBtn.addEventListener("click", resetPrompt);
                 apiKeyField?.addEventListener("input", () => {
                     state.apiKey = apiKeyField.value.trim();
-                    saveState();
-                });
-                promptTemplateField?.addEventListener("input", () => {
-                    state.promptTemplate = promptTemplateField.value.trim() || DEFAULT_PROMPT_TEMPLATE;
                     saveState();
                 });
                 reasoningEffortSelect?.addEventListener("change", () => {
