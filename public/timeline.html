@@ -108,14 +108,17 @@
             display: flex;
             align-items: center;
             gap: 4px;
-            flex: 1;
-            min-width: 40px;
-        }
-
-        .tabs {
-            flex: 0 1 auto;
+            flex: 1 1 auto;
             min-width: 0;
         }
+
+
+        .tabs .tab {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
 
         .tabs-actions {
             display: flex;
@@ -130,52 +133,6 @@
             padding: 5px 0px;
         }
 
-        .tab {
-            border-radius: 999px;
-            border: 1px solid transparent;
-            padding: 4px 12px;
-            font-size: 12px;
-            cursor: pointer;
-            background: transparent;
-            color: var(--muted);
-            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-        }
-
-        .context-menu.file-menu {
-            padding: 0;
-            margin: 0;
-        }
-
-        .context-menu.file-menu .menu-panel .menu-panel-btn {
-            margin-right: 10px;
-            border: none;
-        }
-
-        .tab.active {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: #fff;
-        }
-
-        .tab-actions {
-            display: flex;
-            gap: 4px;
-            align-items: center;
-        }
-
-        .global-actions {
-            margin-left: auto;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .tab-btn-add,
-        .tab-btn-delete {
-            padding: 4px 10px;
-        }
-
         h1 {
             margin: 0 0 4px;
             font-size: 19px;
@@ -185,14 +142,6 @@
             margin: 0 0 12px;
             font-size: 13px;
             color: var(--muted);
-        }
-
-        /* Panneau gauche : OpenAI + JSON */
-        label {
-            font-size: 12px;
-            color: var(--muted);
-            display: block;
-            margin-bottom: 3px;
         }
 
         textarea {
@@ -250,30 +199,6 @@
             box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.3);
         }
 
-        .btn {
-            border-radius: 999px;
-            border: 1px solid transparent;
-            padding: 5px 12px;
-            font-size: 12px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            white-space: nowrap;
-            background: var(--primary);
-            color: #fff;
-        }
-
-        .white-btn {
-            border: 1px solid #cec9c9;
-            background: white;
-            color: #1f2a56;
-            font-size: 13px;
-            padding: 6px 10px;
-            border-radius: 8px;
-        }
-
         .nav-switch {
             position: relative;
             display: inline-flex;
@@ -318,31 +243,6 @@
         .nav-switch-link:hover,
         .nav-switch-link:focus-visible {
             background: rgba(42, 122, 87, 0.08);
-        }
-
-        .btn-ghost {
-            background: var(--surface-soft);
-            color: var(--text);
-            border-color: var(--border);
-        }
-
-        .btn:hover {
-            box-shadow: 0 6px 18px rgba(42, 122, 87, 0.32);
-        }
-
-        .btn-ghost:hover {
-            background: #e5edff;
-        }
-
-        .btn:active {
-            transform: translateY(1px);
-            box-shadow: none;
-        }
-
-        .btn[disabled] {
-            opacity: 0.45;
-            cursor: default;
-            box-shadow: none;
         }
 
         .hint {
@@ -522,20 +422,6 @@
             gap: 8px;
         }
 
-        .btn-generate {
-            border-radius: 6px;
-            border: none;
-            background: #2a7a57;
-            color: #ffffff;
-            padding: 6px 10px;
-        }
-
-        .btn.btn-generate.primary {
-            background: #2a7a57;
-            color: #ffffff;
-            border: none;
-        }
-
         /* Increase the label font size for Récit and Script by 2px */
         .gutenberg-card label[for="promptCreate"],
         .gutenberg-card label[for="promptModify"] {
@@ -649,43 +535,6 @@
             display: flex;
             gap: 10px;
             margin-left: auto;
-        }
-
-        .header-buttons .btn {
-            background: #ffffff;
-            border-color: rgba(15, 23, 42, 0.08);
-            color: #0f172a;
-            padding: 0 16px;
-            min-height: 36px;
-            border-radius: 999px;
-            font-size: 14px;
-        }
-
-        .global-actions .btn,
-        .global-actions .info-button {
-            background: #ffffff;
-            border-radius: 999px;
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            padding: 0 10px;
-            color: #0f172a;
-            font-size: 12px;
-        }
-
-        .global-actions .btn:hover,
-        .global-actions .info-button:hover,
-        .global-actions .btn:focus-visible,
-        .global-actions .info-button:focus-visible {
-            box-shadow: none;
-            border-color: rgba(15, 23, 42, 0.08);
-        }
-
-        .info-button {
-            border-radius: 999px;
-            border: 1px solid #ebe0d1;
-            background: #fff;
-            padding: 6px 12px;
-            font-size: 13px;
-            cursor: pointer;
         }
 
         .menu-header {
@@ -1094,55 +943,6 @@
             transform: translateY(0);
         }
 
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.4);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            z-index: 60;
-        }
-
-        .modal-overlay.open {
-            display: flex;
-        }
-
-        .filter-modal {
-            background: var(--surface);
-            border-radius: 14px;
-            padding: 18px;
-            width: min(800px, 100%);
-            box-shadow: 0 18px 32px rgba(15, 23, 42, 0.22);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            position: relative;
-        }
-
-        .filter-modal .modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding-bottom: 0px;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.3);
-        }
-
-        .filter-modal h3 {
-            margin: 0;
-            font-size: 15px;
-        }
-
-        .modal-close {
-            border: none;
-            background: transparent;
-            font-size: 20px;
-            line-height: 1;
-            cursor: pointer;
-            color: var(--muted);
-        }
-
         .color-modal-overlay {
             position: fixed;
             inset: 0;
@@ -1333,9 +1133,8 @@
 
         .btn-group {
             display: inline-flex;
-            border-radius: 999px;
-            border: 1px solid var(--border);
-            background: var(--surface-soft);
+            border-radius: 4px;
+            background: transparent;
             overflow: hidden;
         }
 
@@ -1384,32 +1183,6 @@
         .type-filter-option.active {
             transform: none;
             box-shadow: none;
-        }
-
-        .btn-small {
-            border: none;
-            background: transparent;
-            padding: 4px 10px;
-            font-size: 11px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            transition: background 120ms ease, color 120ms ease;
-        }
-
-        .btn-small:hover {
-            background: var(--primary-soft);
-        }
-
-        .btn-small-active {
-            background: var(--primary-soft);
-            color: var(--primary-strong);
-        }
-
-        .btn-small:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
         }
 
         /* vis.js styling */
@@ -1656,17 +1429,16 @@
                 <div class="tabs-wrapper">
                     <div id="viewTabs" class="tabs"></div>
                     <div class="tab-actions">
-                        <button class="tab-btn-action tab-btn-add" id="addViewBtn" type="button"
-                            aria-label="Ajouter une vue">+</button>
-                        <button class="tab-btn-action tab-btn-delete" id="deleteViewBtn" type="button"
+                        <button class="tab-action" id="addViewBtn" type="button" aria-label="Ajouter une vue">+</button>
+                        <button class="tab-action" id="deleteViewBtn" type="button"
                             aria-label="Supprimer la vue active">×</button>
                     </div>
                 </div>
 
                 <!-- Promptzilla modal (6 choices) -->
-                <div class="modal-overlay ai-modal-overlay" id="promptzillaOverlay" role="dialog" aria-modal="true"
+                <div class="modal-overlay" id="promptzillaOverlay" role="dialog" aria-modal="true"
                     aria-labelledby="promptzillaTitle">
-                    <div class="filter-modal promptzilla-modal ai-modal">
+                    <div class="modal promptzilla-modal">
                         <div class="modal-header">
                             <h3 id="promptzillaTitle">⛶ Promptzilla</h3>
                             <button class="modal-close" id="promptzillaClose" type="button"
@@ -1675,7 +1447,7 @@
                         <div class="promptzilla-grid" id="promptzillaList">
                             <!-- cards rendered by JS -->
                         </div>
-                        <div class="ai-modal-actions">
+                        <div class="modal-actions">
                             <button id="promptzillaValidateBtn" class="btn-primary">Appliquer</button>
                         </div>
                     </div>
@@ -1769,7 +1541,7 @@
                     </div>
 
                     <div class="menu-trigger">
-                        <button id="shareBtn" class="info-button" type="button" aria-label="Partager"
+                        <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
                             title="Lien de la capsule">⧉ Capsule</button>
                         <div class="context-menu share-menu" id="shareMenu">
                             <div class="menu-panel">
@@ -1822,7 +1594,7 @@
                         <button class="btn-small" id="btn-delete-selected" aria-label="Supprimer l’élément sélectionné">
                             ×
                         </button>
-                        <div class="type-selector" aria-label="Type d’action" role="group">
+                        <div class="type-selector btn" aria-label="Type d’action" role="group">
                             <span class="type-selector-icon" aria-hidden="true">#</span>
                             <select id="itemTypeSelect" aria-label="Changer le type d’action">
                                 <option value="">Type d'action</option>
@@ -1874,7 +1646,7 @@
                     <div class="header-row ia-header-actions gutenberg-recette">
                         <div class="gutenberg-recette-header">
                             <label for="promptCreate">Récit</label>
-                            <button class="btn btn-generate primary" id="btn-call">
+                            <button class="btn btn-primary" id="btn-call">
                                 <span>⌘ Générer</span>
                             </button>
                         </div>
@@ -1887,7 +1659,8 @@
                         <div class="gutenberg-recette-header">
                             <label for="promptModify"
                                 style="margin-top:0;display:block;font-size:13px;color:var(--muted)">Script</label>
-                            <button id="openModifyPromptBtn" class="white-btn" type="button" style="margin-left:8px;">⌗
+                            <button id="openModifyPromptBtn" class="btn btn-secondary" type="button"
+                                style="margin-left:8px;">⌗
                                 Modifier</button>
                         </div>
                         <div class="ia-prompt-fields">
@@ -1898,9 +1671,8 @@
             </div>
         </div>
 
-        <div class="modal-overlay ai-modal-overlay" id="iaModalOverlay" role="dialog" aria-modal="true"
-            aria-labelledby="iaModalTitle">
-            <div class="filter-modal ai-modal">
+        <div class="modal-overlay" id="iaModalOverlay" role="dialog" aria-modal="true" aria-labelledby="iaModalTitle">
+            <div class="modal">
                 <div class="modal-header">
                     <h3 id="iaModalTitle">⌘ Soulgorithm</h3>
                     <button class="modal-close" id="iaModalClose" type="button" aria-label="Fermer l'IA">×</button>
@@ -1929,8 +1701,9 @@
                         </label>
                     </div>
                     <div class="ia-actions-footer ia-template-footer">
-                        <div class="ai-modal-actions" style="width:100%; justify-content:flex-end;">
-                            <button class="btn white-btn" type="button" id="resetTemplatesBtn">↺ Réinitialiser</button>
+                        <div class="modal-actions" style="width:100%; justify-content:flex-end;">
+                            <button class="btn btn-secondary" type="button" id="resetTemplatesBtn">↺
+                                Réinitialiser</button>
                             <button class="btn-primary" type="button" id="iaApplyBtn">Appliquer</button>
                         </div>
                     </div>
@@ -1950,8 +1723,8 @@
                     <div class="color-types" id="colorTypeList"></div>
                 </div>
                 <div class="color-actions">
-                    <button class="btn white-btn" type="button" id="randomizeColorsBtn">🌈 Random</button>
-                    <button class="btn" type="button" id="saveColorPreferencesBtn">Valider</button>
+                    <button class="btn btn-secondary" type="button" id="randomizeColorsBtn">🌈 Random</button>
+                    <button class="btn btn-primary" type="button" id="saveColorPreferencesBtn">Valider</button>
                 </div>
             </div>
         </div>
@@ -1959,11 +1732,11 @@
         <div id="timelineInfoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
             <strong>Module Goal Digger</strong>
-            <span>Version 2025.12.05</span>
+            <span>Version 2025.12.07</span>
             <span>Développé par Quang TRAN.</span>
             <span>Usage réservé à Savane Consulting.</span>
             <div class="info-actions">
-                <button id="timelineUpdateBtn" type="button" class="update-btn">Mettre à jour</button>
+                <button id="timelineUpdateBtn" type="button" class="update-btn">Réinitialiser</button>
                 <button id="timelineTourReplayBtn" type="button" class="secondary">Tour guidé</button>
             </div>
         </div>
@@ -1992,6 +1765,7 @@
         </script>
         <script src="js/share-worker-client.js"></script>
         <script src="js/share-history.js"></script>
+        <script src="js/prompt.js"></script>
         <script src="js/openai-client.js"></script>
         <script>
             // ============================================================
@@ -3146,40 +2920,42 @@
             var iaApplyBtn = document.getElementById("iaApplyBtn");
             var selectedPromptzillaId = null;
 
-            var ROADMAP_PROMPTZILLA = [
-
+            var FALLBACK_ROADMAP_PROMPTZILLA = [
                 {
-                    "id": "product",
-                    "title": "🎯 Roadmap Produit",
-                    "text": "Génère une roadmap produit sur 6 mois avec 4 jalons majeurs (MVP, beta, release, amélioration), 3 acteurs (PO, UX, Dev), 3 domaines (fonctionnel, UX, data) et une timeline mensuelle. Inclure risques, dépendances et livrables clés"
+                    id: "product",
+                    title: "🎯 Roadmap Produit",
+                    text: "Génère une roadmap produit sur 6 mois avec 4 jalons majeurs (MVP, beta, release, amélioration), 3 acteurs (PO, UX, Dev), 3 domaines (fonctionnel, UX, data) et une timeline mensuelle. Inclure risques, dépendances et livrables clés"
                 },
                 {
-                    "id": "tech",
-                    "title": "🛠️ Roadmap Technique",
-                    "text": "Crée une roadmap technique annuelle en 4 phases (audit, refonte, migration, optimisation), positionne les jalons trimestriels, les responsabilités (Tech Lead, Infra, SecOps) et les types d’initiatives (perf, sécurité, scalabilité) sur 1 an"
+                    id: "tech",
+                    title: "🛠️ Roadmap Technique",
+                    text: "Crée une roadmap technique annuelle en 4 phases (audit, refonte, migration, optimisation), positionne les jalons trimestriels, les responsabilités (Tech Lead, Infra, SecOps) et les types d’initiatives (perf, sécurité, scalabilité) sur 1 an"
                 },
                 {
-                    "id": "sprint",
-                    "title": "⚡Calendrier de sprints",
-                    "text": "Propose une planification sur 4 sprints de 2 semaines avec objectifs, stories clés, critères de réussite, dépendances internes et rôles (Dev, QA, UX). Ajoute jalons de revue et rituels agiles."
+                    id: "sprint",
+                    title: "⚡Calendrier de sprints",
+                    text: "Propose une planification sur 4 sprints de 2 semaines avec objectifs, stories clés, critères de réussite, dépendances internes et rôles (Dev, QA, UX). Ajoute jalons de revue et rituels agiles."
                 },
                 {
-                    "id": "strategy",
-                    "title": "💼 Vision stratégique",
-                    "text": "Génère une vision stratégique en 3 horizons (H1/H2/H3) sur 24 mois, avec thèmes structurants, jalons annuels, domaines (produit, tech, business), impacts attendus et types d’investissements"
+                    id: "strategy",
+                    title: "💼 Vision stratégique",
+                    text: "Génère une vision stratégique en 3 horizons (H1/H2/H3) sur 24 mois, avec thèmes structurants, jalons annuels, domaines (produit, tech, business), impacts attendus et types d’investissements"
                 },
                 {
-                    "id": "research",
-                    "title": "🔎 Plan de recherche",
-                    "text": "Construis un plan de recherche en phase discovery sur 6 mois : recherche utilisateur, cadrage problème, prototypage, test d’hypothèses, restitution. Mentionne acteurs (PO, UX, clients), jalons et décisions Go/No-Go."
+                    id: "research",
+                    title: "🔎 Plan de recherche",
+                    text: "Construis un plan de recherche en phase discovery sur 6 mois : recherche utilisateur, cadrage problème, prototypage, test d’hypothèses, restitution. Mentionne acteurs (PO, UX, clients), jalons et décisions Go/No-Go."
                 },
                 {
-                    "id": "project",
-                    "title": "🧩 Projet d'intégration'",
-                    "text": "Génére un projet d’intégration sur 4 mois avec phases (design, dev API, tests, déploiement), jalons critiques, interactions partenaires, risques liés aux environnements et validations métiers."
+                    id: "project",
+                    title: "🧩 Projet d'intégration'",
+                    text: "Génére un projet d’intégration sur 4 mois avec phases (design, dev API, tests, déploiement), jalons critiques, interactions partenaires, risques liés aux environnements et validations métiers."
                 }
             ];
-
+            var ROADMAP_PROMPTZILLA =
+                (window.GoPrompts && Array.isArray(window.GoPrompts.timelinePromptzilla) && window.GoPrompts.timelinePromptzilla.length
+                    ? window.GoPrompts.timelinePromptzilla
+                    : FALLBACK_ROADMAP_PROMPTZILLA);
 
 
             function renderRoadmapPromptzilla() {
@@ -3206,8 +2982,10 @@
             function openRoadmapPromptzilla() {
                 if (!roadmapPromptzillaOverlay) return;
                 if (timelineTourOverlay && timelineTourOverlay.classList.contains("visible")) return;
+                if (!selectedPromptzillaId && ROADMAP_PROMPTZILLA.length) {
+                    selectedPromptzillaId = ROADMAP_PROMPTZILLA[0].id;
+                }
                 renderRoadmapPromptzilla();
-                selectedPromptzillaId = null;
                 roadmapPromptzillaOverlay.classList.add("open");
             }
 
@@ -3264,7 +3042,7 @@
                 });
             }
 
-            var CREATE_SYSTEM_TEMPLATE = `Tu es un assistant product owner qui va générer une feuille de route produit à partir des instructions suivantes {{contenu_script}}
+            var FALLBACK_CREATE_SYSTEM_TEMPLATE = `Tu es un assistant product owner qui va générer une feuille de route produit à partir des instructions suivantes {{contenu_script}}
 Réponds toujours avec un JSON qui contient :
 - \`page\` : le titre de la page courante (utilisé pour le header).
 - \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des natures d'actions différentes entre 3 et 6 dont un type spécifique aux milestones.
@@ -3274,6 +3052,8 @@ Réponds toujours avec un JSON qui contient :
 - Les livrables ou résultats sont convertis en \`kind: "milestone"\` avec juste la date de début.
 - Décomposer en plusieurs actions (P1..Pn) de moins de 21 jours, ceux qui ont plus de 21 jours
 - Sors uniquement le JSON, sans explication ni texte additionnel.`;
+            var CREATE_SYSTEM_TEMPLATE =
+                (window.GoPrompts && window.GoPrompts.timelineCreateSystemTemplate) || FALLBACK_CREATE_SYSTEM_TEMPLATE;
 
             customSystemTemplates.create = customSystemTemplates.create || CREATE_SYSTEM_TEMPLATE;
 
@@ -3464,13 +3244,7 @@ Réponds toujours avec un JSON qui contient :
             } catch (err) {
                 isDevToolsMode = false;
             }
-            document.addEventListener("contextmenu", function (ev) {
-                var target = ev.target;
-                var withinTimeline = target && target.closest && target.closest(".timeline-card");
-                if (withinTimeline && !isDevToolsMode) {
-                    ev.preventDefault();
-                }
-            });
+            // Autoriser le menu contextuel partout (plus de blocage sur la timeline)
 
             // Permettre de fermer les modals avec la touche Échap
             document.addEventListener("keydown", function (ev) {

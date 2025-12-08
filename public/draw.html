@@ -28,12 +28,6 @@
             flex-wrap: wrap;
         }
 
-        .global-actions button.primary {
-            border: none;
-            background: #2a7a57;
-            color: #ffffff;
-        }
-
         .share-menu-wrapper {
             position: relative;
         }
@@ -159,18 +153,6 @@
         .nav-switch-link:hover,
         .nav-switch-link:focus-visible {
             background: rgba(42, 122, 87, 0.08);
-        }
-
-        .ai-button,
-        .generate-btn,
-        .refresh-btn {
-            border: 1px solid #cec9c9;
-            background: white;
-            color: #1f2a56;
-            font-size: 13px;
-            padding: 6px 10px;
-            border-radius: 8px;
-            cursor: pointer;
         }
 
         .connect-layout {
@@ -644,26 +626,6 @@
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         }
 
-        .btn-secondary,
-        .btn-primary {
-            border: none;
-            border-radius: 4px;
-            padding: 6px 12px;
-
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        .btn-secondary {
-            background: #eef0ff;
-            color: #2a7a57;
-        }
-
-        .btn-primary {
-            background: #2a7a57;
-            color: #ffffff;
-        }
-
         /* Ajuste le menu latéral Excalidraw (selected-shape-actions) */
         .excalidraw-card .Island.App-menu__left {
             --padding: 2px;
@@ -726,9 +688,9 @@
             </div>
 
             <!-- Promptzilla modal: 9 diagram choices -->
-            <div class="ai-modal-overlay" id="promptzillaModal" aria-hidden="true">
-                <div class="ai-modal promptzilla-modal">
-                    <header>
+            <div class="modal-overlay" id="promptzillaModal" aria-hidden="true">
+                <div class="modal promptzilla-modal">
+                    <header class="modal-header">
                         <h3>⛶ Promptzilla</h3>
                         <button id="closePromptzillaModal" class="btn-secondary" type="button">✕</button>
                     </header>
@@ -736,22 +698,22 @@
                         aria-label="Promptzilla de diagrammes">
                         <!-- cards rendered by JS -->
                     </div>
-                    <div class="ai-modal-actions">
-                        <button id="promptzillaApplyBtn" class="btn primary" type="button">Appliquer</button>
+                    <div class="modal-actions">
+                        <button id="promptzillaApplyBtn" class="btn-primary" type="button">Appliquer</button>
                     </div>
                 </div>
             </div>
             <div class="tabs-actions">
                 <div id="pageTabs" class="tabs"></div>
-                <button id="addPageBtn" class="tab-btn-action tab-btn-add" title="Ajouter une page">+</button>
-                <button id="deletePageBtn" class="tab-btn-action tab-btn-remove" title="Supprimer la page">×</button>
+                <button id="addPageBtn" class="tab-action" title="Ajouter une page">+</button>
+                <button id="deletePageBtn" class="tab-action" title="Supprimer la page">×</button>
             </div>
             <div class="global-actions">
-                <button id="promptzillaBtn" class="drawer-toggle-btn" type="button">⛶ Promptzilla</button>
-                <button id="toggleDrawerBtn" class="drawer-toggle-btn" type="button">⸙ Gutenberg</button>
-                <button id="aiSettingsBtn" class="ai-button" type="button">⌘ Soulgorithm</button>
+                <button id="promptzillaBtn" class="btn drawer-toggle-btn" type="button">⛶ Promptzilla</button>
+                <button id="toggleDrawerBtn" class="btn drawer-toggle-btn" type="button">⸙ Gutenberg</button>
+                <button id="aiSettingsBtn" class="btn ai-button" type="button">⌘ Soulgorithm</button>
                 <div class="share-menu-wrapper">
-                    <button id="shareBtn" class="info-button" type="button" title="Lien de la capsule">☍
+                    <button id="shareBtn" class="btn btn-secondary" type="button" title="Lien de la capsule">☍
                         Nexus</button>
                     <div id="shareMenu" class="share-menu" role="dialog" aria-live="polite">
                         <div class="share-menu-header">Lien de la capsule</div>
@@ -768,7 +730,7 @@
                         <p class="share-menu-status" id="shareMenuStatus"></p>
                     </div>
                 </div>
-                <button id="infoButton" class="info-button" type="button" title="Vaisseau">⎉ Vaisseau</button>
+                <button id="infoButton" class="btn" type="button" title="Vaisseau">⎉ Vaisseau</button>
 
             </div>
         </header>
@@ -778,11 +740,11 @@
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
             <strong>Module Le Cardinal</strong>
-            <span>Version 2025.12.05</span>
+            <span>Version 2025.12.07</span>
             <span>Développé par Quang TRAN.</span>
             <span>Usage réservé à Savane Consulting.</span>
             <div class="info-actions">
-                <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
+                <button id="updateAppBtn" type="button" class="update-btn">Réinitialiser</button>
                 <button id="tourReplayBtn" type="button" class="secondary">Tour guidé</button>
             </div>
         </div>
@@ -802,13 +764,13 @@
                 <div class="prompt-input-card" id="prompt-input-card">
                     <div class="card-title-row">
                         <div class="card-title">Récit</div>
-                        <button id="generateBtn" class="generate-btn" type="button">⌘ Générer</button>
+                        <button id="generateBtn" class="btn-primary" type="button">⌘ Générer</button>
                     </div>
                     <div class="draw-type-control">
                         <span class="draw-type-control-label">Type de scénario</span>
                         <div class="draw-type-selector" role="group" aria-label="Type de diagramme">
                             <button class="draw-type-btn active" type="button" data-draw-type="sequence"
-                                aria-pressed="true">⇄ Échanges</button>
+                                aria-pressed="true">⇄ Échange</button>
                             <button class="draw-type-btn" type="button" data-draw-type="flow" aria-pressed="false">◇
                                 Processus</button>
                             <button class="draw-type-btn" type="button" data-draw-type="class" aria-pressed="false">⁂
@@ -821,7 +783,7 @@
                 <div class="mermaid-output-card">
                     <div class="card-title-row">
                         <div class="card-title">Script</div>
-                        <button id="refreshExcalidrawBtn" class="refresh-btn" type="button">⌗ Modifier</button>
+                        <button id="refreshExcalidrawBtn" class="btn" type="button">⌗ Modifier</button>
                     </div>
                     <textarea id="mermaidOutput" placeholder="Le code généré apparaitra ici"></textarea>
                 </div>
@@ -846,9 +808,9 @@
         <button id="tourSkipBtn" class="tour-skip" type="button" aria-label="Fermer">×</button>
     </div>
 
-    <div class="ai-modal-overlay" id="aiModal">
-        <div class="ai-modal">
-            <header>
+    <div class="modal-overlay" id="aiModal">
+        <div class="modal">
+            <header class="modal-header">
                 <h3>⌘ Soulgorithm</h3>
                 <button id="closeAiModal" class="btn-secondary" type="button">✕</button>
             </header>
@@ -872,9 +834,9 @@
                 <textarea id="promptTemplateField" rows="6"
                     style="font-family: Menlo, Consolas, 'Courier New', monospace;"></textarea>
             </label>
-            <div class="ai-modal-actions">
-                <button id="resetPromptBtn" class="btn-secondary" type="button">↺ Réinitialiser</button>
-                <button id="applyAiSettingsBtn" class="btn primary" type="button">Appliquer</button>
+            <div class="modal-actions">
+                <button id="resetPromptBtn" class="btn" type="button">↺ Réinitialiser</button>
+                <button id="applyAiSettingsBtn" class="btn-primary" type="button">Appliquer</button>
             </div>
         </div>
     </div>
@@ -885,6 +847,7 @@
     </script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
+    <script src="js/prompt.js"></script>
     <script src="js/openai-client.js"></script>
     <script>
         var process = window.process || {};
@@ -900,12 +863,14 @@
     <script src="js/connect.bundle.js" data-excalidraw-bundle="true"></script>
     <script>
         (() => {
-            const DEFAULT_PROMPT_TEMPLATE =
+            const FALLBACK_DRAW_PROMPT =
                 "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code strictement mermaid sous forme d'un diagramme rigoureux de {{draw_type}}. Les intitulés font moins de 4 mots. Ajoute un titre en commentaire %% Title dans la réponse. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
+            const DEFAULT_PROMPT_TEMPLATE =
+                (window.GoPrompts && window.GoPrompts.drawDefaultPromptTemplate) || FALLBACK_DRAW_PROMPT;
             const DRAW_TYPES = [
-                { id: "sequence", label: "Séquence", promptValue: "sequenceDiagram" },
-                { id: "flow", label: "Flux", promptValue: "flowchart LR" },
-                { id: "class", label: "Classe", promptValue: "classDiagram" }
+                { id: "sequence", label: "Échange", promptValue: "sequenceDiagram", emoji: "⇄" },
+                { id: "flow", label: "Processus", promptValue: "flowchart LR", emoji: "◇" },
+                { id: "class", label: "Structure", promptValue: "classDiagram", emoji: "⁂" }
             ];
             const DEFAULT_DRAW_TYPE = DRAW_TYPES[0].id;
             const STORAGE_KEY = "connect-ai-state";
@@ -1033,7 +998,7 @@ sequenceDiagram
     Note over A,B: Ajoute ici une explication ou un contexte`
             };
 
-            const DIAGRAM_PROMPTZILLA = [
+            const FALLBACK_DRAW_PROMPTZILLA = [
                 { id: "auth-seq", label: "Authentification – Séquentiel", description: "Décris pas à pas la vérification d’identité, de la saisie initiale jusqu’à la réponse finale.", drawType: "sequence" },
                 { id: "file-transfer", label: "Transfert de fichier – Séquentiel", description: "Montre le cheminement d’un fichier du client vers le serveur, avec contrôles et gestion d’erreurs.", drawType: "sequence" },
                 { id: "event-process", label: "Traitement d'événement – Séquentiel", description: "Décris les étapes successives déclenchées par un événement jusqu’à sa résolution.", drawType: "sequence" },
@@ -1044,8 +1009,12 @@ sequenceDiagram
                 { id: "catalog-model", label: "Modèle de catalogue – Classe", description: "Décris les entités Produit, Catégorie, Variation, Stock et leurs dépendances.", drawType: "class" },
                 { id: "resources-model", label: "Modèle de ressources – Classe", description: "Structure les entités Resource, Allocation, Group, Schedule ainsi que leurs liens fonctionnels.", drawType: "class" }
             ];
+            const DIAGRAM_PROMPTZILLA =
+                (window.GoPrompts && Array.isArray(window.GoPrompts.drawPromptzilla) && window.GoPrompts.drawPromptzilla.length
+                    ? window.GoPrompts.drawPromptzilla
+                    : FALLBACK_DRAW_PROMPTZILLA);
 
-            let selectedPromptzillaId = DIAGRAM_PROMPTZILLA[0].id;
+            let selectedPromptzillaId = DIAGRAM_PROMPTZILLA[0]?.id || null;
 
             function renderPromptzillaList(selectedId) {
                 const list = document.getElementById("promptzillaList");
@@ -1058,16 +1027,18 @@ sequenceDiagram
                     card.dataset.bpId = bp.id;
                     card.tabIndex = 0;
                     if (bp.id === sel) card.classList.add("selected");
+                    const drawTypeMeta = DRAW_TYPES.find(option => option.id === bp.drawType) || DRAW_TYPES[0];
+                    const drawTypeIcon = drawTypeMeta?.icon || drawTypeMeta?.emoji || "";
                     const title = document.createElement("h4");
                     title.textContent = bp.label;
+                    const subtitle = document.createElement("p");
+                    subtitle.className = "template-desc-line";
+                    subtitle.textContent = `${drawTypeIcon ? drawTypeIcon + " " : ""}${drawTypeMeta.label}`;
                     const desc = document.createElement("p");
                     desc.textContent = bp.description;
-                    const tag = document.createElement("p");
-                    tag.className = "template-desc-line";
-                    tag.textContent = `Type : ${bp.drawType}`;
                     card.appendChild(title);
+                    card.appendChild(subtitle);
                     card.appendChild(desc);
-                    card.appendChild(tag);
                     card.addEventListener("click", () => {
                         // visual selection only; apply on explicit action
                         list.querySelectorAll(".promptzilla-card").forEach(c => c.classList.remove("selected"));
@@ -1087,6 +1058,9 @@ sequenceDiagram
             function openPromptzillaModal() {
                 const overlay = document.getElementById("promptzillaModal");
                 if (!overlay) return;
+                if (!selectedPromptzillaId && DIAGRAM_PROMPTZILLA.length) {
+                    selectedPromptzillaId = DIAGRAM_PROMPTZILLA[0].id;
+                }
                 renderPromptzillaList(selectedPromptzillaId);
                 overlay.classList.add("open");
                 overlay.setAttribute("aria-hidden", "false");
@@ -1129,6 +1103,10 @@ sequenceDiagram
 
             function applyPromptzillaSelection() {
                 const bp = DIAGRAM_PROMPTZILLA.find(b => b.id === selectedPromptzillaId) || DIAGRAM_PROMPTZILLA[0];
+                if (!bp) {
+                    closePromptzillaModal();
+                    return;
+                }
                 const promptInputEl = document.getElementById("promptInput");
                 if (promptInputEl) promptInputEl.value = bp.description;
                 try { updateActivePageDrawType(bp.drawType); } catch (err) { }
@@ -1829,7 +1807,7 @@ sequenceDiagram
                 pageTabs.innerHTML = "";
                 state.pages.forEach((page, index) => {
                     const btn = document.createElement("button");
-                    btn.className = `tab-btn${index === state.activeIndex ? " active" : ""}`;
+                    btn.className = `tab${index === state.activeIndex ? " active" : ""}`;
                     btn.textContent = page.label || `Bloc ${index + 1}`;
                     btn.title = "Double-clique pour renommer";
                     btn.addEventListener("click", () => {

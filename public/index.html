@@ -690,7 +690,7 @@
             <h1>Go-Toolkit</h1>
             <p>La boîte à outils spatiale des super-POs</p>
             <div class="hero-meta">
-                <span class="hero-version">version 2025.12.06</span>
+                <span class="hero-version">version 2025.12.07</span>
                 <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Antenne</button>
             </div>
         </header>
@@ -744,7 +744,7 @@
         <div id="feedbackModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
             <div class="feedback-modal">
                 <header>
-                    <h3>Donne ton feedback</h3>
+                    <h3>☄ Antenne feedback</h3>
                     <button id="closeFeedbackBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
                 </header>
                 <form id="feedbackForm" class="feedback-form">
@@ -1371,6 +1371,11 @@
         cancelFeedbackBtn?.addEventListener("click", closeModal);
         feedbackModal?.addEventListener("click", event => {
             if (event.target === feedbackModal) {
+                closeModal();
+            }
+        });
+        document.addEventListener("keydown", event => {
+            if (event.key === "Escape" || event.key === "Esc") {
                 closeModal();
             }
         });

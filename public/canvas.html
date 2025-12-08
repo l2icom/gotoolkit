@@ -18,36 +18,6 @@
             box-sizing: border-box;
         }
 
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.4);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            z-index: 30;
-        }
-
-        .modal-overlay.open {
-            display: flex;
-        }
-
-        .modal {
-            background: #fff;
-            border-radius: 14px;
-            padding: 18px;
-            max-width: 940px;
-            width: 100%;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            max-height: 92vh;
-            min-height: 520px;
-            overflow-y: auto;
-        }
-
         .template-actions {
             display: flex;
             justify-content: flex-end;
@@ -128,7 +98,7 @@
         }
 
         .context-menu button {
-            border-radius: 0;
+            border-radius: 4px;
             background: transparent;
             text-align: left;
             padding: 0;
@@ -206,52 +176,6 @@
             transform: translateY(0);
         }
 
-
-        .modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .modal-header h3 {
-            margin: 0;
-            font-size: 18px;
-        }
-
-        .modal-close {
-            border: none;
-            background: transparent;
-            font-size: 18px;
-            cursor: pointer;
-            color: var(--muted);
-        }
-
-        .modal label {
-            font-size: 13px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .modal textarea,
-        .modal input[type="text"],
-        .modal input[type="password"] {
-            border-radius: 8px;
-            border: 1px solid #d0c3ad;
-            padding: 8px;
-            font-size: 13px;
-            font-family: inherit;
-        }
-
-        .modal-panel textarea {
-            min-height: 100px;
-        }
-
-        .modal-description {
-            font-size: 13px;
-            color: var(--muted);
-            margin: 0;
-        }
 
         .share-link-field {
             width: 100%;
@@ -386,6 +310,7 @@
             gap: 8px;
             flex-wrap: wrap;
             margin-top: 10px;
+            flex-direction: row-reverse;
         }
 
         .modal-footer {
@@ -698,11 +623,6 @@
                 flex-wrap: wrap;
             }
 
-            .gutenberg-card-actions-row .tab-btn-suggest {
-                padding: 6px 10px;
-                border-radius: 8px;
-            }
-
             .gutenberg-card.open {
                 display: flex;
             }
@@ -985,21 +905,6 @@
             border: 1px solid #1f1f1f;
         }
 
-
-        .tab-btn-add,
-        .tab-btn-delete,
-        .tab-btn-reset,
-        .tab-btn-suggest {
-            padding: 4px 12px;
-        }
-
-        .tab-btn-suggest-status {
-            min-width: 60px;
-            text-align: left;
-            font-size: 11px;
-            color: var(--muted);
-            margin-left: 2px;
-        }
 
         .nav-switch {
             position: relative;
@@ -1731,21 +1636,22 @@
                 </div>
 
                 <div id="tabs"></div>
-                <button class="tab-btn-action tab-btn-add" id="addTabBtn" type="button">+</button>
-                <button class="tab-btn-action tab-btn-reset" id="restoreStructureBtn" type="button"
+                <button class="tab-action" id="addTabBtn" type="button" aria-label="Ajouter un onglet">+</button>
+                <button class="tab-action" id="restoreStructureBtn" type="button"
                     aria-label="Restaurer les colonnes et sections">↺</button>
-                <button class="tab-btn-action tab-btn-delete" id="deleteTabBtn" type="button">×</button>
+                <button class="tab-action" id="deleteTabBtn" type="button" aria-label="Supprimer l'onglet">×</button>
             </div>
             <div class="global-actions">
 
 
                 <div class="menu-trigger" id="settingsMenuTrigger">
-                    <button id="templateBtn" type="button" aria-label="Choisir un Promptzilla">⛶ Promptzilla</button>
-                    <button id="contextEditorBtn" class="info-button" type="button" aria-label="Ouvrir Gutenberg">⸙
+                    <button id="templateBtn" class="btn" type="button" aria-label="Choisir un Promptzilla">⛶
+                        Promptzilla</button>
+                    <button id="contextEditorBtn" class="btn" type="button" aria-label="Ouvrir Gutenberg">⸙
                         Gutenberg</button>
-                    <button id="contextBtn" type="button" aria-label="Soulgorithm">⌘ Soulgorithm</button>
+                    <button id="contextBtn" class="btn" type="button" aria-label="Soulgorithm">⌘ Soulgorithm</button>
 
-                    <button id="textStyleBtn" type="button" aria-label="Hublot">◯ Hublot</button>
+                    <button id="textStyleBtn" class="btn" type="button" aria-label="Hublot">◯ Hublot</button>
                     <div class="context-menu" id="settingsMenu">
                         <div class="menu-panel">
                             <label>
@@ -1780,7 +1686,7 @@
                     </div>
                 </div>
                 <div class="menu-trigger" id="fileMenuTrigger">
-                    <button id="fileMenuBtn" type="button" aria-label="Canal">⥂ Canal</button>
+                    <button id="fileMenuBtn" class="btn" type="button" aria-label="Canal">⥂ Canal</button>
                     <div class="context-menu" id="fileMenu">
                         <div class="menu-panel">
                             <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir Capsule</button>
@@ -1794,7 +1700,7 @@
                     </div>
                 </div>
                 <div class="menu-trigger" id="shareMenuTrigger">
-                    <button id="shareBtn" class="info-button" type="button" aria-label="Partager"
+                    <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
                         title="Lien de partage">⧉ Capsule</button>
                     <div class="context-menu share-menu" id="shareMenu">
                         <div class="menu-panel">
@@ -1818,11 +1724,11 @@
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
             <strong>Module Petit Robert Downey Jr</strong>
-            <span>Version 2025.12.05</span>
+            <span>Version 2025.12.07</span>
             <span>Développé par Quang TRAN.</span>
             <span>Usage réservé à Savane Consulting.</span>
             <div class="info-actions">
-                <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
+                <button id="updateAppBtn" type="button" class="update-btn">Réinitialiser</button>
                 <button id="tourReplayBtn" type="button" class="secondary">Tour guidé</button>
             </div>
         </div>
@@ -1845,12 +1751,11 @@
                 </div>
                 <div class="gutenberg-card-body">
                     <div class="gutenberg-card-actions-row">
-                        <button class="tab-btn-action tab-btn-suggest" id="generatePlaceholdersBtn" type="button"
+                        <button class="tab-action" id="generatePlaceholdersBtn" type="button"
                             aria-label="Générer des suggestions pour les sections">✧ Suggérer</button>
-                        <button class="tab-btn-action tab-btn-suggest" id="generateFullSlideBtn" type="button"
+                        <button class="tab-action" id="generateFullSlideBtn" type="button"
                             aria-label="Générer toutes les sections et la synthèse">⌘ Générer</button>
-                        <span class="tab-btn-suggest-status gutenberg-status" id="suggestionStatusLabel"
-                            aria-live="polite"></span>
+                        <span class="gutenberg-status" id="suggestionStatusLabel" aria-live="polite"></span>
                     </div>
                     <label>
                         <span style="font-size:15px;">Récit du canvas</span>
@@ -1885,8 +1790,8 @@
         <div id="errorToast" class="error-toast" role="status" aria-live="polite" aria-atomic="true"></div>
     </div>
 
-    <div class="modal-overlay ai-modal-overlay" id="contextModal">
-        <div class="modal ai-modal promptzilla-modal">
+    <div class="modal-overlay" id="contextModal">
+        <div class="modal promptzilla-modal">
             <div class="modal-header">
                 <h3>⌘ Soulgorithm</h3>
                 <button class="modal-close" data-close="contextModal">×</button>
@@ -1929,18 +1834,17 @@
                             style="font-family: Menlo, Consolas, 'Courier New', monospace;"></textarea>
                     </label>
                     <div class="prompt-actions">
-                        <button id="resetPromptsBtn" type="button" class="reset-prompts-btn">↺ Réinitialiser</button>
+                        <button id="contextApplyBtn" type="button" class="btn-primary">Appliquer</button>
+                        <button id="resetPromptsBtn" type="button" class="btn">↺ Réinitialiser</button>
+
                     </div>
-                </div>
-                <div class="ai-modal-actions">
-                    <button id="contextApplyBtn" type="button" class="btn primary">Appliquer</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="modal-overlay ai-modal-overlay" id="templateModal">
-        <div class="modal ai-modal">
+    <div class="modal-overlay" id="templateModal">
+        <div class="modal">
             <div class="modal-header">
                 <h3>⛶ Promptzilla</h3>
                 <button class="modal-close" data-close="templateModal">×</button>
@@ -2009,6 +1913,7 @@
             }
         })();
     </script>
+    <script src="js/prompt.js"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/openai-client.js"></script>
@@ -2035,7 +1940,7 @@
 
         const ratioOptions = [
             {
-                name: "Full",
+                name: "100%",
                 css: "16 / 9",
                 width: "100%",
                 ignoreHeightLimit: true,
@@ -2061,135 +1966,7 @@
             }
         ];
 
-        const templates = [
-            {
-                id: "roadmap",
-                name: "🗺️ Go-Roadmap",
-                defaultTitle: "Go-Roadmap",
-                description: "Plan en trois horizons : sécuriser maintenant, préparer les prochains chantiers et ouvrir les paris long terme, avec objectifs, moyens et indicateurs clés.",
-                columns: [
-                    { stage: "first-col", label: "Maintenant" },
-                    { stage: "second-col", label: "Prochainement" },
-                    { stage: "third-col", label: "Plus tard" }
-                ],
-                sections: [
-                    { key: "objectif", label: "Objectif", examples: "" },
-                    { key: "moyens", label: "Moyens", examples: "" },
-                    { key: "indicateurs", label: "Indicateurs", examples: "" }
-                ]
-            },
-            {
-                id: "arbitrage",
-                name: "⚖️ Arbitrage",
-                defaultTitle: "Arbitrage",
-                description: "Peser Pour/Contre et synthèse pour décider vite : données factuelles, impacts produits et ergonomie pour éclairer le choix.",
-                columns: [
-                    { stage: "first-col", label: "Pour" },
-                    { stage: "second-col", label: "Contre" },
-                    { stage: "third-col", label: "Synthèse" }
-                ],
-                sections: [
-                    { key: "donnees", label: "Données", examples: "" },
-                    { key: "fonctionnalites", label: "Fonctionnalités", examples: "" },
-                    { key: "ergonomie", label: "Ergonomie", examples: "" }
-                ]
-            },
-            {
-                id: "comparaison",
-                name: "🆚 Comparaison",
-                defaultTitle: "Comparaison",
-                description: "Comparer plusieurs options : décrire, lister avantages et inconvénients en croisant choix, fonctionnalités et solutions envisagées.",
-                columns: [
-                    { stage: "first-col", label: "Choix A/B/C" },
-                    { stage: "second-col", label: "Fonctionnalité A/B/C" },
-                    { stage: "third-col", label: "Solution A/B/C" }
-                ],
-                sections: [
-                    { key: "description", label: "Description", examples: "" },
-                    { key: "avantages", label: "Avantages", examples: "" },
-                    { key: "inconvenients", label: "Inconvénients", examples: "" }
-                ]
-            },
-            {
-                id: "evaluation",
-                name: "📈 Évaluation",
-                defaultTitle: "Évaluation",
-                description: "Qualifier une initiative par impact et effort : cadrer les choix, les fonctionnalités et les pistes de solution pour prioriser.",
-                columns: [
-                    { stage: "first-col", label: "Choix A/B/C" },
-                    { stage: "second-col", label: "Fonctionnalité A/B/C" },
-                    { stage: "third-col", label: "Solution A/B/C" }
-                ],
-                sections: [
-                    { key: "initiative", label: "Initiative", examples: "" },
-                    { key: "impact", label: "Impact", examples: "" },
-                    { key: "effort", label: "Effort", examples: "" }
-                ]
-            },
-            {
-                id: "parcours",
-                name: "🚶 Parcours",
-                defaultTitle: "Parcours",
-                description: "Cartographier un parcours : étapes clés, problématiques et opportunités avant/pendant/après pour révéler frictions et leviers.",
-                columns: [
-                    { stage: "first-col", label: "Étape A/B/C" },
-                    { stage: "second-col", label: "Problématique A/B/C" },
-                    { stage: "third-col", label: "Opportunité A/B/C" }
-                ],
-                sections: [
-                    { key: "avant", label: "Avant", examples: "" },
-                    { key: "pendant", label: "Pendant", examples: "" },
-                    { key: "apres", label: "Après", examples: "" }
-                ]
-            },
-            {
-                id: "alignement",
-                name: "🤝 Alignement",
-                defaultTitle: "Alignement",
-                description: "Aligner acteurs, besoins et contraintes : lecture business, tech et expérience pour clarifier attentes et zones de tension.",
-                columns: [
-                    { stage: "first-col", label: "Acteur A/B/C" },
-                    { stage: "second-col", label: "Besoin A/B/C" },
-                    { stage: "third-col", label: "Contrainte A/B/C" }
-                ],
-                sections: [
-                    { key: "business", label: "Business", examples: "" },
-                    { key: "tech", label: "Tech", examples: "" },
-                    { key: "ux", label: "Expérience Utilisateur", examples: "" }
-                ]
-            },
-            {
-                id: "priorisation",
-                name: "🎯 Priorisation",
-                defaultTitle: "Priorisation",
-                description: "Séquencer court/moyen/long terme : lister initiatives, peser impact vs effort et verrouiller l’ordre d’attaque.",
-                columns: [
-                    { stage: "first-col", label: "Court terme" },
-                    { stage: "second-col", label: "Moyen terme" },
-                    { stage: "third-col", label: "Long terme" }
-                ],
-                sections: [
-                    { key: "initiative", label: "Initiative", examples: "" },
-                    { key: "impact", label: "Impact", examples: "" },
-                    { key: "effort", label: "Effort", examples: "" }
-                ]
-            },
-            {
-                id: "decision",
-                name: "🔎 Observation",
-                defaultTitle: "Observation",
-                description: "Structurer hypothèses, données et insights : croiser quanti/quali et formuler la synthèse qui guide la décision ou l’expérience à mener.",
-                columns: [
-                    { stage: "first-col", label: "Hypothèse A/B/C" },
-                    { stage: "second-col", label: "Donnée A/B/C" },
-                    { stage: "third-col", label: "Insight A/B/C" }
-                ],
-                sections: [
-                    { key: "quantitatif", label: "Quantitatif", examples: "" },
-                    { key: "qualitatif", label: "Qualitatif", examples: "" },
-                    { key: "synthese", label: "Synthèse", examples: "" }
-                ]
-            },
+        const fallbackTemplates = [
             {
                 id: "default",
                 name: "🕊️ Libre",
@@ -2207,6 +1984,10 @@
                 ]
             }
         ];
+        const templates =
+            (window.GoPrompts && Array.isArray(window.GoPrompts.canvasTemplates) && window.GoPrompts.canvasTemplates.length
+                ? window.GoPrompts.canvasTemplates
+                : fallbackTemplates);
         const promptVariableDefinitions = {
             globalContext: "Contexte global saisi dans la modalité Contexte",
             pageContext: "Contexte spécifique à la page active",
@@ -3343,7 +3124,7 @@
             ratioOptions.forEach((ratio, index) => {
                 const btn = document.createElement("button");
                 btn.type = "button";
-                btn.className = "ratio-option";
+                btn.className = "ratio-option btn";
                 btn.dataset.index = index;
                 btn.textContent = ratio.name;
                 btn.addEventListener("click", () => {
@@ -4011,7 +3792,7 @@
 
         function createTabButton(index) {
             const btn = document.createElement("button");
-            btn.className = "tab-btn";
+            btn.className = "tab";
             btn.dataset.index = index;
             const slide = slidesContainer.querySelector(`.slide[data-index="${index}"]`);
             const label = (slide?.dataset.tabLabel || `Bloc ${index + 1}`).trim();
@@ -4091,7 +3872,7 @@
             closeContextMenus();
             activeIndex = index;
             const slides = slidesContainer.querySelectorAll(".slide");
-            const tabBtns = tabsContainer.querySelectorAll(".tab-btn");
+            const tabBtns = tabsContainer.querySelectorAll(".tab");
             slides.forEach(s => {
                 s.classList.toggle("hidden", s.dataset.index != index);
             });
