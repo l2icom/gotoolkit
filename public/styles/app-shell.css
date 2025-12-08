@@ -411,17 +411,3 @@ label {
     font-size: 12px;
     color: #4b4b43;
 }
-
-/* Dev-only: force Nexus / share button visible when running locally */
-:root.dev-local #shareBtn,
-:root.dev-local .share-menu-wrapper,
-:root.dev-local .share-menu,
-:root.dev-local .share-menu * {
-    display: inline-flex !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-}
-
-:root.dev-local #shareBtn {
-    color: var(--app-primary-strong) !important;
-}

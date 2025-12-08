@@ -1,18 +1,4 @@
 (function (global) {
-    // dev-local helper: add a `dev-local` class to the root when served locally
-    // This allows CSS to enable debug-only UI (e.g., Nexus/share button) in dev.
-    try {
-        const isLocal = (typeof location !== 'undefined') && (
-            location.protocol === 'file:' ||
-            location.hostname === 'localhost' ||
-            location.hostname === '127.0.0.1'
-        );
-        if (isLocal && typeof document !== 'undefined' && document.documentElement) {
-            document.documentElement.classList.add('dev-local');
-        }
-    } catch (e) {
-        // swallow errors in unusual environments
-    }
     const canvasTemplates = [
         {
             id: "roadmap",
