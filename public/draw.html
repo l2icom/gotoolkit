@@ -1146,7 +1146,8 @@ sequenceDiagram
             let generateCooldownTimer = null;
             let generateCooldownEndTime = 0;
             let currentTourIndex = 0;
-            let isDrawerOpen = !drawerMediaQuery.matches;
+            // Start closed by default (do not auto-open Gutenberg/drawer on desktop)
+            let isDrawerOpen = false;
             const tourSteps = [
                 {
                     title: "Intention Le Cardinal",
@@ -1203,11 +1204,8 @@ sequenceDiagram
             }
 
             function handleDrawerBreakpointChange(event) {
-                if (event.matches) {
-                    isDrawerOpen = false; // mobile starts closed
-                } else {
-                    isDrawerOpen = true; // desktop defaults open
-                }
+                // Always keep drawer closed by default regardless of breakpoint
+                isDrawerOpen = false;
                 syncDrawerToggleUi();
             }
 

@@ -3220,7 +3220,7 @@
                         description: preview.description
                     });
                 } catch (err) {
-                    console.warn("Impossible d'archiver le lien Go-Roadmap", err);
+                    console.warn("Impossible d'archiver le lien", err);
                 }
             }
             var navSwitcherBtn = document.getElementById("navSwitcherBtn");
@@ -5812,13 +5812,9 @@
                 } catch (e) {
                     isDrawer = (window.innerWidth || 0) <= 900;
                 }
-                if (isDrawer) {
-                    el.classList.remove("open");
-                    el.setAttribute("aria-hidden", "true");
-                } else {
-                    el.classList.add("open");
-                    el.setAttribute("aria-hidden", "false");
-                }
+                // Keep Gutenberg/context modal closed by default on first load
+                el.classList.remove("open");
+                el.setAttribute("aria-hidden", "true");
             })();
 
             if (shouldOpenContextOnFirstLoad && !hasTimelineData()) {
@@ -6567,14 +6563,14 @@
 
             var timelineTourSteps = [
                 {
-                    title: "Go-Roadmap, ton copilote planning",
-                    description: "Go-Roadmap aide les consultants à générer des plannings de projet clairs et rapides pour cadrer leurs prochaines étapes.",
-                    selectors: ["#timeline"]
+                    title: "Ton copilote planning",
+                    description: "Goal Digger aide à identifier les prochaines étapes et l'organisation de leurs projets pour atteindre leurs objectifs.",
+                    selectors: []
                 },
                 {
-                    title: "Gutenberg en barre latérale",
-                    description: "Utilise la carte Gutenberg à droite : onglet Récit pour décrire le contexte puis bouton ⌘ Générer, onglet Script pour modifier le planning.",
-                    selectors: [".gutenberg-card"]
+                    title: "Décris ton contexte librement",
+                    description: "Utiliser le bouton ⌘ pour générer le planning, le script permet de le modifier rapidement également.",
+                    selectors: [".gutenberg-recette"]
                 },
                 {
                     title: "Affiche, zoome, navigue",

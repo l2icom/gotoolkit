@@ -72,10 +72,10 @@
 
         .menu-panel {
             display: flex;
-            max-width: 200px;
+            max-width: 300px;
             flex-direction: column;
-            gap: 10px;
-            padding: 10px;
+            gap: 5px;
+            padding: 0px;
         }
 
         .menu-header {
@@ -1705,8 +1705,8 @@
                                     placeholder="Créer un lien ">
                             </div>
                             <div class="share-actions">
-                                <button id="shareUpdateBtn" type="button" class="btn">⟳ Actualiser</button>
-                                <button id="shareCreateBtn" type="button" class="btn primary">☍
+                                <button id="shareUpdateBtn" type="button" class="btn-primary">⟳ Actualiser</button>
+                                <button id="shareCreateBtn" type="button" class="btn">☍
                                     Créer</button>
                             </div>
                             <p class="share-menu-status" id="shareMenuStatus"></p>
@@ -1886,18 +1886,14 @@
     <script>
         (function () {
             function updateGutenbergVisibility() {
+                // Keep Gutenberg closed by default on initial load (no auto-open on desktop).
                 var card = document.getElementById("gutenbergCard");
                 var appMain = document.querySelector(".app-main");
                 if (!card || !appMain) return;
-                if (window.innerWidth > 900) {
-                    card.classList.add("open");
-                    appMain.classList.add("gutenberg-open");
-                    card.setAttribute("aria-hidden", "false");
-                } else {
-                    card.classList.remove("open");
-                    appMain.classList.remove("gutenberg-open");
-                    card.setAttribute("aria-hidden", "true");
-                }
+                // Ensure closed state initially
+                card.classList.remove("open");
+                appMain.classList.remove("gutenberg-open");
+                card.setAttribute("aria-hidden", "true");
             }
 
             window.addEventListener("resize", updateGutenbergVisibility);
@@ -2199,19 +2195,9 @@
         }
 
         function maybeAutoOpenGutenberg() {
+            // Do not auto-open Gutenberg on first load. Keep it closed by default.
             if (!gutenbergCard || !appMain) return;
-            let seen = false;
-            try {
-                seen = localStorage.getItem(GUTENBERG_SEEN_KEY) === "1";
-            } catch (err) {
-                console.warn("Impossible de lire le statut de Gutenberg", err);
-            }
-            if (isDesktopGutenberg() && !seen) {
-                setGutenbergOpen(true, { auto: true });
-                markGutenbergSeen();
-            } else {
-                setGutenbergOpen(false);
-            }
+            setGutenbergOpen(false);
         }
 
         function handleResize() {
