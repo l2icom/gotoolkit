@@ -1534,7 +1534,7 @@
                     </div>
 
                     <div class="menu-trigger">
-                        <button class="btn" id="fileMenuBtn" aria-label="Canal">⥂ Canal</button>
+                        <button class="btn" id="fileMenuBtn" aria-label="Capsule">⧉ Capsule</button>
                         <div class="context-menu file-menu" id="fileMenu">
                             <div class="menu-panel">
                                 <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir
@@ -1551,7 +1551,7 @@
 
                     <div class="menu-trigger">
                         <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
-                            title="Lien de la capsule">⧉ Capsule</button>
+                            title="Lien de la capsule">☍ Nexus</button>
                         <div class="context-menu share-menu" id="shareMenu">
                             <div class="menu-panel">
                                 <div class="menu-header">Lien de la capsule</div>
@@ -1668,9 +1668,7 @@
                         <div class="gutenberg-recette-header">
                             <label for="promptModify"
                                 style="margin-top:0;display:block;font-size:13px;color:var(--muted)">Script</label>
-                            <button id="openModifyPromptBtn" class="btn btn-secondary" type="button"
-                                style="margin-left:8px;">⌗
-                                Modifier</button>
+                            <!-- `openModifyPromptBtn` removed: button hidden per user request -->
                         </div>
                         <div class="ia-prompt-fields">
                             <textarea id="promptModify" class="ia-prompt-field" rows="20"></textarea>
@@ -2554,12 +2552,23 @@
             }
 
             function maybeAutoOpenContextModal() {
+                // Auto-open the context (Gutenberg) on desktop for first visit of timeline
                 if (!contextUiReady) return;
                 if (!contextModalOverlay) return;
                 if (contextModalOverlay.classList.contains("open")) return;
+                if (window.innerWidth < 900) return; // skip on responsive
                 if (hasTimelineData()) return;
                 if (lastTimelineGenerationAt && Date.now() - lastTimelineGenerationAt < AUTO_CONTEXT_SUPPRESSION_MS) return;
-                openContextModal();
+                try {
+                    var seen = localStorage.getItem("robert-gutenberg-opened-timeline");
+                    if (!seen) {
+                        openContextModal();
+                        localStorage.setItem("robert-gutenberg-opened-timeline", "1");
+                    }
+                } catch (err) {
+                    // ignore storage errors
+                    openContextModal();
+                }
             }
 
             function getActiveTypeIds() {
@@ -6589,7 +6598,7 @@
                 },
                 {
                     title: "Exporte ta timeline",
-                    description: "Le menu ⥂ Canal permet de télécharger la vue courante en texte, image ou Excel et le bouton ⧉ Capsule génère un lien privé pour la partager rapidement.",
+                    description: "Le menu ⧉ Capsule permet de télécharger la vue courante en texte, image ou Excel et le bouton ☍ Nexus génère un lien privé pour la partager rapidement.",
                     selectors: ["#fileMenuBtn"]
                 }
             ];

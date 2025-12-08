@@ -1147,8 +1147,10 @@ sequenceDiagram
             let generateCooldownTimer = null;
             let generateCooldownEndTime = 0;
             let currentTourIndex = 0;
-            // Start closed by default (do not auto-open Gutenberg/drawer on desktop)
+            // Start closed by default; but auto-open on first desktop visit or on page creation
             let isDrawerOpen = false;
+            const DESKTOP_GUTENBERG_BREAKPOINT = 900;
+            const GUTENBERG_SEEN_KEY = "robert-gutenberg-opened-draw";
             const tourSteps = [
                 {
                     title: "Intention Le Cardinal",
@@ -1259,6 +1261,32 @@ sequenceDiagram
                     console.warn("Impossible de charger l'état", err);
                     state.pages = [createPage(1)];
                 }
+            }
+
+            function isDesktopGutenberg() {
+                return window.innerWidth >= DESKTOP_GUTENBERG_BREAKPOINT;
+            }
+
+            function markDrawerSeen() {
+                try {
+                    localStorage.setItem(GUTENBERG_SEEN_KEY, "1");
+                } catch (err) {
+                    console.warn("Impossible de noter l'ouverture du drawer", err);
+                }
+            }
+
+            function maybeAutoOpenDrawer() {
+                try {
+                    if (!isDesktopGutenberg()) return;
+                    var seen = localStorage.getItem(GUTENBERG_SEEN_KEY);
+                    if (!seen) {
+                        openDrawer();
+                        markDrawerSeen();
+                    }
+                } catch (err) {
+                    // ignore
+                }
+                syncDrawerToggleUi();
             }
 
             function saveState() {
@@ -2895,6 +2923,11 @@ sequenceDiagram
                     state.pages.push(newPage);
                     setActivePage(state.pages.length - 1);
                     saveState();
+                    try {
+                        if (isDesktopGutenberg()) openDrawer();
+                    } catch (err) {
+                        /* noop */
+                    }
                 });
                 function clearActivePage(options = {}) {
                     const clearRecit = !!options.clearRecit;
@@ -3080,6 +3113,12 @@ sequenceDiagram
             }
 
             initializeAppState();
+            // Try auto-opening drawer on first desktop visit
+            try {
+                maybeAutoOpenDrawer();
+            } catch (err) {
+                /* noop */
+            }
         })();
     </script>
 </body>
