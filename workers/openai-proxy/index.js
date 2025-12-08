@@ -135,7 +135,7 @@ function normalizeClientIp(request) {
 async function forwardToOpenAI(request, env, corsOrigin) {
   // Lire le body brut pour contrôler la taille
   const raw = await request.text();
-  const maxBytes = 10_000; // ≈ 10 KB max pour tout le payload
+  const maxBytes = 200_000; // ≈ 10 KB max pour tout le payload
 
   if (raw.length > maxBytes) {
     return jsonError(corsOrigin, 413, "PAYLOAD_TOO_LARGE", "Payload too large.");

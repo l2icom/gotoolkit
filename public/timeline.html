@@ -6121,15 +6121,8 @@
                 if (mode === "modify") {
                     ensureModifyPrompt({ refreshModify: true });
                 }
-                var promptField = mode === "modify" ? txtPromptModify : txtPromptCreate;
+                var promptField = txtPromptCreate;
                 var promptText = (promptField && promptField.value ? promptField.value.trim() : "");
-                var scriptText = (txtPromptModify && txtPromptModify.value ? txtPromptModify.value.trim() : "");
-
-                if (!promptText && mode === "modify" && txtPromptCreate && txtPromptCreate.value.trim()) {
-                    mode = "create";
-                    promptField = txtPromptCreate;
-                    promptText = txtPromptCreate.value.trim();
-                }
 
                 if (!promptText) {
                     alert("Ajoute un prompt avant d'appeler OpenAI 🙂");
@@ -6157,7 +6150,6 @@
                     schema: "planning-v1",
                     mode: mode,
                     prompt: promptText,
-                    script: scriptText,
                     planning: currentPlanning
                 };
 

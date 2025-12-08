@@ -277,7 +277,8 @@ Réponds toujours avec un JSON qui contient :
 - Sors uniquement le JSON, sans explication ni texte additionnel.
 - On essaie d'optimiser un maximum la feuille de route et réduire la duréee totale. Les actions doivent s'enchainer logiquement sans pause.
 - Les actions peuvent s'enchaîner en parallèle si besoin. Mais les dépendances implicites doivent être prises en compte.
-- Pour une action longue avec \`length\` supérieur à 21 jours, faire plusieurs items de moins de 21 joursen ajoutant dans le nom (P1, P2...Pn)
+- Si un planning est joint, garde les ids de ton mieux et renvoie tout le planning avec les modifications demandées sur la base de l'existant.
+- Pour une action longue avec \`length\` supérieur à 21 jours, faire plusieurs items de moins de 21 jours en ajoutant dans le nom (P1, P2...Pn)
 - Un seul mot pour le label d'un \`markers\` ou un \`type\`.
 - Entre 2-4 mots pour le label d'un \`group\`.
 - On a entre 1 et 3 \`markers\`, entre 2-6 \`types\`, entre 2 et 4 \`groups\` et entre 10 et 20 \`items\`.
