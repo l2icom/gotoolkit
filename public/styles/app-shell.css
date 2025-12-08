@@ -135,13 +135,14 @@ body.app-body {
     box-shadow: 0 4px 12px rgba(16, 20, 40, 0.12);
 }
 
+.menu-panel-btn,
 .btn,
 button.btn,
 .btn-ghost,
 .btn-small {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex start;
     gap: 6px;
     border: 1px solid var(--app-border, #dfe3f5);
     background: var(--app-surface, #ffffff);
@@ -166,6 +167,7 @@ button.btn:focus-visible {
     box-shadow: 0 4px 12px rgba(16, 20, 40, 0.12);
 }
 
+.context-menu button .btn-primary,
 .btn-primary,
 button.btn-primary {
     background: var(--app-primary, #2a7a57);
@@ -408,4 +410,18 @@ label {
     margin: 0;
     font-size: 12px;
     color: #4b4b43;
+}
+
+/* Dev-only: force Nexus / share button visible when running locally */
+:root.dev-local #shareBtn,
+:root.dev-local .share-menu-wrapper,
+:root.dev-local .share-menu,
+:root.dev-local .share-menu * {
+    display: inline-flex !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+:root.dev-local #shareBtn {
+    color: var(--app-primary-strong) !important;
 }
