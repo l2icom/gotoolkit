@@ -3023,6 +3023,8 @@ sequenceDiagram
                 if (shareBtn && shareMenu) {
                     shareBtn.addEventListener("click", event => {
                         event.stopPropagation();
+                        // If info popup is open, close it when opening the share menu
+                        closeInfoPopup();
                         shareMenu.classList.toggle("open");
                         updateShareMenuUI();
                     });

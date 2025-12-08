@@ -786,13 +786,13 @@
 
         .menu-panel-btn {
             border-radius: 0;
-            background: transparent;
+            background: transparent !important;
             text-align: left;
             padding: 8px 12px;
             width: 100%;
             font-size: 14px;
             cursor: pointer;
-            border: none;
+            border: none !important;
             transition: background 0.2s ease;
         }
 
@@ -880,7 +880,6 @@
 
         .global-actions button {
             align-self: flex-end;
-            background: #fff;
             border: 1px solid rgba(15, 23, 42, 0.2);
             color: #0f172a;
             box-shadow: none;
@@ -1477,6 +1476,9 @@
                                         <option value="11">11</option>
                                         <option value="12">12</option>
                                         <option value="13">13</option>
+                                        <option value="14">14</option>
+                                        <option value="15">15</option>
+                                        <option value="16">16</option>
                                     </select>
                                 </label>
                                 <label>
@@ -1533,7 +1535,7 @@
                     <div class="menu-trigger">
                         <button class="btn" id="fileMenuBtn" aria-label="Canal">⥂ Canal</button>
                         <div class="context-menu file-menu" id="fileMenu">
-                            <div class="menu-panel" style="transform: translateX(10px);">
+                            <div class="menu-panel">
                                 <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir
                                     Capsule</button>
                                 <button id="exportJsonBtn" type="button" class="menu-panel-btn">⭳ Télécharger
@@ -1557,7 +1559,7 @@
                                         placeholder="Appuie sur Créer pour générer un lien privé.">
                                 </div>
                                 <div class="share-actions">
-                                    <button id="shareUpdateBtn" type="button" class="menu-panel-btn">🔄️
+                                    <button id="shareUpdateBtn" type="button" class="btn">🔄️
                                         Actualiser</button>
                                     <button id="shareCreateBtn" type="button" class="menu-panel-btn primary">☍
                                         Créer</button>
@@ -3229,7 +3231,7 @@
             var colorTypeList = document.getElementById("colorTypeList");
             var saveColorPreferencesBtn = document.getElementById("saveColorPreferencesBtn");
             var randomizeColorsBtn = document.getElementById("randomizeColorsBtn");
-            var fontSizeChoices = [8, 9, 10, 11, 12, 13];
+            var fontSizeChoices = [8, 9, 10, 11, 12, 13, 14, 15, 16];
             var borderLightModes = {
                 blanc: "#ffffff",
                 clair: "var(--border)",
@@ -3278,6 +3280,8 @@
             if (shareBtn && shareMenu) {
                 shareBtn.addEventListener("click", function (event) {
                     event.stopPropagation();
+                    // If timeline info popup is open, close it when opening the share menu
+                    if (typeof closeTimelineInfoPopup === "function") try { closeTimelineInfoPopup(); } catch (e) { }
                     closeContextMenus();
                     shareMenu.classList.toggle("open");
                     updateShareMenuUI();

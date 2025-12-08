@@ -72,9 +72,10 @@
 
         .menu-panel {
             display: flex;
+            max-width: 200px;
             flex-direction: column;
-            gap: 0;
-            padding: 6px;
+            gap: 10px;
+            padding: 10px;
         }
 
         .menu-header {
@@ -99,9 +100,7 @@
 
         .context-menu button {
             border-radius: 4px;
-            background: transparent;
             text-align: left;
-            padding: 0;
             width: 100%;
             font-size: 14px;
             cursor: pointer;
@@ -122,10 +121,6 @@
         .menu-panel-btn:hover {
             background: rgba(42, 122, 87, 0.08);
             border-radius: 0px;
-        }
-
-        .context-menu button:hover {
-            background: rgba(42, 122, 87, 0.08);
         }
 
         .menu-panel .menu-panel-btn {
@@ -1710,8 +1705,8 @@
                                     placeholder="Créer un lien ">
                             </div>
                             <div class="share-actions">
-                                <button id="shareUpdateBtn" type="button" class="menu-panel-btn">⟳ Actualiser</button>
-                                <button id="shareCreateBtn" type="button" class="menu-panel-btn primary">☍
+                                <button id="shareUpdateBtn" type="button" class="btn">⟳ Actualiser</button>
+                                <button id="shareCreateBtn" type="button" class="btn primary">☍
                                     Créer</button>
                             </div>
                             <p class="share-menu-status" id="shareMenuStatus"></p>
@@ -5273,6 +5268,8 @@
 
         shareBtn?.addEventListener("click", event => {
             event.stopPropagation();
+            // If info popup is open, close it when opening the share menu
+            closeInfoPopup();
             toggleMenu(shareMenu);
             updateShareMenuUI();
         });
