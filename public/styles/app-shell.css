@@ -329,10 +329,10 @@ button.btn-small-active {
 }
 
 label {
-    font-size: 12px;
+    font-size: 14px;
     color: var(--app-muted, #65748a);
     display: block;
-    margin-bottom: 3px;
+    margin-bottom: 4px;
 }
 
 

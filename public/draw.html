@@ -47,6 +47,10 @@
             z-index: 20;
         }
 
+        #promptTemplateField {
+            min-height: 450px;
+        }
+
         .share-menu.open {
             display: block;
         }
@@ -271,7 +275,6 @@
 
         .draw-type-control-label {
             font-size: 12px;
-            font-weight: 500;
             color: #566188;
         }
 
@@ -764,7 +767,7 @@
             <section class="connect-left">
                 <div class="prompt-input-card" id="prompt-input-card">
                     <div class="card-title-row">
-                        <div class="card-title">Récit</div>
+                        <label>Récit</label>
                         <button id="generateBtn" class="btn-primary" type="button">⌘ Répondre</button>
                     </div>
                     <div class="draw-type-control">
@@ -783,7 +786,7 @@
                 </div>
                 <div class="mermaid-output-card">
                     <div class="card-title-row">
-                        <div class="card-title">Script</div>
+                        <label>Script</label>
                         <button id="refreshExcalidrawBtn" class="btn" type="button">⌗ Modifier</button>
                     </div>
                     <textarea id="mermaidOutput" placeholder="Le code généré apparaitra ici"></textarea>
@@ -864,7 +867,7 @@
     <script src="js/connect.bundle.js" data-excalidraw-bundle="true"></script>
     <script>
         // Load runtime config synchronously so tour behavior can be controlled
-        window.GoToolkitConfig = window.GoToolkitConfig || { enableTours: true };
+        window.GoToolkitConfig = window.GoToolkitConfig || { enableTours: false };
         try {
             var __cfg_xhr = new XMLHttpRequest();
             __cfg_xhr.open('GET', '/config.json', false);
@@ -891,7 +894,7 @@
                 (window.GoPrompts && window.GoPrompts.drawDefaultPromptTemplate) || "";
             const DRAW_TYPES = [
                 { id: "sequence", label: "Échange", promptValue: "sequenceDiagram", emoji: "⇄" },
-                { id: "flow", label: "Processus", promptValue: "flowchart LR", emoji: "◇" },
+                { id: "flow", label: "Processus", promptValue: "flowchart", emoji: "◇" },
                 { id: "class", label: "Structure", promptValue: "classDiagram", emoji: "⁂" }
             ];
             const DEFAULT_DRAW_TYPE = DRAW_TYPES[0].id;
@@ -1170,8 +1173,8 @@ sequenceDiagram
             let generateCooldownTimer = null;
             let generateCooldownEndTime = 0;
             let currentTourIndex = 0;
-            // Start closed by default; but auto-open on first desktop visit or on page creation
-            let isDrawerOpen = false;
+            // Start open on desktop by default; auto logic can rehydrate stored state
+            let isDrawerOpen = true;
             const DESKTOP_GUTENBERG_BREAKPOINT = 900;
             const GUTENBERG_SEEN_KEY = "robert-gutenberg-opened-draw";
             const GUTENBERG_OPEN_STATE_KEY = "robert-gutenberg-open-state-draw";
@@ -3051,11 +3054,6 @@ sequenceDiagram
                 tourSkipBtn?.addEventListener("click", closeTour);
                 aiSettingsBtn.addEventListener("click", openModal);
                 closeAiModalBtn.addEventListener("click", closeModal);
-                aiModal.addEventListener("click", event => {
-                    if (event.target === aiModal) {
-                        closeModal();
-                    }
-                });
                 const applyAiSettingsBtn = document.getElementById("applyAiSettingsBtn");
                 applyAiSettingsBtn?.addEventListener("click", () => {
                     state.apiKey = apiKeyField?.value.trim() || "";

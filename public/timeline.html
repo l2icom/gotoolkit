@@ -2989,13 +2989,6 @@
             if (iaModalClose) {
                 iaModalClose.addEventListener("click", closeIaModal);
             }
-            if (iaModalOverlay) {
-                iaModalOverlay.addEventListener("click", function (event) {
-                    if (event.target === iaModalOverlay) {
-                        closeIaModal();
-                    }
-                });
-            }
 
             if (contextModalOverlay) {
                 contextModalOverlay.addEventListener("click", function (event) {
@@ -6674,7 +6667,7 @@
             ];
             var timelineTourOverlay = document.getElementById("timelineTourOverlay");
             // Load runtime config synchronously so tour behavior can be controlled
-            window.GoToolkitConfig = window.GoToolkitConfig || { enableTours: true };
+            window.GoToolkitConfig = window.GoToolkitConfig || { enableTours: false };
             try {
                 var __cfg_xhr = new XMLHttpRequest();
                 __cfg_xhr.open('GET', '/config.json', false);

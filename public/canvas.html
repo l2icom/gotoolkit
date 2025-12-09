@@ -1747,7 +1747,7 @@
                 </div>
                 <div class="gutenberg-card-body">
                     <div class="gutenberg-card-actions-row">
-                        <span style="font-size:14px; color: var(--app-muted, #65748a)">Récit Canvas</span>
+                        <label>Récit Canvas</label>
 
                         <button class="tab-action" id="generateFullSlideBtn" type="button"
                             aria-label="Générer toutes les sections et la synthèse">⌘ Répondre</button>
@@ -1761,7 +1761,7 @@
                             placeholder="Décris ici le cadre global : le domaine, l’objectif principal, les utilisateurs concernés, la problématique à résoudre et le niveau d’enjeu. Décris aussi l’intention globale (pourquoi on fait ça) et l’état actuel (où on en est)."></textarea>
                     </label>
                     <label>
-                        <span style="font-size:14px;">Récit Bloc</span>
+                        <label>Récit Bloc</label>
                         <textarea id="pageContextField" rows="10"
                             placeholder="Ajoute les éléments précis : la situation réelle, les contraintes connues, les choix déjà faits, les dépendances, les deadlines, les acteurs impliqués, les données chiffrées utiles, les points de vigilance et la condition de succès de ce cas particulier."></textarea>
                     </label>
@@ -5099,11 +5099,6 @@
             switchModalTab("settings");
             openModal(contextModal);
         });
-        contextModal.addEventListener("click", event => {
-            if (event.target === contextModal) {
-                closeModal(contextModal);
-            }
-        });
         contextApplyBtn?.addEventListener("click", () => {
             persistState();
             closeModal(contextModal);
@@ -5420,7 +5415,7 @@
         });
 
         // Load runtime config synchronously so tour behavior can be controlled
-        window.GoToolkitConfig = window.GoToolkitConfig || { enableTours: true };
+        window.GoToolkitConfig = window.GoToolkitConfig || { enableTours: false };
         try {
             var __cfg_xhr = new XMLHttpRequest();
             __cfg_xhr.open('GET', '/config.json', false);

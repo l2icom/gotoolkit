@@ -156,7 +156,7 @@
     ];
 
     const drawDefaultPromptTemplate =
-        "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code strictement mermaid sous forme d'un diagramme rigoureux de {{draw_type}}. Les intitulés font moins de 4 mots. Ajoute un titre en commentaire %% Title dans la réponse. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
+        "Tu es un product owner expérimenté, sur la base de {{field_input}}, produis un code strictement mermaid sous forme d'un diagramme de {{draw_type}}. Les intitulés font moins de 4 mots. Ajoute un titre en commentaire %% Title dans la réponse. Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
 
     const canvasDefaultPromptTemplate =
         `Tu es un product owner expérimenté, sur la base de "{{slideTitle}}", du contexte "{{globalContext}}" et "{{pageContext}}" et dans le cadre de "{{columnTitle}}", reformuler "{{fieldValue}}" sous forme de 2 à 3 "{{sectionTitle}}" (un • de < 15 mots pour chaque) sans introduction préalable ni émoji`;
