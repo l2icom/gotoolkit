@@ -47,7 +47,7 @@
 
         .page {
             width: 100%;
-            max-width: 900px;
+            max-width: 1180px;
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -438,6 +438,14 @@
             gap: 6px;
         }
 
+        /* In the modal, show name and tag on the same row */
+        .superpower-modal .superpower-head {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
         .superpower-tag-row {
             display: flex;
             gap: 6px;
@@ -471,6 +479,12 @@
             border-color: #b43a3f;
             background: rgba(180, 58, 63, 0.12);
             color: #b43a3f;
+        }
+
+        .superpower-tag--satellite {
+            border-color: #7a4bc0;
+            background: rgba(122, 75, 192, 0.12);
+            color: #5a2ea6;
         }
 
         .superpower-list section {
@@ -722,6 +736,13 @@
                         <div class="launcher-desc">Modélise tes idées</div>
                     </span>
                 </a>
+                <a class="launcher" href="#" id="indelebileLauncher" rel="noopener noreferrer">
+                    <span class="launcher-emoji">ʃ</span>
+                    <span class="launcher-name">
+                        Indélébile*
+                        <div class="launcher-desc">Visualise tes réflexions</div>
+                    </span>
+                </a>
             </div>
         </section>
 
@@ -790,14 +811,14 @@
         <div id="superpowerModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
             <div class="superpower-modal">
                 <header>
-                    <h3>⚡︎ Superpouvoirs Go-Live</h3>
+                    <h3>⚡︎ Super-pouvoirs Go-Live</h3>
                     <button id="closeSuperpowerBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
                 </header>
                 <div class="superpower-list">
                     <p class="superpower-intro">
-                        La Go-Toolkit est un catalyseur des compétences-clés du Product Owner, dénommées super-pouvoirs.
-                        Certains s'activent avec leur module dédié, d’autres sont utilisés pour piloter les modules
-                        comme un cockpit, d'autres enfin sont au coeur du propulseur de Go-Toolkit.
+                        La Go-Toolkit est un vaisseau des compétences-clés du Product Owner, dénommées super-pouvoirs.
+                        Certains ont leur module dédié, d’autres permettent de piloter ou d'accélérer les
+                        autres modules, d'autres enfin sont en proximité du vaisseau Go-Toolkit.
                     </p>
                     <section>
                         <div class="superpower-head">
@@ -835,7 +856,7 @@
                         <div class="superpower-head">
                             <h4>ʃ Indélébile</h4>
                             <div class="superpower-tag-row">
-                                <span class="superpower-tag superpower-tag--soon">À venir</span>
+                                <span class="superpower-tag superpower-tag--satellite">Satellite</span>
                             </div>
                         </div>
                         <div class="superpower-subtitle">Le pouvoir de l’ancrage visuel. Facilitation graphique en
@@ -845,7 +866,7 @@
                         <div class="superpower-head">
                             <h4>Ϟ Protocop</h4>
                             <div class="superpower-tag-row">
-                                <span class="superpower-tag superpower-tag--soon">À venir</span>
+                                <span class="superpower-tag superpower-tag--soon">En orbite</span>
                             </div>
                         </div>
                         <div class="superpower-subtitle">Le pouvoir de prototyper vite et bien. Donner corps à l’idée
@@ -855,7 +876,7 @@
                         <div class="superpower-head">
                             <h4>⌲ Tuto Tarantino</h4>
                             <div class="superpower-tag-row">
-                                <span class="superpower-tag superpower-tag--soon">À venir</span>
+                                <span class="superpower-tag superpower-tag--soon">En orbite</span>
                             </div>
                         </div>
                         <div class="superpower-subtitle">Le pouvoir de captiver par des tutoriels vidéo percutants.
@@ -875,7 +896,7 @@
                         <div class="superpower-head">
                             <h4>⛶ Promptzilla</h4>
                             <div class="superpower-tag-row">
-                                <span class="superpower-tag">Cockpit
+                                <span class="superpower-tag superpower-tag--cockpit">Cockpit</span>
                                 </span>
                             </div>
                         </div>
@@ -897,7 +918,7 @@
                         <div class="superpower-head">
                             <h4>⌬ Pôlène</h4>
                             <div class="superpower-tag-row">
-                                <span class="superpower-tag superpower-tag--development">Propulseur</span>
+                                <span class="superpower-tag superpower-tag--soon">En orbite</span>
                             </div>
                         </div>
                         <div class="superpower-subtitle">Le pouvoir de concevoir des produits qui exposent leur valeur
@@ -1389,6 +1410,38 @@
 
         updateMessagePlaceholder("autre");
         updateEmailRequirement("autre");
+
+        // Indélébile launcher: open external tool with a one-time confirmation
+        (function () {
+            const indelebileLauncher = document.getElementById("indelebileLauncher");
+            const STORAGE_KEY = "indelebile_confirmed_v1";
+            const TARGET_URL = "https://teach.tldraw.com/";
+            if (!indelebileLauncher) return;
+            indelebileLauncher.addEventListener("click", function (e) {
+                e.preventDefault();
+                try {
+                    const already = localStorage.getItem(STORAGE_KEY) === "1";
+                    if (already) {
+                        window.open(TARGET_URL, "_blank", "noopener");
+                        return;
+                    }
+                }
+                catch (err) {
+                    // ignore storage errors and proceed to confirmation
+                }
+
+                const message = "Tu vas ouvrir un outil externe (https://teach.tldraw.com/).\nCe service est géré par un tiers et est soumis à des conditions d'utilisation différentes. Continuer ?";
+                const ok = window.confirm(message);
+                if (!ok) return;
+                try {
+                    localStorage.setItem(STORAGE_KEY, "1");
+                }
+                catch (err) {
+                    // ignore
+                }
+                window.open(TARGET_URL, "_blank", "noopener");
+            });
+        })();
     </script>
 </body>
 

@@ -1841,21 +1841,21 @@ sequenceDiagram
                 };
             }
 
-                function normalizePage(page, index) {
-                    const fallback = createPage(index + 1);
-                    const incomingType = page?.drawType;
-                    const drawType = DRAW_TYPES.some(option => option.id === incomingType)
-                        ? incomingType
-                        : DEFAULT_DRAW_TYPE;
-                    return {
-                        id: page?.id || fallback.id,
-                        label: page?.label || fallback.label,
-                        title: page?.title || page?.label || fallback.title,
-                        input: page?.input || "",
-                        mermaid: page?.mermaid || "",
-                        drawType
-                    };
-                }
+            function normalizePage(page, index) {
+                const fallback = createPage(index + 1);
+                const incomingType = page?.drawType;
+                const drawType = DRAW_TYPES.some(option => option.id === incomingType)
+                    ? incomingType
+                    : DEFAULT_DRAW_TYPE;
+                return {
+                    id: page?.id || fallback.id,
+                    label: page?.label || fallback.label,
+                    title: page?.title || page?.label || fallback.title,
+                    input: page?.input || "",
+                    mermaid: page?.mermaid || "",
+                    drawType
+                };
+            }
 
             function getDrawTypeOptionById(typeId) {
                 return DRAW_TYPES.find(option => option.id === typeId) || DRAW_TYPES[0];
