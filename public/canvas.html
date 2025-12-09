@@ -1278,6 +1278,37 @@
             transform: translateY(0);
         }
 
+        .textarea-wrapper[data-suggestions] {
+            position: relative;
+        }
+
+        .textarea-wrapper[data-suggestions]::after {
+            content: attr(data-suggestions);
+            position: absolute;
+            left: 0;
+            bottom: calc(100% + 6px);
+            background: rgba(31, 41, 55, 0.92);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            white-space: pre-line;
+            width: 300px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(6px);
+            transition: opacity 0.2s ease, transform 0.2s ease, max-width 0.2s ease;
+            pointer-events: none;
+            z-index: 60;
+        }
+
+        .textarea-wrapper[data-suggestions]:focus-within::after {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
         .column-delete-btn,
         .section-delete-btn,
         .bottom-section-delete {
@@ -1294,7 +1325,9 @@
         }
 
         .column-title-row:hover .column-delete-btn,
-        .section-label-row:hover .section-delete-btn {
+        .section-label-row:hover .section-delete-btn,
+        .section:hover .section-delete-btn,
+        .section:focus-within .section-delete-btn {
             opacity: 1;
             pointer-events: auto;
         }
@@ -1992,6 +2025,8 @@
             (window.GoPrompts && Array.isArray(window.GoPrompts.canvasTemplates) && window.GoPrompts.canvasTemplates.length
                 ? window.GoPrompts.canvasTemplates
                 : fallbackTemplates);
+        const templateExamples =
+            (window.GoPrompts && window.GoPrompts.canvasExamples) || {};
         const promptVariableDefinitions = {
             globalContext: "Contexte global saisi dans la modalité Contexte",
             pageContext: "Contexte spécifique à la page active",
@@ -2025,6 +2060,12 @@
         function getDefaultTitle(templateId) {
             const template = getTemplateById(templateId);
             return template?.defaultTitle || template?.name || fallbackTitle;
+        }
+
+        function getSectionExample(templateId, stage, sectionKey) {
+            const examplesByTemplate = templateExamples[templateId] || templateExamples.default || {};
+            const byStage = examplesByTemplate[stage] || {};
+            return byStage[sectionKey] || "";
         }
 
         function getTemplateSections(templateId) {
@@ -2870,9 +2911,28 @@
             textarea.classList.toggle("textarea-overflow", textarea.scrollHeight > textarea.clientHeight);
         }
 
+        function updateTextareaTooltip(textarea) {
+            if (!textarea) return;
+            const wrapper = textarea.closest(".textarea-wrapper");
+            if (!wrapper) return;
+            const tooltipText =
+                textarea.dataset.suggestionPlaceholder ||
+                textarea.dataset.placeholder ||
+                "";
+            if (textarea.value.trim() && tooltipText) {
+                wrapper.dataset.suggestions = tooltipText;
+            } else {
+                delete wrapper.dataset.suggestions;
+            }
+        }
+
         function monitorTextareaOverflow(textarea) {
             updateTextareaOverflowState(textarea);
-            textarea.addEventListener("input", () => updateTextareaOverflowState(textarea));
+            updateTextareaTooltip(textarea);
+            textarea.addEventListener("input", () => {
+                updateTextareaOverflowState(textarea);
+                updateTextareaTooltip(textarea);
+            });
             textarea.addEventListener("keydown", event => {
                 if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
@@ -3006,6 +3066,7 @@
                         if (!trimmed) return false;
                         textarea.value = trimmed;
                         updateTextareaOverflowState(textarea);
+                        updateTextareaTooltip(textarea);
                         if (labelEl) {
                             labelEl.dataset.suggestions = trimmed;
                         }
@@ -3381,7 +3442,8 @@
             const sectionsHtml = sectionKeys
                 .map(sectionKey => {
                     const sectionMeta = getTemplateSection(templateId, sectionKey) || { label: sectionKey, examples: "" };
-                    const placeholder = (sectionMeta.examples || "").replace(/"/g, '&quot;');
+                    const exampleText = getSectionExample(templateId, stage, sectionKey) || sectionMeta.examples || "";
+                    const placeholder = exampleText.replace(/"/g, '&quot;');
                     const labelText = sectionMeta.label || sectionKey;
                     return `
         <div class="section" data-section="${sectionKey}">
@@ -3390,7 +3452,7 @@
             <button type="button" class="section-delete-btn" aria-label="Supprimer la section">×</button>
           </div>
           <div class="section-text-row">
-            <div class="textarea-wrapper">
+            <div class="textarea-wrapper" data-suggestions="${placeholder}">
               <textarea class="editable" data-section="${sectionKey}" data-placeholder="${placeholder}"></textarea>
               <button class="field-ai-btn inside" type="button" data-field="section-text" data-section="${sectionKey}" title="Générer le contenu" aria-label="Générer le contenu">⌘</button>
             </div>
@@ -3443,6 +3505,8 @@
                 const sectionKey = sectionEl.dataset.section;
                 const label = sectionEl.querySelector(".section-label");
                 const textarea = sectionEl.querySelector("textarea");
+                const textareaWrapper = sectionEl.querySelector(".textarea-wrapper");
+                const stageForSection = column.dataset.stage;
                 const sectionSeed = seed.sections && sectionKey ? seed.sections[sectionKey] : null;
                 if (label) {
                     const defaultLabel = getDefaultSectionLabel(templateId, sectionKey);
@@ -3451,7 +3515,10 @@
                 if (textarea) {
                     if (sectionSeed) {
                         textarea.value = sectionSeed.text || "";
-                        const placeholderValue = sectionSeed.placeholder || "";
+                        const sectionMeta = getTemplateSection(templateId, sectionKey) || { examples: "" };
+                        const exampleText =
+                            getSectionExample(templateId, stageForSection, sectionKey) || sectionMeta.examples || "";
+                        const placeholderValue = sectionSeed.placeholder || exampleText || "";
                         textarea.dataset.placeholder = placeholderValue;
                         if (placeholderValue && !textarea.value.trim()) {
                             textarea.placeholder = placeholderValue;
@@ -3532,9 +3599,10 @@
             schedulePersist();
         }
 
-        function createSectionElement(templateId, sectionKey, seed = {}) {
+        function createSectionElement(templateId, sectionKey, stage, seed = {}) {
             const sectionMeta = getTemplateSection(templateId, sectionKey) || { label: sectionKey, examples: "" };
-            const placeholder = (sectionMeta.examples || "").replace(/"/g, '&quot;');
+            const exampleText = getSectionExample(templateId, stage, sectionKey) || sectionMeta.examples || "";
+            const placeholder = exampleText.replace(/"/g, '&quot;');
             const labelText = seed.label || sectionMeta.label || sectionKey;
 
             const section = document.createElement("div");
@@ -3600,10 +3668,11 @@
             const columnBody = column.querySelector(".column-body");
             if (!columnBody) return;
             const templateSections = getTemplateSections(templateId);
+            const stage = column.dataset.stage;
             templateSections.forEach(sectionMeta => {
                 let sectionEl = columnBody.querySelector(`.section[data-section="${sectionMeta.key}"]`);
                 if (!sectionEl) {
-                    sectionEl = createSectionElement(templateId, sectionMeta.key);
+                    sectionEl = createSectionElement(templateId, sectionMeta.key, stage);
                     columnBody.appendChild(sectionEl);
                 }
             });
@@ -3792,7 +3861,12 @@
             const bottomTextarea = slide.querySelector(".bottom-section-text");
             if (bottomTextarea) {
                 bottomTextarea.value = (seed.bottomSection && seed.bottomSection.text) || "";
-                bottomTextarea.dataset.placeholder = bottomSectionPlaceholderText;
+                // Use template-specific placeholder if available, otherwise fall back
+                // to the existing generic placeholder text.
+                const slideTemplateId = slide.dataset.templateId || templates[0].id;
+                const slideTemplate = getTemplateById(slideTemplateId);
+                const bottomPlaceholder = (slideTemplate && slideTemplate.bottomPlaceholder) || bottomSectionPlaceholderText;
+                bottomTextarea.dataset.placeholder = bottomPlaceholder;
                 bindTextareaPlaceholder(bottomTextarea);
                 monitorTextareaOverflow(bottomTextarea);
                 bottomTextarea.addEventListener("input", () => schedulePersist());
@@ -5109,6 +5183,19 @@
         gutenbergBackdrop?.addEventListener("click", () => {
             setGutenbergOpen(false);
         });
+        // Close gutenberg drawer when clicking outside in drawer mode (<900px)
+        document.addEventListener("click", (ev) => {
+            try {
+                if ((window.innerWidth || 0) >= 900) return; // desktop - do nothing
+                if (!gutenbergCard || !gutenbergCard.classList.contains('open')) return;
+                var t = ev.target;
+                if (t && t.closest && (t.closest('.gutenberg-card') || t.closest('#contextEditorBtn') || t.closest('#contextBtn'))) return;
+                // clicking outside should close the drawer
+                setGutenbergOpen(false);
+            } catch (e) {
+                /* noop */
+            }
+        }, true);
         switchModalTab("settings");
         slideContextLink?.addEventListener("click", event => {
             event.stopPropagation();
