@@ -41,7 +41,7 @@
 
             --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.12);
             --app-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-            --global-font-size: 14px;
+            --global-font-size: 12px;
             --app-border: #e5e7eb;
             --app-border-strong: #e5e7eb;
             --app-primary-strong: #1f4f3d;
@@ -149,8 +149,9 @@
             width: 100%;
             border-radius: 10px;
             border: 1px solid var(--border-strong);
+            line-height: 1.4;
             padding: 6px 8px;
-            font-size: 11px;
+            font-size: 13px;
             font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
             resize: none;
             min-height: 80px;
@@ -408,9 +409,9 @@
         }
 
         .gutenberg-card .gutenberg-recette {
-            /* reduced height: half of previous 250px */
-            flex: 0 0 200px;
-            min-height: 200px;
+            flex: 0 0 50%;
+            height: 50%;
+            min-height: 0;
             display: flex;
             flex-direction: column;
             gap: 6px;
@@ -430,7 +431,8 @@
         }
 
         .gutenberg-card .gutenberg-script {
-            flex: 1 1 auto;
+            flex: 0 0 50%;
+            height: 50%;
             min-height: 0;
             display: flex;
             flex-direction: column;
@@ -509,6 +511,11 @@
             border-radius: 12px;
             height: 100%;
             padding: 6px;
+        }
+
+
+        #clearTimelineBtn {
+            margin-left: auto;
         }
 
         .edit-tooltip {
@@ -1537,10 +1544,8 @@
                         <button class="btn" id="fileMenuBtn" aria-label="Capsule">⧉ Capsule</button>
                         <div class="context-menu file-menu" id="fileMenu">
                             <div class="menu-panel">
-                                <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir
-                                    Capsule</button>
-                                <button id="exportJsonBtn" type="button" class="menu-panel-btn">⭳ Télécharger
-                                    Capsule</button>
+                                <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
+                                <button id="exportJsonBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
                                 <button id="exportTextBtn" type="button" class="menu-panel-btn">¶ Texte</button>
                                 <button id="exportImageBtn" type="button" class="menu-panel-btn">◩ Image</button>
                                 <button id="exportExcelBtn" type="button" class="menu-panel-btn">▥ Excel</button>
@@ -1655,12 +1660,14 @@
                     <div class="header-row ia-header-actions gutenberg-recette">
                         <div class="gutenberg-recette-header">
                             <label for="promptCreate">Récit</label>
+                            <button class="btn" type="button" id="clearTimelineBtn"
+                                aria-label="Réinitialiser la timeline et le script">⊘ Réinitialiser</button>
                             <button class="btn btn-primary" id="btn-call">
-                                <span>⌘ Générer</span>
+                                <span>⌘ Répondre</span>
                             </button>
                         </div>
                         <div class="ia-prompt-fields">
-                            <textarea id="promptCreate" class="ia-prompt-field" rows="10"
+                            <textarea id="promptCreate" class="ia-prompt-field" rows="20"
                                 placeholder="Décris ici ta vision idéale dans 3 à 24 mois : les attendus, les changements, les impacts concrets."></textarea>
                         </div>
                     </div>
@@ -1912,6 +1919,9 @@
             var lastTimelineGenerationAt = 0;
             var AUTO_CONTEXT_SUPPRESSION_MS = 15000;
             var shouldOpenContextOnFirstLoad = false;
+            var initialPromptzillaOpened = false;
+            var GUTENBERG_SEEN_KEY = "robert-gutenberg-opened-timeline";
+            var GUTENBERG_OPEN_STATE_KEY = "robert-gutenberg-open-state-timeline";
             var DEFAULT_CONTEXT_STATE = {
                 prompts: {
                     create: "",
@@ -2380,7 +2390,7 @@
                 fontSize: 14,
                 background: "transparent",
                 ratio: "full",
-                itemDurationMode: "days",
+                itemDurationMode: "none",
                 spacing: "dense",
                 hideWeekends: true
                 , borderLightMode: DEFAULT_BORDER_LIGHT_MODE
@@ -2551,19 +2561,52 @@
                 syncContextFieldsFromState({ refreshModify: true, skipPersist: true });
             }
 
+            function readTimelineContextOpenState() {
+                try {
+                    if (!window.localStorage) return null;
+                    var value = localStorage.getItem(GUTENBERG_OPEN_STATE_KEY);
+                    if (value === "open") {
+                        return true;
+                    }
+                    if (value === "closed") {
+                        return false;
+                    }
+                } catch (err) {
+                    console.warn("Impossible de lire l'état de Gutenberg", err);
+                }
+                return null;
+            }
+
+            function persistTimelineContextOpenState(isOpen) {
+                try {
+                    if (!window.localStorage) return;
+                    localStorage.setItem(GUTENBERG_OPEN_STATE_KEY, isOpen ? "open" : "closed");
+                } catch (err) {
+                    console.warn("Impossible de sauvegarder l'état de Gutenberg", err);
+                }
+            }
+
             function maybeAutoOpenContextModal() {
                 // Auto-open the context (Gutenberg) on desktop for first visit of timeline
                 if (!contextUiReady) return;
                 if (!contextModalOverlay) return;
                 if (contextModalOverlay.classList.contains("open")) return;
                 if (window.innerWidth < 900) return; // skip on responsive
+                var storedState = readTimelineContextOpenState();
+                if (storedState === true) {
+                    openContextModal();
+                    return;
+                }
+                if (storedState === false) {
+                    return;
+                }
                 if (hasTimelineData()) return;
                 if (lastTimelineGenerationAt && Date.now() - lastTimelineGenerationAt < AUTO_CONTEXT_SUPPRESSION_MS) return;
                 try {
-                    var seen = localStorage.getItem("robert-gutenberg-opened-timeline");
+                    var seen = localStorage.getItem(GUTENBERG_SEEN_KEY);
                     if (!seen) {
                         openContextModal();
-                        localStorage.setItem("robert-gutenberg-opened-timeline", "1");
+                        localStorage.setItem(GUTENBERG_SEEN_KEY, "1");
                     }
                 } catch (err) {
                     // ignore storage errors
@@ -2907,6 +2950,7 @@
                     contextModalOverlay.classList.add("open");
                     contextModalOverlay.setAttribute("aria-hidden", "false");
                 }
+                persistTimelineContextOpenState(true);
             }
 
             function closeContextModal() {
@@ -2914,6 +2958,7 @@
                     contextModalOverlay.classList.remove("open");
                     contextModalOverlay.setAttribute("aria-hidden", "true");
                 }
+                persistTimelineContextOpenState(false);
             }
 
             function toggleContextModal(options) {
@@ -2943,15 +2988,6 @@
             }
             if (iaModalClose) {
                 iaModalClose.addEventListener("click", closeIaModal);
-            }
-            if (iaApplyBtn) {
-                iaApplyBtn.addEventListener("click", function () {
-                    if (iaTemplateEditor) {
-                        persistTemplateChange(iaTemplateEditor.value || "");
-                        persistTimelineState();
-                    }
-                    closeIaModal();
-                });
             }
             if (iaModalOverlay) {
                 iaModalOverlay.addEventListener("click", function (event) {
@@ -3033,6 +3069,21 @@
             var roadmapPromptzillaValidate = document.getElementById("promptzillaValidateBtn");
             var openPromptzillaBtn = document.getElementById("openPromptzillaBtn");
             var iaApplyBtn = document.getElementById("iaApplyBtn");
+            if (iaApplyBtn) {
+                iaApplyBtn.addEventListener("click", function () {
+                    if (iaTemplateEditor) {
+                        persistTemplateChange(iaTemplateEditor.value || "");
+                    } else {
+                        persistTimelineState();
+                    }
+                    try {
+                        closeIaModal();
+                    }
+                    catch (e) {
+                        // ignore
+                    }
+                });
+            }
             var selectedPromptzillaId = null;
 
             var ROADMAP_PROMPTZILLA =
@@ -3428,7 +3479,7 @@
                 if (!orderedIds.length) {
                     var emptyOption = document.createElement("option");
                     emptyOption.value = "";
-                    emptyOption.textContent = "Pas de type défini";
+                    emptyOption.textContent = " ";
                     emptyOption.disabled = true;
                     emptyOption.selected = true;
                     itemTypeSelect.appendChild(emptyOption);
@@ -5067,7 +5118,7 @@
             function addView() {
                 persistCurrentPlanning();
                 var label = "Bloc " + (views.length + 1);
-                var newView = { name: label, title: label, planning: null, context: cloneDefaultContext(), clearedOnce: false };
+                var newView = { name: label, title: label, planning: null, context: cloneDefaultContext() };
                 ensureViewFilterState(newView);
                 views.push(newView);
                 persistTimelineState();
@@ -5078,29 +5129,13 @@
 
             function deleteView() {
                 var view = views[activeViewIndex];
-                if (!view) return;
-                var isSingle = views.length <= 1;
-                if (isSingle) {
-                    if (view.clearedOnce) {
-                        clearActiveView({ clearRecit: true });
-                        view.clearedOnce = false;
-                    } else {
-                        clearActiveView({ clearRecit: false });
-                        view.clearedOnce = true;
-                    }
-                    return;
+                if (!view || views.length <= 1) return;
+                views.splice(activeViewIndex, 1);
+                if (activeViewIndex >= views.length) {
+                    activeViewIndex = views.length - 1;
                 }
-                if (view.clearedOnce) {
-                    views.splice(activeViewIndex, 1);
-                    if (activeViewIndex >= views.length) {
-                        activeViewIndex = views.length - 1;
-                    }
-                    persistTimelineState();
-                    activateView(activeViewIndex, true);
-                } else {
-                    view.clearedOnce = true;
-                    clearActiveView({ clearRecit: false });
-                }
+                persistTimelineState();
+                activateView(activeViewIndex, true);
             }
 
             addViewBtn && addViewBtn.addEventListener("click", addView);
@@ -5758,6 +5793,7 @@
             var txtPromptCreate = document.getElementById("promptCreate");
             var txtPromptModify = document.getElementById("promptModify");
             var btnCall = document.getElementById("btn-call");
+            var clearTimelineBtn = document.getElementById("clearTimelineBtn");
             var iaTemplateEditor = document.getElementById("iaTemplateEditor");
             var resetTemplatesBtn = document.getElementById("resetTemplatesBtn");
 
@@ -5831,10 +5867,15 @@
                 // Do not auto-open Gutenberg at first load — open Promptzilla instead
                 if (typeof openRoadmapPromptzilla === "function") {
                     openRoadmapPromptzilla();
+                    initialPromptzillaOpened = true;
                 } else if (typeof openContextModal === "function") {
                     // fallback
                     openContextModal({ mode: "create" });
                 }
+            }
+
+            if (!initialPromptzillaOpened) {
+                maybeAutoOpenContextModal();
             }
 
             if (txtPromptCreate) {
@@ -5914,6 +5955,26 @@
             var reasoningEffortSelect = document.getElementById("reasoningEffortSelect");
             var REASONING_EFFORT_KEY = "plan-reasoning-effort";
             var REASONING_EFFORTS = ["minimal", "low", "medium", "high"];
+            var OPENAI_MESSAGE_MAX_CHARS = 6000;
+
+            function buildChunkedPayloadMessages(jsonText) {
+                if (!jsonText) {
+                    return [{ role: "user", content: "" }];
+                }
+                if (jsonText.length <= OPENAI_MESSAGE_MAX_CHARS) {
+                    return [{ role: "user", content: jsonText }];
+                }
+                var parts = [];
+                for (var i = 0; i < jsonText.length; i += OPENAI_MESSAGE_MAX_CHARS) {
+                    parts.push(jsonText.slice(i, i + OPENAI_MESSAGE_MAX_CHARS));
+                }
+                var total = parts.length;
+                return parts.map(function (chunk, index) {
+                    var header = "Partie " + (index + 1) + " / " + total + " du JSON du planning actuel.\n";
+                    var footer = index === total - 1 ? "\n(Fin du JSON de planning.)" : "";
+                    return { role: "user", content: header + chunk + footer };
+                });
+            }
 
             function readSharedTimelineApiKey() {
                 if (typeof window === "undefined" || !window.localStorage) {
@@ -6156,14 +6217,17 @@
                     mode
                 );
 
+                var scriptContent = txtPromptModify ? (txtPromptModify.value || "") : "";
                 var payload = {
                     schema: "planning-v1",
                     mode: mode,
                     prompt: promptText,
-                    planning: currentPlanning
+                    script: scriptContent
                 };
 
-                var messages = [{ role: "system", content: systemContent }, { role: "user", content: JSON.stringify(payload, null, 2) }];
+                var payloadText = JSON.stringify(payload, null, 2);
+                var payloadMessages = buildChunkedPayloadMessages(payloadText);
+                var messages = [{ role: "system", content: systemContent }].concat(payloadMessages);
 
                 lastTimelineGenerationAt = Date.now();
                 startWaitingTimer(triggerButton);
@@ -6569,6 +6633,12 @@
                 await generateFromMode(btnCall, mode);
             });
 
+            if (clearTimelineBtn) {
+                clearTimelineBtn.addEventListener("click", function () {
+                    clearActiveView({ clearRecit: false });
+                });
+            }
+
 
 
             var timelineTourSteps = [
@@ -6603,6 +6673,27 @@
                 }
             ];
             var timelineTourOverlay = document.getElementById("timelineTourOverlay");
+            // Load runtime config synchronously so tour behavior can be controlled
+            window.GoToolkitConfig = window.GoToolkitConfig || { enableTours: true };
+            try {
+                var __cfg_xhr = new XMLHttpRequest();
+                __cfg_xhr.open('GET', '/config.json', false);
+                __cfg_xhr.send(null);
+                if (__cfg_xhr.status >= 200 && __cfg_xhr.status < 300) {
+                    try { window.GoToolkitConfig = Object.assign({}, window.GoToolkitConfig, JSON.parse(__cfg_xhr.responseText)); } catch (e) { }
+                }
+            } catch (e) { }
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.GoToolkitConfig && window.GoToolkitConfig.enableTours === false) {
+                    var btn = document.getElementById('timelineTourReplayBtn');
+                    if (btn) btn.style.display = 'none';
+                    var overlay = document.getElementById('timelineTourOverlay');
+                    if (overlay) {
+                        overlay.setAttribute('aria-hidden', 'true');
+                        overlay.style.display = 'none';
+                    }
+                }
+            });
             var timelineTourHighlight = timelineTourOverlay && timelineTourOverlay.querySelector(".tour-highlight");
             var timelineTourPanel = timelineTourOverlay && timelineTourOverlay.querySelector(".tour-panel");
             var timelineTourTitle = document.getElementById("timelineTourStepTitle");
@@ -6763,6 +6854,10 @@
             }
             if (timelineTourReplayBtn) {
                 timelineTourReplayBtn.addEventListener("click", function () {
+                    if (window.GoToolkitConfig && window.GoToolkitConfig.enableTours === false) {
+                        setStatus && setStatus("Tours guidés désactivés");
+                        return;
+                    }
                     if (window.localStorage) {
                         window.localStorage.removeItem(timelineTourStorageKey);
                     }
@@ -6781,7 +6876,7 @@
             if (timelineTourSkipAfterUpdateValue && window.sessionStorage) {
                 window.sessionStorage.removeItem(timelineTourSkipFlag);
             }
-            if (!timelineTourSeen && !timelineTourSkipAfterUpdateValue) {
+            if (!timelineTourSeen && !timelineTourSkipAfterUpdateValue && (window.GoToolkitConfig?.enableTours !== false)) {
                 setTimeout(function () {
                     openTimelineTour(0);
                 }, 200);

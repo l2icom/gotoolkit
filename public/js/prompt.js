@@ -163,7 +163,7 @@
     const canvasBottomPromptTemplate =
         `Tu es un product owner expérimenté, sur la base du contexte "{{globalContext}}" et de "{{pageContext}}", et avec {{columnSections}}, répond à {{slideTitle}} en 2 phrases courtes (< 15 mots pour chaque).`;
     const canvasSuggestionsPromptTemplate =
-        `Tu es un product owner expérimenté, sur la base du contexte "{{globalContext}}" et de "{{pageContext}}", et dans le cadre de {{columnTitle}}, formuler 3 instructions commençant par un verbe pour aider à trouver des {{sectionTitle}} synthétiques et pertinents pour répondre à {{slideTitle}} (< 15 mots pour chaque et en commençant chacune par un -). Tout ça sans introduction préalable ni émoji`;
+        `Tu es un product owner expérimenté, sur la base du contexte "{{globalContext}}" et de "{{pageContext}}", et dans le cadre de {{columnTitle}}, formuler 3 instructions commençant par un verbe pour aider à trouver des {{sectionTitle}} synthétiques et pertinents pour répondre à {{slideTitle}} (< 15 mots pour chaque et en commençant chacune par un •). Tout ça sans introduction préalable ni émoji`;
 
     const drawPromptzilla = [
         {
@@ -264,21 +264,32 @@
         }
     ];
 
-    const timelineCreateSystemTemplate = `Tu es un assistant product owner qui va générer une feuille de route produit à partir des instructions suivantes.
-Réponds toujours avec un JSON qui contient :
+    const timelineCreateSystemTemplate = `Tu es un assistant product owner qui va générer une feuille de route produit.
+
+Réponds toujours uniquement avec un JSON contenant :
 - \`page\` : le titre de la page courante (utilisé pour le header).
-- \`types\` : un tableau d’objets \`{ id, label}\` pour décrire des natures d'actions différentes (fonction, compétence, rôle...). 
-- \`markers\`: un tableau d’objets \`{ id, label}\` pour représenter des actions à la journée ou des repères de date (étape, événement, livrable, résultat, risque...). L'id doit être différent de ceux des types.
-- \`groups\` : chaque groupe d'actions avec { id, label } (ex : par équipe, thème, stream produit, enjeu, objectif.)  
-- \`items\` : chaque action ou livrable ou résultat avec { id, groupId, label, kind, start, length? }. On envoie dans le kind l'id de la nature d'action ou de marker.  
-- \`start\` est au format ISO (YYYY-MM-DD) 
-- \`length\` est exprimé en jours  
-- Les items avec comme valeur \`kind:\` un type marker n'ont pas de \`length\`.
-- Sors uniquement le JSON, sans explication ni texte additionnel.
-- On essaie d'optimiser un maximum la feuille de route et réduire la duréee totale. Les actions doivent s'enchainer logiquement sans pause.
-- Les actions peuvent s'enchaîner en parallèle si besoin. Mais les dépendances implicites doivent être prises en compte.
-- Si un planning est joint, garde les ids de ton mieux et renvoie tout le planning avec les modifications demandées sur la base de l'existant.
-- Pour une action longue avec \`length\` supérieur à 21 jours, faire plusieurs items de moins de 21 jours en ajoutant dans le nom (P1, P2...Pn)
+- \`timeline\` : \`{ start, end }\` pour définir la période globale.
+- \`types\` : tableau \`{ id, label }\` décrivant les natures d’actions (fonction, compétence, rôle...). 
+- \`markers\` : tableau \`{ id, label }\` décrivant des repères ponctuels (étape, événement, livrable, résultat, risque...). L’id doit être différent de ceux des types.
+- \`groups\` : chaque groupe d’actions sous la forme \`{ id, label }\` (équipe, thème, stream produit, enjeu, objectif).  
+- \`items\` : chaque action ou repère sous la forme \`{ id, groupId, label, kind, start, length? }\`. Le champ \`kind\` contient l’id d’un type ou d’un marker.
+
+Contraintes de structure :
+- \`start\` au format ISO (YYYY-MM-DD).
+- \`length\` exprimé en jours.
+- Les items dont \`kind\` est un marker n’ont pas de \`length\`.
+- Pour une action \> 21 jours : la découper en items \`(P1, P2...Pn)\`.
+
+Contraintes de planification :
+- Optimiser la durée totale : actions enchaînées sans pause.
+- Actions parallèles possibles si cohérentes.
+- Dépendances implicites obligatoirement respectées.
+- Si un planning est fourni, faire seulement des ajouts ou des modifications au planning existant en conservant les ids
+
+Contraintes de nommage et quantités :
+- Un seul mot pour les labels des \`types\` et \`markers\`.
+- 2 à 4 mots pour les labels des \`groups\`.
+- Entre 1–3 \`markers\`, 2–6 \`types\`, 2–4 \`groups\`, et 10–20 \`items\`. 21 jours en ajoutant dans le nom (P1, P2...Pn)
 - Un seul mot pour le label d'un \`markers\` ou un \`type\`.
 - Entre 2-4 mots pour le label d'un \`group\`.
 - On a entre 1 et 3 \`markers\`, entre 2-6 \`types\`, entre 2 et 4 \`groups\` et entre 10 et 20 \`items\`.

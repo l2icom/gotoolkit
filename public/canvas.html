@@ -472,12 +472,12 @@
 
         .gutenberg-card-actions-row {
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
             align-items: center;
             gap: 8px;
             width: 100%;
-            margin-bottom: 6px;
-            flex-direction: row-reverse;
+            margin-bottom: 4px;
+            flex-direction: row;
         }
 
         /* Make the full generate button primary green */
@@ -497,7 +497,7 @@
         .gutenberg-card-body {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 2px;
             min-height: 0;
             height: 100%;
             font-size: 13px
@@ -514,7 +514,7 @@
             border-radius: 8px;
             border: 1px solid #d0c3ad;
             padding: 8px;
-            font-size: 11px;
+            font-size: 13px;
             font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
             min-height: 120px;
             resize: none;
@@ -611,10 +611,10 @@
             .gutenberg-card-actions-row {
                 display: flex;
                 gap: 8px;
-                justify-content: flex-start;
+                justify-content: space-between;
                 align-items: center;
                 width: 100%;
-                flex-direction: row-reverse;
+                flex-direction: row;
                 flex-wrap: wrap;
             }
 
@@ -898,6 +898,7 @@
             padding: 6px 10px;
             border-radius: 8px;
             border: 1px solid #1f1f1f;
+            margin-left: auto;
         }
 
 
@@ -1282,11 +1283,11 @@
         .bottom-section-delete {
             border: none;
             background: transparent;
-            font-size: 10px;
+            font-size: 20px;
             border-radius: 999px;
             cursor: pointer;
             color: #918b7f;
-            padding: 2px;
+            padding: 0px;
             transition: color 0.2s ease, opacity 0.2s ease;
             opacity: 0;
             pointer-events: none;
@@ -1746,19 +1747,21 @@
                 </div>
                 <div class="gutenberg-card-body">
                     <div class="gutenberg-card-actions-row">
-                        <button class="tab-action" id="generatePlaceholdersBtn" type="button"
-                            aria-label="Générer des suggestions pour les sections">✧ Suggérer</button>
+                        <span style="font-size:14px; color: var(--app-muted, #65748a)">Récit Canvas</span>
+
                         <button class="tab-action" id="generateFullSlideBtn" type="button"
-                            aria-label="Générer toutes les sections et la synthèse">⌘ Générer</button>
+                            aria-label="Générer toutes les sections et la synthèse">⌘ Répondre</button>
+                        <button class="tab-action" id="generatePlaceholdersBtn" type="button"
+                            aria-label="Générer des suggestions pour les sections">✧ Conseiller</button>
                         <span class="gutenberg-status" id="suggestionStatusLabel" aria-live="polite"></span>
                     </div>
                     <label>
-                        <span style="font-size:15px;">Récit du canvas</span>
+
                         <textarea id="globalContextField" rows="10"
                             placeholder="Décris ici le cadre global : le domaine, l’objectif principal, les utilisateurs concernés, la problématique à résoudre et le niveau d’enjeu. Décris aussi l’intention globale (pourquoi on fait ça) et l’état actuel (où on en est)."></textarea>
                     </label>
                     <label>
-                        <span style="font-size:15px;">Récit du bloc</span>
+                        <span style="font-size:14px;">Récit Bloc</span>
                         <textarea id="pageContextField" rows="10"
                             placeholder="Ajoute les éléments précis : la situation réelle, les contraintes connues, les choix déjà faits, les dépendances, les deadlines, les acteurs impliqués, les données chiffrées utiles, les points de vigilance et la condition de succès de ce cas particulier."></textarea>
                     </label>
@@ -1885,15 +1888,25 @@
 
     <script>
         (function () {
+            var STORAGE_KEY = "robert-gutenberg-open-state-canvas";
+            function readAutoOpenState() {
+                try {
+                    if (!window.localStorage) return null;
+                    return localStorage.getItem(STORAGE_KEY);
+                } catch (err) {
+                    return null;
+                }
+            }
+
             function updateGutenbergVisibility() {
-                // Keep Gutenberg closed by default on initial load (no auto-open on desktop).
                 var card = document.getElementById("gutenbergCard");
                 var appMain = document.querySelector(".app-main");
                 if (!card || !appMain) return;
-                // Ensure closed state initially
-                card.classList.remove("open");
-                appMain.classList.remove("gutenberg-open");
-                card.setAttribute("aria-hidden", "true");
+                var stored = readAutoOpenState();
+                var shouldOpen = stored === "open" && (window.innerWidth || 0) >= 900;
+                card.classList.toggle("open", shouldOpen);
+                appMain.classList.toggle("gutenberg-open", shouldOpen);
+                card.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
             }
 
             window.addEventListener("resize", updateGutenbergVisibility);
@@ -2131,6 +2144,7 @@
         let slideClampRaf = null;
         const DESKTOP_GUTENBERG_BREAKPOINT = 900;
         const GUTENBERG_SEEN_KEY = "robert-gutenberg-opened-canvas";
+        const GUTENBERG_OPEN_STATE_KEY = "robert-gutenberg-open-state-canvas";
 
         function updateSlideClamp() {
             if (!slidesViewport) return;
@@ -2163,6 +2177,27 @@
             }
         }
 
+        function readGutenbergOpenState() {
+            try {
+                if (!window.localStorage) return null;
+                const value = localStorage.getItem(GUTENBERG_OPEN_STATE_KEY);
+                if (value === "open") return true;
+                if (value === "closed") return false;
+            } catch (err) {
+                console.warn("Impossible de lire l'état de Gutenberg", err);
+            }
+            return null;
+        }
+
+        function persistGutenbergOpenState(isOpen) {
+            try {
+                if (!window.localStorage) return;
+                localStorage.setItem(GUTENBERG_OPEN_STATE_KEY, isOpen ? "open" : "closed");
+            } catch (err) {
+                console.warn("Impossible de sauvegarder l'état de Gutenberg", err);
+            }
+        }
+
         function syncGutenbergLayoutState() {
             const open = isGutenbergOpen();
             const desktop = isDesktopGutenberg();
@@ -2175,6 +2210,7 @@
             const shouldOpen = Boolean(open);
             gutenbergCard.classList.toggle("open", shouldOpen);
             gutenbergCard.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
+            persistGutenbergOpenState(shouldOpen);
             syncGutenbergLayoutState();
             contextEditorBtn?.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
             contextEditorBtn?.setAttribute("aria-label", shouldOpen ? "Masquer Gutenberg" : "Ouvrir Gutenberg");
@@ -2199,11 +2235,21 @@
             if (!gutenbergCard || !appMain) return;
             if (!isDesktopGutenberg()) return;
             try {
+                const storedState = readGutenbergOpenState();
+                if (storedState === true) {
+                    setGutenbergOpen(true, { auto: true });
+                    return;
+                }
+                if (storedState === false) {
+                    syncGutenbergLayoutState();
+                    return;
+                }
                 var seen = localStorage.getItem(GUTENBERG_SEEN_KEY);
                 if (!seen) {
                     setGutenbergOpen(true, { auto: true });
                     // mark as seen so we don't auto-open on every load
                     markGutenbergSeen();
+                    return;
                 }
             } catch (err) {
                 // ignore storage errors
@@ -2849,11 +2895,11 @@
             const disableButtons = onCooldown || isGeneratingSuggestions;
             if (generatePlaceholdersBtn) {
                 generatePlaceholdersBtn.disabled = disableButtons;
-                generatePlaceholdersBtn.textContent = "✧ Suggérer";
+                generatePlaceholdersBtn.textContent = "✧ Conseiller";
             }
             if (generateFullSlideBtn) {
                 generateFullSlideBtn.disabled = disableButtons;
-                generateFullSlideBtn.textContent = "⌘ Générer";
+                generateFullSlideBtn.textContent = "⌘ Répondre";
             }
             if (suggestionStatusLabel) {
                 const frames = ["◴", "◷", "◶", "◵"];
@@ -2899,61 +2945,88 @@
             }
             isGeneratingSuggestions = true;
             startGeneratePlaceholdersCooldown(PLACEHOLDER_COOLDOWN_DURATION);
+
             const suggestionTemplate = getPromptLibraryForTemplate(activePromptTemplateId).suggestions || defaultSuggestionsPrompt;
             const globalContextValue = globalContextField?.value.trim() || "";
             const pageContextValue = getSlidePageContext(slide).trim();
             const slideTitle = slide.querySelector(".slide-title-input")?.value.trim() || slide.dataset.tabLabel || "";
             const templateId = slide.dataset.templateId || templates[0].id;
+
+            const tasks = [];
+
+            for (const sectionEl of sections) {
+                const column = sectionEl.closest(".column");
+                const columnTitle = column?.querySelector(".column-title")?.textContent.trim() || "";
+                const sectionKey = sectionEl.dataset.section;
+                const labelEl = sectionEl.querySelector(".section-label");
+                const sectionLabel = labelEl?.textContent.trim() || getDefaultSectionLabel(templateId, sectionKey);
+
+                const contextData = {
+                    globalContext: globalContextValue,
+                    contextField: globalContextValue,
+                    pageContext: pageContextValue,
+                    slideTitle: slideTitle,
+                    columnTitle,
+                    sectionTitle: sectionLabel,
+                    fieldValue: sectionEl.querySelector("textarea")?.value.trim() || ""
+                };
+
+                const promptText = fillTemplate(suggestionTemplate, contextData);
+                const messages = [
+                    { role: "system", content: "Tu es un assistant produit." },
+                    { role: "user", content: promptText }
+                ];
+
+                const textarea = sectionEl.querySelector("textarea");
+                if (textarea) {
+                    tasks.push({ textarea, messages, labelEl });
+                }
+            }
+
+            // Include bottom section as a task as well
+            const bottomTextarea = slide.querySelector(".bottom-section-text");
+            if (bottomTextarea) {
+                const bottomContext = buildBottomPromptContext(slide);
+                // Use the same suggestion template but with bottom-specific context
+                const bottomPromptText = fillTemplate(suggestionTemplate, Object.assign({}, bottomContext, { sectionTitle: "Synthèse" }));
+                const bottomMessages = [
+                    { role: "system", content: "Tu es un assistant produit." },
+                    { role: "user", content: bottomPromptText }
+                ];
+                tasks.push({ textarea: bottomTextarea, messages: bottomMessages, labelEl: null });
+            }
+
             let generated = false;
             try {
-                for (const sectionEl of sections) {
-                    const column = sectionEl.closest(".column");
-                    const columnTitle = column?.querySelector(".column-title")?.textContent.trim() || "";
-                    const sectionKey = sectionEl.dataset.section;
-                    const labelEl = sectionEl.querySelector(".section-label");
-                    const sectionLabel =
-                        labelEl?.textContent.trim() || getDefaultSectionLabel(templateId, sectionKey);
-                    const contextData = {
-                        globalContext: globalContextValue,
-                        contextField: globalContextValue,
-                        pageContext: pageContextValue,
-                        slideTitle: slideTitle,
-                        columnTitle,
-                        sectionTitle: sectionLabel
-                    };
-                    const promptText = fillTemplate(suggestionTemplate, contextData);
-                    const messages = [
-                        { role: "system", content: "Tu es un assistant produit." },
-                        { role: "user", content: promptText }
-                    ];
-                    const aiText = await callOpenAI(messages);
-                    if (!aiText) {
-                        continue;
-                    }
-                    const trimmed = aiText.trim();
-                    if (!trimmed) {
-                        continue;
-                    }
-                    generated = true;
-                    if (labelEl) {
-                        labelEl.dataset.suggestions = trimmed;
-                    }
-                    const textarea = sectionEl.querySelector("textarea");
-                    if (textarea) {
-                        textarea.dataset.suggestionPlaceholder = trimmed;
-                        if (!textarea.value.trim()) {
-                            textarea.placeholder = trimmed;
+                const results = await Promise.allSettled(
+                    tasks.map(async ({ textarea, messages, labelEl }) => {
+                        const aiText = await callOpenAI(messages);
+                        if (!aiText) return false;
+                        const trimmed = aiText.trim();
+                        if (!trimmed) return false;
+                        textarea.value = trimmed;
+                        updateTextareaOverflowState(textarea);
+                        if (labelEl) {
+                            labelEl.dataset.suggestions = trimmed;
                         }
-                    }
+                        return true;
+                    })
+                );
+
+                generated = results.some(r => r.status === "fulfilled" && r.value === true);
+
+                if (generated) {
+                    schedulePersist();
+                    updateSlideEmptyState();
+                    showCopyToast("Contenu IA inséré pour cette page.");
+                } else {
+                    showCopyToast("Impossible de générer le contenu.");
                 }
             } finally {
                 isGeneratingSuggestions = false;
-            }
-            if (generated) {
-                schedulePersist();
-                showCopyToast("Suggestions générées pour cette page");
-            } else {
-                showCopyToast("Aucune suggestion générée.");
+                if (!suggestionCooldownTimer) {
+                    updateGeneratePlaceholdersButton(0);
+                }
             }
         }
 
@@ -3479,7 +3552,7 @@
             deleteBtn.type = "button";
             deleteBtn.className = "section-delete-btn";
             deleteBtn.setAttribute("aria-label", "Supprimer la section");
-            deleteBtn.textContent = "❌";
+            deleteBtn.textContent = "×";
             labelRow.append(labelSpan, deleteBtn);
 
             const textRow = document.createElement("div");
@@ -4073,38 +4146,24 @@
                 if (pageContextField) pageContextField.value = "";
                 slide.dataset.pageContext = "";
             }
-            slide.dataset.clearedOnce = "true";
         }
 
         deleteTabBtn.addEventListener("click", () => {
             const slide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
             if (!slide) return;
-            const isSingle = slideCount <= 1;
-            const wasCleared = slide.dataset.clearedOnce === "true";
-            if (isSingle) {
-                if (wasCleared) {
-                    clearActiveSlide({ clearRecits: true });
-                    slide.dataset.clearedOnce = "false";
-                } else {
-                    clearActiveSlide({ clearRecits: false });
-                }
-                schedulePersist();
+            if (slideCount <= 1) return;
+            const label = (slide.dataset.tabLabel || `Bloc ${activeIndex + 1}`).trim();
+            if (!confirm(`Supprimer la vue '${label}' ? Cette action est irréversible.`)) {
                 return;
             }
-            if (wasCleared) {
-                slide.remove();
-                slideCount--;
-                refreshTabs();
-                if (activeIndex >= slideCount) {
-                    activeIndex = slideCount - 1;
-                }
-                setActiveTab(activeIndex);
-                schedulePersist();
-            } else {
-                clearActiveSlide({ clearRecits: false });
-                slide.dataset.clearedOnce = "true";
-                schedulePersist();
+            slide.remove();
+            slideCount--;
+            refreshTabs();
+            if (activeIndex >= slideCount) {
+                activeIndex = slideCount - 1;
             }
+            setActiveTab(activeIndex);
+            schedulePersist();
         });
 
         textStyleBtn.addEventListener("click", event => {
@@ -5075,15 +5134,12 @@
             if (!sharedLoaded && !hasLocalSlides) {
                 openTemplateModal();
             }
+            maybeAutoOpenGutenberg();
         }
-        initializeAppState()
-            .then(() => {
-                maybeAutoOpenGutenberg();
-            })
-            .catch(err => {
-                console.error("Impossible d'initialiser l'état :", err);
-                maybeAutoOpenGutenberg();
-            });
+        initializeAppState().catch(err => {
+            console.error("Impossible d'initialiser l'état :", err);
+            maybeAutoOpenGutenberg();
+        });
 
         const shareBtn = document.getElementById("shareBtn");
         const shareLinkField = document.getElementById("shareLinkField");
@@ -5363,6 +5419,28 @@
             }
         });
 
+        // Load runtime config synchronously so tour behavior can be controlled
+        window.GoToolkitConfig = window.GoToolkitConfig || { enableTours: true };
+        try {
+            var __cfg_xhr = new XMLHttpRequest();
+            __cfg_xhr.open('GET', '/config.json', false);
+            __cfg_xhr.send(null);
+            if (__cfg_xhr.status >= 200 && __cfg_xhr.status < 300) {
+                try { window.GoToolkitConfig = Object.assign({}, window.GoToolkitConfig, JSON.parse(__cfg_xhr.responseText)); } catch (e) { }
+            }
+        } catch (e) { }
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.GoToolkitConfig && window.GoToolkitConfig.enableTours === false) {
+                var btn = document.getElementById('tourReplayBtn');
+                if (btn) btn.style.display = 'none';
+                var overlay = document.getElementById('tourOverlay');
+                if (overlay) {
+                    overlay.setAttribute('aria-hidden', 'true');
+                    overlay.style.display = 'none';
+                }
+            }
+        });
+
         const tourSteps = [
             {
                 title: "Petit Robert, ton assistant vocabulaire",
@@ -5567,6 +5645,10 @@
         tourCloseBtn?.addEventListener("click", () => closeTour(true));
         tourSkipBtn?.addEventListener("click", () => closeTour(true));
         tourReplayBtn?.addEventListener("click", () => {
+            if (window.GoToolkitConfig && window.GoToolkitConfig.enableTours === false) {
+                setStatus("Tours guidés désactivés");
+                return;
+            }
             if (window.localStorage) {
                 window.localStorage.removeItem(tourStorageKey);
             }
@@ -5584,7 +5666,7 @@
             window.sessionStorage?.removeItem(tourSkipFlag);
         }
         const tourSeen = window.localStorage?.getItem(tourStorageKey);
-        if (!tourSeen) {
+        if (!tourSeen && (window.GoToolkitConfig?.enableTours !== false)) {
             setTimeout(() => openTour(0), 200);
         }
     </script>
