@@ -159,7 +159,7 @@
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        /* Récit / Script conservent leur police monospace pour la saisie structurée */
+        /* Scénario / Script conservent leur police monospace pour la saisie structurée */
         .ia-prompt-field {
             font-family: Menlo, Consolas, "Courier New", monospace;
         }
@@ -424,7 +424,7 @@
             gap: 8px;
         }
 
-        /* Increase the label font size for Récit and Script by 2px */
+        /* Increase the label font size for Scénario and Script by 2px */
         .gutenberg-card label[for="promptCreate"],
         .gutenberg-card label[for="promptModify"] {
             font-size: 14px;
@@ -1644,11 +1644,11 @@
                     </div>
                 </div>
                 <div class="timeline-wrapper">
-                        <div id="timeline"></div>
-                        <div id="timelineEmptyState" class="timeline-empty-state" aria-hidden="true">
-                            <p class="timeline-empty-text">Bloc vide. Remplir le Récit → et cliquer sur ⌘ Répondre</p>
-                            <button id="timelineEmptyAction" class="timeline-empty-link" type="button">Ouvrir le Récit</button>
-                        </div>
+                    <div id="timeline"></div>
+                    <div id="timelineEmptyState" class="timeline-empty-state" aria-hidden="true">
+                        <p class="timeline-empty-text">Bloc vide. Remplir le Scénario → et cliquer sur ⌘ Répondre</p>
+
+                    </div>
                 </div>
             </div>
 
@@ -1658,9 +1658,9 @@
                 <div class="ia-actions">
                     <div class="header-row ia-header-actions gutenberg-recette">
                         <div class="gutenberg-recette-header">
-                            <label for="promptCreate">Récit</label>
+                            <label for="promptCreate">Scénario</label>
                             <button class="btn" type="button" id="clearTimelineBtn"
-                                aria-label="Réinitialiser la timeline et le script">⊘ Réinitialiser</button>
+                                aria-label="Réinitialiser la timeline et le script">⊘ Vider</button>
                             <button class="btn btn-primary" id="btn-call">
                                 <span>⌘ Répondre</span>
                             </button>

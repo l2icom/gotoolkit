@@ -101,6 +101,12 @@
             color: #ffffff;
         }
 
+
+        #clearMermaidBtn {
+            margin-left: auto;
+            margin-right: 6px;
+        }
+
         .share-action-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -768,6 +774,7 @@
                 <div class="prompt-input-card" id="prompt-input-card">
                     <div class="card-title-row">
                         <label>Scénario</label>
+                        <button id="clearMermaidBtn" class="btn" type="button">⊘ Vider</button>
                         <button id="generateBtn" class="btn-primary" type="button">⌘ Répondre</button>
                     </div>
                     <div class="draw-type-control">
@@ -787,7 +794,7 @@
                 <div class="mermaid-output-card">
                     <div class="card-title-row">
                         <label>Script</label>
-                        <button id="clearMermaidBtn" class="btn" type="button">⊘ Vider</button>
+
                         <button id="refreshExcalidrawBtn" class="btn" type="button">↺ Restaurer</button>
                     </div>
                     <textarea id="mermaidOutput" placeholder="Le code généré apparaitra ici"></textarea>
@@ -2974,19 +2981,6 @@ sequenceDiagram
                     }
                     updateExcalidrawScene(value);
                 });
-                const excaliWheelHost = document.getElementById("excalidrawHost");
-                if (excaliWheelHost) {
-                    const handleWheelZoom = event => {
-                        if (!excaliWheelHost.contains(event.target)) return;
-                        // Convert vertical wheel inside the canvas to zoom instead of scroll
-                        event.preventDefault();
-                        event.stopPropagation();
-                        event.stopImmediatePropagation?.();
-                        const factor = event.deltaY < 0 ? 0.85 : 1.2;
-                        zoomExcalidrawByFactor(factor);
-                    };
-                    document.addEventListener("wheel", handleWheelZoom, { passive: false, capture: true });
-                }
                 drawTypeButtons.forEach(button => {
                     button.addEventListener("click", () => {
                         const selectedType = button.dataset.drawType;

@@ -109,7 +109,6 @@ class ExcalidrawBridge {
                         <ExcalidrawAny
                             excalidrawAPI={syncApi}
                             theme="light"
-                            detectScroll={false}
                             viewModeEnabled={false}
                             gridModeEnabled={false}
                             zenModeEnabled={false}
