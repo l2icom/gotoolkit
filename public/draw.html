@@ -259,12 +259,12 @@
         .prompt-input-card {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 6px;
         }
 
         .prompt-input-card textarea {
-            height: 130px;
-            margin-bottom: 10px;
+            height: 220px;
+            margin-bottom: 6px;
         }
 
         .draw-type-control {
@@ -311,7 +311,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 4px;
             min-height: 0;
         }
 
@@ -767,7 +767,7 @@
             <section class="connect-left">
                 <div class="prompt-input-card" id="prompt-input-card">
                     <div class="card-title-row">
-                        <label>Récit</label>
+                        <label>Scénario</label>
                         <button id="generateBtn" class="btn-primary" type="button">⌘ Répondre</button>
                     </div>
                     <div class="draw-type-control">
@@ -787,7 +787,8 @@
                 <div class="mermaid-output-card">
                     <div class="card-title-row">
                         <label>Script</label>
-                        <button id="refreshExcalidrawBtn" class="btn" type="button">⌗ Modifier</button>
+                        <button id="clearMermaidBtn" class="btn" type="button">⊘ Vider</button>
+                        <button id="refreshExcalidrawBtn" class="btn" type="button">↺ Restaurer</button>
                     </div>
                     <textarea id="mermaidOutput" placeholder="Le code généré apparaitra ici"></textarea>
                 </div>
@@ -1133,6 +1134,7 @@ sequenceDiagram
             const pageTabs = document.getElementById("pageTabs");
             const addPageBtn = document.getElementById("addPageBtn");
             const deletePageBtn = document.getElementById("deletePageBtn");
+            const clearMermaidBtn = document.getElementById("clearMermaidBtn");
             const refreshExcalidrawBtn = document.getElementById("refreshExcalidrawBtn");
             const infoButton = document.getElementById("infoButton");
             const infoPopup = document.getElementById("infoPopup");
@@ -1840,6 +1842,7 @@ sequenceDiagram
                     title: `Bloc ${position}`,
                     input: "",
                     mermaid: "",
+                    lastAiMermaid: "",
                     drawType: DEFAULT_DRAW_TYPE
                 };
             }
@@ -1850,12 +1853,15 @@ sequenceDiagram
                 const drawType = DRAW_TYPES.some(option => option.id === incomingType)
                     ? incomingType
                     : DEFAULT_DRAW_TYPE;
+                const mermaid = page?.mermaid || "";
+                const lastAiMermaid = page?.lastAiMermaid || mermaid || "";
                 return {
                     id: page?.id || fallback.id,
                     label: page?.label || fallback.label,
                     title: page?.title || page?.label || fallback.title,
                     input: page?.input || "",
-                    mermaid: page?.mermaid || "",
+                    mermaid,
+                    lastAiMermaid,
                     drawType
                 };
             }
@@ -2023,12 +2029,22 @@ sequenceDiagram
                     return;
                 }
                 startGenerateCooldown(30);
+                const existingScript = mermaidOutput.value.trim();
                 const drawType = page.drawType || DEFAULT_DRAW_TYPE;
                 const drawTypePrompt = getDrawTypePromptValue(drawType);
                 const templateBase = state.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
-                const template = templateBase
+                let template = templateBase
                     .replace(/{{field_input}}/gi, inputText)
                     .replace(/{{draw_type}}/gi, drawTypePrompt);
+                if (existingScript) {
+                    template +=
+                        "\n\nScript Mermaid actuel :\n```mermaid\n" +
+                        existingScript +
+                        "\n```\nTiens compte du script existant s'il existe et ne fais que les modifications demandées.";
+                } else {
+                    template +=
+                        "\n\nTiens compte du script existant s'il existe et ne fais que les modifications demandées.";
+                }
                 const messages = [
                     { role: "system", content: "Tu es un assistant produit." },
                     { role: "user", content: template }
@@ -2043,6 +2059,7 @@ sequenceDiagram
                     const extractedTitle = extractDiagramTitle(mermaidCode || aiText);
                     page.input = inputText;
                     page.mermaid = mermaidCode;
+                    page.lastAiMermaid = mermaidCode;
                     if (extractedTitle) {
                         page.title = extractedTitle;
                         if (diagramTitleInput) {
@@ -2957,12 +2974,19 @@ sequenceDiagram
                     }
                     updateExcalidrawScene(value);
                 });
-                document.addEventListener("wheel", (event) => {
-                    if (!event.ctrlKey) return;
-                    event.preventDefault();
-                    const factor = event.deltaY < 0 ? 0.85 : 1.2;
-                    zoomExcalidrawByFactor(factor);
-                }, { passive: false });
+                const excaliWheelHost = document.getElementById("excalidrawHost");
+                if (excaliWheelHost) {
+                    const handleWheelZoom = event => {
+                        if (!excaliWheelHost.contains(event.target)) return;
+                        // Convert vertical wheel inside the canvas to zoom instead of scroll
+                        event.preventDefault();
+                        event.stopPropagation();
+                        event.stopImmediatePropagation?.();
+                        const factor = event.deltaY < 0 ? 0.85 : 1.2;
+                        zoomExcalidrawByFactor(factor);
+                    };
+                    document.addEventListener("wheel", handleWheelZoom, { passive: false, capture: true });
+                }
                 drawTypeButtons.forEach(button => {
                     button.addEventListener("click", () => {
                         const selectedType = button.dataset.drawType;
@@ -3012,9 +3036,28 @@ sequenceDiagram
                     state.pages.splice(state.activeIndex, 1);
                     setActivePage(targetIndex);
                 });
-                refreshExcalidrawBtn.addEventListener("click", () => {
-                    updateExcalidrawScene(mermaidOutput.value);
-                    setStatus("Projection mise à jour ✔️");
+                clearMermaidBtn?.addEventListener("click", () => {
+                    const page = getActivePage();
+                    if (page) {
+                        page.mermaid = "";
+                    }
+                    mermaidOutput.value = "";
+                    updateExcalidrawScene("");
+                    saveState();
+                    setStatus("Script vidé.");
+                });
+                refreshExcalidrawBtn?.addEventListener("click", () => {
+                    const page = getActivePage();
+                    const restoreCode = page?.lastAiMermaid || "";
+                    if (!restoreCode) {
+                        setStatus("Aucun script IA précédent à restaurer.");
+                        return;
+                    }
+                    page.mermaid = restoreCode;
+                    mermaidOutput.value = restoreCode;
+                    updateExcalidrawScene(restoreCode);
+                    saveState();
+                    setStatus("Script restauré depuis la dernière réponse IA ✔️");
                 });
                 infoButton?.addEventListener("click", event => {
                     event.stopPropagation();
