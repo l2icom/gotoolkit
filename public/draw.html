@@ -639,8 +639,10 @@
         /* Ajuste le menu latéral Excalidraw (selected-shape-actions) */
         .excalidraw-card .Island.App-menu__left {
             --padding: 2px;
-            max-height: 200px;
-            max-width: 100px;
+            padding: 4px;
+            max-height: 600px;
+            max-width: 95px;
+
         }
 
         @media (max-width: 1200px) {
@@ -2245,6 +2247,40 @@ sequenceDiagram
             }
 
             let excalidrawReadyPromise = null;
+            let panelReorderObserver = null;
+
+            const findPanelSection = (panel, matcher) =>
+                Array.from(panel?.children || []).find(child => {
+                    const label = child.querySelector("legend, h3, label, [aria-label]");
+                    const text = (label?.textContent || "").trim().toLowerCase();
+                    const aria = (label?.getAttribute("aria-label") || "").trim().toLowerCase();
+                    return matcher.test(text) || matcher.test(aria);
+                });
+
+            const moveColorsAfterTextAlign = () => {
+                const panel = document.querySelector(".excalidraw .App-menu__left .panelColumn");
+                if (!panel) return;
+                const stroke = findPanelSection(panel, /(stroke|contour)/i);
+                const background = findPanelSection(panel, /(background|fond)/i);
+                const textAlign = findPanelSection(panel, /(text align|alignement.*texte|align.*text)/i);
+                if (!textAlign) return;
+                const insertBefore = textAlign.nextSibling;
+                [background, stroke].forEach(node => {
+                    if (node && panel.contains(node)) {
+                        panel.insertBefore(node, insertBefore);
+                    }
+                });
+            };
+
+            function setupPanelReorder() {
+                const host = document.getElementById("excalidrawHost");
+                if (!host || panelReorderObserver) {
+                    return;
+                }
+                panelReorderObserver = new MutationObserver(moveColorsAfterTextAlign);
+                panelReorderObserver.observe(host, { childList: true, subtree: true });
+                moveColorsAfterTextAlign();
+            }
 
             function getExcalidrawBridge() {
                 return window.GoToolkitExcalidraw || null;
@@ -2260,7 +2296,10 @@ sequenceDiagram
                     return Promise.reject(new Error("Hôte Excalidraw introuvable"));
                 }
                 excalidrawReadyPromise = waitForBridgeBundle()
-                    .then(bridge => bridge.initialize(hostEl).then(() => bridge))
+                    .then(bridge => bridge.initialize(hostEl).then(() => {
+                        setupPanelReorder();
+                        return bridge;
+                    }))
                     .catch(error => {
                         excalidrawReadyPromise = null;
                         throw error;
