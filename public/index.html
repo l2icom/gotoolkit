@@ -601,19 +601,20 @@
             background: transparent;
             color: var(--text);
             border-radius: 10px;
-            padding: 8px 12px;
+            padding: 6px 10px;
             cursor: pointer;
+            font-size: 13px;
         }
 
         .btn-primary {
             border: none;
             background: #2a7a57;
             color: #fff;
-            border-radius: 10px;
-            padding: 10px 14px;
-            font-weight: 600;
+            border-radius: 8px;
+            padding: 6px 10px;
             cursor: pointer;
             box-shadow: 0 12px 24px rgba(42, 122, 87, 0.25);
+            font-size: 13px;
         }
 
         .btn-primary:disabled {
@@ -654,12 +655,23 @@
             display: inline-flex;
             align-items: center;
             gap: 4px;
+
+        }
+
+
+
+        .label-subtitle {
+            display: block;
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.2;
         }
 
         .hero-meta {
             margin-left: auto;
             display: flex;
-            flex-direction: column;
+            flex-direction: row-reverse;
             align-items: flex-end;
             gap: 2px;
         }
@@ -704,9 +716,11 @@
             </div>
             <h1>Go-Toolkit</h1>
             <p>Le vaisseau spatial des super-POs</p>
+            <span class="hero-version">v2025.12.10</span>
+
             <div class="hero-meta">
-                <span class="hero-version">version 2025.12.07</span>
                 <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Antenne</button>
+                <button id="openSettingsBtn" class="feedback-button" type="button">⌘ Réglages</button>
             </div>
         </header>
 
@@ -927,6 +941,39 @@
                             l’écosystème.</div>
                     </section>
                 </div>
+            </div>
+        </div>
+
+        <div id="settingsModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+            <div class="feedback-modal">
+                <header>
+                    <h3>⌘ Réglages</h3>
+                    <button id="closeSettingsBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
+                </header>
+                <form class="feedback-form" onsubmit="return false;">
+                    <div class="field-row">
+                        <label style="width:100%">
+                            <a href="https://platform.openai.com/settings/organization/api-keys"
+                                class="label-title dashed-link" target="_blank" rel="noopener noreferrer">Clé
+                                OpenAI</a>
+                            <span class="label-subtitle">Auto-suggestion activée et réponse instantanée</span>
+                            <input id="iaApiKeyInput" type="password" placeholder="sk-... (optionnel)" />
+                        </label>
+                    </div>
+                    <label>
+                        <span class="label-title">Vitesse / effort de raisonnement</span>
+                        <select id="reasoningEffortSelect">
+                            <option value="minimal">Minimal (rapide)</option>
+                            <option value="low">Faible</option>
+                            <option value="medium">Moyen</option>
+                            <option value="high">Élevé</option>
+                        </select>
+                    </label>
+                    <div class="feedback-actions">
+                        <button id="cancelSettingsBtn" type="button" class="btn-secondary">Annuler</button>
+                        <button id="saveSettingsBtn" type="button" class="btn-primary">Sauvegarder</button>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -1388,6 +1435,70 @@
                 submitFeedbackBtn.textContent = "Envoyer";
             }
         }
+
+        // Settings modal (global Réglages)
+        const openSettingsBtn = document.getElementById("openSettingsBtn");
+        const settingsModal = document.getElementById("settingsModal");
+        const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+        const cancelSettingsBtn = document.getElementById("cancelSettingsBtn");
+        const saveSettingsBtn = document.getElementById("saveSettingsBtn");
+        const settingsApiKeyInput = document.getElementById("iaApiKeyInput");
+        const settingsReasoningSelect = document.getElementById("reasoningEffortSelect");
+
+        function openSettings() {
+            if (!settingsModal) return;
+            // populate current values from localStorage
+            try {
+                const storedKey = localStorage.getItem("go-toolkit-api-key") || "";
+                if (settingsApiKeyInput) settingsApiKeyInput.value = storedKey;
+                const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("robert-reasoning-effort") || "low";
+                if (settingsReasoningSelect) settingsReasoningSelect.value = storedReasoning;
+            } catch (e) { /* noop */ }
+            settingsModal.classList.add("open");
+            settingsModal.setAttribute("aria-hidden", "false");
+            settingsReasoningSelect?.focus();
+        }
+
+        function closeSettings() {
+            if (!settingsModal) return;
+            settingsModal.classList.remove("open");
+            settingsModal.setAttribute("aria-hidden", "true");
+        }
+
+        function saveSettings() {
+            try {
+                const apiKey = (settingsApiKeyInput?.value || "").trim();
+                const reasoning = settingsReasoningSelect?.value || "low";
+                // Persist shared keys
+                if (apiKey) {
+                    localStorage.setItem("go-toolkit-api-key", apiKey);
+                } else {
+                    localStorage.removeItem("go-toolkit-api-key");
+                }
+                // Write primary shared reasoning key and also preserve canvas-specific key for compatibility
+                localStorage.setItem("plan-reasoning-effort", reasoning);
+                try { localStorage.setItem("robert-reasoning-effort", reasoning); } catch (e) { }
+                // Validate API key lightly (format check)
+                if (apiKey) {
+                    var openaiKeyPattern = /^sk-[A-Za-z0-9\-_]{20,}$/;
+                    if (openaiKeyPattern.test(apiKey)) {
+                        showToast("Clé OpenAI valide — réglages sauvegardés");
+                    } else {
+                        showToast("Clé OpenAI invalide — vérifie la clé", true);
+                    }
+                } else {
+                    showToast("Réglages sauvegardés");
+                }
+            } catch (e) {
+                showToast("Impossible de sauvegarder les réglages", true);
+            }
+            closeSettings();
+        }
+
+        if (openSettingsBtn) openSettingsBtn.addEventListener("click", openSettings);
+        if (closeSettingsBtn) closeSettingsBtn.addEventListener("click", closeSettings);
+        if (cancelSettingsBtn) cancelSettingsBtn.addEventListener("click", closeSettings);
+        if (saveSettingsBtn) saveSettingsBtn.addEventListener("click", saveSettings);
 
         openFeedbackBtn?.addEventListener("click", openModal);
         closeFeedbackBtn?.addEventListener("click", closeModal);

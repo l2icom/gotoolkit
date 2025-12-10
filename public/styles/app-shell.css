@@ -259,6 +259,40 @@ button.btn-small-active {
     display: flex;
 }
 
+/* Excalidraw app-wide overrides: ensure left menu max-height and tighter panel spacing */
+
+
+.app .excalidraw .shapes-section {
+    position: absolute;
+    right: 0;
+    left: auto;
+}
+
+.app .excalidraw .HintViewer {
+    display: none !important;
+}
+
+.app .excalidraw .App-menu__left,
+.app .excalidraw .Island.App-menu__left {
+    max-height: 500px ;
+    overflow-y: auto ;
+    position:absolute;
+    left: auto ;
+    right: 0;
+}
+.app .excalidraw .panelColumn {
+    row-gap: 2px ;
+}
+
+.app .excalidraw {
+    --editor-container-padding:0px;
+}
+
+.app .excalidraw .App-menu_bottom{
+    padding: 0px;
+flex-direction: row-reverse ;
+}
+
 .modal {
     background: #fff;
     border-radius: 14px;
@@ -340,7 +374,7 @@ label {
     border: none;
     background: #2a7a57;
     color: #ffffff;
-    padding: 6px 12px;
+    padding: 6px 10px;
     border-radius: 8px;
     font-size: 12px;
     cursor: pointer;

@@ -2,10 +2,15 @@
     const canvasTemplates = [
         {
             id: "roadmap",
-            name: "🗺️ Go-Roadmap",
-            defaultTitle: "Go-Roadmap",
+            name: "🗺️ Roadmap",
+            label: "Planifie maintenant, bientôt, plus tard",
+            defaultTitle: "Roadmap",
             description:
-                "Plan en trois horizons : sécuriser maintenant, préparer les prochains chantiers et ouvrir les paris long terme, avec objectifs, moyens et indicateurs clés.",
+                "Planifie maintenant, bientôt, plus tard.\n" +
+                "☐ Temporalité\n" +
+                "☐ Objectifs\n" +
+                "☐ Moyens\n" +
+                "☐ Indicateurs",
             columns: [
                 { stage: "first-col", label: "Maintenant" },
                 { stage: "second-col", label: "Prochainement" },
@@ -32,9 +37,14 @@
         {
             id: "arbitrage",
             name: "⚖️ Arbitrage",
+            label: "Comparer pour et contre clairement",
             defaultTitle: "Arbitrage",
             description:
-                "Peser Pour/Contre et synthèse pour décider vite : données factuelles, impacts produits et ergonomie pour éclairer le choix.",
+                "Comparer pour et contre clairement.\n" +
+                "☐ Décisions\n" +
+                "☐ Données\n" +
+                "☐ Fonctionnalités\n" +
+                "☐ Ergonomie",
             columns: [
                 { stage: "first-col", label: "Pour" },
                 { stage: "second-col", label: "Contre" },
@@ -61,9 +71,16 @@
         {
             id: "comparaison",
             name: "🆚 Comparaison",
+            label: "Choisir entre options et solutions",
             defaultTitle: "Comparaison",
             description:
-                "Comparer plusieurs options : décrire, lister avantages et inconvénients en croisant choix, fonctionnalités et solutions envisagées.",
+                "Choisir entre options et solutions.\n" +
+                "☐ Choix\n" +
+                "☐ Solutions\n" +
+                "☐ Fonctionnalités\n" +
+                "☐ Avantages\n" +
+                "☐ Inconvénients\n",
+
             columns: [
                 { stage: "first-col", label: "Choix 1-2-3" },
                 { stage: "second-col", label: "Fonctionnalité 1-2-3" },
@@ -71,8 +88,8 @@
             ],
             sections: [
                 {
-                    key: "description",
-                    label: "Description",
+                    key: "solutions",
+                    label: "Solutions",
                     examples: ""
                 },
                 {
@@ -90,9 +107,16 @@
         {
             id: "evaluation",
             name: "📈 Évaluation",
+            label: "Qualifier impact et effort par initiative",
             defaultTitle: "Évaluation",
             description:
-                "Qualifier une initiative par impact et effort : cadrer les choix, les fonctionnalités et les pistes de solution pour prioriser.",
+                "Qualifier impact et effort par initiative.\n" +
+                "☐ Initiative\n" +
+                "☐ Impact\n" +
+                "☐ Effort\n" +
+                "☐ Choix\n" +
+                "☐ Fonctionnalités\n" +
+                "☐ Solutions",
             columns: [
                 { stage: "first-col", label: "Choix 1-2-3" },
                 { stage: "second-col", label: "Fonctionnalité 1-2-3" },
@@ -119,9 +143,14 @@
         {
             id: "parcours",
             name: "🚶 Parcours",
+            label: "Cartographier étapes, problèmes, opportunités",
             defaultTitle: "Parcours",
             description:
-                "Cartographier un parcours : étapes clés, problématiques et opportunités avant/pendant/après pour révéler frictions et leviers.",
+                "Cartographier étapes, problèmes, opportunités.\n" +
+                "☐ Étapes\n" +
+                "☐ Problématique\n" +
+                "☐ Opportunités\n" +
+                "☐ Temporalité",
             columns: [
                 { stage: "first-col", label: "Étape 1-2-3" },
                 { stage: "second-col", label: "Problématique 1-2-3" },
@@ -129,18 +158,18 @@
             ],
             sections: [
                 {
-                    key: "avant",
-                    label: "Avant",
+                    key: "debut",
+                    label: "Début",
                     examples: ""
                 },
                 {
-                    key: "pendant",
-                    label: "Pendant",
+                    key: "intermediaire",
+                    label: "Intermédiaire",
                     examples: ""
                 },
                 {
-                    key: "apres",
-                    label: "Après",
+                    key: "fin",
+                    label: "Fin",
                     examples: ""
                 }
             ]
@@ -148,9 +177,16 @@
         {
             id: "alignement",
             name: "🤝 Alignement",
+            label: "Aligner acteurs, besoins et contraintes",
             defaultTitle: "Alignement",
             description:
-                "Aligner acteurs, besoins et contraintes : lecture business, tech et expérience pour clarifier attentes et zones de tension.",
+                "Aligner acteurs, besoins et contraintes.\n" +
+                "☐ Acteurs\n" +
+                "☐ Besoins\n" +
+                "☐ Contraintes\n" +
+                "☐ Business\n" +
+                "☐ Tech\n" +
+                "☐ UX",
             columns: [
                 { stage: "first-col", label: "Acteur 1-2-3" },
                 { stage: "second-col", label: "Besoin 1-2-3" },
@@ -177,9 +213,14 @@
         {
             id: "priorisation",
             name: "🎯 Priorisation",
+            label: "Prioriser initiatives dans le temps",
             defaultTitle: "Priorisation",
             description:
-                "Séquencer court/moyen/long terme : lister initiatives, peser impact vs effort et verrouiller l’ordre d’attaque.",
+                "Prioriser initiatives dans le temps.\n" +
+                "☐ Temporalité\n" +
+                "☐ Initiative\n" +
+                "☐ Impact\n" +
+                "☐ Effort\n",
             columns: [
                 { stage: "first-col", label: "Court terme" },
                 { stage: "second-col", label: "Moyen terme" },
@@ -206,9 +247,14 @@
         {
             id: "decision",
             name: "🔎 Observation",
+            label: "Observer données et conclure simplement",
             defaultTitle: "Observation",
             description:
-                "Structurer hypothèses, données et insights : croiser quanti/quali et formuler la synthèse qui guide la décision ou l’expérience à mener.",
+                "Observer données et conclure simplement.\n" +
+                "☐ Hypothèses\n" +
+                "☐ Données\n" +
+                "☐ Insights\n" +
+                "☐ Décision",
             columns: [
                 { stage: "first-col", label: "Hypothèse 1-2-3" },
                 { stage: "second-col", label: "Donnée 1-2-3" },
@@ -235,9 +281,10 @@
         {
             id: "default",
             name: "🕊️ Libre",
+            label: "Grille libre pour structurer tes idées",
             defaultTitle: "Libre",
             description:
-                "Grille ouverte à trois colonnes et trois sections pour noter, esquisser ou brainstormer sans cadre imposé.",
+                "Grille libre pour structurer tes idées.\n",
             columns: [
                 { stage: "first-col", label: "Colonne 1" },
                 { stage: "second-col", label: "Colonne 2" },
@@ -621,76 +668,110 @@
         "et avec {{columnSections}}, répond à {{slideTitle}} en 2 phrases courtes\n- " +
         "(< 15 mots pour chaque).";
 
-    const canvasSuggestionsPromptTemplate =
-        "Tu es un product owner expérimenté.\n- " +
-        "Sur la base du contexte \"{{globalContext}}\" et de \"{{pageContext}}\",\n- " +
-        "et dans le cadre de {{columnTitle}}, formule 3 instructions commençant par un verbe\n- " +
-        "pour aider à trouver des {{sectionTitle}} synthétiques et pertinents pour répondre à {{slideTitle}}.\n- " +
-        "Chaque instruction < 15 mots et commençant par un •.\n- " +
-        "Sans introduction préalable ni émoji.";
+    const canvasSuggestionsPromptTemplate = `Tu es un product owner expérimenté.
+- Sur la base du contexte "[[globalContext]]" et "[[pageContext]]",
+- reformuler "[[fieldValue]]" ou formule si c'est vide
+- sous forme de 2 à 3 éléments (< 15 mots pour chaque précédé d'un • ) en suivant les instructions spécifiques à la colonne [[columnId]] et à la section [[sectionLabel]] dans canvasExamples
+- Sans introduction préalable ni émoji.`;
 
     const drawPromptzilla = [
         {
             id: "sequence-service",
             label: "🚶‍♂️ Happy path",
             description:
-                "Enchaînement entre services/acteurs pour illustrer une user story ou un parcours nominal : front, back, services externes, et événements déclenchés.",
+                "Tracer le scénario nominal et ses interactions clés.\n" +
+                "☐ Services\n" +
+                "☐ Acteurs\n" +
+                "☐ User story\n" +
+                "☐ Événements",
             drawType: "sequence"
         },
         {
             id: "flow-bpmn",
             label: "💼 Processus métier",
             description:
-                "Processus BPMN simplifié : étapes clés, décisions (diamants), événements déclenchés, entrées/sorties, swimlanes si pertinent.",
+                "Cartographier le processus métier et ses décisions clés.\n" +
+                "☐ Étapes\n" +
+                "☐ Décisions\n" +
+                "☐ Événements\n" +
+                "☐ Swimlanes",
             drawType: "flow"
         },
         {
             id: "class-domaine",
             label: "🧭 Modèle métier",
             description:
-                "Structure les entités principales du domaine, leurs attributs essentiels et relations (cardinalités) : agrégats, valeurs, objets et référentiels.",
+                "Structurer les entités et relations du domaine.\n" +
+                "☐ Entités\n" +
+                "☐ Attributs\n" +
+                "☐ Relations\n" +
+                "☐ Agrégats",
             drawType: "class"
         },
         {
             id: "class-api",
             label: "🔌 Objets API",
             description:
-                "Représenter les ressources et schémas d’API : endpoints majeurs, payloads clés, relations entre objets, déclencheurs webhooks, dépendances API internes/externes.",
+                "Lister les objets API et leurs relations.\n" +
+                "☐ Endpoints\n" +
+                "☐ Payloads\n" +
+                "☐ Relations\n" +
+                "☐ Webhooks",
             drawType: "class"
         },
         {
             id: "sequence-communication",
             label: "📡 Communication inter-service",
             description:
-                "Échanges entre acteurs (client, fournisseur, service, base de données, application, interface...), authentification, permissions, envoi data, récupération data, validation, erreurs, déconnexion",
+                "Décrire les échanges et contrôles entre services.\n" +
+                "☐ Authentification\n" +
+                "☐ Permissions\n" +
+                "☐ Validation\n" +
+                "☐ Erreurs",
             drawType: "sequence"
         },
         {
             id: "flow-data",
             label: "📊 Flux de données",
             description:
-                "Flux de données clés : sources (forms, batch), traitements (validation, enrichissement), stockages, et consommateurs (API, BI, webhooks).",
+                "Visualiser le parcours complet des données.\n" +
+                "☐ Sources\n" +
+                "☐ Traitements\n" +
+                "☐ Stockages\n" +
+                "☐ Consommateurs",
             drawType: "flow"
         },
         {
             id: "class-events",
             label: "🛰️ Événements métiers",
             description:
-                "Catalogue d'événements : type (domain/event), producteurs, consommateurs, payloads principaux et liens vers entités métiers.",
+                "Cartographier les événements métiers et leurs flux.\n" +
+                "☐ Événements\n" +
+                "☐ Producteurs\n" +
+                "☐ Consommateurs\n" +
+                "☐ Payloads",
             drawType: "class"
         },
         {
             id: "sequence-role",
             label: "🧰 Rôles et responsabilités",
             description:
-                "Parcours support/escalade : étapes de prise en charge, rôles (L1/L2/L3), SLA, décisions et notifications.",
+                "Clarifier rôles, décisions et notifications clés.\n" +
+                "☐ Rôles\n" +
+                "☐ SLA\n" +
+                "☐ Décisions\n" +
+                "☐ Notifications",
             drawType: "sequence"
         },
         {
             id: "class-resources",
             label: "📦 Modèle de ressources",
             description:
-                "Structure les entités ressources, permissions, groupes, typologies ainsi que leurs liens fonctionnels.",
+                "Décrire ressources, permissions et liens associés.\n" +
+                "☐ Ressources\n" +
+                "☐ Permissions\n" +
+                "☐ Groupes\n" +
+                "☐ Liens",
             drawType: "class"
         }
     ];
@@ -699,32 +780,62 @@
         {
             id: "product",
             title: "🎯 Roadmap Produit",
-            text: "Génère une roadmap produit sur 6 mois avec 4 jalons majeurs (MVP, beta, release, amélioration), 3 acteurs (PO, UX, Dev), 3 domaines (fonctionnel, UX, data) et une timeline mensuelle. Inclure risques, dépendances et livrables clés"
+            text:
+                "Tracer une roadmap produit avec thèmes, livrables et risques.\n" +
+                "☐ Thèmes\n" +
+                "☐ Livrables\n" +
+                "☐ Risques\n" +
+                "☐ Jalons"
         },
         {
             id: "tech",
             title: "🛠️ Roadmap Technique",
-            text: "Crée une roadmap technique annuelle en 4 phases (audit, refonte, migration, optimisation), positionne les jalons trimestriels, les responsabilités (Tech Lead, Infra, SecOps) et les types d’initiatives (perf, sécurité, scalabilité) sur 1 an"
+            text:
+                "Planifier les phases techniques et responsabilités.\n" +
+                "☐ Périmètre\n" +
+                "☐ Dépendances\n" +
+                "☐ Ressources\n" +
+                "☐ Risques"
         },
         {
             id: "sprint",
             title: "⚡Calendrier de sprints",
-            text: "Propose une planification sur 4 sprints de 2 semaines avec objectifs, stories clés, critères de réussite, dépendances internes et rôles (Dev, QA, UX). Ajoute jalons de revue et rituels agiles."
+            text:
+                "Organiser les sprints, objectifs et dépendances.\n" +
+                "☐ Objectifs\n" +
+                "☐ Stories\n" +
+                "☐ Équipe\n" +
+                "☐ Rituels"
         },
         {
             id: "strategy",
             title: "💼 Vision stratégique",
-            text: "Génère une vision stratégique en 3 horizons (H1/H2/H3) sur 24 mois, avec thèmes structurants, jalons annuels, domaines (produit, tech, business), impacts attendus et types d’investissements"
+            text:
+                "Projeter la vision stratégique sur plusieurs horizons.\n" +
+                "☐ Ambitions\n" +
+                "☐ Initiativess\n" +
+                "☐ Investissements\n" +
+                "☐ Indicateurs"
         },
         {
             id: "research",
             title: "🔎 Plan de recherche",
-            text: "Construis un plan de recherche en phase discovery sur 6 mois : recherche utilisateur, cadrage problème, prototypage, test d’hypothèses, restitution. Mentionne acteurs (PO, UX, clients), jalons et décisions Go/No-Go."
+            text:
+                "Programmer la recherche, jalons et décisions clés.\n" +
+                "☐ Hypothèses\n" +
+                "☐ Domaines\n" +
+                "☐ Études\n" +
+                "☐ Résultats"
         },
         {
             id: "project",
             title: "🧩 Projet d'intégration'",
-            text: "Génére un projet d’intégration sur 4 mois avec phases (design, dev API, tests, déploiement), jalons critiques, interactions partenaires, risques liés aux environnements et validations métiers."
+            text:
+                "Piloter un projet d’intégration avec phases et risques.\n" +
+                "☐ Acteurs\n" +
+                "☐ Phases\n" +
+                "☐ Livrables\n" +
+                "☐ Risques"
         }
     ];
 

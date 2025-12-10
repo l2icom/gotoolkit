@@ -12,6 +12,29 @@
     <link rel="stylesheet" href="styles/app-shell.css">
     <link rel="stylesheet" href="https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.min.css">
     <style>
+        .template-tooltip {
+            display: none;
+            position: absolute;
+            left: 0;
+            bottom: -8px;
+            transform: translateY(100%);
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 8px 10px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            max-width: 340px;
+            font-size: 12px;
+            color: #ffffff;
+            line-height: 1.3;
+            backdrop-filter: blur(2px);
+        }
+
+        .prompt-input-wrapper.is-focused .template-tooltip {
+            display: block;
+        }
+
         :root {
             font-size: 12px;
             --app-text: #101428;
@@ -48,6 +71,10 @@
         }
 
         #promptTemplateField {
+            min-height: 200px;
+        }
+
+        #systemPromptField {
             min-height: 200px;
         }
 
@@ -261,7 +288,7 @@
 
         /* Gutenberg card defaults (monospace, smaller text) */
         .connect-left textarea {
-            font-size: 11px;
+            font-size: 12px;
             font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
         }
 
@@ -326,7 +353,7 @@
             background: #ffffff;
             color: #1f2a56;
             border-radius: 12px;
-            padding: 4px 8px;
+            padding: 3px 6px;
             font-size: 11px;
             cursor: pointer;
             transition: background 0.15s ease, border-color 0.15s ease;
@@ -389,7 +416,7 @@
         }
 
         .prompt-input-card textarea {
-            height: 220px;
+            height: 350px;
             margin-bottom: 0px;
         }
 
@@ -811,6 +838,7 @@
     </style>
 </head>
 
+
 <body class="app-body">
     <div class="app">
         <header class="app-header">
@@ -926,6 +954,7 @@
                     </div>
                     <div class="prompt-input-wrapper">
                         <div id="promptSuggestion" class="prompt-suggestion" aria-hidden="true"></div>
+                        <div id="templateTooltip" class="template-tooltip" aria-hidden="true"></div>
                         <textarea id="promptInput" rows="5"
                             placeholder="Décris ton contexte produit, tes utilisateurs, ta problématique..."></textarea>
                     </div>
@@ -966,24 +995,15 @@
                 <h3>⌘ Soulgorithm</h3>
                 <button id="closeAiModal" class="btn-secondary" type="button">✕</button>
             </header>
-            <label>
-                <a href="https://platform.openai.com/settings/organization/api-keys" target="_blank"
-                    rel="noreferrer">OpenAI API key</a>
-                <input type="password" id="apiKeyField" placeholder="sk-...">
-            </label>
-            <label>
-                <span>Vitesse</span>
-                <select id="reasoningEffortSelect"
-                    style="border: 1px solid #d0c3ad; font-size: 13px; font-family: inherit; color: inherit;">
-                    <option value="minimal">Éclair</option>
-                    <option value="low" selected>Rapide</option>
-                    <option value="medium">Fluide</option>
-                    <option value="high">Turbo</option>
-                </select>
-            </label>
+            <!-- API key and reasoning settings are global (Réglages) and moved to index.html -->
             <label>
                 <span>Prompt personnalisé</span>
                 <textarea id="promptTemplateField" rows="6"
+                    style="font-family: Menlo, Consolas, 'Courier New', monospace;"></textarea>
+            </label>
+            <label>
+                <span>Prompt système (personnalisable par document)</span>
+                <textarea id="systemPromptField" rows="4"
                     style="font-family: Menlo, Consolas, 'Courier New', monospace;"></textarea>
             </label>
             <div class="modal-actions">
@@ -1040,6 +1060,12 @@
         (() => {
             const DEFAULT_PROMPT_TEMPLATE =
                 (window.GoPrompts && window.GoPrompts.drawDefaultPromptTemplate) || "";
+            const DEFAULT_SYSTEM_PROMPT =
+                (window.GoPrompts && window.GoPrompts.drawDefaultSystemPrompt) ||
+                "Tu proposes des nouvelles idées en gardant le texte existant intact." +
+                "Il doit poursuivre naturellement la phrase avec entre 4 à 7 mots." +
+                "Propose 3 alternatives (4 à 7 mots). Pour chaque alternative, fournis un label (1-2 mots-clé du texte alternatif) et le texte complet. " +
+                "Réponds STRICTEMENT au format JSON demandé.";
             const DRAW_TYPES = [
                 { id: "sequence", label: "Échange", promptValue: "sequenceDiagram", emoji: "⇄" },
                 { id: "flow", label: "Processus", promptValue: "flowchart", emoji: "◇" },
@@ -1098,6 +1124,7 @@
                 activeIndex: 0,
                 apiKey: "",
                 promptTemplate: DEFAULT_PROMPT_TEMPLATE,
+                systemPrompt: DEFAULT_SYSTEM_PROMPT,
                 reasoningEffort: "low"
             };
             let pendingSceneCode = "";
@@ -1193,6 +1220,10 @@ classDiagram
             let promptSuggestRequestId = 0;
             let inlineSuggestion = "";
             let promptAltSuggestions = [];
+            let templateCriteriaStatus = {};
+            let lastAnalyzedSentenceCount = 0;
+            let lastAnalyzedTemplateId = null;
+            let criteriaAnalysisAbortController = null;
 
             const DIAGRAM_PROMPTZILLA =
                 (window.GoPrompts && Array.isArray(window.GoPrompts.drawPromptzilla) && window.GoPrompts.drawPromptzilla.length
@@ -1205,11 +1236,64 @@ classDiagram
                 return DIAGRAM_PROMPTZILLA.find(b => b.id === selectedPromptzillaId) || DIAGRAM_PROMPTZILLA[0] || null;
             }
 
+            function getTemplateCriteria(template) {
+                if (!template) return [];
+                if (Array.isArray(template.criteria) && template.criteria.length) {
+                    return template.criteria.filter(Boolean);
+                }
+                const lines = (template.description || "")
+                    .split(/\n/)
+                    .map(line => line.trim())
+                    .filter(Boolean);
+                return lines
+                    .filter(line => /^([🗹☐])/.test(line))
+                    .map(line => line.replace(/^[🗹☐]\s*/, "").trim())
+                    .filter(Boolean);
+            }
+
+            function getTemplateSummary(template) {
+                if (!template) return "";
+                const firstLine = (template.description || "").split(/\n/)[0] || "";
+                return (firstLine || template.label || "").trim();
+            }
+
+            function renderTemplateTooltip(template, statusMap = null) {
+                const tooltip = document.getElementById("templateTooltip");
+                if (!tooltip) return;
+                const summary = getTemplateSummary(template);
+                const criteria = getTemplateCriteria(template);
+                const normalizedStatus = {};
+                if (statusMap && typeof statusMap === "object") {
+                    Object.keys(statusMap).forEach(key => {
+                        normalizedStatus[key.toLowerCase()] = Boolean(statusMap[key]);
+                    });
+                }
+                const lines = [];
+                if (summary) {
+                    lines.push(escapeHtml(summary));
+                }
+                if (criteria.length) {
+                    criteria.forEach(item => {
+                        const key = item.toLowerCase();
+                        const matched = normalizedStatus[key] || false;
+                        const marker = matched ? "🗹" : "☐";
+                        lines.push(`${marker} ${escapeHtml(item)}`);
+                    });
+                }
+                tooltip.innerHTML = lines.join("<br>");
+                tooltip.setAttribute("aria-hidden", lines.length ? "false" : "true");
+            }
+
             function updateSelectedTemplateLabelDisplay() {
                 if (!selectedTemplateLabel) return;
                 const sel = getSelectedPromptzilla();
                 const labelText = sel?.label || "";
                 selectedTemplateLabel.textContent = labelText ? `: ${labelText}` : "";
+                // update template tooltip content if present
+                try {
+                    const templateStatus = sel?.id ? templateCriteriaStatus[sel.id] : null;
+                    renderTemplateTooltip(sel, templateStatus);
+                } catch (e) { /* noop */ }
             }
 
             function renderPromptzillaList(selectedId) {
@@ -1231,7 +1315,10 @@ classDiagram
                     subtitle.className = "template-desc-line";
                     subtitle.textContent = `${drawTypeIcon ? drawTypeIcon + " " : ""}${drawTypeMeta.label}`;
                     const desc = document.createElement("p");
-                    desc.textContent = bp.description;
+                    desc.innerHTML = (bp.description || "")
+                        .split(/\n/)
+                        .map(line => escapeHtml(line))
+                        .join("<br>");
                     card.appendChild(title);
                     card.appendChild(subtitle);
                     card.appendChild(desc);
@@ -1312,6 +1399,7 @@ classDiagram
                     refreshPromptSuggestion();
                     syncPromptSuggestionScroll();
                     schedulePromptAISuggestion();
+                    triggerCriteriaAnalysis({ force: true });
                 }
             }
 
@@ -1338,9 +1426,9 @@ classDiagram
             const aiModal = document.getElementById("aiModal");
             const aiSettingsBtn = document.getElementById("aiSettingsBtn");
             const closeAiModalBtn = document.getElementById("closeAiModal");
-            const apiKeyField = document.getElementById("apiKeyField");
-            const reasoningEffortSelect = document.getElementById("reasoningEffortSelect");
+            // API key and reasoning controls moved to global settings (index.html)
             const promptTemplateField = document.getElementById("promptTemplateField");
+            const systemPromptField = document.getElementById("systemPromptField");
             const resetPromptBtn = document.getElementById("resetPromptBtn");
             const navSwitcherBtn = document.getElementById("navSwitcherBtn");
             const navSwitcherMenu = document.getElementById("navSwitcherMenu");
@@ -1352,6 +1440,77 @@ classDiagram
             const shareUpdateBtn = document.getElementById("shareUpdateBtn");
             const capsuleMenuBtn = document.getElementById("capsuleMenuBtn");
             const capsuleMenu = document.getElementById("capsuleMenu");
+            // prompt input tooltip behavior
+            (function setupPromptTooltip() {
+                const promptEl = document.getElementById('promptInput');
+                const wrapper = document.querySelector('.prompt-input-wrapper');
+                const tooltip = document.getElementById('templateTooltip');
+                if (!promptEl || !wrapper || !tooltip) return;
+                let inactivityTimer = null;
+                const INACTIVITY_MS = 5000;
+
+                function clearInactivityTimer() {
+                    if (inactivityTimer) {
+                        clearTimeout(inactivityTimer);
+                        inactivityTimer = null;
+                    }
+                }
+
+                function startInactivityTimer() {
+                    clearInactivityTimer();
+                    inactivityTimer = setTimeout(() => {
+                        try {
+                            wrapper.classList.remove('is-focused');
+                            tooltip.setAttribute('aria-hidden', 'true');
+                        } catch (e) { /* noop */ }
+                        inactivityTimer = null;
+                    }, INACTIVITY_MS);
+                }
+
+                function resetInactivityTimer() {
+                    // maintain tooltip visible and restart timeout
+                    try {
+                        if (!wrapper.classList.contains('is-focused')) wrapper.classList.add('is-focused');
+                        tooltip.setAttribute('aria-hidden', tooltip.textContent ? 'false' : 'true');
+                    } catch (e) { /* noop */ }
+                    startInactivityTimer();
+                }
+
+                promptEl.addEventListener('focus', function () {
+                    wrapper.classList.add('is-focused');
+                    const sel = getSelectedPromptzilla();
+                    const status = sel?.id ? templateCriteriaStatus[sel.id] : null;
+                    renderTemplateTooltip(sel, status);
+                    tooltip.setAttribute('aria-hidden', tooltip.textContent ? 'false' : 'true');
+                    startInactivityTimer();
+                });
+
+                promptEl.addEventListener('blur', function () {
+                    wrapper.classList.remove('is-focused');
+                    tooltip.setAttribute('aria-hidden', 'true');
+                    clearInactivityTimer();
+                });
+
+                // Consider typing or keydown as activity
+                promptEl.addEventListener('input', resetInactivityTimer);
+                promptEl.addEventListener('keydown', resetInactivityTimer);
+
+                // update tooltip when selection is applied
+                const origApply = window.applyPromptzillaSelection;
+                if (typeof origApply === 'function') {
+                    window.applyPromptzillaSelection = function () {
+                        try { origApply.apply(this, arguments); } catch (e) { }
+                        try {
+                            const sel = getSelectedPromptzilla();
+                            const status = sel?.id ? templateCriteriaStatus[sel.id] : null;
+                            renderTemplateTooltip(sel, status);
+                            tooltip.setAttribute('aria-hidden', tooltip.textContent ? 'false' : 'true');
+                            // if the textarea is focused, keep tooltip visible and reset timer
+                            if (document.activeElement === promptEl) resetInactivityTimer();
+                        } catch (e) { }
+                    };
+                }
+            })();
             const capsuleOpenBtn = document.getElementById("capsuleOpenBtn");
             const capsuleSaveBtn = document.getElementById("capsuleSaveBtn");
             const toggleDrawerBtn = document.getElementById("toggleDrawerBtn");
@@ -1500,6 +1659,7 @@ classDiagram
                         activeIndex: Math.max(0, Math.min(normalizedPages.length - 1, parsed.activeIndex || 0)),
                         apiKey: parsed.apiKey || storedApiKey || "",
                         promptTemplate: parsed.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
+                        systemPrompt: parsed.systemPrompt || DEFAULT_SYSTEM_PROMPT,
                         reasoningEffort: parsed.reasoningEffort || parsed.reasoning?.effort || "low"
                     };
                 } catch (err) {
@@ -1587,6 +1747,7 @@ classDiagram
                     activeIndex: state.activeIndex,
                     apiKey: state.apiKey || "",
                     promptTemplate: state.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
+                    systemPrompt: state.systemPrompt || DEFAULT_SYSTEM_PROMPT,
                     reasoningEffort: state.reasoningEffort || "low",
                     scene
                 };
@@ -1603,6 +1764,7 @@ classDiagram
                 state.activeIndex = Math.max(0, Math.min(state.pages.length - 1, payload.activeIndex || 0));
                 state.apiKey = payload.apiKey || "";
                 state.promptTemplate = payload.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                state.systemPrompt = payload.systemPrompt || DEFAULT_SYSTEM_PROMPT;
                 state.reasoningEffort = payload.reasoningEffort || payload.reasoning?.effort || "low";
                 if (payload.scene) {
                     sharedScenePayload = normalizeScene(payload.scene);
@@ -1673,6 +1835,7 @@ classDiagram
                     activeIndex: state.activeIndex,
                     apiKey: state.apiKey || "",
                     promptTemplate: state.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
+                    systemPrompt: state.systemPrompt || DEFAULT_SYSTEM_PROMPT,
                     reasoningEffort: state.reasoningEffort || "low"
                 };
             }
@@ -1702,8 +1865,8 @@ classDiagram
                 if (promptTemplateField) {
                     promptTemplateField.value = state.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
                 }
-                if (reasoningEffortSelect) {
-                    reasoningEffortSelect.value = state.reasoningEffort || "low";
+                if (systemPromptField) {
+                    systemPromptField.value = state.systemPrompt || DEFAULT_SYSTEM_PROMPT;
                 }
                 updateShareMenuUI();
                 saveState();
@@ -1939,8 +2102,16 @@ classDiagram
             }
 
             function clearAppCacheAndReload() {
+                // Preserve the OpenAI key across reset
+                var _preservedOpenAiKey = null;
+                try {
+                    _preservedOpenAiKey = localStorage.getItem('go-toolkit-api-key');
+                } catch (err) { /* noop */ }
                 try {
                     localStorage.clear();
+                    if (_preservedOpenAiKey) {
+                        try { localStorage.setItem('go-toolkit-api-key', _preservedOpenAiKey); } catch (e) { }
+                    }
                 } catch (err) {
                     console.warn("Impossible de vider localStorage", err);
                 }
@@ -2260,6 +2431,155 @@ classDiagram
                 return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
             }
 
+            function countCompletedSentences(text) {
+                if (!text) return 0;
+                const matches = text.match(/[^.!?]+[.!?]+/g);
+                return matches ? matches.length : 0;
+            }
+
+            async function analyzePromptCriteria(text, template) {
+                if (!template || !template.id) return;
+                const criteria = getTemplateCriteria(template);
+                if (!criteria.length) return;
+                if (criteriaAnalysisAbortController) {
+                    try { criteriaAnalysisAbortController.abort(); } catch (e) { /* noop */ }
+                }
+                const controller = new AbortController();
+                criteriaAnalysisAbortController = controller;
+                const apiKey = (state.apiKey || "").trim();
+
+                // If no API key is available, use a simple local heuristic to
+                // determine whether criteria appear in the text (substring or
+                // first-token match). This keeps the template tooltip functional
+                // without requiring OpenAI access.
+                if (!apiKey) {
+                    try {
+                        const normalized = {};
+                        const lower = (text || "").toLowerCase();
+                        criteria.forEach(item => {
+                            const keyLc = (item || "").toLowerCase();
+                            const token = (item || "").replace(/[^\w]+/g, ' ').trim().split(/\s+/)[0] || keyLc;
+                            normalized[keyLc] = lower.indexOf(item.toLowerCase()) !== -1 || (token && lower.indexOf(token.toLowerCase()) !== -1);
+                        });
+                        templateCriteriaStatus[template.id] = normalized;
+                        renderTemplateTooltip(template, normalized);
+                    } finally {
+                        if (criteriaAnalysisAbortController === controller) criteriaAnalysisAbortController = null;
+                    }
+                    return;
+                }
+                const useProxy = !apiKey;
+                const endpoint = useProxy
+                    ? "https://openai.gotoolkit.workers.dev/v1/chat/completions"
+                    : "https://api.openai.com/v1/chat/completions";
+                const systemPrompt =
+                    "Tu vérifies si un texte couvre des éléments donnés. " +
+                    "Réponds uniquement avec un JSON {\"matches\":{\"critère\":true/false}} sans commentaire. " +
+                    "Considère un critère rempli si le texte contient l'idée ou un synonyme clair.";
+                const userPrompt =
+                    `Texte à vérifier : """${text}"""` +
+                    `\nCritères attendus (${criteria.length}) : ${criteria.join(", ")}` +
+                    `\nRéponds STRICTEMENT au format {"matches":{"Critère":true/false}} avec les mêmes libellés.`;
+                const body = {
+                    model: "gpt-4o-mini",
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: userPrompt }
+                    ],
+                    response_format: { type: "json_object" },
+                    temperature: 0
+                };
+                try {
+                    const response = await fetch(endpoint, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {})
+                        },
+                        body: JSON.stringify(body),
+                        signal: controller.signal
+                    });
+                    const rawText = await response.text();
+                    if (criteriaAnalysisAbortController !== controller) return;
+                    if (!response.ok) {
+                        throw new Error(rawText || "Analyse des critères indisponible");
+                    }
+                    let content = rawText;
+                    try {
+                        const parsedOuter = JSON.parse(rawText);
+                        content = parsedOuter?.choices?.[0]?.message?.content || rawText;
+                    } catch (err) {
+                        /* noop */
+                    }
+                    let parsed = null;
+                    try {
+                        parsed = JSON.parse(content || "{}");
+                    } catch (err) {
+                        console.warn("Réponse analyse critères non JSON", err);
+                    }
+                    const matches = parsed?.matches || parsed?.result || {};
+                    const normalized = {};
+                    criteria.forEach(item => {
+                        const keyLc = item.toLowerCase();
+                        const candidates = [
+                            matches[item],
+                            matches[keyLc],
+                            matches[item.replace(/\s+/g, "_")],
+                            matches[item.replace(/\s+/g, "_").toLowerCase()],
+                            matches[item.replace(/\s+/g, "").toLowerCase()]
+                        ];
+                        const val = candidates.find(v => typeof v !== "undefined");
+                        normalized[keyLc] = val === true || val === "true" || val === 1;
+                    });
+                    templateCriteriaStatus[template.id] = normalized;
+                    renderTemplateTooltip(template, normalized);
+                } catch (err) {
+                    if (err?.name === "AbortError") return;
+                    console.warn("Analyse des critères impossible", err);
+                } finally {
+                    if (criteriaAnalysisAbortController === controller) {
+                        criteriaAnalysisAbortController = null;
+                    }
+                }
+            }
+
+            function triggerCriteriaAnalysis(options = {}) {
+                const force = options.force || false;
+                const template = getSelectedPromptzilla();
+                const templateId = template?.id || null;
+                if (templateId && !templateCriteriaStatus[templateId]) {
+                    templateCriteriaStatus[templateId] = {};
+                }
+                if (templateId !== lastAnalyzedTemplateId) {
+                    lastAnalyzedSentenceCount = 0;
+                    lastAnalyzedTemplateId = templateId;
+                }
+                const status = templateId ? templateCriteriaStatus[templateId] : null;
+                renderTemplateTooltip(template, status);
+                if (!promptInput) return;
+                const text = promptInput.value || "";
+                const trimmed = text.trim();
+                const criteria = getTemplateCriteria(template);
+                if (!trimmed || !criteria.length) {
+                    lastAnalyzedSentenceCount = countCompletedSentences(text);
+                    if (templateId) {
+                        templateCriteriaStatus[templateId] = {};
+                        renderTemplateTooltip(template, templateCriteriaStatus[templateId]);
+                    }
+                    if (criteriaAnalysisAbortController) {
+                        try { criteriaAnalysisAbortController.abort(); } catch (e) { /* noop */ }
+                        criteriaAnalysisAbortController = null;
+                    }
+                    return;
+                }
+                const sentenceCount = countCompletedSentences(text);
+                if (!force && sentenceCount === lastAnalyzedSentenceCount) {
+                    return;
+                }
+                lastAnalyzedSentenceCount = sentenceCount;
+                analyzePromptCriteria(trimmed, template);
+            }
+
             function formatInlineSuggestion(textBeforeCursor, suggestion) {
                 const trimmed = (suggestion || "").trim();
                 if (!trimmed) return "";
@@ -2342,12 +2662,8 @@ classDiagram
                 const endpoint = useProxy
                     ? "https://openai.gotoolkit.workers.dev/v1/chat/completions"
                     : "https://api.openai.com/v1/chat/completions";
-                const systemPrompt =
-                    "Tu proposes des suites probables à la phrase en cours ou de nouvelles idées en gardant le texte existant intact. " +
-                    `Ton intention est d'aider l'utilisateur à structurer sa demande selon : ${templateDescription || "le modèle sélectionné"}. ` +
-                    "Ne modifie pas le texte fourni. Fournis une suite principale de 4 à 6 mots. " +
-                    "Propose 3 alternatives (3 à 6 mots). Pour chaque alternative, fournis un label (mot-clé résumé) et le texte complet. " +
-                    "Réponds STRICTEMENT au format JSON demandé.";
+                const template = state.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+                const systemPrompt = (template || DEFAULT_SYSTEM_PROMPT).replace(/{{TEMPLATE_DESCRIPTION}}/g, templateDescription || "le modèle sélectionné");
                 const body = {
                     model: "gpt-4o-mini",
                     messages: [
@@ -2358,7 +2674,7 @@ classDiagram
                                 `Texte complet :\n"""${text || ""}"""\n` +
                                 `Position du curseur (index): ${cursor}\n` +
                                 `Contexte/tonalité : ${placeholder || ""}\n` +
-                                `Format attendu (JSON strict) : {"corrected":"(reprends exactement le texte fourni, inchangé)","main":"(4 à 6 mots)","alts":[{"label":"mot clé","text":"3 à 6 mots"}...]}\n` +
+                                `Format attendu (JSON strict) : {"main":"(4 à 6 mots)","alts":[{"label":"mot clé","text":"3 à 6 mots"}...]}\n` +
                                 `Ne retourne rien d'autre que ce JSON.`
                         }
                     ],
@@ -2405,15 +2721,13 @@ classDiagram
                 } catch (err) {
                     console.warn("[prompt-assist] cannot parse content as JSON", err, { content });
                 }
-                const corrected = typeof parsedJson?.corrected === "string" ? parsedJson.corrected : text || "";
                 const main = typeof parsedJson?.main === "string" ? parsedJson.main.trim() : "";
                 const alts = Array.isArray(parsedJson?.alts) ? parsedJson.alts : [];
                 console.debug("[prompt-assist] parsed", {
-                    correctedLength: corrected.length,
                     mainLength: (main || "").length,
                     altCount: Array.isArray(alts) ? alts.length : 0
                 });
-                return { corrected, main, alts: Array.isArray(alts) ? alts : [] };
+                return { main, alts: Array.isArray(alts) ? alts : [] };
             }
 
             function renderPromptSuggestion() {
@@ -2660,6 +2974,7 @@ classDiagram
                 refreshPromptSuggestion();
                 syncPromptSuggestionScroll();
                 renderPageScene(page);
+                triggerCriteriaAnalysis({ force: Boolean(promptInput.value.trim()) });
             }
 
             function clearGenerateCooldown() {
@@ -2867,11 +3182,9 @@ classDiagram
 
             function openModal() {
                 aiModal.classList.add("open");
-                apiKeyField.value = state.apiKey || "";
                 promptTemplateField.value = state.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
-                if (reasoningEffortSelect) {
-                    reasoningEffortSelect.value = state.reasoningEffort || "low";
-                }
+                if (systemPromptField) systemPromptField.value = state.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+                // API key and reasoning settings are now managed globally in the Settings modal
             }
 
             function closeModal() {
@@ -2880,6 +3193,7 @@ classDiagram
 
             function resetPrompt() {
                 promptTemplateField.value = DEFAULT_PROMPT_TEMPLATE;
+                if (systemPromptField) systemPromptField.value = DEFAULT_SYSTEM_PROMPT;
             }
 
             const EXCALIDRAW_STYLESHEET_URL = "https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw-assets/index.css";
@@ -3624,15 +3938,37 @@ classDiagram
                 const api = await getExcalidrawApi();
                 const appState = buildExcalidrawAppState(api, normalized.appState || {});
                 const filesObj = toBinaryFilesObject(normalized.files);
+                // Prepare files for the Excalidraw API: if we have a plain object (from storage),
+                // convert to a Map which Excalidraw expects internally. If it's already a Map,
+                // keep it as-is.
+                let filesForApi = null;
+                if (filesObj) {
+                    if (filesObj instanceof Map) {
+                        filesForApi = filesObj;
+                    } else if (typeof filesObj === "object") {
+                        try {
+                            filesForApi = new Map(Object.entries(filesObj));
+                        } catch (e) {
+                            filesForApi = null;
+                        }
+                    }
+                }
+
                 const scenePayload = {
                     elements: normalized.elements || [],
                     appState
                 };
-                if (filesObj) {
+                if (filesForApi) {
+                    scenePayload.files = filesForApi;
+                } else if (filesObj) {
+                    // fall back to plain object if conversion failed
                     scenePayload.files = filesObj;
                 }
+
                 const applied = applySceneUpdate(api, scenePayload);
-                if (filesObj && typeof api.addFiles === "function") {
+                if (filesForApi && typeof api.addFiles === "function") {
+                    api.addFiles(Array.from(filesForApi.values()));
+                } else if (filesObj && typeof api.addFiles === "function") {
                     api.addFiles(Object.values(filesObj));
                 }
                 if (applied && !options.skipStore) {
@@ -3660,11 +3996,26 @@ classDiagram
                     }
                     const appState = buildExcalidrawAppState(api, sceneData.appState || {});
                     const filesObj = toBinaryFilesObject(sceneData.files);
+                    // Convert stored files object to Map for the Excalidraw API when possible.
+                    let filesForApi = null;
+                    if (filesObj) {
+                        if (filesObj instanceof Map) {
+                            filesForApi = filesObj;
+                        } else if (typeof filesObj === "object") {
+                            try {
+                                filesForApi = new Map(Object.entries(filesObj));
+                            } catch (e) {
+                                filesForApi = null;
+                            }
+                        }
+                    }
                     const scenePayload = {
                         elements: sceneData.elements || [],
                         appState
                     };
-                    if (filesObj) {
+                    if (filesForApi) {
+                        scenePayload.files = filesForApi;
+                    } else if (filesObj) {
                         scenePayload.files = filesObj;
                     }
                     if (!applySceneUpdate(api, scenePayload)) {
@@ -3674,7 +4025,9 @@ classDiagram
                             hasReplaceAll: typeof api?.replaceAllElements === "function"
                         });
                     }
-                    if (filesObj && typeof api.addFiles === "function") {
+                    if (filesForApi && typeof api.addFiles === "function") {
+                        api.addFiles(Array.from(filesForApi.values()));
+                    } else if (filesObj && typeof api.addFiles === "function") {
                         api.addFiles(Object.values(filesObj));
                     }
                     if (requestId === sceneBuildRequestId) {
@@ -3719,6 +4072,7 @@ classDiagram
                     clearPromptAlternatives();
                     refreshPromptSuggestion();
                     schedulePromptAISuggestion();
+                    triggerCriteriaAnalysis();
                 });
                 promptInput.addEventListener("focus", () => {
                     promptInputWrapper?.classList.add("is-focused");
@@ -3887,49 +4241,14 @@ classDiagram
                 aiSettingsBtn.addEventListener("click", openModal);
                 closeAiModalBtn.addEventListener("click", closeModal);
                 const applyAiSettingsBtn = document.getElementById("applyAiSettingsBtn");
-                applyAiSettingsBtn?.addEventListener("click", async () => {
-                    state.apiKey = apiKeyField?.value.trim() || "";
+                applyAiSettingsBtn?.addEventListener("click", () => {
                     state.promptTemplate = promptTemplateField?.value.trim() || DEFAULT_PROMPT_TEMPLATE;
-                    state.reasoningEffort = reasoningEffortSelect?.value || "low";
+                    state.systemPrompt = systemPromptField?.value.trim() || DEFAULT_SYSTEM_PROMPT;
                     saveState();
-                    if (!state.apiKey) {
-                        setStatus("Ajoute une clé OpenAI pour activer les suggestions inline.");
-                        return;
-                    }
-                    if (!window.GoToolkitOpenAI) {
-                        setStatus("Client OpenAI indisponible.");
-                        return;
-                    }
-                    try {
-                        applyAiSettingsBtn.disabled = true;
-                        const payload = {
-                            model: "gpt-5-nano",
-                            messages: [{ role: "user", content: "Ping" }],
-                            max_output_tokens: 16
-                        };
-                        await GoToolkitOpenAI.chatCompletion({
-                            endpoint: "https://api.openai.com/v1/responses",
-                            apiKey: state.apiKey,
-                            payload
-                        });
-                        setStatus("Clé OpenAI validée ✔️");
-                        closeModal();
-                    } catch (err) {
-                        console.error("Test clé OpenAI échoué", err);
-                        setStatus("Clé OpenAI invalide ou API indisponible.");
-                    } finally {
-                        applyAiSettingsBtn.disabled = false;
-                    }
+                    setStatus("Paramètres enregistrés ✔️");
+                    closeModal();
                 });
                 resetPromptBtn.addEventListener("click", resetPrompt);
-                apiKeyField?.addEventListener("input", () => {
-                    state.apiKey = apiKeyField.value.trim();
-                    saveState();
-                });
-                reasoningEffortSelect?.addEventListener("change", () => {
-                    state.reasoningEffort = reasoningEffortSelect.value || "low";
-                    saveState();
-                });
                 window.addEventListener("keydown", event => {
                     const isEscape = event.key === "Escape";
                     if (isEscape && aiModal.classList.contains("open")) {
@@ -4056,6 +4375,26 @@ classDiagram
                 if (!sharedLoaded) {
                     loadState();
                 }
+                // Load global Settings (shared across pages) if present in localStorage.
+                // This allows a central "Réglages" modal (index.html) to control API key
+                // and reasoning effort for all pages.
+                try {
+                    if (window.localStorage) {
+                        // API key (shared)
+                        const sharedApiKey = localStorage.getItem(API_KEY_STORAGE_KEY) || "";
+                        if (sharedApiKey && !state.apiKey) {
+                            state.apiKey = sharedApiKey;
+                        }
+                        // Reasoning effort (shared key used by timeline page)
+                        const SHARED_REASONING_KEY = "plan-reasoning-effort";
+                        const sharedReasoning = localStorage.getItem(SHARED_REASONING_KEY) || "";
+                        if (sharedReasoning) {
+                            state.reasoningEffort = sharedReasoning;
+                        }
+                    }
+                } catch (e) {
+                    /* noop */
+                }
                 renderTabs();
                 syncFormWithPage();
                 updateSelectedTemplateLabelDisplay();
@@ -4073,6 +4412,22 @@ classDiagram
             }
 
             initializeAppState();
+            // React to global Settings changes saved in other tabs/windows
+            window.addEventListener("storage", function (ev) {
+                if (!ev || !ev.key) return;
+                try {
+                    if (ev.key === API_KEY_STORAGE_KEY) {
+                        state.apiKey = ev.newValue || "";
+                    }
+                    if (ev.key === "plan-reasoning-effort" || ev.key === "robert-reasoning-effort") {
+                        state.reasoningEffort = ev.newValue || "low";
+                        const sel = document.getElementById("reasoningEffortSelect");
+                        if (sel) sel.value = state.reasoningEffort;
+                    }
+                } catch (err) {
+                    /* noop */
+                }
+            });
         })();
     </script>
 </body>

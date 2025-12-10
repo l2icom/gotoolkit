@@ -12,6 +12,12 @@ import type { ExcalidrawElement } from "@excalidraw/excalidraw/types/element/typ
 import { parseMermaidToExcalidraw } from "@excalidraw/mermaid-to-excalidraw";
 
 const MERMAID_OPTIONS = { fontSize: 20 };
+const MERMAID_ELEMENT_STYLE_DEFAULTS = {
+    strokeWidth: 2,
+    strokeStyle: "solid" as const,
+    roughness: 0,
+    roundness: null as const
+};
 const EDGE_HOST_CLASS = "go-excalidraw-edge";
 const EDGE_STYLE_ID = "go-excalidraw-edge-style";
 const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
@@ -56,9 +62,19 @@ const createInitialData = () => ({
     appState: {
         viewBackgroundColor: "#fdfdfd",
         gridModeEnabled: false,
-        isLoading: false
+        isLoading: false,
+        currentItemRoundness: "sharp" as const
     }
 });
+
+const applyMermaidDefaults = (elements: readonly ExcalidrawElement[]): ExcalidrawElement[] =>
+    elements.map(element => ({
+        ...element,
+        strokeWidth: element.strokeWidth ?? MERMAID_ELEMENT_STYLE_DEFAULTS.strokeWidth,
+        strokeStyle: element.strokeStyle ?? MERMAID_ELEMENT_STYLE_DEFAULTS.strokeStyle,
+        roughness: MERMAID_ELEMENT_STYLE_DEFAULTS.roughness,
+        roundness: MERMAID_ELEMENT_STYLE_DEFAULTS.roundness
+    }));
 
 class ExcalidrawBridge {
     private api: ExcalidrawImperativeAPI | null = null;
@@ -142,8 +158,9 @@ class ExcalidrawBridge {
             return null;
         }
         const normalizedFiles = (!Array.isArray(converted) && (converted as any)?.files) || parsed?.files || null;
+        const sharpElements = applyMermaidDefaults(normalizedElements as readonly ExcalidrawElement[]);
         return {
-            elements: normalizedElements as readonly ExcalidrawElement[],
+            elements: sharpElements as readonly ExcalidrawElement[],
             files: normalizedFiles || undefined
         };
     }
@@ -156,7 +173,8 @@ class ExcalidrawBridge {
                 ...(api.getAppState() as any),
                 viewBackgroundColor: "#fdfdfd",
                 gridModeEnabled: false,
-                isLoading: false
+                isLoading: false,
+                currentItemRoundness: "sharp"
             }
         };
         if (scene.files) {

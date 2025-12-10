@@ -237,7 +237,7 @@
         return next;
     }
 
-    async function chatCompletion({ endpoint, apiKey, payload, headers = {}, stopCondition }) {
+    async function chatCompletion({ endpoint, apiKey, payload, headers = {}, stopCondition, signal }) {
         if (!endpoint) {
             throw new Error("Endpoint manquant");
         }
@@ -252,7 +252,8 @@
         const response = await fetch(endpoint, {
             method: "POST",
             headers: buildHeaders(apiKey, headers),
-            body: JSON.stringify(requestPayload)
+            body: JSON.stringify(requestPayload),
+            signal
         });
 
         if (!response.ok) {

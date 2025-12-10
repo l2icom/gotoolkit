@@ -26,7 +26,7 @@ const { chromium } = require("playwright");
         await page.goto(targetUrl, { waitUntil: "load" });
         await page.waitForTimeout(8000);
     } catch (error) {
-        console.error("Playwright navigation error", error);
+        console.error("Playwright navigation error when navigation", error);
     } finally {
         await browser.close();
     }
