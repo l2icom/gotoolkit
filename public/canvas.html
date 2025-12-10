@@ -482,10 +482,10 @@
 
         /* Make the full generate button primary green */
         #generateFullSlideBtn {
-            border: none;
+            border: 1px solid var(--app-text);
             position: relative;
-            background: #2a7a57;
-            color: #ffffff;
+            background: #ffffff;
+            color: var(--app-text);
             padding: 6px 10px;
             border-radius: 8px;
         }
@@ -524,10 +524,11 @@
             /* Firefox: hide by default */
         }
 
-        /* Layout: Scénario fixed height, Scène fills remaining space */
+        /* Layout: make the global context smaller and let the page context fill the card
+           so the `#pageContextField` occupies the remaining space instead of roughly half. */
         .gutenberg-card-body>label:first-child textarea,
         #globalContextField {
-            height: 200px;
+            height: 250px;
             flex: none;
             min-height: 0;
         }
@@ -541,9 +542,10 @@
 
         .gutenberg-card-body>label:last-child textarea,
         #pageContextField {
-            flex: 1 1 auto;
+            flex: 1 1 0;
             min-height: 0;
             overflow: auto;
+            height: 100%;
         }
 
         /* Thin scrollbar only visible on focus */
@@ -574,6 +576,74 @@
 
         .gutenberg-card textarea:focus {
             scrollbar-width: thin;
+        }
+
+        .prompt-input-wrapper {
+            position: relative;
+            width: 100%;
+            display: flex;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        .global-context-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .global-context-tooltip {
+            display: block;
+            position: relative;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            font-size: 12px;
+            line-height: 1.35;
+            white-space: pre-line;
+            min-height: 54px;
+        }
+
+        .template-tooltip {
+            display: none;
+            position: absolute;
+            left: 0;
+            bottom: -8px;
+            transform: translateY(100%);
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 8px 10px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            max-width: 360px;
+            font-size: 12px;
+            color: #ffffff;
+            line-height: 1.3;
+            backdrop-filter: blur(2px);
+        }
+
+        .prompt-input-wrapper.is-focused .template-tooltip {
+            display: block;
+        }
+
+        /* Canvas-specific: show the template tooltip above the Scénario textarea
+           when the prompt-input-wrapper is focused (float at top of textarea). */
+        #canvasTemplateTooltip {
+            bottom: auto;
+            top: -8px;
+            transform: translateY(-100%);
+            left: 0;
+            z-index: 60;
+            max-width: 360px;
+        }
+
+        .template-label {
+            font-size: 12px;
+            color: var(--muted);
         }
 
         .gutenberg-status {
@@ -884,20 +954,13 @@
             flex-wrap: no-wrap;
         }
 
-        #generatePlaceholdersBtn {
-            border: none;
-            background: #2a7a57;
-            color: #ffffff;
-            padding: 6px 10px;
-            border-radius: 8px;
-        }
-
         #generateFullSlideBtn {
-            background: #fff;
-            color: var(--text-main);
-            padding: 6px 10px;
+            border: 1px solid var(--app-text);
+            position: relative;
+            background: #ffffff;
+            color: var(--app-text);
+            padding: 8px 12px;
             border-radius: 8px;
-            border: 1px solid #1f1f1f;
             margin-left: auto;
         }
 
@@ -1013,6 +1076,7 @@
             align-items: center;
             width: 100%;
             height: 100%;
+            padding: 12px 0px;
         }
 
         .slide {
@@ -1027,7 +1091,7 @@
             width: min(var(--slide-width, min(1680px, 100%)),
                     var(--slide-height-width-limit,
                         calc(var(--slide-available-height, calc(100vh - 190px)) * var(--slide-aspect-value, calc(16 / 9)))));
-            max-height: var(--slide-available-height, calc(100vh - 190px));
+            height: 100%;
         }
 
         .slide-bottom-section {
@@ -1058,7 +1122,7 @@
         .slide-bottom-section.bottom-section-focused .bottom-section-delete {
             opacity: 1;
             pointer-events: auto;
-            color: #c62828;
+            color: #918b7f;
         }
 
         .bottom-section-text {
@@ -1072,7 +1136,6 @@
             font-size: var(--slide-font-size, 16px);
             margin: 4px 0px 4px 0px;
             line-height: 1.5;
-            resize: vertical;
             overflow: auto;
             padding: 0px 6px;
         }
@@ -1218,6 +1281,8 @@
             padding: 0px 4px 0px;
             display: flex;
             flex-direction: column;
+            flex: 1;
+            min-height: 0;
             gap: 2px;
             font-size: 10px;
             background: var(--slide-bg, transparent);
@@ -1229,6 +1294,7 @@
             flex-direction: column;
             gap: 0px;
             flex: 1;
+            min-height: 0;
         }
 
         .section-label {
@@ -1309,22 +1375,37 @@
             transform: translateY(0);
         }
 
+
+        .column-copy-btn {
+            border: none;
+            background: transparent;
+            font-size: 13px;
+            border-radius: 999px;
+            cursor: pointer;
+            color: #918b7f;
+            padding: 0px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+
+
         .column-delete-btn,
         .section-delete-btn,
         .bottom-section-delete {
             border: none;
             background: transparent;
-            font-size: 20px;
+            font-size: 22px;
             border-radius: 999px;
             cursor: pointer;
             color: #918b7f;
             padding: 0px;
-            transition: color 0.2s ease, opacity 0.2s ease;
             opacity: 0;
             pointer-events: none;
         }
 
         .column-title-row:hover .column-delete-btn,
+        .column-title-row:hover .column-copy-btn,
         .section-label-row:hover .section-delete-btn,
         .section:hover .section-delete-btn,
         .section:focus-within .section-delete-btn {
@@ -1333,6 +1414,7 @@
         }
 
         .column-title:focus-visible~.column-delete-btn,
+        .column-title:focus-visible~.column-copy-btn,
         .section-label:focus-visible+.section-delete-btn,
         .slide-title-input:focus-visible {
             outline: none;
@@ -1343,11 +1425,20 @@
 
         .section-text-row {
             position: relative;
+            display: flex;
+            align-items: stretch;
+            gap: 2px;
+            justify-content: space-between;
+            flex: 1;
+            min-height: 0;
         }
 
         .textarea-wrapper {
             position: relative;
             width: 100%;
+            flex: 1;
+            display: flex;
+            min-height: 0;
         }
 
         .textarea-wrapper textarea {
@@ -1369,7 +1460,6 @@
         .section-label-row,
         .section-text-row {
             display: flex;
-            align-items: center;
             gap: 2px;
             justify-content: space-between;
         }
@@ -1406,9 +1496,9 @@
             font-size: var(--slide-font-size, 16px);
             padding: 6px 8px;
             line-height: 1.3;
-            height: 145px;
-            min-height: 100px;
-            resize: vertical;
+            min-height: 0;
+            height: 100%;
+            resize: none;
             border: none;
             background: var(--slide-bg, transparent);
             color: var(--slide-text-color, #2f2922);
@@ -1416,6 +1506,7 @@
             overflow: auto;
             scrollbar-width: none;
             -ms-overflow-style: none;
+            flex: 1;
         }
 
         .column-focused textarea {
@@ -1431,6 +1522,16 @@
             outline: 1px solid rgba(42, 122, 87, 0.8);
             box-shadow: none;
             scrollbar-width: thin;
+        }
+
+        /* Keep section textareas using the slide background on hover/focus
+           to avoid an unwanted white flash when interacting with them. */
+        .section textarea:hover,
+        .section textarea:focus,
+        .textarea-wrapper:hover textarea,
+        .textarea-wrapper:focus-within textarea {
+            background: var(--slide-bg, transparent) !important;
+            color: var(--slide-text-color, #2f2922) !important;
         }
 
         .section textarea.textarea-overflow {
@@ -1718,9 +1819,8 @@
                     <button id="fileMenuBtn" class="btn" type="button" aria-label="Capsule">⧉ Capsule</button>
                     <div class="context-menu" id="fileMenu">
                         <div class="menu-panel">
-                            <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir Capsule</button>
-                            <button id="exportJsonBtn" type="button" class="menu-panel-btn">⭳ Télécharger
-                                Capsule</button>
+                            <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
+                            <button id="exportJsonBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
                             <button id="exportPptxBtn" type="button" class="menu-panel-btn">▭ Powerpoint</button>
                             <button id="exportTextBtn" type="button" class="menu-panel-btn">¶ Texte</button>
                             <button id="exportPngBtn" type="button" class="menu-panel-btn">◩ Image</button>
@@ -1784,19 +1884,21 @@
 
                         <button class="tab-action" id="generateFullSlideBtn" type="button"
                             aria-label="Générer toutes les sections et la synthèse">⌘ Répondre</button>
-                        <button class="tab-action" id="generatePlaceholdersBtn" type="button"
-                            aria-label="Générer des suggestions pour les sections">✧ Conseiller</button>
                         <span class="gutenberg-status" id="suggestionStatusLabel" aria-live="polite"></span>
                     </div>
-                    <label>
-
+                    <label class="global-context-wrapper">
                         <textarea id="globalContextField" rows="10"
-                            placeholder="Décris ici le cadre global : le domaine, l’objectif principal, les utilisateurs concernés, la problématique à résoudre et le niveau d’enjeu. Décris aussi l’intention globale (pourquoi on fait ça) et l’état actuel (où on en est)."></textarea>
+                            placeholder="Décris le domaine, les utilisateurs, la problématique et l'intention"></textarea>
+                        <div id="globalContextTooltip" class="global-context-tooltip" aria-live="polite"></div>
                     </label>
                     <label>
                         <label>Scénario</label>
-                        <textarea id="pageContextField" rows="10"
-                            placeholder="Ajoute les éléments précis : la situation réelle, les contraintes connues, les choix déjà faits, les dépendances, les deadlines, les acteurs impliqués, les données chiffrées utiles, les points de vigilance et la condition de succès de ce cas particulier."></textarea>
+                        <div id="canvasSelectedTemplateLabel" class="template-label"></div>
+                        <div class="prompt-input-wrapper">
+                            <textarea id="pageContextField" rows="10"
+                                placeholder="Décrire la situation de manière quantitative et qualitative"></textarea>
+                            <div id="canvasTemplateTooltip" class="template-tooltip" aria-hidden="true"></div>
+                        </div>
                     </label>
                 </div </aside>
         </div>
@@ -1828,21 +1930,7 @@
                 <button class="modal-close" data-close="contextModal">×</button>
             </div>
             <div class="modal-panel hide" data-panel="settings">
-                <label>
-                    <a href="https://platform.openai.com/settings/organization/api-keys" target="_blank"
-                        rel="noreferrer">OpenAI API key</a>
-                    <input type="password" id="apiKeyInput" autocomplete="off" placeholder="sk-...">
-                </label>
-                <label>
-                    <span>Vitesse</span>
-                    <select id="reasoningEffortSelect"
-                        style="border: 1px solid #d0c3ad; font-size: 13px; font-family: inherit; color: inherit;">
-                        <option value="minimal">Éclair</option>
-                        <option value="low" selected>Rapide</option>
-                        <option value="medium">Fluide</option>
-                        <option value="high">Turbo</option>
-                    </select>
-                </label>
+                <!-- API key and reasoning settings moved to global Settings (index.html) -->
                 <div class="ia-mode-toggle" id="iaModeToggle">
                     <div class="ia-mode-label">IA Mode</div>
                     <button type="button" data-ia-mode="express">🛫︎ Auto</button>
@@ -2035,7 +2123,12 @@
             fieldValue: "Valeur actuelle du champ",
             sectionTitle: "Intitulé de la section ciblée",
             slideTitle: "Titre de la slide",
-            columnSections: "Résumé des 9 éléments de toutes les sections"
+            columnSections: "Résumé des 9 éléments de toutes les sections",
+            templateName: "Nom du template utilisé pour cet assistant",
+            columnDetails: "Liste des colonnes et sections visibles sur la page",
+            canvasExamples: "Exemples de références par colonne/section",
+            columnStages: "Traces des data-stage pour les colonnes générées",
+            bottomSection: "Zone de synthèse en bas de la slide"
         };
         const promptPreviewMaskedKeys = new Set(["fieldValue", "globalContext", "pageContext"]);
 
@@ -2052,6 +2145,10 @@
             (window.GoPrompts && window.GoPrompts.canvasBottomPromptTemplate) || "";
         const defaultSuggestionsPrompt =
             (window.GoPrompts && window.GoPrompts.canvasSuggestionsPromptTemplate) || "";
+        const fullSlidePromptTemplate =
+            (window.GoPrompts && window.GoPrompts.fullSlidePromptTemplate) || "";
+        const GLOBAL_CONTEXT_CRITERIA = ["domaine", "utilisateurs", "problématiques", "intention"];
+        const GLOBAL_CONTEXT_TOOLTIP_INTRO = "Cible ces éléments pour bien cadrer l’histoire :";
 
         function getTemplateById(id) {
             return templates.find(template => template.id === id) || templates[0];
@@ -2081,12 +2178,163 @@
             return section ? section.label : sectionKey;
         }
 
+        function buildColumnPromptSummary(columns) {
+            if (!columns || !columns.length) return "";
+            return columns
+                .map(column => {
+                    const columnLabel = column.stageLabel || column.stage;
+                    const sectionLabels = Object.keys(column.sections || {})
+                        .map(key => column.sections[key]?.label || key)
+                        .filter(Boolean);
+                    return `- Colonne "${columnLabel}" (${column.stage}) : ${sectionLabels.join(", ") || "Aucune section"}`;
+                })
+                .join("\n");
+        }
+
+        function buildCanvasExamplesNotes(templateId, columns) {
+            const examplesByTemplate = templateExamples[templateId] || templateExamples.default || {};
+            const lines = [];
+            (columns || []).forEach(column => {
+                const stageExamples = examplesByTemplate[column.stage] || {};
+                if (!Object.keys(stageExamples).length) {
+                    return;
+                }
+                const columnLabel = column.stageLabel || column.stage;
+                lines.push(`Colonne "${columnLabel}" (${column.stage}) :`);
+                Object.keys(stageExamples).forEach(sectionKey => {
+                    const sectionLabel =
+                        column.sections?.[sectionKey]?.label ||
+                        getDefaultSectionLabel(templateId, sectionKey) ||
+                        sectionKey;
+                    const exampleText = stageExamples[sectionKey];
+                    if (exampleText) {
+                        lines.push(`- ${sectionLabel}: ${exampleText}`);
+                    }
+                });
+            });
+            return lines.join("\n");
+        }
+
+        function buildFullSlidePromptContext(slide, options = {}) {
+            const templateId = options.templateId || slide?.dataset.templateId || templates[0].id;
+            const columns = buildColumnSeeds(slide, { includeText: false });
+            const columnDetails = buildColumnPromptSummary(columns);
+            const canvasExampleDetails = buildCanvasExamplesNotes(templateId, columns);
+            if (!fullSlidePromptTemplate) {
+                return null;
+            }
+            const templateName = getTemplateById(templateId)?.name || getTemplateById(templateId)?.defaultTitle || "";
+            const data = {
+                globalContext: options.globalContext || "",
+                pageContext: options.pageContext || "",
+                slideTitle: options.slideTitle || "",
+                templateName,
+                columnDetails,
+                canvasExamples: canvasExampleDetails,
+                columnStages: columns.map(column => column.stage).join(", ")
+            };
+            return { prompt: fillTemplate(fullSlidePromptTemplate, data), columns, templateId };
+        }
+
+        function parseFullSlideResponse(rawText) {
+            if (!rawText) return null;
+            const first = rawText.indexOf("{");
+            const last = rawText.lastIndexOf("}");
+            if (first === -1 || last === -1 || last <= first) {
+                return null;
+            }
+            try {
+                return JSON.parse(rawText.slice(first, last + 1));
+            } catch (err) {
+                console.warn("Impossible de parser la réponse IA du prompt global", err);
+            }
+            return null;
+        }
+
+        function buildBulletedText(value) {
+            const lines = Array.isArray(value)
+                ? value.slice()
+                : typeof value === "string"
+                    ? value.split(/\r?\n/)
+                    : [];
+            return lines
+                .map(line => (line || "").trim())
+                .filter(Boolean)
+                .map(line => (line.startsWith("•") ? line : `• ${line}`))
+                .join("\n");
+        }
+
+        function applyFullSlideResponse(parsed, slide, columns) {
+            if (!parsed || !slide) return false;
+            let updated = false;
+            const titleInput = slide.querySelector(".slide-title-input");
+            const newTitle = typeof parsed.slideTitle === "string" ? parsed.slideTitle.trim() : "";
+            if (newTitle && titleInput && titleInput.value.trim() !== newTitle) {
+                titleInput.value = newTitle;
+                updated = true;
+            }
+            const columnPayload = parsed.columns || {};
+            (columns || []).forEach(column => {
+                const stageKey = column.stage;
+                const columnResult = columnPayload[stageKey];
+                if (!columnResult || typeof columnResult !== "object") return;
+                Object.keys(columnResult).forEach(sectionKey => {
+                    const textarea = slide.querySelector(`.section[data-section="${sectionKey}"] textarea`);
+                    if (!textarea) return;
+                    const text = buildBulletedText(columnResult[sectionKey]);
+                    if (!text) return;
+                    textarea.value = text;
+                    normalizeBullets(textarea);
+                    updateTextareaOverflowState(textarea);
+                    handleSectionCriteriaTrigger(textarea, { force: true });
+                    updated = true;
+                });
+            });
+            const bottomTextarea = slide.querySelector(".bottom-section-text");
+            if (bottomTextarea && parsed.bottomSection) {
+                const bottomText = buildBulletedText(parsed.bottomSection);
+                if (bottomText) {
+                    bottomTextarea.value = bottomText;
+                    updateTextareaOverflowState(bottomTextarea);
+                    updated = true;
+                }
+            }
+            return updated;
+        }
+
         function getTemplateColumns(templateId) {
             return getTemplateById(templateId).columns;
         }
 
         function getTemplateColumn(templateId, index) {
             return getTemplateColumns(templateId)[index] || { stage: "first-col", label: `Colonne ${index + 1}` };
+        }
+
+        function getActiveTemplateId() {
+            const activeSlide = getActiveSlideElement?.();
+            return activeSlide?.dataset.templateId || currentTemplateId || templates[0].id;
+        }
+
+        function getActiveTemplate() {
+            return getTemplateById(getActiveTemplateId());
+        }
+
+        function getTemplateCriteria(template) {
+            if (!template) return [];
+            if (Array.isArray(template.criteria) && template.criteria.length) {
+                return template.criteria.filter(Boolean);
+            }
+            const lines = (template.description || "").split(/\n/).map(line => line.trim()).filter(Boolean);
+            return lines
+                .filter(line => line.startsWith("🗹"))
+                .map(line => line.replace(/^🗹\s*/, "").trim())
+                .filter(Boolean);
+        }
+
+        function getTemplateSummary(template) {
+            if (!template) return "";
+            const firstLine = (template.description || "").split(/\n/)[0] || "";
+            return (firstLine || template.name || "").trim();
         }
 
         let templateSlides = {};
@@ -2119,7 +2367,6 @@
         const addTabBtn = document.getElementById("addTabBtn");
         const deleteTabBtn = document.getElementById("deleteTabBtn");
         const restoreStructureBtn = document.getElementById("restoreStructureBtn");
-        const generatePlaceholdersBtn = document.getElementById("generatePlaceholdersBtn");
         const generateFullSlideBtn = document.getElementById("generateFullSlideBtn");
         const suggestionStatusLabel = document.getElementById("suggestionStatusLabel");
         const exportBtn = document.getElementById("exportPngBtn");
@@ -2132,6 +2379,8 @@
         const exportJsonBtn = document.getElementById("exportJsonBtn");
         const contextBtn = document.getElementById("contextBtn");
         const contextEditorBtn = document.getElementById("contextEditorBtn");
+        const selectedTemplateLabelEl = document.getElementById("canvasSelectedTemplateLabel");
+        const canvasTemplateTooltip = document.getElementById("canvasTemplateTooltip");
         const contextModal = document.getElementById("contextModal");
         const appMain = document.querySelector(".app-main");
         const gutenbergCard = document.getElementById("gutenbergCard");
@@ -2147,7 +2396,8 @@
         const settingsMenu = document.getElementById("settingsMenu");
         const fileMenu = document.getElementById("fileMenu");
         const shareMenu = document.getElementById("shareMenu");
-        const apiKeyInput = document.getElementById("apiKeyInput");
+        const globalContextTooltip = document.getElementById("globalContextTooltip");
+        // per-modal API key input removed; use shared localStorage key `go-toolkit-api-key` instead
         const reasoningEffortSelect = document.getElementById("reasoningEffortSelect");
         const reasoningEffortKey = "robert-reasoning-effort";
         const reasoningEfforts = ["minimal", "low", "medium", "high"];
@@ -2173,6 +2423,16 @@
         const promptEditorContextPreview = document.getElementById("promptEditorContextPreview");
         const promptEditorPreview = document.getElementById("promptEditorPreview");
         let promptEditorCurrentContext = null;
+        const scenarioContextWrapper = document.getElementById("pageContextField")?.closest(".prompt-input-wrapper");
+        let templateCriteriaStatus = {};
+        let lastAnalyzedSentenceCount = 0;
+        let lastAnalyzedTemplateId = null;
+        let criteriaAnalysisAbortController = null;
+        let scenarioTooltipTimer = null;
+        const SCENARIO_TOOLTIP_INACTIVITY_MS = 5000;
+        const sectionCriteriaSentenceCount = new WeakMap();
+        const sectionCriteriaControllers = new WeakMap();
+        const sectionCriteriaLastText = new WeakMap();
         const contextApplyBtn = document.getElementById("contextApplyBtn");
         promptEditorPreview?.addEventListener("input", () => {
             if (!promptEditorTextarea) return;
@@ -2305,11 +2565,7 @@
 
         window.addEventListener("resize", handleResize);
 
-        if (apiKeyInput) {
-            apiKeyInput.addEventListener("input", () => {
-                writeSharedApiKey(apiKeyInput.value.trim());
-            });
-        }
+        // API key input moved to global Settings (index.html). Use readSharedApiKey()/writeSharedApiKey() helpers.
 
         const STORAGE_KEY = "go-roadmap-state";
         const API_KEY_STORAGE_KEY = "go-toolkit-api-key";
@@ -2396,7 +2652,7 @@
                     ratioIndex: currentRatioIndex,
                     textStyleIndex: currentTextStyleIndex,
                     fontSize: currentFontSize,
-                    apiKey: apiKeyInput.value,
+                    apiKey: readSharedApiKey(),
                     globalContext: globalContextValue,
                     context: globalContextValue,
                     prompts: promptLibrary,
@@ -2668,16 +2924,14 @@
             activePromptTemplateId = payload.promptTemplateId || activePromptTemplateId;
             currentTemplateId = payload.defaultTemplateId || currentTemplateId;
             lastAppliedTemplateId = currentTemplateId;
-            if (apiKeyInput) {
+            if (true) {
                 const hasSavedApiKey = Object.prototype.hasOwnProperty.call(payload, "apiKey");
                 const apiKeyValue = hasSavedApiKey ? payload.apiKey || "" : readSharedApiKey();
-                apiKeyInput.value = apiKeyValue;
-                writeSharedApiKey(apiKeyInput.value.trim());
+                // Persist to shared storage so other pages read the same API key
+                writeSharedApiKey(apiKeyValue || "");
             }
             const storedReasoning = localStorage.getItem(reasoningEffortKey) || "low";
-            if (reasoningEffortSelect && reasoningEfforts.includes(storedReasoning)) {
-                reasoningEffortSelect.value = storedReasoning;
-            }
+            // reasoning effort is managed globally in Settings (index.html); stored value is read from localStorage
             const globalContextValue = payload.globalContext ?? payload.context ?? "";
             if (globalContextField) {
                 globalContextField.value = globalContextValue;
@@ -2742,13 +2996,8 @@
                 delete label.dataset.suggestions;
             }
             if (textarea && hasTextareaSuggestion) {
-                const fallbackPlaceholder = textarea.dataset.placeholder || "";
                 delete textarea.dataset.suggestionPlaceholder;
-                if (!textarea.value.trim()) {
-                    textarea.placeholder = fallbackPlaceholder;
-                } else {
-                    textarea.placeholder = "";
-                }
+                textarea.placeholder = "";
             }
             if (!skipPersist) {
                 schedulePersist();
@@ -2773,8 +3022,33 @@
         }
 
         function bindTextareaPlaceholder(textarea) {
-            const example = textarea.dataset.placeholder || "";
-            textarea.placeholder = example;
+            // Keep `placeholder` empty; example text stays in `data-placeholder` only.
+            textarea.placeholder = "";
+        }
+
+        function parseSuggestionCriteria(text) {
+            const lines = (text || "").split(/\n/).map(line => line.trim()).filter(Boolean);
+            if (!lines.length) return { instruction: "", criteria: [] };
+            const startsWithCheckbox = lines[0].match(/^[☐☑]/);
+            const instruction = startsWithCheckbox ? "" : lines[0];
+            const criteriaLines = startsWithCheckbox ? lines : lines.slice(1);
+            const criteria = criteriaLines
+                .map(line => line.replace(/^[☐☑]\s*/, "").trim())
+                .filter(Boolean);
+            return { instruction, criteria };
+        }
+
+        function renderSuggestionWithStatus(parsed, statusMap = {}) {
+            const lines = [];
+            if (parsed.instruction) {
+                lines.push(parsed.instruction);
+            }
+            parsed.criteria.forEach(item => {
+                const matched = statusMap[item.toLowerCase()] || false;
+                const marker = matched ? "☑" : "☐";
+                lines.push(`${marker} ${item}`);
+            });
+            return lines.join("\n");
         }
 
         function promptKeyFromMode(mode) {
@@ -2852,12 +3126,28 @@
                 library.suggestions = suggestionPromptField.value || defaultSuggestionsPrompt;
             });
         }
-        globalContextField?.addEventListener("input", () => {
-            schedulePersist();
+        pageContextField?.addEventListener("focus", () => {
+            resetScenarioTooltipTimer();
+            updateSelectedTemplateLabelDisplay();
+        });
+        pageContextField?.addEventListener("blur", () => {
+            if (scenarioContextWrapper) scenarioContextWrapper.classList.remove("is-focused");
+            if (canvasTemplateTooltip) {
+                canvasTemplateTooltip.setAttribute("aria-hidden", "true");
+            }
+            clearScenarioTooltipTimer();
         });
         pageContextField?.addEventListener("input", () => {
             setActivePageContext(pageContextField.value);
             schedulePersist();
+            triggerCriteriaAnalysis();
+            resetScenarioTooltipTimer();
+        });
+        pageContextField?.addEventListener("keydown", () => {
+            resetScenarioTooltipTimer();
+        });
+        globalContextField?.addEventListener("blur", () => {
+            // no-op: suggestion generation removed
         });
         document.addEventListener("input", event => {
             const target = event.target;
@@ -2873,27 +3163,48 @@
             });
         });
 
-        reasoningEffortSelect?.addEventListener("change", () => {
-            const value = reasoningEffortSelect.value;
-            if (reasoningEfforts.includes(value)) {
-                localStorage.setItem(reasoningEffortKey, value);
-            }
-        });
+        // reasoning select moved to global Settings (index.html)
 
         function showColumnPlaceholders(column) {
             column.querySelectorAll("textarea").forEach(textarea => {
-                if (!textarea.value) {
-                    textarea.placeholder = textarea.dataset.suggestionPlaceholder || textarea.dataset.placeholder || "";
-                }
+                // Do not expose placeholders in the `placeholder` attribute.
+                // Keep example text only in `data-placeholder` for internal use.
+                textarea.placeholder = "";
             });
         }
 
         function clearColumnPlaceholders(column) {
             column.querySelectorAll("textarea").forEach(textarea => {
-                if (!textarea.value) {
-                    textarea.placeholder = "";
-                }
+                // Ensure `placeholder` is always empty; we keep examples in data-* only.
+                textarea.placeholder = "";
             });
+        }
+
+        function clearScenarioTooltipTimer() {
+            if (scenarioTooltipTimer) {
+                clearTimeout(scenarioTooltipTimer);
+                scenarioTooltipTimer = null;
+            }
+        }
+
+        function startScenarioTooltipTimer() {
+            clearScenarioTooltipTimer();
+            scenarioTooltipTimer = setTimeout(() => {
+                scenarioContextWrapper?.classList.remove("is-focused");
+                canvasTemplateTooltip?.setAttribute("aria-hidden", "true");
+                scenarioTooltipTimer = null;
+            }, SCENARIO_TOOLTIP_INACTIVITY_MS);
+        }
+
+        function resetScenarioTooltipTimer() {
+            if (scenarioContextWrapper) {
+                scenarioContextWrapper.classList.add("is-focused");
+            }
+            if (canvasTemplateTooltip) {
+                const hasText = Boolean(canvasTemplateTooltip.textContent);
+                canvasTemplateTooltip.setAttribute("aria-hidden", hasText ? "false" : "true");
+            }
+            startScenarioTooltipTimer();
         }
 
         function normalizeBullets(textarea) {
@@ -2911,6 +3222,56 @@
             textarea.classList.toggle("textarea-overflow", textarea.scrollHeight > textarea.clientHeight);
         }
 
+        function redistributeSectionHeights(column) {
+            if (!column || !column.isConnected) return;
+            const body = column.querySelector(".column-body");
+            if (!body) return;
+            const sections = Array.from(body.querySelectorAll(".section"));
+            if (!sections.length) return;
+            const bodyStyles = getComputedStyle(body);
+            const gap = parseFloat(bodyStyles.gap || "0") || 0;
+            let available = body.getBoundingClientRect().height - gap * Math.max(0, sections.length - 1);
+            const textareas = [];
+            sections.forEach(section => {
+                const labelRow = section.querySelector(".section-label-row");
+                const textRow = section.querySelector(".section-text-row");
+                const textarea = textRow?.querySelector("textarea");
+                if (!textarea) return;
+                const labelHeight = labelRow?.getBoundingClientRect().height || 0;
+                const textRowGap = textRow ? (parseFloat(getComputedStyle(textRow).gap || "0") || 0) : 0;
+                available -= labelHeight + textRowGap;
+                textareas.push(textarea);
+            });
+            if (!textareas.length) return;
+            const perHeight = Math.max(80, available / textareas.length);
+            textareas.forEach(textarea => {
+                textarea.style.height = `${perHeight}px`;
+            });
+        }
+
+        function resizeAllColumnSections(targetSlide) {
+            const slide = targetSlide || getActiveSlideElement();
+            if (!slide) return;
+            slide.querySelectorAll(".column").forEach(column => redistributeSectionHeights(column));
+        }
+
+        function handleSectionCriteriaTrigger(textarea, options = {}) {
+            const force = Boolean(options.force);
+            const text = textarea.value || "";
+            const sentenceCount = countCompletedSentences(text);
+            const prev = sectionCriteriaSentenceCount.get(textarea) || 0;
+            const prevText = sectionCriteriaLastText.get(textarea) || "";
+            const hasTextChanged = text !== prevText;
+            const sentenceChanged = sentenceCount !== prev;
+            const endsWithSentence = /[.!?]\s*$/.test(text);
+            const shouldAnalyzeOnInput = sentenceCount > prev || (hasTextChanged && endsWithSentence);
+            if (!force && !shouldAnalyzeOnInput) return;
+            if (force && !hasTextChanged) return;
+            sectionCriteriaSentenceCount.set(textarea, sentenceCount);
+            sectionCriteriaLastText.set(textarea, text);
+            evaluateSectionCriteria(textarea);
+        }
+
         function updateTextareaTooltip(textarea) {
             if (!textarea) return;
             const wrapper = textarea.closest(".textarea-wrapper");
@@ -2919,10 +3280,112 @@
                 textarea.dataset.suggestionPlaceholder ||
                 textarea.dataset.placeholder ||
                 "";
-            if (textarea.value.trim() && tooltipText) {
+            if (tooltipText) {
                 wrapper.dataset.suggestions = tooltipText;
             } else {
                 delete wrapper.dataset.suggestions;
+            }
+        }
+
+        async function evaluateSectionCriteria(textarea) {
+            if (!textarea) return;
+            const placeholderText = textarea.dataset.suggestionPlaceholder || textarea.dataset.placeholder || "";
+            const parsed = parseSuggestionCriteria(placeholderText);
+            if (!parsed.criteria.length) return;
+            const text = textarea.value || "";
+            const criteria = parsed.criteria;
+            const apiKey = (readSharedApiKey() || "").trim();
+            const prevController = sectionCriteriaControllers.get(textarea);
+            if (prevController) {
+                try { prevController.abort(); } catch (e) { /* noop */ }
+            }
+            const controller = new AbortController();
+            sectionCriteriaControllers.set(textarea, controller);
+
+            // simple fallback if no API key: check keyword presence
+            if (!apiKey) {
+                const lower = text.toLowerCase();
+                const normalized = {};
+                criteria.forEach(item => {
+                    const keyLc = item.toLowerCase();
+                    normalized[keyLc] = lower.includes(keyLc);
+                });
+                const updated = renderSuggestionWithStatus(parsed, normalized);
+                textarea.dataset.suggestionPlaceholder = updated;
+                // Do not set `placeholder` attribute; keep suggestion text in data-attr.
+                updateTextareaTooltip(textarea);
+                sectionCriteriaControllers.delete(textarea);
+                return;
+            }
+
+            const endpoint = "https://api.openai.com/v1/chat/completions";
+            const body = {
+                model: "gpt-4o-mini",
+                messages: [
+                    {
+                        role: "system",
+                        content:
+                            "Tu vérifies si un texte respecte des critères donnés. " +
+                            "Réponds uniquement avec un JSON {\"matches\":{\"critère\":true/false}}. " +
+                            "Un critère est rempli si l'idée exprimée respecte la condition du critère."
+                    },
+                    {
+                        role: "user",
+                        content:
+                            `Texte : """${text}"""` +
+                            `\nCritères (${criteria.length}) : ${criteria.join(", ")}` +
+                            `\nRéponds STRICTEMENT au format {"matches":{"Critère":true/false}} avec les mêmes libellés.`
+                    }
+                ],
+                response_format: { type: "json_object" },
+                temperature: 0
+            };
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify(body),
+                    signal: controller.signal
+                });
+                const rawText = await res.text();
+                if (sectionCriteriaControllers.get(textarea) !== controller) return;
+                if (!res.ok) throw new Error(rawText || "Analyse critères indisponible");
+                let content = rawText;
+                try {
+                    const parsedOuter = JSON.parse(rawText);
+                    content = parsedOuter?.choices?.[0]?.message?.content || rawText;
+                } catch (e) { /* noop */ }
+                let parsedJson = null;
+                try { parsedJson = JSON.parse(content || "{}"); } catch (e) { }
+                const matches = parsedJson?.matches || parsedJson?.result || {};
+                const normalized = {};
+                criteria.forEach(item => {
+                    const keyLc = item.toLowerCase();
+                    const candidates = [
+                        matches[item],
+                        matches[keyLc],
+                        matches[item.replace(/\s+/g, "_")],
+                        matches[item.replace(/\s+/g, "_").toLowerCase()],
+                        matches[item.replace(/\s+/g, "").toLowerCase()]
+                    ];
+                    const val = candidates.find(v => typeof v !== "undefined");
+                    normalized[keyLc] = val === true || val === "true" || val === 1;
+                });
+                const updated = renderSuggestionWithStatus(parsed, normalized);
+                textarea.dataset.suggestionPlaceholder = updated;
+                // Do not set `placeholder` attribute; tooltip updated via data attrs.
+                updateTextareaTooltip(textarea);
+            } catch (err) {
+                if (err?.name === "AbortError") return;
+                console.warn("Analyse critères section impossible", err);
+            } finally {
+                if (sectionCriteriaControllers.get(textarea) === controller) {
+                    sectionCriteriaControllers.delete(textarea);
+                }
             }
         }
 
@@ -2932,6 +3395,9 @@
             textarea.addEventListener("input", () => {
                 updateTextareaOverflowState(textarea);
                 updateTextareaTooltip(textarea);
+                if (textarea.dataset.section) {
+                    handleSectionCriteriaTrigger(textarea);
+                }
             });
             textarea.addEventListener("keydown", event => {
                 if (event.key === "Enter" && !event.shiftKey) {
@@ -2947,16 +3413,18 @@
             });
             textarea.addEventListener("blur", () => {
                 normalizeBullets(textarea);
+                if (textarea.dataset.section) {
+                    handleSectionCriteriaTrigger(textarea, { force: true });
+                }
             });
+            if (textarea.dataset.section) {
+                sectionCriteriaSentenceCount.set(textarea, countCompletedSentences(textarea.value || ""));
+            }
         }
 
         function updateGeneratePlaceholdersButton(remaining = 0) {
             const onCooldown = remaining > 0;
             const disableButtons = onCooldown || isGeneratingSuggestions;
-            if (generatePlaceholdersBtn) {
-                generatePlaceholdersBtn.disabled = disableButtons;
-                generatePlaceholdersBtn.textContent = "✧ Conseiller";
-            }
             if (generateFullSlideBtn) {
                 generateFullSlideBtn.disabled = disableButtons;
                 generateFullSlideBtn.textContent = "⌘ Répondre";
@@ -2969,7 +3437,7 @@
         }
 
         function startGeneratePlaceholdersCooldown(duration = PLACEHOLDER_COOLDOWN_DURATION) {
-            if (!generatePlaceholdersBtn && !generateFullSlideBtn && !suggestionStatusLabel) {
+            if (!generateFullSlideBtn && !suggestionStatusLabel) {
                 return;
             }
             if (suggestionCooldownTimer) {
@@ -2992,103 +3460,16 @@
             }, 1000);
         }
 
+        function stopGeneratePlaceholdersCooldown() {
+            if (suggestionCooldownTimer) {
+                clearInterval(suggestionCooldownTimer);
+                suggestionCooldownTimer = null;
+            }
+            updateGeneratePlaceholdersButton(0);
+        }
+
         async function generateSectionPlaceholders() {
-            if (!generatePlaceholdersBtn || isGeneratingSuggestions || suggestionCooldownTimer) {
-                return;
-            }
-            const slide = getActiveSlideElement();
-            if (!slide) return;
-            const sections = Array.from(slide.querySelectorAll(".section"));
-            if (!sections.length) {
-                showCopyToast("Aucune section détectée.");
-                return;
-            }
-            isGeneratingSuggestions = true;
-            startGeneratePlaceholdersCooldown(PLACEHOLDER_COOLDOWN_DURATION);
-
-            const suggestionTemplate = getPromptLibraryForTemplate(activePromptTemplateId).suggestions || defaultSuggestionsPrompt;
-            const globalContextValue = globalContextField?.value.trim() || "";
-            const pageContextValue = getSlidePageContext(slide).trim();
-            const slideTitle = slide.querySelector(".slide-title-input")?.value.trim() || slide.dataset.tabLabel || "";
-            const templateId = slide.dataset.templateId || templates[0].id;
-
-            const tasks = [];
-
-            for (const sectionEl of sections) {
-                const column = sectionEl.closest(".column");
-                const columnTitle = column?.querySelector(".column-title")?.textContent.trim() || "";
-                const sectionKey = sectionEl.dataset.section;
-                const labelEl = sectionEl.querySelector(".section-label");
-                const sectionLabel = labelEl?.textContent.trim() || getDefaultSectionLabel(templateId, sectionKey);
-
-                const contextData = {
-                    globalContext: globalContextValue,
-                    contextField: globalContextValue,
-                    pageContext: pageContextValue,
-                    slideTitle: slideTitle,
-                    columnTitle,
-                    sectionTitle: sectionLabel,
-                    fieldValue: sectionEl.querySelector("textarea")?.value.trim() || ""
-                };
-
-                const promptText = fillTemplate(suggestionTemplate, contextData);
-                const messages = [
-                    { role: "system", content: "Tu es un assistant produit." },
-                    { role: "user", content: promptText }
-                ];
-
-                const textarea = sectionEl.querySelector("textarea");
-                if (textarea) {
-                    tasks.push({ textarea, messages, labelEl });
-                }
-            }
-
-            // Include bottom section as a task as well
-            const bottomTextarea = slide.querySelector(".bottom-section-text");
-            if (bottomTextarea) {
-                const bottomContext = buildBottomPromptContext(slide);
-                // Use the same suggestion template but with bottom-specific context
-                const bottomPromptText = fillTemplate(suggestionTemplate, Object.assign({}, bottomContext, { sectionTitle: "Synthèse" }));
-                const bottomMessages = [
-                    { role: "system", content: "Tu es un assistant produit." },
-                    { role: "user", content: bottomPromptText }
-                ];
-                tasks.push({ textarea: bottomTextarea, messages: bottomMessages, labelEl: null });
-            }
-
-            let generated = false;
-            try {
-                const results = await Promise.allSettled(
-                    tasks.map(async ({ textarea, messages, labelEl }) => {
-                        const aiText = await callOpenAI(messages);
-                        if (!aiText) return false;
-                        const trimmed = aiText.trim();
-                        if (!trimmed) return false;
-                        textarea.value = trimmed;
-                        updateTextareaOverflowState(textarea);
-                        updateTextareaTooltip(textarea);
-                        if (labelEl) {
-                            labelEl.dataset.suggestions = trimmed;
-                        }
-                        return true;
-                    })
-                );
-
-                generated = results.some(r => r.status === "fulfilled" && r.value === true);
-
-                if (generated) {
-                    schedulePersist();
-                    updateSlideEmptyState();
-                    showCopyToast("Contenu IA inséré pour cette page.");
-                } else {
-                    showCopyToast("Impossible de générer le contenu.");
-                }
-            } finally {
-                isGeneratingSuggestions = false;
-                if (!suggestionCooldownTimer) {
-                    updateGeneratePlaceholdersButton(0);
-                }
-            }
+            return;
         }
 
         async function generateFullSlideContent() {
@@ -3099,78 +3480,47 @@
             if (!slide) {
                 return;
             }
-            const templateId = slide.dataset.templateId || templates[0].id;
             const globalContextValue = globalContextField?.value.trim() || "";
             const pageContextValue = getSlidePageContext(slide).trim();
-            const slideTitle = slide.querySelector(".slide-title-input")?.value.trim() || slide.dataset.tabLabel || "";
-            const tasks = [];
-            Array.from(slide.querySelectorAll(".section")).forEach(sectionEl => {
-                const sectionKey = sectionEl.dataset.section;
-                const textarea = sectionEl.querySelector("textarea");
-                if (!sectionKey || !textarea) {
-                    return;
-                }
-                const column = sectionEl.closest(".column");
-                const columnTitle = column?.querySelector(".column-title")?.textContent.trim() || "";
-                const labelEl = sectionEl.querySelector(".section-label");
-                const sectionLabel = labelEl?.textContent.trim() || getDefaultSectionLabel(templateId, sectionKey);
-                const promptContext = {
-                    globalContext: globalContextValue,
-                    contextField: globalContextValue,
-                    pageContext: pageContextValue,
-                    slideTitle: slideTitle,
-                    columnTitle,
-                    fieldValue: textarea.value.trim(),
-                    sectionTitle: sectionLabel
-                };
-                const promptText = buildFieldPrompt(sectionKey, templateId, promptContext);
-                tasks.push({ textarea, messages: buildAssistantMessages(promptText) });
+            const slideTitle =
+                slide.querySelector(".slide-title-input")?.value.trim() || slide.dataset.tabLabel || "";
+            const context = buildFullSlidePromptContext(slide, {
+                globalContext: globalContextValue,
+                pageContext: pageContextValue,
+                slideTitle
             });
-
-            const bottomTextarea = slide.querySelector(".bottom-section-text");
-            if (bottomTextarea) {
-                const bottomPromptContext = buildBottomPromptContext(slide);
-                const bottomPrompt = buildFieldPrompt("bottom-section", templateId, bottomPromptContext);
-                tasks.push({ textarea: bottomTextarea, messages: buildAssistantMessages(bottomPrompt) });
-            }
-
-            if (!tasks.length) {
-                showCopyToast("Aucune zone à générer.");
+            if (!context || !context.prompt) {
+                showCopyToast("Aucun prompt complet disponible.");
                 return;
             }
 
             isGeneratingSuggestions = true;
             startGeneratePlaceholdersCooldown(PLACEHOLDER_COOLDOWN_DURATION);
-
             try {
-                const results = await Promise.allSettled(
-                    tasks.map(async ({ textarea, messages }) => {
-                        const aiText = await callOpenAI(messages);
-                        if (!aiText) {
-                            return false;
-                        }
-                        const trimmed = aiText.trim();
-                        if (!trimmed) {
-                            return false;
-                        }
-                        textarea.value = trimmed;
-                        updateTextareaOverflowState(textarea);
-                        return true;
-                    })
-                );
-                const hasSuccess = results.some(result => result.status === "fulfilled" && result.value);
-                if (hasSuccess) {
+                const aiText = await callOpenAI(buildAssistantMessages(context.prompt));
+                if (!aiText) {
+                    showCopyToast("Impossible de générer le contenu.");
+                    return;
+                }
+                const parsed = parseFullSlideResponse(aiText);
+                if (!parsed) {
+                    showCopyToast("Réponse IA non conforme (JSON attendu).");
+                    return;
+                }
+                const applied = applyFullSlideResponse(parsed, slide, context.columns);
+                if (applied) {
                     schedulePersist();
                     updateSlideEmptyState();
                     showCopyToast("Contenu IA généré pour cette page.");
                 } else {
-                    showCopyToast("Impossible de générer le contenu.");
+                    showCopyToast("La réponse IA n’a rien modifié.");
                 }
+            } catch (err) {
+                console.error("Erreur full slide", err);
+                showCopyToast("Impossible de générer le contenu.");
             } finally {
                 isGeneratingSuggestions = false;
-                if (!suggestionCooldownTimer) {
-                    updateGeneratePlaceholdersButton(0);
-                }
+                stopGeneratePlaceholdersCooldown();
             }
         }
 
@@ -3451,9 +3801,9 @@
             <span class="section-label" data-section="${sectionKey}" contenteditable="true">${labelText}</span>
             <button type="button" class="section-delete-btn" aria-label="Supprimer la section">×</button>
           </div>
-          <div class="section-text-row">
-            <div class="textarea-wrapper" data-suggestions="${placeholder}">
-              <textarea class="editable" data-section="${sectionKey}" data-placeholder="${placeholder}"></textarea>
+                    <div class="section-text-row">
+                        <div class="textarea-wrapper">
+                            <textarea class="editable" data-section="${sectionKey}" data-placeholder="${placeholder}"></textarea>
               <button class="field-ai-btn inside" type="button" data-field="section-text" data-section="${sectionKey}" title="Générer le contenu" aria-label="Générer le contenu">⌘</button>
             </div>
           </div>
@@ -3463,18 +3813,19 @@
                 .join("");
 
             column.innerHTML = `
-      <div class="column-header">
-        <div class="column-header-main">
-          <div class="column-title-row">
-            <span class="column-title" contenteditable="true">${fallbackStage}</span>
-            <button type="button" class="column-delete-btn" aria-label="Supprimer la colonne">×</button>
-          </div>
-        </div>
-      </div>
-      <div class="column-body">
-        ${sectionsHtml}
-      </div>
-    `;
+            <div class="column-header">
+                <div class="column-header-main">
+                    <div class="column-title-row">
+                        <span class="column-title" contenteditable="true">${fallbackStage}</span>
+                                                <button type="button" class="column-copy-btn" aria-label="Copier la colonne à droite">⧉</button>
+                        <button type="button" class="column-delete-btn" aria-label="Supprimer la colonne">×</button>
+                    </div>
+                </div>
+            </div>
+            <div class="column-body">
+                ${sectionsHtml}
+            </div>
+        `;
 
             const columnTitleEl = column.querySelector(".column-title");
             columnTitleEl.addEventListener("focus", () => {
@@ -3513,16 +3864,15 @@
                     label.textContent = sectionSeed?.label || defaultLabel;
                 }
                 if (textarea) {
+                    const sectionMeta = getTemplateSection(templateId, sectionKey) || { examples: "" };
+                    const exampleText =
+                        getSectionExample(templateId, stageForSection, sectionKey) || sectionMeta.examples || "";
+                    const placeholderValue = ((sectionSeed && sectionSeed.placeholder) || exampleText || "").replace(/🗹/g, "☐");
+                    textarea.dataset.placeholder = placeholderValue;
+                    // Intentionally leave the visible `placeholder` empty.
+                    textarea.placeholder = "";
                     if (sectionSeed) {
                         textarea.value = sectionSeed.text || "";
-                        const sectionMeta = getTemplateSection(templateId, sectionKey) || { examples: "" };
-                        const exampleText =
-                            getSectionExample(templateId, stageForSection, sectionKey) || sectionMeta.examples || "";
-                        const placeholderValue = sectionSeed.placeholder || exampleText || "";
-                        textarea.dataset.placeholder = placeholderValue;
-                        if (placeholderValue && !textarea.value.trim()) {
-                            textarea.placeholder = placeholderValue;
-                        }
                         const suggestionValue = sectionSeed.suggestions || "";
                         if (suggestionValue) {
                             if (label) {
@@ -3530,11 +3880,10 @@
                                 label.dataset.suggestions = suggestionValue;
                             }
                             textarea.dataset.suggestionPlaceholder = suggestionValue;
-                            if (!textarea.value.trim()) {
-                                textarea.placeholder = suggestionValue;
-                            }
                         }
                     }
+                    sectionCriteriaSentenceCount.set(textarea, countCompletedSentences(textarea.value || ""));
+                    sectionCriteriaLastText.set(textarea, textarea.value || "");
                     monitorTextareaOverflow(textarea);
                 }
                 const deleteBtn = sectionEl.querySelector(".section-delete-btn");
@@ -3547,6 +3896,11 @@
             columnDeleteBtn?.addEventListener("click", event => {
                 event.stopPropagation();
                 deleteColumn(column);
+            });
+            const columnCopyBtn = column.querySelector(".column-copy-btn");
+            columnCopyBtn?.addEventListener("click", event => {
+                event.stopPropagation();
+                copyColumnToRight(column);
             });
 
             // Always display textarea suggestion placeholders for this column
@@ -3564,6 +3918,7 @@
                 selectColumnForPalette(column);
             });
 
+            requestAnimationFrame(() => redistributeSectionHeights(column));
             return column;
         }
 
@@ -3572,6 +3927,7 @@
             if (!confirm("Supprimer cette colonne ?")) {
                 return;
             }
+            const slide = column.closest(".slide");
             const nextColumn = column.nextElementSibling || column.previousElementSibling;
             column.remove();
             if (nextColumn) {
@@ -3580,6 +3936,52 @@
             } else {
                 selectColumnForPalette(null);
             }
+            resizeAllColumnSections(slide);
+            schedulePersist();
+        }
+
+        function copyColumnToRight(column) {
+            if (!column) return;
+            const slide = column.closest('.slide');
+            const templateId = slide?.dataset.templateId || currentTemplateId || null;
+            const columnsContainer = column.parentElement;
+            if (!columnsContainer) return;
+
+            const stage = column.dataset.stage;
+            const stageLabel = column.querySelector('.column-title')?.textContent || '';
+            const stageColor = column.style.getPropertyValue('--stage-color') || '';
+
+            const sectionsSeed = {};
+            Array.from(column.querySelectorAll('.section')).forEach(sectionEl => {
+                const key = sectionEl.dataset.section;
+                const label = sectionEl.querySelector('.section-label')?.textContent || getDefaultSectionLabel(templateId, key) || key;
+                sectionsSeed[key] = { label, text: '' };
+            });
+
+            const seed = {
+                stage: stage,
+                stageLabel: stageLabel,
+                stageColor: stageColor,
+                sections: sectionsSeed
+            };
+
+            const templateColumns = getTemplateColumns(templateId);
+            let columnIndex = -1;
+            if (Array.isArray(templateColumns)) {
+                columnIndex = templateColumns.findIndex(c => c.stage === stage);
+            }
+            if (columnIndex === -1) {
+                columnIndex = Array.from(columnsContainer.children).indexOf(column);
+            }
+
+            const newColumn = createColumn(templateId, columnIndex, seed);
+            if (column.nextElementSibling) {
+                columnsContainer.insertBefore(newColumn, column.nextElementSibling);
+            } else {
+                columnsContainer.appendChild(newColumn);
+            }
+            selectColumnForPalette(newColumn);
+            newColumn.querySelector('.column-title')?.focus();
             schedulePersist();
         }
 
@@ -3591,6 +3993,7 @@
             const column = sectionEl.closest(".column");
             const nextSection = sectionEl.nextElementSibling || sectionEl.previousElementSibling;
             sectionEl.remove();
+            redistributeSectionHeights(column);
             if (nextSection) {
                 nextSection.querySelector(".section-label")?.focus();
             } else if (column) {
@@ -3630,15 +4033,14 @@
             const textarea = document.createElement("textarea");
             textarea.className = "editable";
             textarea.dataset.section = sectionKey;
-            textarea.dataset.placeholder = placeholder;
+            textarea.dataset.placeholder = placeholder.replace(/🗹/g, "☐");
+            // Keep placeholder empty by default; examples live in data-placeholder only.
+            textarea.placeholder = "";
             textarea.value = seed.text || "";
             const suggestionValue = seed.suggestions || "";
             if (suggestionValue) {
                 labelSpan.dataset.suggestions = suggestionValue;
                 textarea.dataset.suggestionPlaceholder = suggestionValue;
-                if (!textarea.value.trim()) {
-                    textarea.placeholder = suggestionValue;
-                }
             }
             const aiButton = document.createElement("button");
             aiButton.type = "button";
@@ -3654,12 +4056,14 @@
             section.append(labelRow, textRow);
 
             bindSectionLabel(labelSpan);
-            bindTextareaPlaceholder(textarea);
             monitorTextareaOverflow(textarea);
+            sectionCriteriaSentenceCount.set(textarea, countCompletedSentences(textarea.value || ""));
+            sectionCriteriaLastText.set(textarea, textarea.value || "");
             deleteBtn.addEventListener("click", event => {
                 event.stopPropagation();
                 deleteSection(section);
             });
+            requestAnimationFrame(() => redistributeSectionHeights(section.closest(".column")));
             return section;
         }
 
@@ -3706,6 +4110,9 @@
             if (!slide) return;
             const template = getTemplateById(templateId);
             if (!template) return;
+            if (template.id && !templateCriteriaStatus[template.id]) {
+                templateCriteriaStatus[template.id] = {};
+            }
             const snapshot = captureSlideSnapshot(slide);
             const columnsContainer = slide.querySelector(".columns");
             if (!columnsContainer) return;
@@ -3754,6 +4161,8 @@
             lastAppliedTemplateId = template.id;
             activePromptTemplateId = template.id;
             setPromptFieldsForTemplate(template.id);
+            updateSelectedTemplateLabelDisplay();
+            triggerCriteriaAnalysis({ force: Boolean(pageContextField?.value?.trim()) });
             schedulePersist();
         }
 
@@ -3779,6 +4188,7 @@
             });
             schedulePersist();
             updateSlideEmptyState();
+            requestAnimationFrame(() => resizeAllColumnSections(slide));
         }
 
         function setBottomSectionFocusState(slide, focused) {
@@ -3883,6 +4293,7 @@
             const styleIndex = typeof seed.textStyleIndex === "number" ? seed.textStyleIndex : currentTextStyleIndex;
             const fontSize = typeof seed.fontSize === "number" ? seed.fontSize : currentFontSize;
             applyTextStyleToSlide(slide, styleIndex, fontSize);
+            requestAnimationFrame(() => resizeAllColumnSections(slide));
             return slide;
         }
 
@@ -4034,6 +4445,9 @@
             setPromptFieldsForTemplate(currentTemplateId);
             syncPageContextFieldWithActiveSlide();
             updateSlideEmptyState();
+            updateSelectedTemplateLabelDisplay();
+            triggerCriteriaAnalysis({ force: Boolean(pageContextField?.value?.trim()) });
+            requestAnimationFrame(() => resizeAllColumnSections(activeSlide));
         }
 
         function buildColumnSeeds(slide, options = {}) {
@@ -4169,9 +4583,6 @@
         addTabBtn.addEventListener("click", addTab);
         restoreStructureBtn?.addEventListener("click", () => {
             restoreColumnsAndSections();
-        });
-        generatePlaceholdersBtn?.addEventListener("click", () => {
-            generateSectionPlaceholders();
         });
         generateFullSlideBtn?.addEventListener("click", () => {
             generateFullSlideContent();
@@ -4316,7 +4727,7 @@
                     ratioIndex: currentRatioIndex,
                     textStyleIndex: currentTextStyleIndex,
                     fontSize: currentFontSize,
-                    apiKey: apiKeyInput.value,
+                    apiKey: localStorage.getItem('go-toolkit-api-key') || '',
                     globalContext: globalContextValue,
                     context: globalContextValue,
                     prompts: promptLibrary,
@@ -4351,6 +4762,181 @@
             applySettingsFromPayload(settings);
             renderSlides();
             schedulePersist();
+        }
+
+        function renderTemplateTooltip(template, statusMap) {
+            if (!canvasTemplateTooltip) return;
+            const summary = getTemplateSummary(template);
+            const criteria = getTemplateCriteria(template);
+            const normalizedStatus = {};
+            if (statusMap && typeof statusMap === "object") {
+                Object.keys(statusMap).forEach(key => {
+                    normalizedStatus[key.toLowerCase()] = Boolean(statusMap[key]);
+                });
+            }
+            const lines = [];
+            if (summary) lines.push(escapeHtml(summary));
+            criteria.forEach(item => {
+                const key = item.toLowerCase();
+                const matched = normalizedStatus[key] || false;
+                const marker = matched ? "🗹" : "☐";
+                lines.push(`${marker} ${escapeHtml(item)}`);
+            });
+            canvasTemplateTooltip.innerHTML = lines.join("<br>");
+            canvasTemplateTooltip.setAttribute("aria-hidden", lines.length ? "false" : "true");
+        }
+
+        function updateSelectedTemplateLabelDisplay() {
+            const tpl = getActiveTemplate();
+            if (selectedTemplateLabelEl) {
+                selectedTemplateLabelEl.textContent = tpl ? `Modèle : ${tpl.name || tpl.defaultTitle || tpl.id}` : "";
+            }
+            if (tpl && tpl.id) {
+                const status = templateCriteriaStatus[tpl.id] || null;
+                renderTemplateTooltip(tpl, status);
+            }
+        }
+
+        function countCompletedSentences(text) {
+            if (!text) return 0;
+            const matches = text.match(/[^.!?]+[.!?]+/g);
+            return matches ? matches.length : 0;
+        }
+
+        async function analyzePromptCriteria(text, template) {
+            if (!template || !template.id) return;
+            const criteria = getTemplateCriteria(template);
+            if (!criteria.length) return;
+            if (criteriaAnalysisAbortController) {
+                try { criteriaAnalysisAbortController.abort(); } catch (e) { /* noop */ }
+            }
+            const controller = new AbortController();
+            criteriaAnalysisAbortController = controller;
+            const apiKey = (readSharedApiKey() || "").trim();
+
+            // If there's no API key available, fall back to a simple local heuristic
+            // to mark criteria as present when the page context text contains the
+            // criterion label or a leading token. This provides a usable tooltip
+            // without requiring OpenAI access.
+            if (!apiKey) {
+                try {
+                    const normalized = {};
+                    const lower = (text || "").toLowerCase();
+                    criteria.forEach(item => {
+                        const keyLc = item.toLowerCase();
+                        // Use either the full label or its first token as a simple match
+                        const token = (item || "").replace(/[^\w]+/g, ' ').trim().split(/\s+/)[0] || keyLc;
+                        normalized[keyLc] = lower.indexOf(item.toLowerCase()) !== -1 || (token && lower.indexOf(token.toLowerCase()) !== -1);
+                    });
+                    templateCriteriaStatus[template.id] = normalized;
+                    renderTemplateTooltip(template, normalized);
+                } finally {
+                    if (criteriaAnalysisAbortController === controller) criteriaAnalysisAbortController = null;
+                }
+                return;
+            }
+            const useProxy = !apiKey;
+            const endpoint = useProxy
+                ? "https://openai.gotoolkit.workers.dev/v1/chat/completions"
+                : "https://api.openai.com/v1/chat/completions";
+            const systemPrompt =
+                "Tu vérifies si un texte couvre des éléments donnés. " +
+                "Réponds uniquement avec un JSON {\"matches\":{\"critère\":true/false}} sans commentaire. " +
+                "Considère un critère rempli si le texte contient l'idée ou un synonyme clair.";
+            const userPrompt =
+                `Texte à vérifier : """${text}"""` +
+                `\nCritères attendus (${criteria.length}) : ${criteria.join(", ")}` +
+                `\nRéponds STRICTEMENT au format {"matches":{"Critère":true/false}} avec les mêmes libellés.`;
+            const body = {
+                model: "gpt-4o-mini",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userPrompt }
+                ],
+                response_format: { type: "json_object" },
+                temperature: 0
+            };
+            try {
+                const res = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {})
+                    },
+                    body: JSON.stringify(body),
+                    signal: controller.signal
+                });
+                const rawText = await res.text();
+                if (criteriaAnalysisAbortController !== controller) return;
+                if (!res.ok) throw new Error(rawText || "Analyse des critères indisponible");
+                let content = rawText;
+                try {
+                    const parsedOuter = JSON.parse(rawText);
+                    content = parsedOuter?.choices?.[0]?.message?.content || rawText;
+                } catch (e) { /* noop */ }
+                let parsed = null;
+                try { parsed = JSON.parse(content || "{}"); } catch (e) { console.warn("Réponse analyse critères non JSON", e); }
+                const matches = parsed?.matches || parsed?.result || {};
+                const normalized = {};
+                criteria.forEach(item => {
+                    const keyLc = item.toLowerCase();
+                    const candidates = [
+                        matches[item],
+                        matches[keyLc],
+                        matches[item.replace(/\s+/g, "_")],
+                        matches[item.replace(/\s+/g, "_").toLowerCase()],
+                        matches[item.replace(/\s+/g, "").toLowerCase()]
+                    ];
+                    const val = candidates.find(v => typeof v !== "undefined");
+                    normalized[keyLc] = val === true || val === "true" || val === 1;
+                });
+                templateCriteriaStatus[template.id] = normalized;
+                renderTemplateTooltip(template, normalized);
+            } catch (err) {
+                if (err?.name === "AbortError") return;
+                console.warn("Analyse des critères impossible", err);
+            } finally {
+                if (criteriaAnalysisAbortController === controller) {
+                    criteriaAnalysisAbortController = null;
+                }
+            }
+        }
+
+        function triggerCriteriaAnalysis(options = {}) {
+            const force = options.force || false;
+            const tpl = getActiveTemplate();
+            const tplId = tpl?.id;
+            if (tplId && !templateCriteriaStatus[tplId]) {
+                templateCriteriaStatus[tplId] = {};
+            }
+            if (tplId !== lastAnalyzedTemplateId) {
+                lastAnalyzedSentenceCount = 0;
+                lastAnalyzedTemplateId = tplId;
+            }
+            const status = tplId ? templateCriteriaStatus[tplId] : null;
+            renderTemplateTooltip(tpl, status);
+            if (!pageContextField) return;
+            const text = pageContextField.value || "";
+            const trimmed = text.trim();
+            const criteria = getTemplateCriteria(tpl);
+            if (!trimmed || !criteria.length) {
+                lastAnalyzedSentenceCount = countCompletedSentences(text);
+                if (tplId) {
+                    templateCriteriaStatus[tplId] = {};
+                    renderTemplateTooltip(tpl, templateCriteriaStatus[tplId]);
+                }
+                if (criteriaAnalysisAbortController) {
+                    try { criteriaAnalysisAbortController.abort(); } catch (e) { /* noop */ }
+                    criteriaAnalysisAbortController = null;
+                }
+                return;
+            }
+            const sentenceCount = countCompletedSentences(text);
+            if (!force && sentenceCount === lastAnalyzedSentenceCount) {
+                return;
+            }
+            lastAnalyzedSentenceCount = sentenceCount;
+            analyzePromptCriteria(trimmed, tpl);
         }
 
         function closeMenu(menu) {
@@ -4398,8 +4984,9 @@
                 const title = document.createElement("h4");
                 title.textContent = template.name;
                 const desc = document.createElement("p");
-                desc.textContent = template.description ||
+                const rawDesc = template.description ||
                     `Colonnes : ${template.columns.map(col => col.label).join(" – ")} | Lignes : ${template.sections.map(sec => sec.label).join(" – ")}`;
+                desc.innerHTML = escapeHtml(rawDesc).replace(/\n/g, "<br>");
 
                 row.append(title, desc);
 
@@ -4742,7 +5329,13 @@
         });
 
         function fillTemplate(template, data) {
-            return template.replace(/\{\{(\w+)\}\}/g, (_, key) => data[key] ?? "");
+            const normalized = data || {};
+            return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+                if (Object.prototype.hasOwnProperty.call(normalized, key)) {
+                    return normalized[key] ?? "";
+                }
+                return `{{${key}}}`;
+            });
         }
 
         function getPromptTemplateForSection(templateId, sectionKey) {
@@ -4785,7 +5378,7 @@
                 if (!window.GoToolkitOpenAI) {
                     throw new Error("Client OpenAI indisponible");
                 }
-                const apiKey = (apiKeyInput.value || "").trim();
+                const apiKey = (localStorage.getItem("go-toolkit-api-key") || "").trim();
                 const useProxy = !apiKey;
                 console.warn(useProxy ? "Appel OpenAI via le proxy gotoolkit.workers.dev" : "Appel OpenAI officiel");
                 const endpoint = useProxy
@@ -5208,7 +5801,33 @@
             if (!sharedLoaded) {
                 hasLocalSlides = loadSavedState();
             }
+            // Load shared Settings (global Réglages) if present so this page
+            // respects the central API key and reasoning effort selection.
+            try {
+                if (window.localStorage) {
+                    const sharedApi = localStorage.getItem(API_KEY_STORAGE_KEY) || "";
+                    if (sharedApi) {
+                        // Shared API key present; persisted in localStorage for shared use.
+                        if (!localStorage.getItem(API_KEY_STORAGE_KEY)) {
+                            localStorage.setItem(API_KEY_STORAGE_KEY, sharedApi);
+                        }
+                    }
+                    // Reasoning effort: prefer the global key used by timeline, fallback
+                    // to this page's existing key for compatibility.
+                    const PAGE_REASONING_KEY = reasoningEffortKey || "robert-reasoning-effort";
+                    const sharedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem(PAGE_REASONING_KEY) || "";
+                    if (sharedReasoning) {
+                        const sel = document.getElementById("reasoningEffortSelect");
+                        if (sel) sel.value = sharedReasoning;
+                        // Also persist to the page key so code reading it later sees the value
+                        try { localStorage.setItem(PAGE_REASONING_KEY, sharedReasoning); } catch (e) { }
+                    }
+                }
+            } catch (e) {
+                /* noop */
+            }
             renderSlides();
+            requestAnimationFrame(() => resizeAllColumnSections());
             applyRatio(currentRatioIndex);
             if (sharedLoaded) {
                 persistState();
@@ -5221,6 +5840,23 @@
         initializeAppState().catch(err => {
             console.error("Impossible d'initialiser l'état :", err);
             maybeAutoOpenGutenberg();
+        });
+
+        window.addEventListener("resize", () => resizeAllColumnSections());
+
+        // React to global Settings changes saved in other tabs/windows
+        window.addEventListener('storage', function (ev) {
+            if (!ev || !ev.key) return;
+            try {
+                if (ev.key === 'plan-reasoning-effort' || ev.key === reasoningEffortKey) {
+                    const val = ev.newValue || 'low';
+                    const sel = document.getElementById('reasoningEffortSelect');
+                    if (sel) sel.value = val;
+                    try { localStorage.setItem(reasoningEffortKey, val); } catch (e) { }
+                }
+            } catch (err) {
+                /* noop */
+            }
         });
 
         const shareBtn = document.getElementById("shareBtn");
@@ -5434,8 +6070,14 @@
         }
 
         function clearAppCacheAndReload() {
+            // Preserve the shared OpenAI key across a reset
+            var __preservedOpenAiKey = null;
+            try { __preservedOpenAiKey = localStorage.getItem('go-toolkit-api-key'); } catch (e) { }
             try {
                 localStorage.clear();
+                if (__preservedOpenAiKey) {
+                    try { localStorage.setItem('go-toolkit-api-key', __preservedOpenAiKey); } catch (e) { }
+                }
             } catch (err) {
                 console.warn("Impossible de vider localStorage", err);
             }
