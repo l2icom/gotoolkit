@@ -55,6 +55,57 @@
             display: block;
         }
 
+        .menu-trigger {
+            position: relative;
+            display: inline-flex;
+            align-items: stretch;
+            gap: 4px;
+        }
+
+        .context-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 0;
+            min-width: 150px;
+            max-width: 320px;
+            display: none;
+            z-index: 40;
+        }
+
+        .context-menu.open {
+            display: block;
+        }
+
+        .menu-panel {
+            display: flex;
+            max-width: 300px;
+            flex-direction: column;
+            gap: 5px;
+            padding: 0;
+        }
+
+        .menu-panel-btn {
+            border-radius: 0;
+            border: 1px solid #fff;
+            background: transparent;
+            text-align: left;
+            padding: 8px 12px;
+            width: 100%;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .menu-panel-btn:hover,
+        .menu-panel-btn:focus {
+            background: rgba(16, 20, 40, 0.06);
+            outline: none;
+        }
+
         .share-menu-header {
             font-size: 12px;
             font-weight: 600;
@@ -218,6 +269,49 @@
             flex: 0 0 350px;
             max-width: 350px;
             width: 100%;
+        }
+
+        .prompt-input-wrapper {
+            position: relative;
+        }
+
+        .prompt-input-wrapper textarea {
+            position: relative;
+            background: #fbfbff;
+            z-index: 1;
+            padding: 8px;
+            margin: 0;
+            border: 1px solid #d6dbf2;
+            border-radius: 4px;
+            color: #101428;
+            box-sizing: border-box;
+        }
+
+        .prompt-suggestion {
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 0;
+            box-sizing: border-box;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: inherit;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #c8cee8;
+            overflow: hidden;
+            z-index: 2;
+        }
+
+        .prompt-suggestion .prompt-suggestion-mask {
+            color: transparent;
+        }
+
+        .prompt-suggestion .prompt-suggestion-hint {
+            color: #c8cee8;
         }
 
         .drawer-overlay {
@@ -640,9 +734,13 @@
         .excalidraw-card .Island.App-menu__left {
             --padding: 2px;
             padding: 4px;
-            max-height: 600px;
+            max-height: 500px;
             max-width: 95px;
+        }
 
+        /* Tweak panel column spacing inside Excalidraw */
+        .excalidraw .panelColumn {
+            row-gap: 2px;
         }
 
         @media (max-width: 1200px) {
@@ -724,6 +822,16 @@
                 <button id="promptzillaBtn" class="btn drawer-toggle-btn" type="button">⛶ Promptzilla</button>
                 <button id="toggleDrawerBtn" class="btn drawer-toggle-btn" type="button">⸙ Gutenberg</button>
                 <button id="aiSettingsBtn" class="btn ai-button" type="button">⌘ Soulgorithm</button>
+                <div class="menu-trigger" id="capsuleMenuTrigger">
+                    <button id="capsuleMenuBtn" class="btn" type="button" title="Capsule">⧉ Capsule</button>
+                    <div class="context-menu" id="capsuleMenu">
+                        <div class="menu-panel">
+                            <button id="capsuleOpenBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
+                            <button id="capsuleSaveBtn" type="button" class="menu-panel-btn">⭳ Enregistrer</button>
+                            <button id="infoButton" type="button" class="menu-panel-btn">⎉ Vaisseau</button>
+                        </div>
+                    </div>
+                </div>
                 <div class="share-menu-wrapper">
                     <button id="shareBtn" class="btn btn-secondary" type="button" title="Lien de la capsule">☍
                         Nexus</button>
@@ -742,7 +850,6 @@
                         <p class="share-menu-status" id="shareMenuStatus"></p>
                     </div>
                 </div>
-                <button id="infoButton" class="btn" type="button" title="Vaisseau">⎉ Vaisseau</button>
 
             </div>
         </header>
@@ -780,7 +887,7 @@
                         <button id="generateBtn" class="btn-primary" type="button">⌘ Répondre</button>
                     </div>
                     <div class="draw-type-control">
-                        <span class="draw-type-control-label">Type de scénario</span>
+                        <span class="draw-type-control-label">Type</span>
                         <div class="draw-type-selector" role="group" aria-label="Type de diagramme">
                             <button class="draw-type-btn active" type="button" data-draw-type="sequence"
                                 aria-pressed="true">⇄ Échange</button>
@@ -790,8 +897,11 @@
                                 Structure</button>
                         </div>
                     </div>
-                    <textarea id="promptInput" rows="5"
-                        placeholder="Décris ton contexte produit, tes utilisateurs, ta problématique..."></textarea>
+                    <div class="prompt-input-wrapper">
+                        <div id="promptSuggestion" class="prompt-suggestion" aria-hidden="true"></div>
+                        <textarea id="promptInput" rows="5"
+                            placeholder="Décris ton contexte produit, tes utilisateurs, ta problématique..."></textarea>
+                    </div>
                 </div>
                 <div class="mermaid-output-card">
                     <div class="card-title-row">
@@ -908,6 +1018,12 @@
                 { id: "class", label: "Structure", promptValue: "classDiagram", emoji: "⁂" }
             ];
             const DEFAULT_DRAW_TYPE = DRAW_TYPES[0].id;
+            const MERMAID_STYLE_DEFAULTS = {
+                strokeWidth: 2,
+                strokeStyle: "solid",
+                roughness: 0,
+                roundness: null
+            };
             const STORAGE_KEY = "connect-ai-state";
             const API_KEY_STORAGE_KEY = "go-toolkit-api-key";
             function getShareDraftKey(token) {
@@ -997,6 +1113,11 @@
             }
 
             const promptInput = document.getElementById("promptInput");
+            const promptSuggestion = document.getElementById("promptSuggestion");
+            const promptInputWrapper = document.querySelector(".prompt-input-wrapper");
+            if (promptInput && promptInputWrapper && document.activeElement === promptInput) {
+                promptInputWrapper.classList.add("is-focused");
+            }
             const diagramTitleInput = document.getElementById("diagramTitleInput");
             const mermaidOutput = document.getElementById("mermaidOutput");
             const drawTypeButtons = Array.from(document.querySelectorAll(".draw-type-btn[data-draw-type]"));
@@ -1024,14 +1145,20 @@ classDiagram
     }
     User --> Item : "Décris le lien entre eux"`,
                 sequence: `%% SEQUENCE DIAGRAM PLACEHOLDER
-sequenceDiagram
-    participant A as DécrisIciLePremierActeur
-    participant B as DécrisLeDeuxièmeActeur
-    A->>B: Décris la première interaction
-    B->>A: Décris la réponse
-    A->>B: Décris l’étape suivante
-    Note over A,B: Ajoute ici une explication ou un contexte`
+    sequenceDiagram
+        participant A as DécrisIciLePremierActeur
+        participant B as DécrisLeDeuxièmeActeur
+        A->>B: Décris la première interaction
+        B->>A: Décris la réponse
+        A->>B: Décris l’étape suivante
+        Note over A,B: Ajoute ici une explication ou un contexte`
             };
+            let currentPromptSuggestion = "";
+            let currentPromptAiSuggestion = "";
+            let promptSuggestDebounce = null;
+            let promptSuggestAbortController = null;
+            let promptSuggestRequestId = 0;
+            let inlineSuggestion = "";
 
             const DIAGRAM_PROMPTZILLA =
                 (window.GoPrompts && Array.isArray(window.GoPrompts.drawPromptzilla) && window.GoPrompts.drawPromptzilla.length
@@ -1135,7 +1262,12 @@ sequenceDiagram
                 if (promptInputEl) promptInputEl.value = bp.description;
                 try { updateActivePageDrawType(bp.drawType); } catch (err) { }
                 closePromptzillaModal();
-                if (promptInputEl) promptInputEl.focus();
+                if (promptInputEl) {
+                    promptInputEl.focus();
+                    refreshPromptSuggestion();
+                    syncPromptSuggestionScroll();
+                    schedulePromptAISuggestion();
+                }
             }
 
             const generateBtn = document.getElementById("generateBtn");
@@ -1173,6 +1305,10 @@ sequenceDiagram
             const shareMenuStatus = document.getElementById("shareMenuStatus");
             const shareCreateBtn = document.getElementById("shareCreateBtn");
             const shareUpdateBtn = document.getElementById("shareUpdateBtn");
+            const capsuleMenuBtn = document.getElementById("capsuleMenuBtn");
+            const capsuleMenu = document.getElementById("capsuleMenu");
+            const capsuleOpenBtn = document.getElementById("capsuleOpenBtn");
+            const capsuleSaveBtn = document.getElementById("capsuleSaveBtn");
             const toggleDrawerBtn = document.getElementById("toggleDrawerBtn");
             const drawerOverlay = document.getElementById("drawerOverlay");
             const connectLeft = document.querySelector(".connect-left");
@@ -1189,6 +1325,11 @@ sequenceDiagram
             const DESKTOP_GUTENBERG_BREAKPOINT = 900;
             const GUTENBERG_SEEN_KEY = "robert-gutenberg-opened-draw";
             const GUTENBERG_OPEN_STATE_KEY = "robert-gutenberg-open-state-draw";
+            const capsuleImportInput = document.createElement("input");
+            capsuleImportInput.type = "file";
+            capsuleImportInput.accept = "application/json";
+            capsuleImportInput.style.display = "none";
+            document.body.appendChild(capsuleImportInput);
             const tourSteps = [
                 {
                     title: "Intention Le Cardinal",
@@ -1300,16 +1441,19 @@ sequenceDiagram
             function loadState() {
                 try {
                     const raw = localStorage.getItem(STORAGE_KEY);
+                    const storedApiKey = localStorage.getItem(API_KEY_STORAGE_KEY) || "";
                     if (!raw) {
                         state.pages = [createPage(1)];
+                        state.apiKey = storedApiKey || "";
                         return;
                     }
                     const parsed = JSON.parse(raw);
                     const storedPages = Array.isArray(parsed.pages) && parsed.pages.length ? parsed.pages : [createPage(1)];
+                    const normalizedPages = storedPages.map((page, index) => normalizePage(page, index));
                     state = {
-                        pages: storedPages.map((page, index) => normalizePage(page, index)),
-                        activeIndex: parsed.activeIndex || 0,
-                        apiKey: parsed.apiKey || "",
+                        pages: normalizedPages,
+                        activeIndex: Math.max(0, Math.min(normalizedPages.length - 1, parsed.activeIndex || 0)),
+                        apiKey: parsed.apiKey || storedApiKey || "",
                         promptTemplate: parsed.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
                         reasoningEffort: parsed.reasoningEffort || parsed.reasoning?.effort || "low"
                     };
@@ -1357,9 +1501,17 @@ sequenceDiagram
 
             function saveState() {
                 try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                    const persistable = {
+                        ...state,
+                        pages: state.pages.map((page, index) => normalizePage(page, index))
+                    };
+                    state.pages = persistable.pages;
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(persistable));
+                    if (state.apiKey) {
+                        localStorage.setItem(API_KEY_STORAGE_KEY, state.apiKey);
+                    }
                     if (currentShareToken) {
-                        writeShareDraft(currentShareToken, state, new Date().toISOString());
+                        writeShareDraft(currentShareToken, persistable, new Date().toISOString());
                     }
                 } catch (err) {
                     console.error("Impossible de sauvegarder l'état", err);
@@ -1376,7 +1528,7 @@ sequenceDiagram
                             : [];
                     const appState = typeof api.getAppState === "function" ? api.getAppState() : undefined;
                     const files = typeof api.getFiles === "function" ? api.getFiles() : undefined;
-                    return { elements: elements || [], appState, files };
+                    return normalizeScene({ elements: elements || [], appState, files });
                 } catch (err) {
                     console.warn("Impossible de capturer la scène Excalidraw", err);
                     return null;
@@ -1407,9 +1559,109 @@ sequenceDiagram
                 state.apiKey = payload.apiKey || "";
                 state.promptTemplate = payload.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
                 state.reasoningEffort = payload.reasoningEffort || payload.reasoning?.effort || "low";
-                if (payload.scene && payload.scene.elements) {
-                    sharedScenePayload = payload.scene;
+                if (payload.scene) {
+                    sharedScenePayload = normalizeScene(payload.scene);
                 }
+                return true;
+            }
+
+            function getExportFilename(ext) {
+                try {
+                    const rawTitle = (document.title || "export").toString().trim();
+                    const safe = rawTitle.replace(/[^a-z0-9\-_.]/gi, "_").replace(/_+/g, "_");
+                    const ts = new Date().toISOString().replace(/[:.]/g, "-");
+                    return `${safe || "export"}_${ts}.${ext || "txt"}`;
+                } catch (err) {
+                    return `export_${Date.now()}.${ext || "txt"}`;
+                }
+            }
+
+            async function buildSceneSnapshotForPage(page, isActive) {
+                if (!page) return null;
+                if (isActive) {
+                    const liveScene = await captureExcalidrawScene();
+                    if (liveScene) return liveScene;
+                }
+                const storedScene = normalizeScene(page.scene);
+                if (storedScene) return storedScene;
+                try {
+                    const sceneData = await buildScenePayload(page.mermaid || "");
+                    const api = await getExcalidrawApi();
+                    const appState = buildExcalidrawAppState(api, sceneData.appState || {});
+                    const payload = {
+                        elements: sceneData.elements || [],
+                        appState
+                    };
+                    if (sceneData.files) {
+                        payload.files = sceneData.files;
+                    }
+                    return normalizeScene(payload);
+                } catch (err) {
+                    console.warn("Impossible de générer la scène Excalidraw pour l'export", err);
+                    return null;
+                }
+            }
+
+            async function buildPageScenesSnapshot() {
+                const snapshots = [];
+                for (let i = 0; i < state.pages.length; i++) {
+                    const snapshot = await buildSceneSnapshotForPage(state.pages[i], i === state.activeIndex);
+                    snapshots.push(snapshot);
+                }
+                return snapshots;
+            }
+
+            async function buildCapsulePayload() {
+                const snapshots = await buildPageScenesSnapshot();
+                const pages = state.pages.map((page, index) => {
+                    const normalized = normalizePage(page, index);
+                    const scene = snapshots[index] || normalized.scene || null;
+                    if (scene) {
+                        normalized.scene = scene;
+                    } else {
+                        delete normalized.scene;
+                    }
+                    return normalized;
+                });
+                return {
+                    pages,
+                    activeIndex: state.activeIndex,
+                    apiKey: state.apiKey || "",
+                    promptTemplate: state.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
+                    reasoningEffort: state.reasoningEffort || "low"
+                };
+            }
+
+            function applyImportedCapsule(payload) {
+                if (!payload || typeof payload !== "object") return false;
+                const incomingPages = Array.isArray(payload.pages) && payload.pages.length
+                    ? payload.pages
+                    : Array.isArray(payload.tabs) && payload.tabs.length
+                        ? payload.tabs
+                        : null;
+                const normalizedPages = (incomingPages && incomingPages.length)
+                    ? incomingPages.map((page, index) => normalizePage(page, index))
+                    : [createPage(1)];
+                state.pages = normalizedPages;
+                state.activeIndex = Math.max(0, Math.min(normalizedPages.length - 1, payload.activeIndex || 0));
+                state.apiKey = payload.apiKey || state.apiKey || "";
+                state.promptTemplate = payload.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                state.reasoningEffort = payload.reasoningEffort || payload.reasoning?.effort || "low";
+                sharedScenePayload = null;
+                currentShareToken = null;
+                shareLoadedFromRemote = false;
+                shareLastUpdatedAt = null;
+                updateUrlWithShareToken(null);
+                renderTabs();
+                syncFormWithPage();
+                if (promptTemplateField) {
+                    promptTemplateField.value = state.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                }
+                if (reasoningEffortSelect) {
+                    reasoningEffortSelect.value = state.reasoningEffort || "low";
+                }
+                updateShareMenuUI();
+                saveState();
                 return true;
             }
 
@@ -1507,22 +1759,7 @@ sequenceDiagram
             async function applySharedSceneIfPresent() {
                 if (!sharedScenePayload) return;
                 try {
-                    const api = await getExcalidrawApi();
-                    const appState = {
-                        ...api.getAppState?.(),
-                        ...(sharedScenePayload.appState || {})
-                    };
-                    const scenePayload = {
-                        elements: sharedScenePayload.elements || [],
-                        appState
-                    };
-                    if (sharedScenePayload.files) {
-                        scenePayload.files = sharedScenePayload.files;
-                    }
-                    applySceneUpdate(api, scenePayload);
-                    if (sharedScenePayload.files && typeof api.addFiles === "function") {
-                        api.addFiles(sharedScenePayload.files);
-                    }
+                    await applySceneToExcalidraw(sharedScenePayload);
                 } catch (err) {
                     console.warn("Impossible d'appliquer la scène partagée", err);
                 }
@@ -1646,6 +1883,10 @@ sequenceDiagram
 
             function closeShareMenu() {
                 shareMenu?.classList.remove("open");
+            }
+
+            function closeCapsuleMenu() {
+                capsuleMenu?.classList.remove("open");
             }
 
             function closeInfoPopup() {
@@ -1844,6 +2085,34 @@ sequenceDiagram
                 });
             }
 
+            function normalizeScene(scene) {
+                if (!scene || typeof scene !== "object") {
+                    return null;
+                }
+                const elements = Array.isArray(scene.elements) ? scene.elements : [];
+                const appState = scene.appState && typeof scene.appState === "object" ? scene.appState : undefined;
+                const files = toBinaryFilesObject(scene.files);
+                if (!elements.length && !appState && !files) {
+                    return null;
+                }
+                return { elements, appState, files };
+            }
+
+            function toBinaryFilesObject(files) {
+                if (!files) return null;
+                if (files instanceof Map) {
+                    return Object.fromEntries(files.entries());
+                }
+                if (typeof files === "object") {
+                    const result = {};
+                    Object.entries(files).forEach(([key, value]) => {
+                        if (value) result[key] = value;
+                    });
+                    return result;
+                }
+                return null;
+            }
+
             function createPage(position) {
                 return {
                     id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
@@ -1852,7 +2121,8 @@ sequenceDiagram
                     input: "",
                     mermaid: "",
                     lastAiMermaid: "",
-                    drawType: DEFAULT_DRAW_TYPE
+                    drawType: DEFAULT_DRAW_TYPE,
+                    scene: null
                 };
             }
 
@@ -1864,6 +2134,7 @@ sequenceDiagram
                     : DEFAULT_DRAW_TYPE;
                 const mermaid = page?.mermaid || "";
                 const lastAiMermaid = page?.lastAiMermaid || mermaid || "";
+                const scene = normalizeScene(page?.scene);
                 return {
                     id: page?.id || fallback.id,
                     label: page?.label || fallback.label,
@@ -1871,7 +2142,8 @@ sequenceDiagram
                     input: page?.input || "",
                     mermaid,
                     lastAiMermaid,
-                    drawType
+                    drawType,
+                    scene
                 };
             }
 
@@ -1929,12 +2201,219 @@ sequenceDiagram
                 if (!promptInput) return;
                 const normalized = DRAW_TYPES.some(option => option.id === drawType) ? drawType : DEFAULT_DRAW_TYPE;
                 promptInput.placeholder = drawTypePlaceholders[normalized] || "Décris ton contexte produit, tes utilisateurs, ta problématique...";
+                refreshPromptSuggestion();
+                schedulePromptAISuggestion();
             }
 
             function updateMermaidPlaceholder(drawType) {
                 if (!mermaidOutput) return;
                 const normalized = DRAW_TYPES.some(option => option.id === drawType) ? drawType : DEFAULT_DRAW_TYPE;
                 mermaidOutput.placeholder = mermaidPlaceholders[normalized] || "Le code généré apparaitra ici";
+            }
+
+            function escapeHtml(str) {
+                return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+            }
+
+            function isCaretAtEnd(inputEl) {
+                if (!inputEl) return false;
+                return inputEl.selectionStart === inputEl.value.length && inputEl.selectionEnd === inputEl.value.length;
+            }
+
+            function setInlineSuggestion(text) {
+                inlineSuggestion = (text || "").trim();
+                currentPromptAiSuggestion = inlineSuggestion;
+                renderPromptSuggestion();
+            }
+
+            async function fetchInlineSuggestion({ apiKey, messages, signal, timeoutMs = 15000 }) {
+                const useProxy = !apiKey;
+                const endpoint = useProxy
+                    ? "https://openai.gotoolkit.workers.dev/v1/chat/completions"
+                    : "https://api.openai.com/v1/chat/completions";
+                const body = {
+                    model: "gpt-4o-mini",
+                    messages,
+                    max_tokens: 32,
+                    temperature: 0.7
+                };
+                console.debug("[inline-suggest] outbound payload", {
+                    bodySummary: { max_tokens: body.max_tokens, temperature: body.temperature, messages: messages.length }
+                });
+                const controller = new AbortController();
+                if (signal) {
+                    signal.addEventListener("abort", () => controller.abort(), { once: true });
+                }
+                const timeout = setTimeout(() => controller.abort(), timeoutMs);
+                const res = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {})
+                    },
+                    body: JSON.stringify(body),
+                    signal: controller.signal
+                });
+                clearTimeout(timeout);
+                const text = await res.text();
+                if (!res.ok) {
+                    console.warn("[inline-suggest] API error", text);
+                    throw new Error(text || "OpenAI inline suggestion failed");
+                }
+                let parsed = null;
+                try {
+                    parsed = JSON.parse(text);
+                } catch (err) {
+                    console.warn("[inline-suggest] cannot parse response", err);
+                    return "";
+                }
+                const content = parsed?.choices?.[0]?.message?.content || "";
+                console.debug("[inline-suggest] raw response length", text.length, "choice length", (content || "").length);
+                return (content || "").trim();
+            }
+
+            function renderPromptSuggestion() {
+                if (!promptInput || !promptSuggestion) return;
+                const value = promptInput.value || "";
+                const atEnd = isCaretAtEnd(promptInput);
+                const hint = inlineSuggestion && atEnd ? inlineSuggestion : "";
+                currentPromptSuggestion = hint;
+                if (!hint) {
+                    promptSuggestion.innerHTML = "";
+                    promptSuggestion.style.opacity = "0";
+                    return;
+                }
+                const mask = escapeHtml(value);
+                const hintHtml = escapeHtml(hint);
+                // Wrap mask and hint inside a container that mimics textarea content.
+                promptSuggestion.innerHTML = `<div class="prompt-suggestion-content"><span class="prompt-suggestion-mask">${mask}</span><span class="prompt-suggestion-hint">${hintHtml}</span></div>`;
+                const suggestionContent = promptSuggestion.querySelector(".prompt-suggestion-content");
+                if (suggestionContent && promptInput) {
+                    suggestionContent.style.padding = getComputedStyle(promptInput).padding;
+                    suggestionContent.style.lineHeight = getComputedStyle(promptInput).lineHeight;
+                    suggestionContent.style.fontFamily = getComputedStyle(promptInput).fontFamily;
+                    suggestionContent.style.fontSize = getComputedStyle(promptInput).fontSize;
+                    suggestionContent.style.whiteSpace = "pre-wrap";
+                    suggestionContent.style.wordBreak = "break-word";
+                }
+                promptSuggestion.style.opacity = "1";
+                promptSuggestion.scrollTop = promptInput.scrollTop;
+                promptSuggestion.scrollLeft = promptInput.scrollLeft;
+            }
+
+            function refreshPromptSuggestion() {
+                requestAnimationFrame(renderPromptSuggestion);
+            }
+
+            function acceptPromptSuggestion() {
+                if (!promptInput || !currentPromptSuggestion) return false;
+                promptInput.value = (promptInput.value || "") + currentPromptSuggestion;
+                renderPromptSuggestion();
+                promptInput.dispatchEvent(new Event("input", { bubbles: true }));
+                currentPromptAiSuggestion = "";
+                return true;
+            }
+
+            function syncPromptSuggestionScroll() {
+                if (!promptInput || !promptSuggestion) return;
+                promptSuggestion.scrollTop = promptInput.scrollTop;
+                promptSuggestion.scrollLeft = promptInput.scrollLeft;
+            }
+
+            function clearPromptAiSuggestion() {
+                currentPromptAiSuggestion = "";
+                renderPromptSuggestion();
+            }
+
+            function stopPromptSuggestionRequest() {
+                if (promptSuggestAbortController) {
+                    promptSuggestAbortController.abort();
+                    promptSuggestAbortController = null;
+                }
+            }
+
+            function schedulePromptAISuggestion() {
+                if (promptSuggestDebounce) {
+                    clearTimeout(promptSuggestDebounce);
+                }
+                promptSuggestDebounce = setTimeout(startPromptAISuggestion, 350);
+            }
+
+            async function startPromptAISuggestion() {
+                console.debug("[inline-suggest] start request");
+                if (!promptInput || !window.GoToolkitOpenAI || !GoToolkitOpenAI.supportsStreaming()) {
+                    console.debug("[inline-suggest] skip: client/streaming unavailable");
+                    return;
+                }
+                const apiKey = (state.apiKey || "").trim();
+                const value = (promptInput.value || "").trim();
+                if (!value || value.length < 12) {
+                    console.debug("[inline-suggest] skip: text too short", { length: value.length });
+                    clearPromptAiSuggestion();
+                    return;
+                }
+                const page = getActivePage();
+                const drawType = page?.drawType || DEFAULT_DRAW_TYPE;
+                const placeholder = drawTypePlaceholders[drawType] || promptInput.placeholder || "";
+                const requestId = ++promptSuggestRequestId;
+                stopPromptSuggestionRequest();
+                const abortController = new AbortController();
+                promptSuggestAbortController = abortController;
+                const startedAt = performance.now();
+                console.debug("[inline-suggest] sending", { requestId, valueLength: value.length });
+                const messages = [
+                    {
+                        role: "system",
+                        content:
+                            "Tu complètes en ligne un début de scénario utilisateur. Réponds uniquement avec une courte suite (3-6 mots), sans reformuler ni commencer de nouvelle phrase si inutile."
+                    },
+                    {
+                        role: "user",
+                        content:
+                            `Contexte attendu : ${placeholder}\n\nTexte en cours (ne pas répéter) :\n` +
+                            value +
+                            "\n\nSuite probable en quelques mots :"
+                    }
+                ];
+                console.debug("[inline-suggest] payload prepared", {
+                    userTextLength: value.length,
+                    placeholderLength: placeholder.length
+                });
+                try {
+                    const suggestion = await fetchInlineSuggestion({
+                        apiKey,
+                        messages,
+                        signal: abortController.signal
+                    });
+                    if (requestId !== promptSuggestRequestId) return;
+                    let rawSuggestion = suggestion || "";
+                    console.debug("[inline-suggest] response length", rawSuggestion.length, "content", rawSuggestion);
+                    const words = rawSuggestion
+                        .replace(/\s+/g, " ")
+                        .replace(/\n+/g, " ")
+                        .trim()
+                        .split(" ")
+                        .filter(Boolean);
+                    if (!words.length) {
+                        console.debug("[inline-suggest] empty suggestion", { rawSuggestion });
+                        setInlineSuggestion("");
+                        return;
+                    }
+                    const limited = words.slice(0, 4).join(" ");
+                    setInlineSuggestion(limited);
+                    const elapsedMs = Math.round(performance.now() - startedAt);
+                    console.log("[inline-suggest] completed in", elapsedMs, "ms", { rawSuggestion, limited });
+                } catch (err) {
+                    if (err?.name !== "AbortError") {
+                        const elapsedMs = Math.round(performance.now() - startedAt);
+                        console.log("[inline-suggest] failed after", elapsedMs, "ms", err);
+                        console.warn("Inline suggestion failed", err);
+                    }
+                } finally {
+                    if (promptSuggestAbortController === abortController) {
+                        promptSuggestAbortController = null;
+                    }
+                }
             }
 
             function updateActivePageDrawType(typeId) {
@@ -1952,11 +2431,49 @@ sequenceDiagram
                 saveState();
             }
 
+            async function persistActivePageScene(page = getActivePage()) {
+                if (!page) return null;
+                try {
+                    const scene = await captureExcalidrawScene();
+                    if (scene) {
+                        page.scene = scene;
+                        return scene;
+                    }
+                } catch (err) {
+                    console.warn("Impossible de sauvegarder la scène active", err);
+                }
+                return null;
+            }
+
             function setActivePage(index) {
-                state.activeIndex = Math.max(0, Math.min(state.pages.length - 1, index));
+                const targetIndex = Math.max(0, Math.min(state.pages.length - 1, index));
+                const previousPage = getActivePage();
+                const capturePromise = persistActivePageScene(previousPage);
+                state.activeIndex = targetIndex;
                 renderTabs();
-                syncFormWithPage();
-                saveState();
+                const applySwitch = () => {
+                    syncFormWithPage();
+                    saveState();
+                };
+                if (capturePromise && typeof capturePromise.finally === "function") {
+                    capturePromise.finally(applySwitch);
+                } else {
+                    applySwitch();
+                }
+            }
+
+            async function renderPageScene(page) {
+                if (!page) return;
+                const storedScene = normalizeScene(page.scene);
+                if (storedScene) {
+                    try {
+                        await applySceneToExcalidraw(storedScene);
+                        return;
+                    } catch (err) {
+                        console.warn("Impossible d'appliquer la scène sauvegardée", err);
+                    }
+                }
+                await updateExcalidrawScene(page?.mermaid || "");
             }
 
             function syncFormWithPage() {
@@ -1970,7 +2487,9 @@ sequenceDiagram
                 updateDrawTypeSelector(page?.drawType || DEFAULT_DRAW_TYPE);
                 updatePromptPlaceholder(page?.drawType || DEFAULT_DRAW_TYPE);
                 updateMermaidPlaceholder(page?.drawType || DEFAULT_DRAW_TYPE);
-                updateExcalidrawScene(page?.mermaid || "");
+                refreshPromptSuggestion();
+                syncPromptSuggestionScroll();
+                renderPageScene(page);
             }
 
             function clearGenerateCooldown() {
@@ -2247,40 +2766,6 @@ sequenceDiagram
             }
 
             let excalidrawReadyPromise = null;
-            let panelReorderObserver = null;
-
-            const findPanelSection = (panel, matcher) =>
-                Array.from(panel?.children || []).find(child => {
-                    const label = child.querySelector("legend, h3, label, [aria-label]");
-                    const text = (label?.textContent || "").trim().toLowerCase();
-                    const aria = (label?.getAttribute("aria-label") || "").trim().toLowerCase();
-                    return matcher.test(text) || matcher.test(aria);
-                });
-
-            const moveColorsAfterTextAlign = () => {
-                const panel = document.querySelector(".excalidraw .App-menu__left .panelColumn");
-                if (!panel) return;
-                const stroke = findPanelSection(panel, /(stroke|contour)/i);
-                const background = findPanelSection(panel, /(background|fond)/i);
-                const textAlign = findPanelSection(panel, /(text align|alignement.*texte|align.*text)/i);
-                if (!textAlign) return;
-                const insertBefore = textAlign.nextSibling;
-                [background, stroke].forEach(node => {
-                    if (node && panel.contains(node)) {
-                        panel.insertBefore(node, insertBefore);
-                    }
-                });
-            };
-
-            function setupPanelReorder() {
-                const host = document.getElementById("excalidrawHost");
-                if (!host || panelReorderObserver) {
-                    return;
-                }
-                panelReorderObserver = new MutationObserver(moveColorsAfterTextAlign);
-                panelReorderObserver.observe(host, { childList: true, subtree: true });
-                moveColorsAfterTextAlign();
-            }
 
             function getExcalidrawBridge() {
                 return window.GoToolkitExcalidraw || null;
@@ -2296,10 +2781,7 @@ sequenceDiagram
                     return Promise.reject(new Error("Hôte Excalidraw introuvable"));
                 }
                 excalidrawReadyPromise = waitForBridgeBundle()
-                    .then(bridge => bridge.initialize(hostEl).then(() => {
-                        setupPanelReorder();
-                        return bridge;
-                    }))
+                    .then(bridge => bridge.initialize(hostEl).then(() => bridge))
                     .catch(error => {
                         excalidrawReadyPromise = null;
                         throw error;
@@ -2344,6 +2826,19 @@ sequenceDiagram
                     return null;
                 }
             }
+            function applyMermaidStyleDefaults(elements) {
+                if (!Array.isArray(elements)) return [];
+                return elements.map(element => {
+                    if (!element || typeof element !== "object") return element;
+                    return {
+                        ...element,
+                        strokeWidth: element.strokeWidth ?? MERMAID_STYLE_DEFAULTS.strokeWidth,
+                        strokeStyle: element.strokeStyle || MERMAID_STYLE_DEFAULTS.strokeStyle,
+                        roughness: MERMAID_STYLE_DEFAULTS.roughness,
+                        roundness: MERMAID_STYLE_DEFAULTS.roundness
+                    };
+                });
+            }
             async function buildScenePayload(code) {
                 const trimmed = (code || "").trim();
                 if (!trimmed) {
@@ -2355,10 +2850,16 @@ sequenceDiagram
                     const imageOnlyScene = converted.elements.every(element => element?.type === "image");
                     // If mermaid conversion produced any image, skip it and fallback to legacy vectorization for editability.
                     if (!hasImage && !imageOnlyScene) {
-                        return converted;
+                        return {
+                            ...converted,
+                            elements: applyMermaidStyleDefaults(converted.elements || [])
+                        };
                     }
                 }
-                return { elements: buildLegacyExcalidrawElements(trimmed), files: null };
+                return {
+                    elements: applyMermaidStyleDefaults(buildLegacyExcalidrawElements(trimmed)),
+                    files: null
+                };
             }
 
             function createBaseElement(type, overrides = {}) {
@@ -2374,10 +2875,10 @@ sequenceDiagram
                     strokeColor: "#1c2a55",
                     backgroundColor: overrides.backgroundColor ?? "#ffffff",
                     fillStyle: overrides.fillStyle ?? "solid",
-                    strokeWidth: overrides.strokeWidth ?? 2,
-                    strokeStyle: "solid",
-                    roundness: overrides.roundness ?? null,
-                    roughness: 0,
+                    strokeWidth: overrides.strokeWidth ?? MERMAID_STYLE_DEFAULTS.strokeWidth,
+                    strokeStyle: overrides.strokeStyle || MERMAID_STYLE_DEFAULTS.strokeStyle,
+                    roundness: overrides.roundness ?? MERMAID_STYLE_DEFAULTS.roundness,
+                    roughness: MERMAID_STYLE_DEFAULTS.roughness,
                     opacity: 100,
                     groupIds: [],
                     boundElements: [],
@@ -2935,6 +3436,48 @@ sequenceDiagram
                 return false;
             }
 
+            function buildExcalidrawAppState(api, overrides = {}) {
+                const base = (api && typeof api.getAppState === "function") ? api.getAppState() : {};
+                return {
+                    ...base,
+                    ...overrides,
+                    viewBackgroundColor: "#fdfdfd",
+                    gridModeEnabled: false,
+                    isLoading: false,
+                    currentItemRoundness: "sharp"
+                };
+            }
+
+            async function applySceneToExcalidraw(scene, options = {}) {
+                const normalized = normalizeScene(scene);
+                if (!normalized) return false;
+                const api = await getExcalidrawApi();
+                const appState = buildExcalidrawAppState(api, normalized.appState || {});
+                const filesObj = toBinaryFilesObject(normalized.files);
+                const scenePayload = {
+                    elements: normalized.elements || [],
+                    appState
+                };
+                if (filesObj) {
+                    scenePayload.files = filesObj;
+                }
+                const applied = applySceneUpdate(api, scenePayload);
+                if (filesObj && typeof api.addFiles === "function") {
+                    api.addFiles(Object.values(filesObj));
+                }
+                if (applied && !options.skipStore) {
+                    const activePage = getActivePage();
+                    if (activePage) {
+                        activePage.scene = normalizeScene({
+                            elements: scenePayload.elements,
+                            appState,
+                            files: scenePayload.files || null
+                        });
+                    }
+                }
+                return applied;
+            }
+
             async function updateExcalidrawScene(code) {
                 pendingSceneCode = code || "";
                 sceneBuildRequestId += 1;
@@ -2945,18 +3488,14 @@ sequenceDiagram
                     if (requestId !== sceneBuildRequestId) {
                         return;
                     }
-                    const appState = {
-                        ...api.getAppState(),
-                        viewBackgroundColor: "#fdfdfd",
-                        gridModeEnabled: false,
-                        isLoading: false
-                    };
+                    const appState = buildExcalidrawAppState(api, sceneData.appState || {});
+                    const filesObj = toBinaryFilesObject(sceneData.files);
                     const scenePayload = {
                         elements: sceneData.elements || [],
                         appState
                     };
-                    if (sceneData.files) {
-                        scenePayload.files = sceneData.files;
+                    if (filesObj) {
+                        scenePayload.files = filesObj;
                     }
                     if (!applySceneUpdate(api, scenePayload)) {
                         console.warn("Aucune méthode disponible pour mettre à jour Excalidraw", {
@@ -2965,8 +3504,18 @@ sequenceDiagram
                             hasReplaceAll: typeof api?.replaceAllElements === "function"
                         });
                     }
-                    if (sceneData.files && typeof api.addFiles === "function") {
-                        api.addFiles(sceneData.files);
+                    if (filesObj && typeof api.addFiles === "function") {
+                        api.addFiles(Object.values(filesObj));
+                    }
+                    if (requestId === sceneBuildRequestId) {
+                        const activePage = getActivePage();
+                        if (activePage) {
+                            activePage.scene = normalizeScene({
+                                elements: scenePayload.elements,
+                                appState,
+                                files: scenePayload.files || null
+                            });
+                        }
                     }
                 } catch (error) {
                     console.error("Impossible de mettre à jour Excalidraw", error);
@@ -2978,13 +3527,13 @@ sequenceDiagram
                         return;
                     }
                     const fallbackElements = buildFallbackTextElements(pendingSceneCode || "Diagramme indisponible");
-                    const appState = {
-                        ...api.getAppState(),
-                        viewBackgroundColor: "#fdfdfd",
-                        gridModeEnabled: false,
-                        isLoading: false
-                    };
-                    applySceneUpdate(api, { elements: fallbackElements, appState });
+                    const appState = buildExcalidrawAppState(api);
+                    const scenePayload = { elements: fallbackElements, appState };
+                    applySceneUpdate(api, scenePayload);
+                    const activePage = getActivePage();
+                    if (activePage) {
+                        activePage.scene = normalizeScene(scenePayload);
+                    }
                 }
             }
 
@@ -2996,7 +3545,33 @@ sequenceDiagram
                         page.input = promptInput.value;
                         saveState();
                     }
+                    setInlineSuggestion("");
+                    refreshPromptSuggestion();
+                    schedulePromptAISuggestion();
                 });
+                promptInput.addEventListener("focus", () => {
+                    promptInputWrapper?.classList.add("is-focused");
+                    refreshPromptSuggestion();
+                });
+                promptInput.addEventListener("blur", () => {
+            promptInputWrapper?.classList.remove("is-focused");
+            refreshPromptSuggestion();
+                });
+                promptInput.addEventListener("keydown", event => {
+                    if (!currentPromptSuggestion) return;
+                    const atEnd =
+                        promptInput.selectionStart === promptInput.value.length &&
+                        promptInput.selectionEnd === promptInput.value.length;
+                    const shouldAccept =
+                        atEnd &&
+                        (event.key === "Tab" ||
+                            (event.key === "ArrowRight" && !event.metaKey && !event.ctrlKey && !event.shiftKey));
+                    if (shouldAccept) {
+                        event.preventDefault();
+                        acceptPromptSuggestion();
+                    }
+                });
+                promptInput.addEventListener("scroll", syncPromptSuggestionScroll);
                 diagramTitleInput?.addEventListener("dblclick", () => {
                     diagramTitleInput.readOnly = false;
                     diagramTitleInput.focus();
@@ -3016,6 +3591,7 @@ sequenceDiagram
                     const value = mermaidOutput.value;
                     if (page) {
                         page.mermaid = value;
+                        page.scene = null;
                         saveState();
                     }
                     updateExcalidrawScene(value);
@@ -3040,11 +3616,11 @@ sequenceDiagram
                         /* noop */
                     }
                 });
-                function clearActivePage(options = {}) {
-                    const clearRecit = !!options.clearRecit;
-                    const page = getActivePage();
-                    if (!page) return;
-                    if (!clearRecit) {
+            function clearActivePage(options = {}) {
+                const clearRecit = !!options.clearRecit;
+                const page = getActivePage();
+                if (!page) return;
+                if (!clearRecit) {
                         promptInput.value = page.input || promptInput.value;
                     } else {
                         promptInput.value = "";
@@ -3052,12 +3628,16 @@ sequenceDiagram
                     }
                     page.mermaid = "";
                     page.title = page.label;
-                    page.drawType = DEFAULT_DRAW_TYPE;
-                    mermaidOutput.value = "";
-                    diagramTitleInput.value = page.title;
-                    updateActivePageDrawType(DEFAULT_DRAW_TYPE);
-                    updateExcalidrawScene("");
-                }
+                page.drawType = DEFAULT_DRAW_TYPE;
+                page.scene = null;
+                mermaidOutput.value = "";
+                diagramTitleInput.value = page.title;
+                updateActivePageDrawType(DEFAULT_DRAW_TYPE);
+                refreshPromptSuggestion();
+                syncPromptSuggestionScroll();
+                clearPromptAiSuggestion();
+                updateExcalidrawScene("");
+            }
                 deletePageBtn.addEventListener("click", () => {
                     const page = getActivePage();
                     if (!page || state.pages.length <= 1) return;
@@ -3073,6 +3653,7 @@ sequenceDiagram
                     const page = getActivePage();
                     if (page) {
                         page.mermaid = "";
+                        page.scene = null;
                     }
                     mermaidOutput.value = "";
                     updateExcalidrawScene("");
@@ -3087,6 +3668,7 @@ sequenceDiagram
                         return;
                     }
                     page.mermaid = restoreCode;
+                    page.scene = null;
                     mermaidOutput.value = restoreCode;
                     updateExcalidrawScene(restoreCode);
                     saveState();
@@ -3095,6 +3677,7 @@ sequenceDiagram
                 infoButton?.addEventListener("click", event => {
                     event.stopPropagation();
                     closeShareMenu();
+                    closeCapsuleMenu();
                     infoPopup?.classList.toggle("open");
                 });
                 updateAppBtn?.addEventListener("click", event => {
@@ -3131,12 +3714,39 @@ sequenceDiagram
                 aiSettingsBtn.addEventListener("click", openModal);
                 closeAiModalBtn.addEventListener("click", closeModal);
                 const applyAiSettingsBtn = document.getElementById("applyAiSettingsBtn");
-                applyAiSettingsBtn?.addEventListener("click", () => {
+                applyAiSettingsBtn?.addEventListener("click", async () => {
                     state.apiKey = apiKeyField?.value.trim() || "";
                     state.promptTemplate = promptTemplateField?.value.trim() || DEFAULT_PROMPT_TEMPLATE;
                     state.reasoningEffort = reasoningEffortSelect?.value || "low";
                     saveState();
-                    closeModal();
+                    if (!state.apiKey) {
+                        setStatus("Ajoute une clé OpenAI pour activer les suggestions inline.");
+                        return;
+                    }
+                    if (!window.GoToolkitOpenAI) {
+                        setStatus("Client OpenAI indisponible.");
+                        return;
+                    }
+                    try {
+                        applyAiSettingsBtn.disabled = true;
+                        const payload = {
+                            model: "gpt-5-nano",
+                            messages: [{ role: "user", content: "Ping" }],
+                            max_output_tokens: 16
+                        };
+                        await GoToolkitOpenAI.chatCompletion({
+                            endpoint: "https://api.openai.com/v1/responses",
+                            apiKey: state.apiKey,
+                            payload
+                        });
+                        setStatus("Clé OpenAI validée ✔️");
+                        closeModal();
+                    } catch (err) {
+                        console.error("Test clé OpenAI échoué", err);
+                        setStatus("Clé OpenAI invalide ou API indisponible.");
+                    } finally {
+                        applyAiSettingsBtn.disabled = false;
+                    }
                 });
                 resetPromptBtn.addEventListener("click", resetPrompt);
                 apiKeyField?.addEventListener("input", () => {
@@ -3167,6 +3777,57 @@ sequenceDiagram
 
                 drawerMediaQuery.addEventListener("change", handleDrawerBreakpointChange);
 
+                capsuleMenuBtn?.addEventListener("click", event => {
+                    event.stopPropagation();
+                    closeShareMenu();
+                    closeInfoPopup();
+                    capsuleMenu?.classList.toggle("open");
+                });
+                capsuleMenu?.addEventListener("click", event => {
+                    event.stopPropagation();
+                });
+                capsuleOpenBtn?.addEventListener("click", () => {
+                    capsuleImportInput.value = "";
+                    capsuleImportInput.click();
+                    closeCapsuleMenu();
+                });
+                capsuleSaveBtn?.addEventListener("click", async () => {
+                    closeCapsuleMenu();
+                    try {
+                        const payload = await buildCapsulePayload();
+                        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+                        const link = document.createElement("a");
+                        link.href = URL.createObjectURL(blob);
+                        link.download = getExportFilename("json");
+                        link.click();
+                        URL.revokeObjectURL(link.href);
+                        setStatus("Capsule enregistrée en JSON.");
+                    } catch (err) {
+                        console.error("Impossible de sauvegarder la capsule", err);
+                        setStatus("Erreur pendant l'enregistrement de la capsule.");
+                    }
+                });
+                capsuleImportInput.addEventListener("change", event => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        try {
+                            const parsed = JSON.parse(reader.result);
+                            const applied = applyImportedCapsule(parsed);
+                            if (applied) {
+                                setStatus("Capsule chargée ✔️");
+                            } else {
+                                throw new Error("Format invalide");
+                            }
+                        } catch (err) {
+                            console.error("Import JSON invalide", err);
+                            alert("Import JSON invalide.");
+                        }
+                    };
+                    reader.readAsText(file);
+                });
+
                 if (shareBtn && shareMenu) {
                     shareBtn.addEventListener("click", event => {
                         event.stopPropagation();
@@ -3190,6 +3851,11 @@ sequenceDiagram
                 document.addEventListener("click", event => {
                     if (!shareMenu?.contains(event.target) && event.target !== shareBtn) {
                         closeShareMenu();
+                    }
+                });
+                document.addEventListener("click", event => {
+                    if (!capsuleMenu?.contains(event.target) && event.target !== capsuleMenuBtn) {
+                        closeCapsuleMenu();
                     }
                 });
 
