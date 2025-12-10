@@ -48,7 +48,7 @@
         }
 
         #promptTemplateField {
-            min-height: 450px;
+            min-height: 200px;
         }
 
         .share-menu.open {
@@ -299,8 +299,8 @@
             white-space: pre-wrap;
             word-break: break-word;
             font-family: inherit;
-            font-size: 12px;
-            line-height: 1.5;
+            font-size: inherit;
+            line-height: inherit;
             color: #c8cee8;
             overflow: hidden;
             z-index: 2;
@@ -312,6 +312,32 @@
 
         .prompt-suggestion .prompt-suggestion-hint {
             color: #c8cee8;
+        }
+
+        .prompt-alt-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .prompt-alt-badge {
+            border: 1px solid #d6dbf2;
+            background: #ffffff;
+            color: #1f2a56;
+            border-radius: 12px;
+            padding: 4px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease;
+            text-transform: capitalize;
+        }
+
+        .prompt-alt-badge:hover,
+        .prompt-alt-badge:focus-visible {
+            background: #f0f4ff;
+            border-color: #c0c8ee;
+            outline: none;
         }
 
         .drawer-overlay {
@@ -364,7 +390,7 @@
 
         .prompt-input-card textarea {
             height: 220px;
-            margin-bottom: 6px;
+            margin-bottom: 0px;
         }
 
         .draw-type-control {
@@ -887,7 +913,8 @@
                         <button id="generateBtn" class="btn-primary" type="button">⌘ Répondre</button>
                     </div>
                     <div class="draw-type-control">
-                        <span class="draw-type-control-label">Type</span>
+                        <span class="draw-type-control-label">Type <span id="selectedTemplateLabel"
+                                aria-live="polite"></span></span>
                         <div class="draw-type-selector" role="group" aria-label="Type de diagramme">
                             <button class="draw-type-btn active" type="button" data-draw-type="sequence"
                                 aria-pressed="true">⇄ Échange</button>
@@ -902,6 +929,7 @@
                         <textarea id="promptInput" rows="5"
                             placeholder="Décris ton contexte produit, tes utilisateurs, ta problématique..."></textarea>
                     </div>
+                    <div id="promptAltRow" class="prompt-alt-row" aria-live="polite"></div>
                 </div>
                 <div class="mermaid-output-card">
                     <div class="card-title-row">
@@ -1114,9 +1142,14 @@
 
             const promptInput = document.getElementById("promptInput");
             const promptSuggestion = document.getElementById("promptSuggestion");
+            const promptAltRow = document.getElementById("promptAltRow");
+            const selectedTemplateLabel = document.getElementById("selectedTemplateLabel");
             const promptInputWrapper = document.querySelector(".prompt-input-wrapper");
             if (promptInput && promptInputWrapper && document.activeElement === promptInput) {
                 promptInputWrapper.classList.add("is-focused");
+            }
+            if (promptAltRow) {
+                promptAltRow.style.display = "none";
             }
             const diagramTitleInput = document.getElementById("diagramTitleInput");
             const mermaidOutput = document.getElementById("mermaidOutput");
@@ -1159,6 +1192,7 @@ classDiagram
             let promptSuggestAbortController = null;
             let promptSuggestRequestId = 0;
             let inlineSuggestion = "";
+            let promptAltSuggestions = [];
 
             const DIAGRAM_PROMPTZILLA =
                 (window.GoPrompts && Array.isArray(window.GoPrompts.drawPromptzilla) && window.GoPrompts.drawPromptzilla.length
@@ -1166,6 +1200,17 @@ classDiagram
                     : []);
 
             let selectedPromptzillaId = DIAGRAM_PROMPTZILLA[0]?.id || null;
+
+            function getSelectedPromptzilla() {
+                return DIAGRAM_PROMPTZILLA.find(b => b.id === selectedPromptzillaId) || DIAGRAM_PROMPTZILLA[0] || null;
+            }
+
+            function updateSelectedTemplateLabelDisplay() {
+                if (!selectedTemplateLabel) return;
+                const sel = getSelectedPromptzilla();
+                const labelText = sel?.label || "";
+                selectedTemplateLabel.textContent = labelText ? `: ${labelText}` : "";
+            }
 
             function renderPromptzillaList(selectedId) {
                 const list = document.getElementById("promptzillaList");
@@ -1258,8 +1303,8 @@ classDiagram
                     closePromptzillaModal();
                     return;
                 }
+                updateSelectedTemplateLabelDisplay();
                 const promptInputEl = document.getElementById("promptInput");
-                if (promptInputEl) promptInputEl.value = bp.description;
                 try { updateActivePageDrawType(bp.drawType); } catch (err) { }
                 closePromptzillaModal();
                 if (promptInputEl) {
@@ -2215,9 +2260,13 @@ classDiagram
                 return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
             }
 
-            function isCaretAtEnd(inputEl) {
-                if (!inputEl) return false;
-                return inputEl.selectionStart === inputEl.value.length && inputEl.selectionEnd === inputEl.value.length;
+            function formatInlineSuggestion(textBeforeCursor, suggestion) {
+                const trimmed = (suggestion || "").trim();
+                if (!trimmed) return "";
+                const lastChar = (textBeforeCursor || "").slice(-1);
+                const startsWithPunctuation = /^[,.;:!?)/\]]/.test(trimmed);
+                const needsLeadingSpace = lastChar && !/\s/.test(lastChar) && !startsWithPunctuation;
+                return `${needsLeadingSpace ? " " : ""}${trimmed}`;
             }
 
             function setInlineSuggestion(text) {
@@ -2226,19 +2275,101 @@ classDiagram
                 renderPromptSuggestion();
             }
 
-            async function fetchInlineSuggestion({ apiKey, messages, signal, timeoutMs = 15000 }) {
+            function clearPromptAlternatives() {
+                promptAltSuggestions = [];
+                if (promptAltRow) {
+                    promptAltRow.innerHTML = "";
+                    promptAltRow.style.display = "none";
+                }
+            }
+
+            function renderPromptAlternatives(alts) {
+                if (!promptAltRow) return;
+                const items = Array.isArray(alts)
+                    ? alts
+                        .map(item => {
+                            if (typeof item === "string") {
+                                return { label: item.trim(), text: item.trim() };
+                            }
+                            if (item && typeof item === "object") {
+                                const label = (item.label || item.title || item.text || item.value || "").trim();
+                                const text = (item.text || item.value || item.label || item.title || "").trim();
+                                return { label, text };
+                            }
+                            return null;
+                        })
+                        .filter(item => item && item.text)
+                        .slice(0, 3)
+                    : [];
+                promptAltSuggestions = items;
+                promptAltRow.innerHTML = "";
+                if (!items.length) {
+                    promptAltRow.style.display = "none";
+                    return;
+                }
+                promptAltRow.style.display = "flex";
+                items.forEach(alt => {
+                    const displayLabel = alt.label || alt.text.split(" ")[0] || alt.text;
+                    const badge = document.createElement("button");
+                    badge.type = "button";
+                    badge.className = "prompt-alt-badge";
+                    badge.textContent = displayLabel;
+                    badge.title = alt.text;
+                    badge.addEventListener("click", () => insertTextAtCursor(alt.text));
+                    promptAltRow.appendChild(badge);
+                });
+            }
+
+            function insertTextAtCursor(insertText) {
+                if (!promptInput || typeof insertText !== "string") return;
+                const value = promptInput.value || "";
+                const start = promptInput.selectionStart ?? value.length;
+                const end = promptInput.selectionEnd ?? start;
+                const before = value.slice(0, start);
+                const after = value.slice(end);
+                const formattedInsert = formatInlineSuggestion(before, insertText);
+                if (!formattedInsert) return;
+                const nextValue = before + formattedInsert + after;
+                const caret = before.length + formattedInsert.length;
+                promptInput.value = nextValue;
+                promptInput.setSelectionRange(caret, caret);
+                promptInput.dispatchEvent(new Event("input", { bubbles: true }));
+                refreshPromptSuggestion();
+            }
+
+            async function fetchPromptAssist({ apiKey, text, cursor, placeholder, templateDescription, signal, timeoutMs = 15000 }) {
                 const useProxy = !apiKey;
                 const endpoint = useProxy
                     ? "https://openai.gotoolkit.workers.dev/v1/chat/completions"
                     : "https://api.openai.com/v1/chat/completions";
+                const systemPrompt =
+                    "Tu proposes des suites probables à la phrase en cours ou de nouvelles idées en gardant le texte existant intact. " +
+                    `Ton intention est d'aider l'utilisateur à structurer sa demande selon : ${templateDescription || "le modèle sélectionné"}. ` +
+                    "Ne modifie pas le texte fourni. Fournis une suite principale de 4 à 6 mots. " +
+                    "Propose 3 alternatives (3 à 6 mots). Pour chaque alternative, fournis un label (mot-clé résumé) et le texte complet. " +
+                    "Réponds STRICTEMENT au format JSON demandé.";
                 const body = {
                     model: "gpt-4o-mini",
-                    messages,
-                    max_tokens: 32,
-                    temperature: 0.7
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        {
+                            role: "user",
+                            content:
+                                `Texte complet :\n"""${text || ""}"""\n` +
+                                `Position du curseur (index): ${cursor}\n` +
+                                `Contexte/tonalité : ${placeholder || ""}\n` +
+                                `Format attendu (JSON strict) : {"corrected":"(reprends exactement le texte fourni, inchangé)","main":"(4 à 6 mots)","alts":[{"label":"mot clé","text":"3 à 6 mots"}...]}\n` +
+                                `Ne retourne rien d'autre que ce JSON.`
+                        }
+                    ],
+                    max_tokens: 220,
+                    temperature: 0.35,
+                    response_format: { type: "json_object" }
                 };
-                console.debug("[inline-suggest] outbound payload", {
-                    bodySummary: { max_tokens: body.max_tokens, temperature: body.temperature, messages: messages.length }
+                console.debug("[prompt-assist] outbound payload", {
+                    useProxy,
+                    textLength: (text || "").length,
+                    cursor
                 });
                 const controller = new AbortController();
                 if (signal) {
@@ -2255,44 +2386,68 @@ classDiagram
                     signal: controller.signal
                 });
                 clearTimeout(timeout);
-                const text = await res.text();
+                const rawText = await res.text();
                 if (!res.ok) {
-                    console.warn("[inline-suggest] API error", text);
-                    throw new Error(text || "OpenAI inline suggestion failed");
+                    console.warn("[prompt-assist] API error", rawText);
+                    throw new Error(rawText || "OpenAI prompt assist failed");
                 }
-                let parsed = null;
+                let content = "";
                 try {
-                    parsed = JSON.parse(text);
+                    const parsedOuter = JSON.parse(rawText);
+                    content = parsedOuter?.choices?.[0]?.message?.content || "";
                 } catch (err) {
-                    console.warn("[inline-suggest] cannot parse response", err);
-                    return "";
+                    console.warn("[prompt-assist] cannot parse outer response", err);
+                    content = rawText;
                 }
-                const content = parsed?.choices?.[0]?.message?.content || "";
-                console.debug("[inline-suggest] raw response length", text.length, "choice length", (content || "").length);
-                return (content || "").trim();
+                let parsedJson = null;
+                try {
+                    parsedJson = JSON.parse(content || rawText);
+                } catch (err) {
+                    console.warn("[prompt-assist] cannot parse content as JSON", err, { content });
+                }
+                const corrected = typeof parsedJson?.corrected === "string" ? parsedJson.corrected : text || "";
+                const main = typeof parsedJson?.main === "string" ? parsedJson.main.trim() : "";
+                const alts = Array.isArray(parsedJson?.alts) ? parsedJson.alts : [];
+                console.debug("[prompt-assist] parsed", {
+                    correctedLength: corrected.length,
+                    mainLength: (main || "").length,
+                    altCount: Array.isArray(alts) ? alts.length : 0
+                });
+                return { corrected, main, alts: Array.isArray(alts) ? alts : [] };
             }
 
             function renderPromptSuggestion() {
                 if (!promptInput || !promptSuggestion) return;
                 const value = promptInput.value || "";
-                const atEnd = isCaretAtEnd(promptInput);
-                const hint = inlineSuggestion && atEnd ? inlineSuggestion : "";
+                const hasSelection = promptInput.selectionStart !== promptInput.selectionEnd;
+                const caret = promptInput.selectionStart ?? value.length;
+                const hint = !hasSelection && inlineSuggestion
+                    ? formatInlineSuggestion(value.slice(0, caret), inlineSuggestion)
+                    : "";
                 currentPromptSuggestion = hint;
                 if (!hint) {
                     promptSuggestion.innerHTML = "";
                     promptSuggestion.style.opacity = "0";
                     return;
                 }
-                const mask = escapeHtml(value);
+                const before = escapeHtml(value.slice(0, caret));
+                const after = escapeHtml(value.slice(caret));
                 const hintHtml = escapeHtml(hint);
                 // Wrap mask and hint inside a container that mimics textarea content.
-                promptSuggestion.innerHTML = `<div class="prompt-suggestion-content"><span class="prompt-suggestion-mask">${mask}</span><span class="prompt-suggestion-hint">${hintHtml}</span></div>`;
+                promptSuggestion.innerHTML =
+                    `<div class="prompt-suggestion-content">` +
+                    `<span class="prompt-suggestion-mask">${before}</span>` +
+                    `<span class="prompt-suggestion-hint">${hintHtml}</span>` +
+                    `<span class="prompt-suggestion-mask">${after}</span>` +
+                    `</div>`;
                 const suggestionContent = promptSuggestion.querySelector(".prompt-suggestion-content");
                 if (suggestionContent && promptInput) {
-                    suggestionContent.style.padding = getComputedStyle(promptInput).padding;
-                    suggestionContent.style.lineHeight = getComputedStyle(promptInput).lineHeight;
-                    suggestionContent.style.fontFamily = getComputedStyle(promptInput).fontFamily;
-                    suggestionContent.style.fontSize = getComputedStyle(promptInput).fontSize;
+                    const inputStyles = getComputedStyle(promptInput);
+                    suggestionContent.style.padding = inputStyles.padding;
+                    suggestionContent.style.lineHeight = inputStyles.lineHeight;
+                    suggestionContent.style.fontFamily = inputStyles.fontFamily;
+                    suggestionContent.style.fontSize = inputStyles.fontSize;
+                    suggestionContent.style.letterSpacing = inputStyles.letterSpacing;
                     suggestionContent.style.whiteSpace = "pre-wrap";
                     suggestionContent.style.wordBreak = "break-word";
                 }
@@ -2307,7 +2462,17 @@ classDiagram
 
             function acceptPromptSuggestion() {
                 if (!promptInput || !currentPromptSuggestion) return false;
-                promptInput.value = (promptInput.value || "") + currentPromptSuggestion;
+                const value = promptInput.value || "";
+                const start = promptInput.selectionStart ?? value.length;
+                const end = promptInput.selectionEnd ?? start;
+                const before = value.slice(0, start);
+                const after = value.slice(end);
+                const formatted = formatInlineSuggestion(before, inlineSuggestion || currentPromptSuggestion);
+                if (!formatted) return false;
+                const nextValue = before + formatted + after;
+                const caret = before.length + formatted.length;
+                promptInput.value = nextValue;
+                promptInput.setSelectionRange(caret, caret);
                 renderPromptSuggestion();
                 promptInput.dispatchEvent(new Event("input", { bubbles: true }));
                 currentPromptAiSuggestion = "";
@@ -2321,6 +2486,7 @@ classDiagram
             }
 
             function clearPromptAiSuggestion() {
+                inlineSuggestion = "";
                 currentPromptAiSuggestion = "";
                 renderPromptSuggestion();
             }
@@ -2336,78 +2502,82 @@ classDiagram
                 if (promptSuggestDebounce) {
                     clearTimeout(promptSuggestDebounce);
                 }
-                promptSuggestDebounce = setTimeout(startPromptAISuggestion, 350);
+                promptSuggestDebounce = setTimeout(startPromptAISuggestion, 650);
             }
 
             async function startPromptAISuggestion() {
-                console.debug("[inline-suggest] start request");
-                if (!promptInput || !window.GoToolkitOpenAI || !GoToolkitOpenAI.supportsStreaming()) {
-                    console.debug("[inline-suggest] skip: client/streaming unavailable");
+                console.debug("[prompt-assist] start request");
+                if (!promptInput) {
+                    console.debug("[prompt-assist] skip: input unavailable");
                     return;
                 }
                 const apiKey = (state.apiKey || "").trim();
-                const value = (promptInput.value || "").trim();
-                if (!value || value.length < 12) {
-                    console.debug("[inline-suggest] skip: text too short", { length: value.length });
+                const rawValue = promptInput.value || "";
+                const valueLength = rawValue.trim().length;
+                if (!valueLength || valueLength < 12) {
+                    console.debug("[prompt-assist] skip: text too short", { length: valueLength });
                     clearPromptAiSuggestion();
+                    clearPromptAlternatives();
                     return;
                 }
+                const cursor = promptInput.selectionStart ?? rawValue.length;
+                const selectionEnd = promptInput.selectionEnd ?? cursor;
                 const page = getActivePage();
                 const drawType = page?.drawType || DEFAULT_DRAW_TYPE;
                 const placeholder = drawTypePlaceholders[drawType] || promptInput.placeholder || "";
+                const templateMeta = getSelectedPromptzilla();
+                const templateDescription = templateMeta?.description || "";
                 const requestId = ++promptSuggestRequestId;
                 stopPromptSuggestionRequest();
                 const abortController = new AbortController();
                 promptSuggestAbortController = abortController;
                 const startedAt = performance.now();
-                console.debug("[inline-suggest] sending", { requestId, valueLength: value.length });
-                const messages = [
-                    {
-                        role: "system",
-                        content:
-                            "Tu complètes en ligne un début de scénario utilisateur. Réponds uniquement avec une courte suite (3-6 mots), sans reformuler ni commencer de nouvelle phrase si inutile."
-                    },
-                    {
-                        role: "user",
-                        content:
-                            `Contexte attendu : ${placeholder}\n\nTexte en cours (ne pas répéter) :\n` +
-                            value +
-                            "\n\nSuite probable en quelques mots :"
-                    }
-                ];
-                console.debug("[inline-suggest] payload prepared", {
-                    userTextLength: value.length,
-                    placeholderLength: placeholder.length
-                });
+                console.debug("[prompt-assist] sending", { requestId, valueLength });
+                clearPromptAlternatives();
                 try {
-                    const suggestion = await fetchInlineSuggestion({
+                    const result = await fetchPromptAssist({
                         apiKey,
-                        messages,
+                        text: rawValue,
+                        cursor,
+                        placeholder,
+                        templateDescription,
                         signal: abortController.signal
                     });
                     if (requestId !== promptSuggestRequestId) return;
-                    let rawSuggestion = suggestion || "";
-                    console.debug("[inline-suggest] response length", rawSuggestion.length, "content", rawSuggestion);
-                    const words = rawSuggestion
-                        .replace(/\s+/g, " ")
-                        .replace(/\n+/g, " ")
-                        .trim()
-                        .split(" ")
-                        .filter(Boolean);
-                    if (!words.length) {
-                        console.debug("[inline-suggest] empty suggestion", { rawSuggestion });
-                        setInlineSuggestion("");
-                        return;
-                    }
-                    const limited = words.slice(0, 4).join(" ");
-                    setInlineSuggestion(limited);
+                    const enforceWordLimit = (textValue, maxWords = 5) => {
+                        if (!textValue) return "";
+                        const words = textValue.trim().split(/\s+/).slice(0, maxWords);
+                        return words.join(" ").trim();
+                    };
+                    const mainSuggestion = enforceWordLimit(result?.main || "", 6);
+                    const alts = Array.isArray(result?.alts)
+                        ? result.alts.map(entry => {
+                            if (entry && typeof entry === "object") {
+                                return {
+                                    label: (entry.label || entry.title || entry.text || "").trim(),
+                                    text: enforceWordLimit(entry.text || entry.value || entry.label || "", 6)
+                                };
+                            }
+                            const textVal = enforceWordLimit(entry || "", 6);
+                            return { label: textVal.split(" ")[0] || textVal, text: textVal };
+                        })
+                        : [];
+                    setInlineSuggestion(mainSuggestion);
+                    renderPromptAlternatives(alts);
+                    refreshPromptSuggestion();
+                    syncPromptSuggestionScroll();
                     const elapsedMs = Math.round(performance.now() - startedAt);
-                    console.log("[inline-suggest] completed in", elapsedMs, "ms", { rawSuggestion, limited });
+                    console.log("[prompt-assist] completed in", elapsedMs, "ms", {
+                        mainLength: (mainSuggestion || "").length,
+                        altCount: alts.length
+                    });
                 } catch (err) {
                     if (err?.name !== "AbortError") {
                         const elapsedMs = Math.round(performance.now() - startedAt);
-                        console.log("[inline-suggest] failed after", elapsedMs, "ms", err);
-                        console.warn("Inline suggestion failed", err);
+                        console.log("[prompt-assist] failed after", elapsedMs, "ms", err);
+                        console.warn("Prompt assist failed", err);
+                        clearPromptAiSuggestion();
+                        clearPromptAlternatives();
                     }
                 } finally {
                     if (promptSuggestAbortController === abortController) {
@@ -3546,6 +3716,7 @@ classDiagram
                         saveState();
                     }
                     setInlineSuggestion("");
+                    clearPromptAlternatives();
                     refreshPromptSuggestion();
                     schedulePromptAISuggestion();
                 });
@@ -3554,16 +3725,15 @@ classDiagram
                     refreshPromptSuggestion();
                 });
                 promptInput.addEventListener("blur", () => {
-            promptInputWrapper?.classList.remove("is-focused");
-            refreshPromptSuggestion();
+                    promptInputWrapper?.classList.remove("is-focused");
+                    refreshPromptSuggestion();
                 });
                 promptInput.addEventListener("keydown", event => {
                     if (!currentPromptSuggestion) return;
-                    const atEnd =
-                        promptInput.selectionStart === promptInput.value.length &&
-                        promptInput.selectionEnd === promptInput.value.length;
+                    const collapsed =
+                        promptInput.selectionStart === promptInput.selectionEnd;
                     const shouldAccept =
-                        atEnd &&
+                        collapsed &&
                         (event.key === "Tab" ||
                             (event.key === "ArrowRight" && !event.metaKey && !event.ctrlKey && !event.shiftKey));
                     if (shouldAccept) {
@@ -3571,6 +3741,8 @@ classDiagram
                         acceptPromptSuggestion();
                     }
                 });
+                promptInput.addEventListener("keyup", refreshPromptSuggestion);
+                promptInput.addEventListener("mouseup", () => setTimeout(refreshPromptSuggestion, 0));
                 promptInput.addEventListener("scroll", syncPromptSuggestionScroll);
                 diagramTitleInput?.addEventListener("dblclick", () => {
                     diagramTitleInput.readOnly = false;
@@ -3616,11 +3788,11 @@ classDiagram
                         /* noop */
                     }
                 });
-            function clearActivePage(options = {}) {
-                const clearRecit = !!options.clearRecit;
-                const page = getActivePage();
-                if (!page) return;
-                if (!clearRecit) {
+                function clearActivePage(options = {}) {
+                    const clearRecit = !!options.clearRecit;
+                    const page = getActivePage();
+                    if (!page) return;
+                    if (!clearRecit) {
                         promptInput.value = page.input || promptInput.value;
                     } else {
                         promptInput.value = "";
@@ -3628,16 +3800,17 @@ classDiagram
                     }
                     page.mermaid = "";
                     page.title = page.label;
-                page.drawType = DEFAULT_DRAW_TYPE;
-                page.scene = null;
-                mermaidOutput.value = "";
-                diagramTitleInput.value = page.title;
-                updateActivePageDrawType(DEFAULT_DRAW_TYPE);
-                refreshPromptSuggestion();
-                syncPromptSuggestionScroll();
-                clearPromptAiSuggestion();
-                updateExcalidrawScene("");
-            }
+                    page.drawType = DEFAULT_DRAW_TYPE;
+                    page.scene = null;
+                    mermaidOutput.value = "";
+                    diagramTitleInput.value = page.title;
+                    updateActivePageDrawType(DEFAULT_DRAW_TYPE);
+                    refreshPromptSuggestion();
+                    syncPromptSuggestionScroll();
+                    clearPromptAiSuggestion();
+                    clearPromptAlternatives();
+                    updateExcalidrawScene("");
+                }
                 deletePageBtn.addEventListener("click", () => {
                     const page = getActivePage();
                     if (!page || state.pages.length <= 1) return;
@@ -3885,6 +4058,7 @@ classDiagram
                 }
                 renderTabs();
                 syncFormWithPage();
+                updateSelectedTemplateLabelDisplay();
                 bindEvents();
                 handleDrawerBreakpointChange(drawerMediaQuery);
                 initializeExcalidraw();
