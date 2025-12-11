@@ -1896,7 +1896,7 @@
                     </label>
                     <div class="scenario-section">
                         <div class="scenario-header-row">
-                            <span>Scénario</span>
+                            <label>Scénario</label>
                             <button class="btn" id="clearSectionsBtn" type="button" aria-label="Vider les sections">⊘
                                 Vider</button>
                         </div>
@@ -2120,10 +2120,18 @@
                 ]
             }
         ];
-        const templates =
+        const defaultTemplateId = "default";
+        const rawTemplates =
             (window.GoPrompts && Array.isArray(window.GoPrompts.canvasTemplates) && window.GoPrompts.canvasTemplates.length
                 ? window.GoPrompts.canvasTemplates
                 : fallbackTemplates);
+        const templates = Array.isArray(rawTemplates) && rawTemplates.length
+            ? rawTemplates.slice()
+            : fallbackTemplates.slice();
+        const defaultTemplateIndex = templates.findIndex(template => template?.id === defaultTemplateId);
+        if (defaultTemplateIndex > 0) {
+            templates.unshift(templates.splice(defaultTemplateIndex, 1)[0]);
+        }
         const templateExamples =
             (window.GoPrompts && window.GoPrompts.canvasExamples) || {};
         const promptVariableDefinitions = {
@@ -2233,9 +2241,12 @@
                 slide.pageContext = slide.pageContext ?? slide.context ?? "";
                 templateSlides[templateId].push(slide);
             });
-            const fallbackId = templates[0].id;
+            const fallbackId = templates.find(template => template?.id === defaultTemplateId)?.id || templates[0].id;
             if (!templateSlides[fallbackId] || !templateSlides[fallbackId].length) {
-                templateSlides[fallbackId] = [{ templateId: fallbackId }];
+                templateSlides[fallbackId] = [{
+                    templateId: fallbackId,
+                    bgColor: "#ffffff"
+                }];
             }
         }
 
@@ -2272,6 +2283,7 @@
         const templateList = document.getElementById("templateList");
         const templateApplyBtn = document.getElementById("templateApplyBtn");
         let selectedTemplateId = null;
+        let hasPromptzillaOpenedForNewSlide = false;
         const globalContextField = document.getElementById("globalContextField");
         const pageContextField = document.getElementById("pageContextField");
         const contextModalTabs = contextModal?.querySelectorAll(".modal-tab") ?? [];
@@ -4526,6 +4538,10 @@
                 /* noop */
             }
             schedulePersist();
+            if (!hasPromptzillaOpenedForNewSlide) {
+                hasPromptzillaOpenedForNewSlide = true;
+                openTemplateModal();
+            }
         }
 
         function updateDeleteButtonState() {

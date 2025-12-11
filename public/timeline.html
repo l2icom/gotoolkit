@@ -2800,10 +2800,10 @@
                 var endDate = formatTooltipDate(item.end || item.start || item.date);
                 if (!startDate || !endDate) return null;
                 var label = (item.content || item.label || "").trim();
+                if (!label) return null;
                 var days = getItemDurationInDays(item);
                 var durationText = days ? " (" + days + " jours)" : "";
-                var prefix = label ? label + " — " : "";
-                return prefix + startDate + " → " + endDate + durationText;
+                return label + " — " + startDate + " → " + endDate + durationText;
             }
 
             function positionEditTooltip(clientX, clientY) {
