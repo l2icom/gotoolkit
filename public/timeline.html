@@ -366,39 +366,6 @@
             font-family: inherit;
         }
 
-        .prompt-input-wrapper {
-            position: relative;
-        }
-
-        .prompt-input-wrapper textarea {
-            position: relative;
-            z-index: 1;
-        }
-
-        .template-tooltip {
-            display: none;
-            position: absolute;
-            left: 0;
-            bottom: -8px;
-            transform: translateY(100%);
-            background: rgba(0, 0, 0, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            padding: 8px 10px;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            z-index: 10;
-            max-width: 340px;
-            font-size: 12px;
-            color: #ffffff;
-            line-height: 1.3;
-            backdrop-filter: blur(2px);
-            white-space: pre-wrap;
-        }
-
-        .prompt-input-wrapper.is-focused .template-tooltip {
-            display: block;
-        }
-
         .gutenberg-card.open {
             display: flex;
             flex-direction: column;
@@ -576,6 +543,29 @@
 
         .edit-tooltip.visible {
             opacity: 1;
+        }
+
+        /* Tooltip affiché sous le textarea Scénario (noir semi-transparent, texte blanc) */
+        .scenario-template-tooltip {
+            position: absolute;
+            z-index: 120;
+            background: rgba(0, 0, 0, 0.82);
+            color: #fff;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            max-width: 420px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+            pointer-events: none;
+            white-space: pre-wrap;
+            opacity: 0;
+            transform-origin: top left;
+            transition: opacity 0.12s ease, transform 0.12s ease;
+        }
+
+        .scenario-template-tooltip.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .header-buttons {
@@ -1705,12 +1695,9 @@
                             </button>
                         </div>
                         <div class="ia-prompt-fields">
-                            <div class="prompt-template-meta" id="promptTemplateMeta" title="">Modèle : —</div>
-                            <div class="prompt-input-wrapper" id="promptCreateWrapper">
-                                <textarea id="promptCreate" class="ia-prompt-field" rows="20"
-                                    placeholder="Décris ici ton objectif, ton échéance et tes actions"></textarea>
-                                <div id="timelineTemplateTooltip" class="template-tooltip" aria-hidden="true"></div>
-                            </div>
+                            <div class="prompt-template-meta" id="promptTemplateMeta">Modèle : —</div>
+                            <textarea id="promptCreate" class="ia-prompt-field" rows="20"
+                                placeholder="Décris ici ton objectif, ton échéance et tes actions"></textarea>
                         </div>
                     </div>
                     <div class="header-row ia-header-actions gutenberg-script">
@@ -4665,31 +4652,6 @@
                     importJsonInput.value = "";
                 });
             }
-
-            function restartTemplateTooltipTimer() {
-                if (!timelineTemplateTooltip || !promptCreateWrapper) return;
-                const hasContent = timelineTemplateTooltip.innerHTML && timelineTemplateTooltip.innerHTML.trim() !== "";
-                const isFocused = document.activeElement === txtPromptCreate;
-                if (!hasContent || !isFocused) {
-                    timelineTemplateTooltip.setAttribute("aria-hidden", "true");
-                    promptCreateWrapper.classList.remove("is-focused");
-                    if (tooltipTimer) {
-                        clearTimeout(tooltipTimer);
-                        tooltipTimer = null;
-                    }
-                    return;
-                }
-                promptCreateWrapper.classList.add("is-focused");
-                timelineTemplateTooltip.setAttribute("aria-hidden", "false");
-                if (tooltipTimer) {
-                    clearTimeout(tooltipTimer);
-                }
-                tooltipTimer = setTimeout(function () {
-                    promptCreateWrapper.classList.remove("is-focused");
-                    timelineTemplateTooltip.setAttribute("aria-hidden", "true");
-                }, 5000);
-            }
-
             if (importJsonBtn) {
                 importJsonBtn.addEventListener("click", function () {
                     triggerImportJson();
@@ -6089,13 +6051,17 @@
             var txtPromptCreate = document.getElementById("promptCreate");
             var txtPromptModify = document.getElementById("promptModify");
             var promptTemplateMeta = document.getElementById("promptTemplateMeta");
-            var promptCreateWrapper = document.getElementById("promptCreateWrapper");
-            var timelineTemplateTooltip = document.getElementById("timelineTemplateTooltip");
+            var currentPromptTemplateDescription = "";
+            // Tooltip element shown under the scenario textarea on focus
+            var scenarioTooltip = document.createElement('div');
+            scenarioTooltip.className = 'scenario-template-tooltip';
+            scenarioTooltip.style.display = 'none';
+            document.body.appendChild(scenarioTooltip);
+            var scenarioTooltipTimer = null;
             var btnCall = document.getElementById("btn-call");
             var clearTimelineBtn = document.getElementById("clearTimelineBtn");
             var iaTemplateEditor = document.getElementById("iaTemplateEditor");
             var resetTemplatesBtn = document.getElementById("resetTemplatesBtn");
-            var tooltipTimer = null;
 
             function getTemplateById(id) {
                 if (!id) return null;
@@ -6110,16 +6076,66 @@
                 var label = tpl ? tpl.title : "—";
                 var description = tpl ? tpl.text : "";
                 promptTemplateMeta.textContent = "Modèle : " + label;
-                promptTemplateMeta.title = "";
+                // Ne pas définir d'attribut title ici (tooltip natif retiré)
+                currentPromptTemplateDescription = description || "";
+                // If the scenario textarea currently has focus, update displayed tooltip content
+                if (document.activeElement === txtPromptCreate) {
+                    showScenarioTooltip(currentPromptTemplateDescription, txtPromptCreate);
+                }
                 if (txtPromptCreate) {
                     txtPromptCreate.title = "";
                 }
-                if (timelineTemplateTooltip) {
-                    var htmlDesc = description ? escapeHtml(description).replace(/\n/g, "<br>") : "";
-                    timelineTemplateTooltip.innerHTML = htmlDesc;
-                    var shouldShow = htmlDesc && document.activeElement === txtPromptCreate;
-                    timelineTemplateTooltip.setAttribute("aria-hidden", shouldShow ? "false" : "true");
+            }
+
+            function positionScenarioTooltipForTextarea(textarea) {
+                if (!textarea) return;
+                var rect = textarea.getBoundingClientRect();
+                var left = Math.max(8, rect.left + window.scrollX);
+                var top = rect.bottom + 8 + window.scrollY;
+                scenarioTooltip.style.left = left + 'px';
+                scenarioTooltip.style.top = top + 'px';
+                // constrain width to textarea width or max-width
+                var maxW = Math.min(rect.width, 420);
+                scenarioTooltip.style.maxWidth = maxW + 'px';
+            }
+
+            function showScenarioTooltip(text, textarea) {
+                if (!text || !textarea) return;
+                scenarioTooltip.textContent = text;
+                positionScenarioTooltipForTextarea(textarea);
+                scenarioTooltip.style.display = 'block';
+                // small initial transform for nicer appear
+                scenarioTooltip.style.transform = 'translateY(4px)';
+                requestAnimationFrame(function () {
+                    // adjust if overflowing viewport
+                    var tipRect = scenarioTooltip.getBoundingClientRect();
+                    var overflowRight = tipRect.right - (window.innerWidth - 8);
+                    if (overflowRight > 0) {
+                        var currentLeft = parseFloat(scenarioTooltip.style.left || 0);
+                        scenarioTooltip.style.left = Math.max(8, currentLeft - overflowRight) + 'px';
+                    }
+                    scenarioTooltip.classList.add('visible');
+                    scenarioTooltip.style.transform = 'translateY(0)';
+                });
+                // reset timer
+                if (scenarioTooltipTimer) {
+                    clearTimeout(scenarioTooltipTimer);
                 }
+                scenarioTooltipTimer = setTimeout(function () {
+                    hideScenarioTooltip();
+                }, 5000);
+            }
+
+            function hideScenarioTooltip() {
+                if (scenarioTooltipTimer) {
+                    clearTimeout(scenarioTooltipTimer);
+                    scenarioTooltipTimer = null;
+                }
+                scenarioTooltip.classList.remove('visible');
+                // allow transition then hide
+                setTimeout(function () {
+                    scenarioTooltip.style.display = 'none';
+                }, 140);
             }
 
             function setSelectedTemplateId(id, options) {
@@ -6129,7 +6145,6 @@
                     ctx.templateId = selectedPromptzillaId;
                 }
                 updatePromptTemplateMeta();
-                restartTemplateTooltipTimer();
                 if (!options || !options.skipPersist) {
                     persistTimelineState();
                 }
@@ -6162,6 +6177,28 @@
                 }
             }
 
+            // Show tooltip under the Scénario textarea on focus; hide after 5s inactivity.
+            if (txtPromptCreate) {
+                txtPromptCreate.addEventListener('focus', function () {
+                    // Use latest template description
+                    if (currentPromptTemplateDescription) {
+                        showScenarioTooltip(currentPromptTemplateDescription, txtPromptCreate);
+                    }
+                });
+                txtPromptCreate.addEventListener('input', function () {
+                    // reset hide timer on input
+                    if (scenarioTooltip.style.display !== 'none') {
+                        if (scenarioTooltipTimer) {
+                            clearTimeout(scenarioTooltipTimer);
+                        }
+                        scenarioTooltipTimer = setTimeout(function () { hideScenarioTooltip(); }, 5000);
+                    }
+                });
+                txtPromptCreate.addEventListener('blur', function () {
+                    hideScenarioTooltip();
+                });
+            }
+
             function syncContextFieldsFromState(options) {
                 var context = getActiveViewContext();
                 if (context && typeof context.templateId === "string") {
@@ -6189,7 +6226,6 @@
                     skipPersist: true
                 });
                 updatePromptTemplateMeta();
-                restartTemplateTooltipTimer();
                 if (!options || !options.skipPersist) {
                     persistTimelineState();
                 }
@@ -6241,22 +6277,6 @@
                     persistActiveContext(function (ctx) {
                         ctx.prompts.create = txtPromptCreate.value || "";
                     });
-                    restartTemplateTooltipTimer();
-                });
-                txtPromptCreate.addEventListener("focus", function () {
-                    restartTemplateTooltipTimer();
-                });
-                txtPromptCreate.addEventListener("blur", function () {
-                    if (tooltipTimer) {
-                        clearTimeout(tooltipTimer);
-                        tooltipTimer = null;
-                    }
-                    if (promptCreateWrapper) {
-                        promptCreateWrapper.classList.remove("is-focused");
-                    }
-                    if (timelineTemplateTooltip) {
-                        timelineTemplateTooltip.setAttribute("aria-hidden", "true");
-                    }
                 });
             }
             if (txtPromptModify) {

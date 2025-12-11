@@ -1362,7 +1362,6 @@
             cursor: pointer;
             color: #918b7f;
             padding: 0px;
-            transition: color 0.2s ease, opacity 0.2s ease;
             opacity: 0;
             pointer-events: none;
         }
@@ -1380,7 +1379,6 @@
             cursor: pointer;
             color: #918b7f;
             padding: 0px;
-            transition: color 0.2s ease, opacity 0.2s ease;
             opacity: 0;
             pointer-events: none;
         }
@@ -2185,10 +2183,14 @@
             if (Array.isArray(template.criteria) && template.criteria.length) {
                 return template.criteria.filter(Boolean);
             }
-            const lines = (template.description || "").split(/\n/).map(line => line.trim()).filter(Boolean);
+            // Accept description OR text (some templates use `text` instead of `description`)
+            const source = String(template.description || template.text || "");
+            const lines = source.split(/\n/).map(line => line.trim()).filter(Boolean);
+            // Accept several common checklist/marker symbols (unchecked/checked)
+            const markerRe = /^[🗹☐☑✓]/;
             return lines
-                .filter(line => line.startsWith("🗹"))
-                .map(line => line.replace(/^🗹\s*/, "").trim())
+                .filter(line => markerRe.test(line))
+                .map(line => line.replace(/^[🗹☐☑✓]\s*/, "").trim())
                 .filter(Boolean);
         }
 
@@ -2987,8 +2989,21 @@
             });
         }
         pageContextField?.addEventListener("focus", () => {
-            resetScenarioTooltipTimer();
+            // On focus, afficher dans `canvasTemplateTooltip` la description complète
+            // du template actif (escaped + sauts de ligne conservés) puis démarrer
+            // la minuterie d'inactivité.
+            try {
+                const tpl = getActiveTemplate();
+                const desc = tpl && tpl.description ? String(tpl.description) : "";
+                if (canvasTemplateTooltip) {
+                    canvasTemplateTooltip.innerHTML = escapeHtml(desc).replace(/\n/g, "<br>");
+                    canvasTemplateTooltip.setAttribute("aria-hidden", desc ? "false" : "true");
+                }
+            } catch (e) {
+                /* noop */
+            }
             updateSelectedTemplateLabelDisplay();
+            resetScenarioTooltipTimer();
         });
         pageContextField?.addEventListener("blur", () => {
             if (scenarioContextWrapper) scenarioContextWrapper.classList.remove("is-focused");
@@ -4151,7 +4166,7 @@
                 const slideTemplateId = slide.dataset.templateId || templates[0].id;
                 const slideTemplate = getTemplateById(slideTemplateId);
                 const bottomPlaceholder = (slideTemplate && slideTemplate.bottomPlaceholder) || bottomSectionPlaceholderText;
-                bottomTextarea.dataset.placeholder = bottomPlaceholder;
+                // No native tooltip for the bottom textarea (keep empty / placeholder-driven)
                 bindTextareaPlaceholder(bottomTextarea);
                 monitorTextareaOverflow(bottomTextarea);
                 bottomTextarea.addEventListener("input", () => schedulePersist());
