@@ -1446,6 +1446,18 @@
             padding-top: 26px;
         }
 
+        .section-advice-btn.inside {
+            position: absolute;
+            bottom: 6px;
+            right: 36px;
+            border-radius: 999px;
+            border: 1px solid #dcd0c1;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 11px;
+            padding: 2px 6px;
+            cursor: pointer;
+        }
+
         .field-ai-btn.inside {
             position: absolute;
             bottom: 6px;
@@ -1465,6 +1477,30 @@
             justify-content: space-between;
         }
 
+        #suggestionPromptField {
+            height: 180px;
+
+        }
+
+        .section-advice-btn:hover {
+            color: #2a7a57;
+        }
+
+        .section-advice-btn {
+            border: none;
+            background: transparent;
+            font-size: 16px;
+            color: #918b7f;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+
         .field-ai-btn {
             border: none;
             background: transparent;
@@ -1479,7 +1515,16 @@
             transition: opacity 0.2s ease;
         }
 
+        .textarea-wrapper:hover .section-advice-btn,
+        .textarea-wrapper textarea:focus-visible+.section-advice-btn,
+        .section-advice-btn:focus-visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
         .textarea-wrapper:hover .field-ai-btn,
+        .textarea-wrapper:focus-within .field-ai-btn,
         .textarea-wrapper textarea:focus-visible+.field-ai-btn,
         .field-ai-btn:focus-visible {
             opacity: 1;
@@ -1488,6 +1533,10 @@
         }
 
         .field-ai-btn:hover {
+            color: #2a7a57;
+        }
+
+        .section-advice-btn:hover {
             color: #2a7a57;
         }
 
@@ -1884,10 +1933,12 @@
                         <label>Histoire</label>
                         <div class="gutenberg-card-actions-row-right">
 
-                            <button class="btn-primary" id="generateFullSlideBtn" type="button"
-                                aria-label="Générer toutes les sections et la synthèse">⌘ Répondre</button>
 
-                            <span class="gutenberg-status" id="suggestionStatusLabel" aria-live="polite"></span>
+                            <button class="btn" id="generateFullSlideBtn" type="button"
+                                aria-label="Générer toutes les sections et la synthèse">⌘ Répondre</button>
+                            <button class="btn-primary" id="adviceBtn" type="button"
+                                aria-label="Conseiller la saisie IA">✧
+                                Suggérer</button>
                         </div>
                     </div>
                     <label>
@@ -2144,6 +2195,7 @@
             sectionTitle: "Intitulé de la section ciblée",
             sectionLabel: "Label actuel de la section",
             sectionGuidance: "Consignes issues de canvasExamples pour cette colonne/section",
+            columnSection: "Nom + contexte de la colonne utilisée par cette section",
             slideTitle: "Titre de la slide",
             columnSections: "Résumé des 9 éléments de toutes les sections"
         };
@@ -2187,7 +2239,11 @@
             return getTemplateSections(templateId).find(section => section.key === sectionKey);
         }
 
-        function getSectionGuidance(templateId, columnId, sectionKey, sectionLabel, columnTitle) {
+        function getSectionGuidance(templateId, columnId, sectionKey, sectionLabel, columnTitle, slide = null) {
+            const slideExample = getCanvasExampleForSection(slide, columnId, sectionKey, columnTitle);
+            if (slideExample) {
+                return slideExample;
+            }
             const exampleText = getSectionExample(templateId, columnId, sectionKey) || "";
             if (exampleText) {
                 return exampleText;
@@ -2239,6 +2295,10 @@
                 const templateId = templates.some(t => t.id === incomingId) ? incomingId : templates[0].id;
                 slide.templateId = templateId;
                 slide.pageContext = slide.pageContext ?? slide.context ?? "";
+                if (!slide.history && slide.globalContext) {
+                    slide.history = slide.globalContext;
+                }
+                slide.canvasExamples = slide.canvasExamples ?? slide.examples ?? {};
                 templateSlides[templateId].push(slide);
             });
             const fallbackId = templates.find(template => template?.id === defaultTemplateId)?.id || templates[0].id;
@@ -2261,7 +2321,9 @@
         const deleteTabBtn = document.getElementById("deleteTabBtn");
         const restoreStructureBtn = document.getElementById("restoreStructureBtn");
         const generateFullSlideBtn = document.getElementById("generateFullSlideBtn");
-        const suggestionStatusLabel = document.getElementById("suggestionStatusLabel");
+        const adviceBtn = document.getElementById("adviceBtn");
+        ensureButtonBaseLabel(generateFullSlideBtn);
+        ensureButtonBaseLabel(adviceBtn);
         const clearSectionsBtn = document.getElementById("clearSectionsBtn");
         const exportBtn = document.getElementById("exportPngBtn");
         const exportPptxBtn = document.getElementById("exportPptxBtn");
@@ -2541,7 +2603,7 @@
 
         function buildStatePayload() {
             storeCurrentSlides();
-            const globalContextValue = globalContextField?.value || "";
+            const globalContextValue = getActiveHistoryValue() || "";
             return {
                 slides: collectAllSlides(),
                 settings: {
@@ -2803,6 +2865,7 @@
         const PLACEHOLDER_COOLDOWN_DURATION = 30;
         let suggestionCooldownTimer = null;
         let isGeneratingSuggestions = false;
+        let isGeneratingAdvice = false;
 
         setPromptFieldsForTemplate(activePromptTemplateId);
         setActiveIaMode(activeIaMode);
@@ -2830,15 +2893,15 @@
             }
             const storedReasoning = localStorage.getItem(reasoningEffortKey) || "low";
             // reasoning effort is managed globally in Settings (index.html); stored value is read from localStorage
-            const globalContextValue = payload.globalContext ?? payload.context ?? "";
-            if (globalContextField) {
-                globalContextField.value = globalContextValue;
+            const inheritedHistory = payload.globalContext ?? payload.context ?? "";
+            if (globalContextField && inheritedHistory) {
+                globalContextField.value = inheritedHistory;
             }
-            if (globalContextValue) {
+            if (inheritedHistory) {
                 Object.values(templateSlides).forEach(slides => {
                     slides.forEach(slide => {
-                        if (!slide.pageContext) {
-                            slide.pageContext = globalContextValue;
+                        if (!slide.history) {
+                            slide.history = inheritedHistory;
                         }
                     });
                 });
@@ -2948,9 +3011,7 @@
                 lines.push(parsed.instruction);
             }
             parsed.criteria.forEach(item => {
-                const matched = statusMap[item.toLowerCase()] || false;
-                const marker = matched ? "☑" : "☐";
-                lines.push(`${marker} ${item}`);
+                lines.push(item);
             });
             return lines.join("\n");
         }
@@ -3030,6 +3091,21 @@
                 library.suggestions = suggestionPromptField.value || defaultSuggestionsPrompt;
             });
         }
+
+        function flushPromptFieldsToLibrary() {
+            if (!activePromptTemplateId) return;
+            const library = getPromptLibraryForTemplate(activePromptTemplateId);
+            const modeKey = promptKeyFromMode(activeIaMode);
+            if (mainPromptField) {
+                library[modeKey] = mainPromptField.value || defaultPromptTemplate;
+            }
+            if (bottomPromptField) {
+                library.bottom = bottomPromptField.value || bottomSectionDefaultPrompt;
+            }
+            if (suggestionPromptField) {
+                library.suggestions = suggestionPromptField.value || defaultSuggestionsPrompt;
+            }
+        }
         pageContextField?.addEventListener("focus", () => {
             // On focus, afficher dans `canvasTemplateTooltip` la description complète
             // du template actif (escaped + sauts de ligne conservés) puis démarrer
@@ -3065,6 +3141,10 @@
         });
         globalContextField?.addEventListener("blur", () => {
             // no-op: suggestion generation removed
+        });
+        globalContextField?.addEventListener("input", () => {
+            setSlideHistory(getActiveSlideElement(), globalContextField.value);
+            schedulePersist();
         });
         document.addEventListener("input", event => {
             const target = event.target;
@@ -3202,6 +3282,20 @@
             } else {
                 delete wrapper.dataset.suggestions;
             }
+        }
+
+        function ensureButtonBaseLabel(button) {
+            if (!button) return "";
+            if (!button.dataset.baseLabel) {
+                button.dataset.baseLabel = button.textContent;
+            }
+            return button.dataset.baseLabel;
+        }
+
+        function setButtonBusyState(button, busy) {
+            if (!button) return;
+            const baseLabel = ensureButtonBaseLabel(button);
+            button.textContent = busy ? `${baseLabel}...` : baseLabel;
         }
 
         async function evaluateSectionCriteria(textarea) {
@@ -3344,17 +3438,12 @@
             const disableButtons = onCooldown || isGeneratingSuggestions;
             if (generateFullSlideBtn) {
                 generateFullSlideBtn.disabled = disableButtons;
-                generateFullSlideBtn.textContent = "⌘ Répondre";
-            }
-            if (suggestionStatusLabel) {
-                const frames = ["◴", "◷", "◶", "◵"];
-                const frame = frames[remaining % frames.length];
-                suggestionStatusLabel.textContent = onCooldown ? `${frame} ${remaining}s` : "";
+                setButtonBusyState(generateFullSlideBtn, disableButtons);
             }
         }
 
         function startGeneratePlaceholdersCooldown(duration = PLACEHOLDER_COOLDOWN_DURATION) {
-            if (!generateFullSlideBtn && !suggestionStatusLabel) {
+            if (!generateFullSlideBtn) {
                 return;
             }
             if (suggestionCooldownTimer) {
@@ -3461,6 +3550,135 @@
             } finally {
                 isGeneratingSuggestions = false;
                 stopGeneratePlaceholdersCooldown();
+            }
+        }
+
+        function buildAdvicePrompt({ globalContext, sectionLabel, columnSection, fieldValue }) {
+            const contextSnippet = globalContext ? `"""${globalContext}"""` : "aucun contexte global";
+            const sectionInfo = sectionLabel ? `"${sectionLabel}"` : "cette section";
+            const columnInfo = columnSection ? `"${columnSection}"` : "cette colonne";
+            const trimmedValue = fieldValue ? fieldValue.trim() : "";
+            const valueDescriptor = trimmedValue ? `"${trimmedValue}"` : "vide";
+            const emptyRule =
+                "Si le champ est vide, propose exactement deux • de moins de 15 mots pour prioriser cette saisie (le deuxième étant une liste d'exemples concrets) ; réponds uniquement par ces deux lignes sans autre texte ni émoji.";
+            const filledRule =
+                "Si le champ est rempli, suggère deux points positifs (précédés de +) et des critiques constructives (précédés de -) de moins de 15 mots chacune pour améliorer cette saisie ; réponds uniquement par ces deux lignes sans autre texte ni émoji.";
+            const applicationHint = `Le champ actuel est ${valueDescriptor}. Applique uniquement la règle correspondante.`;
+            return (
+                `Sur la base du contexte global ${contextSnippet}, pour la section ${sectionInfo} dans ${columnInfo}, ${applicationHint}\n` +
+                `${emptyRule}\n${filledRule}`
+            );
+        }
+
+        async function requestSectionAdvice({ slide, sectionKey, sectionLabel, columnKey, columnSection, textarea, fieldValue }) {
+            try {
+                const promptText = buildAdvicePrompt({
+                    globalContext: (getSlideHistory(slide) || "").trim(),
+                    sectionLabel,
+                    columnSection,
+                    fieldValue
+                });
+                const messages = buildAssistantMessages(promptText);
+                const aiText = await callOpenAI(messages);
+                if (!aiText) {
+                    return false;
+                }
+                const trimmed = aiText.trim();
+                if (!trimmed) {
+                    return false;
+                }
+                textarea.dataset.suggestionPlaceholder = trimmed;
+                updateTextareaTooltip(textarea);
+                updateSectionCanvasExample(slide, columnKey, sectionKey, trimmed);
+                return true;
+            } catch (err) {
+                console.warn("Conseil section impossible", err);
+                return false;
+            }
+        }
+
+        function buildSectionTask(sectionEl) {
+            if (!sectionEl) {
+                return null;
+            }
+            const slide = sectionEl.closest(".slide");
+            if (!slide) return null;
+            const sectionKey = sectionEl.dataset.section;
+            const textarea = sectionEl.querySelector("textarea");
+            if (!sectionKey || !textarea) {
+                return null;
+            }
+            const column = sectionEl.closest(".column");
+            const columnStage = column?.dataset.stage || "";
+            const columnTitle = column?.querySelector(".column-title")?.textContent.trim() || "";
+            const columnSection = columnTitle || columnStage || "cette colonne";
+            const columnKey = columnStage || columnTitle || `column-${sectionKey}`;
+            const templateId = slide?.dataset.templateId || templates[0].id;
+            const sectionLabel =
+                column?.querySelector(`.section-label[data-section="${sectionKey}"]`)?.textContent.trim() ||
+                getDefaultSectionLabel(templateId, sectionKey);
+            return {
+                slide,
+                sectionKey,
+                sectionLabel,
+                columnKey,
+                columnSection,
+                fieldValue: textarea?.value.trim() || "",
+                textarea
+            };
+        }
+
+        async function generateSectionAdvice() {
+            if (!adviceBtn || isGeneratingAdvice) return;
+            const slide = getActiveSlideElement();
+            if (!slide) return;
+            const templateId = slide.dataset.templateId || templates[0].id;
+            const tasks = Array.from(slide.querySelectorAll(".section"))
+                .map(section => buildSectionTask(section))
+                .filter(Boolean);
+            if (!tasks.length) {
+                showCopyToast("Aucune section à conseiller.");
+                return;
+            }
+            const previousText = adviceBtn.textContent;
+            adviceBtn.disabled = true;
+            adviceBtn.textContent = "✧ Conseiller...";
+            isGeneratingAdvice = true;
+            try {
+                const results = await Promise.allSettled(tasks.map(task => requestSectionAdvice(task)));
+                const hasSuccess = results.some(result => result.status === "fulfilled" && result.value);
+                if (hasSuccess) {
+                    schedulePersist();
+                    showCopyToast("Conseils IA mis à jour.");
+                } else {
+                    showCopyToast("Impossible de générer les conseils IA.");
+                }
+            } finally {
+                isGeneratingAdvice = false;
+                adviceBtn.disabled = false;
+                adviceBtn.textContent = previousText;
+            }
+        }
+
+        async function handleSectionAdviceClick(button) {
+            const sectionEl = button.closest(".section");
+            if (!sectionEl) return;
+            const task = buildSectionTask(sectionEl);
+            if (!task) return;
+            const prevText = button.textContent;
+            button.disabled = true;
+            button.textContent = "✧...";
+            try {
+                const success = await requestSectionAdvice(task);
+                if (success) {
+                    schedulePersist();
+                    showCopyToast("Conseil IA mis à jour.");
+                } else {
+                    showCopyToast("Impossible de générer le conseil IA.");
+                }
+            } finally {
+                button.disabled = false;
+                button.textContent = prevText;
             }
         }
 
@@ -3733,6 +3951,8 @@
                     fontSize: Number.isNaN(fontSizeValue) ? currentFontSize : fontSizeValue,
                     columns,
                     pageContext: slide.dataset.pageContext || "",
+                    history: getSlideHistory(slide),
+                    canvasExamples: getSlideCanvasExamples(slide),
                     bottomSection: bottomSectionData
                 };
             });
@@ -3766,8 +3986,9 @@
             <button type="button" class="section-delete-btn" aria-label="Supprimer la section">×</button>
           </div>
                     <div class="section-text-row">
-                        <div class="textarea-wrapper">
-                            <textarea class="editable" data-section="${sectionKey}" data-placeholder="${placeholder}"></textarea>
+                    <div class="textarea-wrapper">
+                        <textarea class="editable" data-section="${sectionKey}" data-placeholder="${placeholder}"></textarea>
+              <button class="section-advice-btn inside" type="button" data-action="advice" data-section="${sectionKey}" title="Conseiller la saisie" aria-label="Conseiller la saisie">✧</button>
               <button class="field-ai-btn inside" type="button" data-field="section-text" data-section="${sectionKey}" title="Générer le contenu" aria-label="Générer le contenu">⌘</button>
             </div>
           </div>
@@ -4006,6 +4227,14 @@
                 labelSpan.dataset.suggestions = suggestionValue;
                 textarea.dataset.suggestionPlaceholder = suggestionValue;
             }
+            const adviceButton = document.createElement("button");
+            adviceButton.type = "button";
+            adviceButton.className = "section-advice-btn field-ai-btn inside";
+            adviceButton.dataset.action = "advice";
+            adviceButton.dataset.section = sectionKey;
+            adviceButton.title = "Conseiller la saisie";
+            adviceButton.setAttribute("aria-label", "Conseiller la saisie");
+            adviceButton.textContent = "✧";
             const aiButton = document.createElement("button");
             aiButton.type = "button";
             aiButton.className = "field-ai-btn inside";
@@ -4014,7 +4243,7 @@
             aiButton.title = "Générer le contenu";
             aiButton.setAttribute("aria-label", "Générer le contenu");
             aiButton.textContent = "⌘";
-            textareaWrapper.append(textarea, aiButton);
+            textareaWrapper.append(textarea, adviceButton, aiButton);
             textRow.appendChild(textareaWrapper);
 
             section.append(labelRow, textRow);
@@ -4183,6 +4412,10 @@
             slide.dataset.templateId = templateId;
             slide.dataset.tabLabel = seed.tabLabel || `Bloc ${index + 1}`;
             slide.dataset.pageContext = seed.pageContext ?? seed.context ?? "";
+            setSlideHistory(slide, seed.history ?? seed.globalContext ?? "");
+            if (seed.canvasExamples) {
+                setSlideCanvasExamples(slide, seed.canvasExamples);
+            }
             const hasBottomSection = !seed.bottomSection?.deleted;
             const bottomSectionMarkup = hasBottomSection
                 ? `
@@ -4350,6 +4583,84 @@
             slide.dataset.pageContext = value || "";
         }
 
+        function getSlideHistory(slide) {
+            return slide?.dataset.history || "";
+        }
+
+        function setSlideHistory(slide, value) {
+            if (!slide) return;
+            if (value) {
+                slide.dataset.history = value;
+            } else {
+                delete slide.dataset.history;
+            }
+        }
+
+        function getActiveHistoryValue() {
+            return getSlideHistory(getActiveSlideElement());
+        }
+
+        function syncHistoryFieldWithActiveSlide() {
+            if (!globalContextField) return;
+            const history = getActiveHistoryValue() || "";
+            if (globalContextField.value !== history) {
+                globalContextField.value = history;
+            }
+        }
+
+        function parseCanvasExamplesValue(value) {
+            if (!value) return {};
+            try {
+                const parsed = JSON.parse(value);
+                if (parsed && typeof parsed === "object") {
+                    return parsed;
+                }
+            } catch (err) {
+                console.warn("Canvas examples invalides", err);
+            }
+            return {};
+        }
+
+        function getSlideCanvasExamples(slide) {
+            return parseCanvasExamplesValue(slide?.dataset.canvasExamples);
+        }
+
+        function setSlideCanvasExamples(slide, examples) {
+            if (!slide) return;
+            const normalized = examples && typeof examples === "object" ? examples : {};
+            const serialized = JSON.stringify(normalized);
+            if (serialized === "{}") {
+                delete slide.dataset.canvasExamples;
+            } else {
+                slide.dataset.canvasExamples = serialized;
+            }
+        }
+
+        function getCanvasExampleForSection(slide, columnId, sectionKey, columnTitle) {
+            if (!slide) return null;
+            const examples = getSlideCanvasExamples(slide);
+            const keys = [columnId, columnId?.toLowerCase(), columnTitle, columnTitle?.toLowerCase()]
+                .map(key => (typeof key === "string" ? key.trim() : ""))
+                .filter(Boolean);
+            for (const key of keys) {
+                const bucket = examples[key];
+                if (bucket && typeof bucket === "object" && bucket[sectionKey]) {
+                    return bucket[sectionKey];
+                }
+            }
+            return null;
+        }
+
+        function updateSectionCanvasExample(slide, columnId, sectionKey, guidance) {
+            if (!slide || !guidance) return;
+            const examples = getSlideCanvasExamples(slide);
+            const key = (columnId || "").trim() || "default-column";
+            const columnBucket = Object.assign({}, examples[key]);
+            columnBucket[sectionKey] = guidance;
+            examples[key] = columnBucket;
+            setSlideCanvasExamples(slide, examples);
+        }
+
         function syncPageContextFieldWithActiveSlide() {
             if (!pageContextField) return;
             const contextValue = getActivePageContext();
@@ -4407,6 +4718,7 @@
                 lastAppliedTemplateId = currentTemplateId;
             }
             setPromptFieldsForTemplate(currentTemplateId);
+            syncHistoryFieldWithActiveSlide();
             syncPageContextFieldWithActiveSlide();
             updateSlideEmptyState();
             updateSelectedTemplateLabelDisplay();
@@ -4469,7 +4781,9 @@
                 bottomSection: {
                     text: bottomSectionEl?.querySelector(".bottom-section-text")?.value || "",
                     deleted: !Boolean(bottomSectionEl)
-                }
+                },
+                history: getSlideHistory(slide),
+                canvasExamples: getSlideCanvasExamples(slide)
             };
         }
 
@@ -4516,7 +4830,9 @@
                 bottomSection: {
                     text: previousSlide.querySelector(".bottom-section-text")?.value || "",
                     deleted: !Boolean(previousSlide.querySelector(".slide-bottom-section"))
-                }
+                },
+                history: getSlideHistory(previousSlide),
+                canvasExamples: getSlideCanvasExamples(previousSlide)
             };
         }
 
@@ -4554,6 +4870,12 @@
         });
         generateFullSlideBtn?.addEventListener("click", () => {
             generateFullSlideContent();
+        });
+        adviceBtn?.addEventListener("click", () => {
+            generateSectionAdvice();
+        });
+        clearSectionsBtn?.addEventListener("click", () => {
+            clearSectionsInActiveSlide();
         });
 
         templateBtn?.addEventListener("click", () => {
@@ -4595,7 +4917,8 @@
             const bottomSection = slide.querySelector(".bottom-section-text");
             if (bottomSection) bottomSection.value = "";
             if (clearRecits) {
-                if (globalContextField) globalContextField.value = "";
+                setSlideHistory(slide, "");
+                syncHistoryFieldWithActiveSlide();
                 if (pageContextField) pageContextField.value = "";
                 slide.dataset.pageContext = "";
             }
@@ -4687,23 +5010,8 @@
         });
 
         exportJsonBtn.addEventListener("click", () => {
-            const data = collectAllSlides();
-            const globalContextValue = globalContextField?.value || "";
-            const payload = {
-                slides: data,
-                settings: {
-                    ratioIndex: currentRatioIndex,
-                    textStyleIndex: currentTextStyleIndex,
-                    fontSize: currentFontSize,
-                    apiKey: localStorage.getItem('go-toolkit-api-key') || '',
-                    globalContext: globalContextValue,
-                    context: globalContextValue,
-                    prompts: promptLibrary,
-                    promptTemplateId: activePromptTemplateId,
-                    iaMode: activeIaMode,
-                    defaultTemplateId: currentTemplateId
-                }
-            };
+            closeContextMenus();
+            const payload = buildStatePayload();
             const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
@@ -5350,10 +5658,11 @@
             const columnStage = column?.dataset.stage || "";
             const columnTitle = column?.querySelector(".column-title")?.textContent.trim() || "";
             const columnId = columnStage || columnTitle || "cette colonne";
+            const columnSection = columnTitle || columnStage || columnId || "cette colonne";
             const sectionLabel =
                 column?.querySelector(`.section-label[data-section="${sectionKey}"]`)?.textContent.trim() ||
                 getDefaultSectionLabel(safeTemplateId, sectionKey);
-            const globalContextValue = globalContextField?.value.trim() || "";
+            const globalContextValue = (getSlideHistory(slide) || "").trim();
             const slideTitle =
                 slide?.querySelector(".slide-title-input")?.value.trim() ||
                 slide?.dataset.tabLabel ||
@@ -5363,7 +5672,8 @@
                 columnStage || columnId,
                 sectionKey,
                 sectionLabel,
-                columnTitle
+                columnTitle,
+                slide
             );
             return {
                 globalContext: globalContextValue,
@@ -5376,13 +5686,14 @@
                 sectionTitle: sectionLabel,
                 sectionLabel,
                 sectionGuidance,
+                columnSection,
                 slideTitle
             };
         }
 
         function buildBottomPromptContext(slide) {
             const slideTitle = slide?.querySelector(".slide-title-input")?.value.trim() || "Slide";
-            const globalContextValue = globalContextField?.value.trim() || "";
+            const globalContextValue = (getSlideHistory(slide) || "").trim();
             const pageContextValue = getSlidePageContext(slide).trim();
             return {
                 globalContext: globalContextValue,
@@ -5561,23 +5872,8 @@
                 if (!messages || !messages.length) {
                     return;
                 }
-                const countdownDuration = 30;
-                let remainingSeconds = countdownDuration;
-                let countdownInterval = null;
-                const updateCountdownLabel = () => {
-                    const frames = ["◴", "◷", "◶", "◵"];
-                    const frame = frames[remainingSeconds % frames.length];
-                    button.textContent = `${frame} ${remainingSeconds}s`;
-                };
-                updateCountdownLabel();
-                countdownInterval = setInterval(() => {
-                    remainingSeconds = Math.max(0, remainingSeconds - 1);
-                    updateCountdownLabel();
-                    if (remainingSeconds === 0) {
-                        clearInterval(countdownInterval);
-                    }
-                }, 1000);
                 button.disabled = true;
+                setButtonBusyState(button, true);
                 try {
                     const aiText = await callOpenAI(messages);
                     console.log("OpenAI field response", aiText);
@@ -5586,10 +5882,7 @@
                     updateTextareaOverflowState(textarea);
                     schedulePersist();
                 } finally {
-                    if (countdownInterval) {
-                        clearInterval(countdownInterval);
-                    }
-                    button.textContent = "⌘";
+                    setButtonBusyState(button, false);
                     button.disabled = false;
                 }
             })();
@@ -5639,6 +5932,12 @@
         }
 
         document.addEventListener("click", event => {
+            const adviceBtnTarget = event.target.closest(".section-advice-btn");
+            if (adviceBtnTarget) {
+                event.stopPropagation();
+                handleSectionAdviceClick(adviceBtnTarget);
+                return;
+            }
             const btn = event.target.closest(".field-ai-btn");
             if (btn) {
                 event.stopPropagation();
@@ -5689,6 +5988,7 @@
             openModal(contextModal);
         });
         contextApplyBtn?.addEventListener("click", () => {
+            flushPromptFieldsToLibrary();
             persistState();
             closeModal(contextModal);
         });
@@ -5792,7 +6092,8 @@
             const slides = collectAllSlides();
             const firstSlide = Array.isArray(slides) && slides.length ? slides[0] : null;
             const title = (firstSlide?.title || "Sans titre").trim();
-            const desc = (globalContextField?.value || "")
+            const descSource = firstSlide?.history || firstSlide?.pageContext || "";
+            const desc = (descSource || globalContextField?.value || "")
                 .split(/\r?\n/)
                 .map(line => line.trim())
                 .filter(Boolean)

@@ -648,7 +648,6 @@
     };
 
     const drawDefaultPromptTemplate =
-        "Tu es un product owner expérimenté.\n- " +
         "Sur la base de {{field_input}}, produis un code strictement mermaid\n- " +
         "sous forme d'un diagramme de {{draw_type}}.\n- " +
         "Les intitulés font moins de 4 mots.\n- " +
@@ -656,23 +655,23 @@
         "Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
 
     const canvasDefaultPromptTemplate =
-        "Tu es un product owner expérimenté.\n- " +
         "Sur la base de \"{{slideTitle}}\", du contexte \"{{globalContext}}\" et \"{{pageContext}}\",\n- " +
         "et dans le cadre de \"{{columnTitle}}\", reformuler \"{{fieldValue}}\"\n- " +
         "sous forme de 2 à 3 \"{{sectionTitle}}\" (un • de < 15 mots pour chaque).\n- " +
         "Sans introduction préalable ni émoji.";
 
     const canvasBottomPromptTemplate =
-        "Tu es un product owner expérimenté.\n- " +
         "Sur la base du contexte \"{{globalContext}}\" et de \"{{pageContext}}\",\n- " +
-        "et avec {{columnSections}}, répond à {{slideTitle}} en 2 phrases courtes\n- " +
+        "et avec {{columnSections}}, répond à {{slideTitle}} en 2 phrases de moins de 15 mots précédés d'un •\n- " +
         "(< 15 mots pour chaque).";
 
-    const canvasSuggestionsPromptTemplate = `Tu es un product owner expérimenté.
-- Sur la base du contexte "[[globalContext]]" et "[[pageContext]]",
-- reformuler "[[fieldValue]]" ou formule si c'est vide
-- sous forme de 2 à 3 éléments (< 15 mots pour chaque précédé d'un • ) en suivant les instructions spécifiques à la colonne [[columnId]] et à la section [[sectionLabel]] dans canvasExamples
-- Sans introduction préalable ni émoji.`;
+    const canvasSuggestionsPromptTemplate = `
+- En partant du contexte "{{globalContext}}" et en connaissant la section "{{sectionLabel}}" de {{columnSection}},
+- Si {{fieldValue}} est vide, propose exactement deux conseils • de moins de 15 mots chacune, pour remplir cette saisie ; (le deuxième étant des mots clés d'exemples de réponse) ;
+- Si {{fieldValue}} est rempli, suggère deux points positifs de la saisie (précédés chacun de + et commençant par un nom)
+- Et suggère deux critiques constructives sur la saisie (précédés chacun de - et commençant par un verbe)
+- Réponds uniquement sans autre texte ni émoji avec moins de 15 mots par point
+`;
 
     const drawPromptzilla = [
         {
@@ -839,7 +838,7 @@
         }
     ];
 
-    const timelineCreateSystemTemplate = `Tu es un assistant product owner qui va générer une feuille de route produit.
+    const timelineCreateSystemTemplate = `Tu vas aider à générer un planning précis à partir des infos fournises.
 
 Réponds toujours uniquement avec un JSON contenant :
 - \`page\` : le titre de la page courante (utilisé pour le header).

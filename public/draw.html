@@ -1231,10 +1231,11 @@ classDiagram
                     ? window.GoPrompts.drawPromptzilla
                     : []);
 
-            let selectedPromptzillaId = DIAGRAM_PROMPTZILLA[0]?.id || null;
+            let selectedPromptzillaId = null;
 
             function getSelectedPromptzilla() {
-                return DIAGRAM_PROMPTZILLA.find(b => b.id === selectedPromptzillaId) || DIAGRAM_PROMPTZILLA[0] || null;
+                if (!selectedPromptzillaId) return null;
+                return DIAGRAM_PROMPTZILLA.find(b => b.id === selectedPromptzillaId) || null;
             }
 
             function getTemplateCriteria(template) {
@@ -1310,9 +1311,6 @@ classDiagram
             function openPromptzillaModal() {
                 const overlay = document.getElementById("promptzillaModal");
                 if (!overlay) return;
-                if (!selectedPromptzillaId && DIAGRAM_PROMPTZILLA.length) {
-                    selectedPromptzillaId = DIAGRAM_PROMPTZILLA[0].id;
-                }
                 renderPromptzillaList(selectedPromptzillaId);
                 overlay.classList.add("open");
                 overlay.setAttribute("aria-hidden", "false");
@@ -1354,7 +1352,11 @@ classDiagram
             });
 
             function applyPromptzillaSelection() {
-                const bp = DIAGRAM_PROMPTZILLA.find(b => b.id === selectedPromptzillaId) || DIAGRAM_PROMPTZILLA[0];
+                if (!selectedPromptzillaId) {
+                    closePromptzillaModal();
+                    return;
+                }
+                const bp = DIAGRAM_PROMPTZILLA.find(b => b.id === selectedPromptzillaId);
                 if (!bp) {
                     closePromptzillaModal();
                     return;

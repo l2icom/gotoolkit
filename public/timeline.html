@@ -6102,7 +6102,12 @@
             }
 
             function showScenarioTooltip(textarea) {
-                if (!textarea) return;
+                if (!textarea || !scenarioTooltip) return;
+                var tooltipText = (scenarioTooltip.textContent || "").trim();
+                if (!tooltipText || scenarioTooltip.getAttribute("aria-hidden") === "true") {
+                    hideScenarioTooltip();
+                    return;
+                }
                 positionScenarioTooltipForTextarea(textarea);
                 scenarioTooltip.style.display = 'block';
                 // small initial transform for nicer appear
