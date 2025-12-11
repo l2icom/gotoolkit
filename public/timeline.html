@@ -366,6 +366,39 @@
             font-family: inherit;
         }
 
+        .prompt-input-wrapper {
+            position: relative;
+        }
+
+        .prompt-input-wrapper textarea {
+            position: relative;
+            z-index: 1;
+        }
+
+        .template-tooltip {
+            display: none;
+            position: absolute;
+            left: 0;
+            bottom: -8px;
+            transform: translateY(100%);
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 8px 10px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            max-width: 340px;
+            font-size: 12px;
+            color: #ffffff;
+            line-height: 1.3;
+            backdrop-filter: blur(2px);
+            white-space: pre-wrap;
+        }
+
+        .prompt-input-wrapper.is-focused .template-tooltip {
+            display: block;
+        }
+
         .gutenberg-card.open {
             display: flex;
             flex-direction: column;
@@ -401,6 +434,12 @@
             display: flex;
             flex-direction: column;
             flex: 1 1 auto;
+        }
+
+        .prompt-template-meta {
+            font-size: 12px;
+            color: var(--muted);
+            margin: 2px 0 6px;
         }
 
         .gutenberg-card .ia-prompt-field {
@@ -1666,8 +1705,12 @@
                             </button>
                         </div>
                         <div class="ia-prompt-fields">
-                            <textarea id="promptCreate" class="ia-prompt-field" rows="20"
-                                placeholder="Décris ici ta vision idéale dans 3 à 24 mois : les attendus, les changements, les impacts concrets."></textarea>
+                            <div class="prompt-template-meta" id="promptTemplateMeta" title="">Modèle : —</div>
+                            <div class="prompt-input-wrapper" id="promptCreateWrapper">
+                                <textarea id="promptCreate" class="ia-prompt-field" rows="20"
+                                    placeholder="Décris ici ton objectif, ton échéance et tes actions"></textarea>
+                                <div id="timelineTemplateTooltip" class="template-tooltip" aria-hidden="true"></div>
+                            </div>
                         </div>
                     </div>
                     <div class="header-row ia-header-actions gutenberg-script">
@@ -1926,7 +1969,8 @@
                 prompts: {
                     create: "",
                     modify: null
-                }
+                },
+                templateId: null
             };
             var customSystemTemplates = {
                 create: ""
@@ -2414,6 +2458,7 @@
                 }
                 base.prompts.create = typeof base.prompts.create === "string" ? base.prompts.create : "";
                 base.prompts.modify = typeof base.prompts.modify === "string" ? base.prompts.modify : null;
+                base.templateId = typeof base.templateId === "string" ? base.templateId : null;
                 return base;
             }
 
@@ -2480,7 +2525,7 @@
                         };
                     });
                 } else if (persistedState.groups) {
-                    var defaultLabel = persistedState.label || persistedState.name || "Bloc 1";
+                    var defaultLabel = persistedState.label || persistedState.name || "";
                     views = [{
                         name: defaultLabel,
                         title: defaultLabel,
@@ -2513,7 +2558,7 @@
                 }
             }
             if (!views.length) {
-                views = [{ name: "Bloc 1", title: "Bloc 1", planning: null, context: cloneDefaultContext() }];
+                views = [{ name: "", title: "", planning: null, context: cloneDefaultContext() }];
             }
             views.forEach(ensureViewFilterState);
             views.forEach(ensureViewContext);
@@ -3110,9 +3155,12 @@
                     card.className = "promptzilla-card";
                     card.setAttribute("role", "button");
                     card.dataset.id = tpl.id;
+                    if (tpl.id === selectedPromptzillaId) {
+                        card.classList.add("selected");
+                    }
                     card.innerHTML = `<strong style="font-size:13px">${tpl.title}</strong><div style="font-size:12px;color:var(--muted);white-space:pre-wrap;word-break:break-word;margin-top:6px">${tpl.text}</div>`;
                     card.addEventListener("click", function () {
-                        selectedPromptzillaId = tpl.id;
+                        setSelectedTemplateId(tpl.id, { skipPersist: true });
                         // update visuals
                         Array.from(roadmapPromptzillaList.children).forEach(function (c) { c.classList.remove("selected"); });
                         card.classList.add("selected");
@@ -3126,8 +3174,13 @@
             function openRoadmapPromptzilla() {
                 if (!roadmapPromptzillaOverlay) return;
                 if (timelineTourOverlay && timelineTourOverlay.classList.contains("visible")) return;
-                if (!selectedPromptzillaId && ROADMAP_PROMPTZILLA.length) {
-                    selectedPromptzillaId = ROADMAP_PROMPTZILLA[0].id;
+                if (!selectedPromptzillaId) {
+                    var ctx = getActiveViewContext();
+                    if (ctx && ctx.templateId) {
+                        setSelectedTemplateId(ctx.templateId, { skipPersist: true });
+                    } else if (ROADMAP_PROMPTZILLA.length) {
+                        setSelectedTemplateId(ROADMAP_PROMPTZILLA[0].id, { skipPersist: true });
+                    }
                 }
                 renderRoadmapPromptzilla();
                 roadmapPromptzillaOverlay.classList.add("open");
@@ -3155,23 +3208,15 @@
                     if (!selectedPromptzillaId) return;
                     var tpl = ROADMAP_PROMPTZILLA.find(function (t) { return t.id === selectedPromptzillaId; });
                     if (tpl) {
-                        var visionField = document.getElementById("promptCreate");
-                        var scriptField = document.getElementById("promptModify");
-                        if (visionField) {
-                            visionField.value = tpl.text;
-                        }
-                        if (scriptField) {
-                            scriptField.value = tpl.text || "";
-                        }
                         // Persist into active view context so opening the Gutenberg modal won't overwrite values
                         if (typeof persistActiveContext === "function") {
                             persistActiveContext(function (ctx) {
                                 ctx.prompts = ctx.prompts || {};
-                                ctx.prompts.create = tpl.text || "";
-                                ctx.prompts.modify = tpl.script || "";
+                                ctx.templateId = tpl.id || null;
                                 ctx.mode = "create";
                             });
                         }
+                        setSelectedTemplateId(tpl.id, { skipPersist: true });
                         closeRoadmapPromptzilla();
                         // open Gutenberg/context modal in 'create' mode to avoid refresh-overwrite of modify
                         if (typeof openContextModal === "function") {
@@ -4132,45 +4177,43 @@
                     lines.push("Types : " + typeLabels.join(", "));
                 }
                 var items = planning && Array.isArray(planning.items) ? planning.items : [];
-                if (items.length) {
-                    lines.push("");
-                    lines.push("Actions :");
-                    items.forEach(function (item, index) {
-                        if (index) {
-                            lines.push("");
-                        }
-                        var label = item.label || "Sans titre";
-                        lines.push(label);
-                        var days = null;
-                        if (isMarkerKind(item.kind)) {
-                            if (item.date) {
-                                days = 1;
-                                lines.push("Date: " + item.date + " (1 jour)");
-                            }
-                        } else {
-                            var parsedLength = parseInt(item.length, 10);
-                            if (!isNaN(parsedLength) && parsedLength > 0) {
-                                days = parsedLength;
-                            } else if (item.start && item.end) {
-                                days = computeDaySpan(item.start, item.end);
-                            }
-                            if (item.start) {
-                                var dayLabel = days === 1 ? " jour" : " jours";
-                                lines.push("Date: " + item.start + (days ? " (" + days + dayLabel + ")" : ""));
-                            }
-                        }
-                        var groupLabel = groupMap[item.groupId] || item.groupId;
-                        if (groupLabel) {
-                            lines.push("Groupe: " + groupLabel);
-                        }
-                        if (item.kind) {
-                            lines.push("Type: " + getKindLabel(item.kind));
-                        }
-                    });
-                } else {
-                    lines.push("");
-                    lines.push("Aucun élément à exporter pour l’instant.");
+                if (!items.length) {
+                    return "";
                 }
+                lines.push("");
+                lines.push("Actions :");
+                items.forEach(function (item, index) {
+                    if (index) {
+                        lines.push("");
+                    }
+                    var label = item.label || "Sans titre";
+                    lines.push(label);
+                    var days = null;
+                    if (isMarkerKind(item.kind)) {
+                        if (item.date) {
+                            days = 1;
+                            lines.push("Date: " + item.date + " (1 jour)");
+                        }
+                    } else {
+                        var parsedLength = parseInt(item.length, 10);
+                        if (!isNaN(parsedLength) && parsedLength > 0) {
+                            days = parsedLength;
+                        } else if (item.start && item.end) {
+                            days = computeDaySpan(item.start, item.end);
+                        }
+                        if (item.start) {
+                            var dayLabel = days === 1 ? " jour" : " jours";
+                            lines.push("Date: " + item.start + (days ? " (" + days + dayLabel + ")" : ""));
+                        }
+                    }
+                    var groupLabel = groupMap[item.groupId] || item.groupId;
+                    if (groupLabel) {
+                        lines.push("Groupe: " + groupLabel);
+                    }
+                    if (item.kind) {
+                        lines.push("Type: " + getKindLabel(item.kind));
+                    }
+                });
                 return lines.join("\n");
             }
 
@@ -4623,6 +4666,30 @@
                 });
             }
 
+            function restartTemplateTooltipTimer() {
+                if (!timelineTemplateTooltip || !promptCreateWrapper) return;
+                const hasContent = timelineTemplateTooltip.innerHTML && timelineTemplateTooltip.innerHTML.trim() !== "";
+                const isFocused = document.activeElement === txtPromptCreate;
+                if (!hasContent || !isFocused) {
+                    timelineTemplateTooltip.setAttribute("aria-hidden", "true");
+                    promptCreateWrapper.classList.remove("is-focused");
+                    if (tooltipTimer) {
+                        clearTimeout(tooltipTimer);
+                        tooltipTimer = null;
+                    }
+                    return;
+                }
+                promptCreateWrapper.classList.add("is-focused");
+                timelineTemplateTooltip.setAttribute("aria-hidden", "false");
+                if (tooltipTimer) {
+                    clearTimeout(tooltipTimer);
+                }
+                tooltipTimer = setTimeout(function () {
+                    promptCreateWrapper.classList.remove("is-focused");
+                    timelineTemplateTooltip.setAttribute("aria-hidden", "true");
+                }, 5000);
+            }
+
             if (importJsonBtn) {
                 importJsonBtn.addEventListener("click", function () {
                     triggerImportJson();
@@ -4987,14 +5054,26 @@
             function ensureViewName(index) {
                 var view = views[index];
                 if (!view) return "Bloc " + (index + 1);
-                return view.name || view.title || ("Bloc " + (index + 1));
+                if (view.name !== undefined && view.name !== null) return view.name;
+                if (view.title !== undefined && view.title !== null) return view.title;
+                return "Bloc " + (index + 1);
             }
 
             function refreshHeaderText() {
                 if (!headerTitleElement) return;
                 var currentView = views[activeViewIndex];
-                headerTitleElement.textContent =
-                    (currentView && (currentView.title || currentView.name)) || "Outil de planning · OpenAI ready";
+                var label = "";
+                if (currentView) {
+                    var ctx = ensureViewContext(currentView);
+                    var hasContent =
+                        (ctx.prompts && ((ctx.prompts.create || "").trim() || (ctx.prompts.modify || "").trim())) ||
+                        hasTimelineData();
+                    label = currentView.title || currentView.name;
+                    if (!hasContent && !currentView.planning) {
+                        label = "";
+                    }
+                }
+                headerTitleElement.textContent = label || "";
             }
 
             function resetTimelineForEmptyView() {
@@ -5030,6 +5109,7 @@
                     resetTimelineForEmptyView();
                 }
                 ensureViewContext(view);
+                selectedPromptzillaId = view && view.context ? (view.context.templateId || null) : null;
                 refreshHeaderText();
                 renderViewTabs();
                 updateEmptyViewMessage();
@@ -5048,6 +5128,8 @@
                     if (txtPromptCreate) txtPromptCreate.value = "";
                 }
                 ctx.prompts.modify = "";
+                ctx.templateId = null;
+                selectedPromptzillaId = null;
                 if (txtPromptModify) txtPromptModify.value = "";
                 view.context = ctx;
                 view.planning = null;
@@ -5071,8 +5153,13 @@
                     ctx.prompts.create = "";
                     ctx.prompts.modify = "";
                 }
+                if (ctx) {
+                    ctx.templateId = null;
+                }
+                selectedPromptzillaId = null;
                 if (txtPromptCreate) txtPromptCreate.value = "";
                 if (txtPromptModify) txtPromptModify.value = "";
+                updatePromptTemplateMeta();
                 persistTimelineState();
             }
 
@@ -6001,16 +6088,69 @@
             // ============================================================
             var txtPromptCreate = document.getElementById("promptCreate");
             var txtPromptModify = document.getElementById("promptModify");
+            var promptTemplateMeta = document.getElementById("promptTemplateMeta");
+            var promptCreateWrapper = document.getElementById("promptCreateWrapper");
+            var timelineTemplateTooltip = document.getElementById("timelineTemplateTooltip");
             var btnCall = document.getElementById("btn-call");
             var clearTimelineBtn = document.getElementById("clearTimelineBtn");
             var iaTemplateEditor = document.getElementById("iaTemplateEditor");
             var resetTemplatesBtn = document.getElementById("resetTemplatesBtn");
+            var tooltipTimer = null;
+
+            function getTemplateById(id) {
+                if (!id) return null;
+                return ROADMAP_PROMPTZILLA.find(function (tpl) { return tpl.id === id; }) || null;
+            }
+
+            function updatePromptTemplateMeta() {
+                if (!promptTemplateMeta) return;
+                var ctx = getActiveViewContext();
+                var currentId = (ctx && typeof ctx.templateId === "string" && ctx.templateId.trim()) ? ctx.templateId.trim() : (selectedPromptzillaId || "");
+                var tpl = getTemplateById(currentId);
+                var label = tpl ? tpl.title : "—";
+                var description = tpl ? tpl.text : "";
+                promptTemplateMeta.textContent = "Modèle : " + label;
+                promptTemplateMeta.title = "";
+                if (txtPromptCreate) {
+                    txtPromptCreate.title = "";
+                }
+                if (timelineTemplateTooltip) {
+                    var htmlDesc = description ? escapeHtml(description).replace(/\n/g, "<br>") : "";
+                    timelineTemplateTooltip.innerHTML = htmlDesc;
+                    var shouldShow = htmlDesc && document.activeElement === txtPromptCreate;
+                    timelineTemplateTooltip.setAttribute("aria-hidden", shouldShow ? "false" : "true");
+                }
+            }
+
+            function setSelectedTemplateId(id, options) {
+                selectedPromptzillaId = id || null;
+                var ctx = getActiveViewContext();
+                if (ctx) {
+                    ctx.templateId = selectedPromptzillaId;
+                }
+                updatePromptTemplateMeta();
+                restartTemplateTooltipTimer();
+                if (!options || !options.skipPersist) {
+                    persistTimelineState();
+                }
+            }
 
             function ensureModifyPrompt(options) {
                 var context = getActiveViewContext();
                 context.prompts = context.prompts || {};
+                // If la timeline est vide, le script reste vide.
+                if (!hasTimelineData()) {
+                    context.prompts.modify = "";
+                    if (txtPromptModify) {
+                        txtPromptModify.value = "";
+                    }
+                    if (!options || !options.skipPersist) {
+                        persistTimelineState();
+                    }
+                    return;
+                }
                 var shouldRefresh = options && options.refreshModify;
-                var hasExisting = typeof context.prompts.modify === "string";
+                var hasExisting = typeof context.prompts.modify === "string" && context.prompts.modify.trim() !== "";
                 if ((shouldRefresh && !hasExisting) || context.prompts.modify === undefined || context.prompts.modify === null) {
                     context.prompts.modify = getModifyPromptContent();
                 }
@@ -6024,23 +6164,32 @@
 
             function syncContextFieldsFromState(options) {
                 var context = getActiveViewContext();
+                if (context && typeof context.templateId === "string") {
+                    selectedPromptzillaId = context.templateId || null;
+                }
+                var isEmptyTimeline = !hasTimelineData();
+                if (isEmptyTimeline) {
+                    if (context.prompts) {
+                        context.prompts.create = "";
+                        context.prompts.modify = "";
+                    }
+                    if (txtPromptCreate) txtPromptCreate.value = "";
+                    if (txtPromptModify) txtPromptModify.value = "";
+                }
                 if (txtPromptCreate) {
-                    // Preserve existing textarea content if context has no prompt saved.
-                    var existing = (txtPromptCreate.value || "").toString();
-                    if (context.prompts && typeof context.prompts.create === "string" && context.prompts.create.trim() !== "") {
+                    if (!isEmptyTimeline && context.prompts && typeof context.prompts.create === "string" && context.prompts.create.trim() !== "") {
                         txtPromptCreate.value = context.prompts.create;
-                    } else if (existing.trim() !== "") {
-                        // If the textarea already contains meaningful text (from HTML), copy it into context for the active view.
-                        context.prompts = context.prompts || {};
-                        context.prompts.create = existing;
                     } else {
                         txtPromptCreate.value = "";
+                        if (context.prompts) context.prompts.create = "";
                     }
                 }
                 ensureModifyPrompt({
                     refreshModify: options && options.refreshModify,
                     skipPersist: true
                 });
+                updatePromptTemplateMeta();
+                restartTemplateTooltipTimer();
                 if (!options || !options.skipPersist) {
                     persistTimelineState();
                 }
@@ -6092,6 +6241,22 @@
                     persistActiveContext(function (ctx) {
                         ctx.prompts.create = txtPromptCreate.value || "";
                     });
+                    restartTemplateTooltipTimer();
+                });
+                txtPromptCreate.addEventListener("focus", function () {
+                    restartTemplateTooltipTimer();
+                });
+                txtPromptCreate.addEventListener("blur", function () {
+                    if (tooltipTimer) {
+                        clearTimeout(tooltipTimer);
+                        tooltipTimer = null;
+                    }
+                    if (promptCreateWrapper) {
+                        promptCreateWrapper.classList.remove("is-focused");
+                    }
+                    if (timelineTemplateTooltip) {
+                        timelineTemplateTooltip.setAttribute("aria-hidden", "true");
+                    }
                 });
             }
             if (txtPromptModify) {
@@ -6242,35 +6407,7 @@
             var iaModalButtonDefaultLabel = iaModalButton
                 ? iaModalButton.textContent.trim()
                 : "⌘";
-            var EMPTY_MODIFY_PROMPT_TEXT = (function () {
-                if (Array.isArray(ROADMAP_PROMPTZILLA) && ROADMAP_PROMPTZILLA.length) {
-                    var first = ROADMAP_PROMPTZILLA[0];
-                    if (first && typeof first.text === "string" && first.text.trim() !== "") {
-                        return first.text;
-                    }
-                }
-                return (
-                    "Bloc : Planning 2026\n" +
-                    "\n" +
-                    "Éléments :\n" +
-                    "\n" +
-                    "Action 1 \n" +
-                    "Date: 2026-01-01 → 2027-01-01\n" +
-                    "Groupe: Phase 1\n" +
-                    "Type:  Catégorie 1\n" +
-                    "\n" +
-                    "\n" +
-                    "Repère 1 \n" +
-                    "Date: 2025-03-22\n" +
-                    "Groupe: Phase 2\n" +
-                    "Type: jalon+\n" +
-                    "\n" +
-                    "Action 2\n" +
-                    "Date: 2026-03-01 → 2026-07-01 \n" +
-                    "Groupe: Groupe 2\n" +
-                    "Type:  Catégorie 2"
-                );
-            })();
+            var EMPTY_MODIFY_PROMPT_TEXT = "";
 
             function hasTimelineData() {
                 if (!items || typeof items.get !== "function") {
@@ -6281,7 +6418,7 @@
 
             function getModifyPromptContent() {
                 if (!items || typeof items.get !== "function" || !hasTimelineData()) {
-                    return EMPTY_MODIFY_PROMPT_TEXT;
+                    return "";
                 }
                 persistCurrentPlanning();
                 var currentView = views[activeViewIndex];
