@@ -613,36 +613,36 @@
         default: {
             "first-col": {
                 "first-section":
-                    "• Noter une idée ou un point clé lié à cette section.\n" +
-                    "• Exemples : problème, opportunité, intuition à creuser.",
+                    "" +
+                    "",
                 "second-section":
-                    "• Ajouter quelques éléments de contexte ou exemples.\n" +
-                    "• Exemples : cas concrets, contraintes, signaux observés.",
+                    "" +
+                    "",
                 "third-section":
-                    "• Esquisser une première conclusion ou piste d’action.\n" +
-                    "• Exemples : décision envisagée, prochaine étape, question ouverte."
+                    "" +
+                    ""
             },
             "second-col": {
                 "first-section":
-                    "• Reprendre la même thématique sous un angle différent.\n" +
-                    "• Exemples : autre point de vue, autre population, autre canal.",
+                    "" +
+                    "",
                 "second-section":
-                    "• Détailler des variantes, scénarios ou options.\n" +
-                    "• Exemples : solution A/B, approche progressive, plan alternatif.",
+                    "" +
+                    "",
                 "third-section":
-                    "• Noter une synthèse intermédiaire pour cette colonne.\n" +
-                    "• Exemples : choix préférés, risques associés, éléments à valider."
+                    "" +
+                    ""
             },
             "third-col": {
                 "first-section":
-                    "• Ouvrir éventuellement sur une vision plus long terme.\n" +
-                    "• Exemples : ambition, direction cible, pari à tenter.",
+                    "" +
+                    "",
                 "second-section":
-                    "• Lister des leviers, moyens ou partenaires possibles.\n" +
-                    "• Exemples : équipes, outils, expérimentations, collaborations.",
+                    "" +
+                    "",
                 "third-section":
-                    "• Conclure la réflexion de cette colonne.\n" +
-                    "• Exemples : décision finale, feuille de route courte, backlog à créer."
+                    "" +
+                    ""
             }
         }
     };

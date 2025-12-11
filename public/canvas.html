@@ -12,6 +12,7 @@
             --app-border-strong: #cdd4ed;
             --app-primary-strong: #1f2a56;
             --app-text: #101428;
+            --slide-bg: #ffffff;
         }
 
         * {
@@ -478,6 +479,39 @@
             width: 100%;
             margin-bottom: 4px;
             flex-direction: row;
+        }
+
+        .gutenberg-card-actions-row-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .scenario-section {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            height: 100%;
+        }
+
+        .scenario-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .scenario-header-row span {
+            font-weight: 600;
+            font-size: 13px;
+            line-height: 1.2;
+        }
+
+        .scenario-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            height: 100%;
         }
 
         /* Make the full generate button primary green */
@@ -1048,11 +1082,10 @@
         }
 
         .slide {
-            background: var(--slide-bg, transparent);
+            background: var(--slide-bg, #ffffff);
             border-radius: var(--radius);
             padding: 8px 8px 8px;
             box-shadow: var(--shadow-soft);
-            border: 1px solid rgba(255, 255, 255, 0.7);
             display: flex;
             flex-direction: column;
             aspect-ratio: var(--slide-aspect-ratio, 16 / 9);
@@ -1098,7 +1131,7 @@
             min-height: 60px;
             border-radius: 8px;
             border: 1px solid #dcd0c1;
-            background: var(--slide-bg, transparent);
+            background: var(--slide-bg, #ffffff);
             color: var(--slide-text-color, var(--text-main));
             font-family: var(--slide-font-family, var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif));
             font-size: var(--slide-font-size, 16px);
@@ -1187,7 +1220,7 @@
 
         .column {
             border-radius: 4px;
-            background: var(--slide-bg, transparent);
+            background: var(--slide-bg, #ffffff);
             border: 1px solid transparent;
             display: flex;
             flex-direction: column;
@@ -1206,7 +1239,7 @@
         }
 
         .column-header {
-            background: var(--slide-bg, transparent);
+            background: var(--slide-bg, #ffffff);
             border-bottom: 1px solid rgba(0, 0, 0, 0.02);
             border-radius: 4px 4px 0 0;
             padding: 4px 4px 4px;
@@ -1253,7 +1286,7 @@
             min-height: 0;
             gap: 2px;
             font-size: 10px;
-            background: var(--slide-bg, transparent);
+            background: var(--slide-bg, #ffffff);
             border-radius: 0 0 4px 4px;
         }
 
@@ -1468,7 +1501,7 @@
             height: 100%;
             resize: none;
             border: none;
-            background: var(--slide-bg, transparent);
+            background: var(--slide-bg, #ffffff);
             color: var(--slide-text-color, #2f2922);
             font-family: var(--slide-font-family, var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif));
             overflow: auto;
@@ -1498,7 +1531,7 @@
         .section textarea:focus,
         .textarea-wrapper:hover textarea,
         .textarea-wrapper:focus-within textarea {
-            background: var(--slide-bg, transparent) !important;
+            background: var(--slide-bg, #ffffff) !important;
             color: var(--slide-text-color, #2f2922) !important;
         }
 
@@ -1684,13 +1717,13 @@
 
         /* textareas utilisent editable + fond léger */
         .section textarea.editable {
-            background: var(--slide-bg, transparent);
+            background: var(--slide-bg, #ffffff);
         }
 
         body.exporting .editable {
             border: none;
             box-shadow: none;
-            background: var(--slide-bg, transparent);
+            background: var(--slide-bg, #ffffff);
         }
 
         body.exporting .section textarea {
@@ -1849,28 +1882,35 @@
                 <div class="gutenberg-card-body">
                     <div class="gutenberg-card-actions-row">
                         <label>Histoire</label>
+                        <div class="gutenberg-card-actions-row-right">
 
+                            <button class="btn-primary" id="generateFullSlideBtn" type="button"
+                                aria-label="Générer toutes les sections et la synthèse">⌘ Répondre</button>
 
-                        <button class="btn right" id="clearSectionsBtn" type="button" aria-label="Vider les sections">⊘
-                            Vider</button>
-                        <button class="btn-primary" id="generateFullSlideBtn" type="button"
-                            aria-label="Générer toutes les sections et la synthèse">⌘ Répondre</button>
-                        <span class="gutenberg-status" id="suggestionStatusLabel" aria-live="polite"></span>
+                            <span class="gutenberg-status" id="suggestionStatusLabel" aria-live="polite"></span>
+                        </div>
                     </div>
                     <label>
                         <textarea id="globalContextField" rows="10"
                             placeholder="Décris le domaine, les utilisateurs, la problématique et l'intention"></textarea>
                     </label>
-                    <label>
-                        <label>Scénario</label>
-                        <div id="canvasSelectedTemplateLabel" class="template-label"></div>
-                        <div class="prompt-input-wrapper">
-                            <textarea id="pageContextField" rows="10"
-                                placeholder="Décrire la situation de manière quantitative et qualitative"></textarea>
-                            <div id="canvasTemplateTooltip" class="template-tooltip" aria-hidden="true"></div>
+                    <div class="scenario-section">
+                        <div class="scenario-header-row">
+                            <span>Scénario</span>
+                            <button class="btn" id="clearSectionsBtn" type="button" aria-label="Vider les sections">⊘
+                                Vider</button>
                         </div>
-                    </label>
-                </div </aside>
+                        <label class="scenario-input-group">
+                            <div id="canvasSelectedTemplateLabel" class="template-label"></div>
+                            <div class="prompt-input-wrapper">
+                                <textarea id="pageContextField" rows="10"
+                                    placeholder="Décrire la situation de manière quantitative et qualitative"></textarea>
+                                <div id="canvasTemplateTooltip" class="template-tooltip" aria-hidden="true"></div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </aside>
         </div>
 
         <div id="gutenbergBackdrop" class="gutenberg-backdrop"></div>
@@ -3346,7 +3386,7 @@
                 return;
             }
             const templateId = slide.dataset.templateId || templates[0].id;
-            const tasks = [];
+            const sectionTasks = [];
             Array.from(slide.querySelectorAll(".section")).forEach(sectionEl => {
                 const sectionKey = sectionEl.dataset.section;
                 const textarea = sectionEl.querySelector("textarea");
@@ -3356,41 +3396,49 @@
                 const column = sectionEl.closest(".column");
                 const promptContext = buildSectionPromptContext(slide, column, sectionKey, textarea, templateId);
                 const promptText = buildFieldPrompt(sectionKey, templateId, promptContext);
-                tasks.push({ textarea, messages: buildAssistantMessages(promptText) });
+                sectionTasks.push({ textarea, messages: buildAssistantMessages(promptText) });
             });
 
             const bottomTextarea = slide.querySelector(".bottom-section-text");
-            if (bottomTextarea) {
-                const bottomPromptContext = buildBottomPromptContext(slide);
-                const bottomPrompt = buildFieldPrompt("bottom-section", templateId, bottomPromptContext);
-                tasks.push({ textarea: bottomTextarea, messages: buildAssistantMessages(bottomPrompt) });
-            }
-
-            if (!tasks.length) {
+            if (!sectionTasks.length && !bottomTextarea) {
                 showCopyToast("Aucune zone à générer.");
                 return;
             }
+
+            const generateForTextarea = async (textarea, messages) => {
+                const aiText = await callOpenAI(messages);
+                if (!aiText) {
+                    return false;
+                }
+                const trimmed = aiText.trim();
+                if (!trimmed) {
+                    return false;
+                }
+                textarea.value = trimmed;
+                updateTextareaOverflowState(textarea);
+                return true;
+            };
 
             isGeneratingSuggestions = true;
             startGeneratePlaceholdersCooldown(PLACEHOLDER_COOLDOWN_DURATION);
 
             try {
-                const results = await Promise.allSettled(
-                    tasks.map(async ({ textarea, messages }) => {
-                        const aiText = await callOpenAI(messages);
-                        if (!aiText) {
-                            return false;
-                        }
-                        const trimmed = aiText.trim();
-                        if (!trimmed) {
-                            return false;
-                        }
-                        textarea.value = trimmed;
-                        updateTextareaOverflowState(textarea);
-                        return true;
-                    })
+                const sectionResults = await Promise.allSettled(
+                    sectionTasks.map(({ textarea, messages }) => generateForTextarea(textarea, messages))
                 );
-                const hasSuccess = results.some(result => result.status === "fulfilled" && result.value);
+                const sectionsHaveResponse = sectionResults.length === 0
+                    ? true
+                    : sectionResults.every(result => result.status === "fulfilled" && result.value);
+                const sectionSucceeded = sectionResults.some(result => result.status === "fulfilled" && result.value);
+
+                let bottomSuccess = false;
+                if (bottomTextarea && sectionsHaveResponse) {
+                    const bottomPromptContext = buildBottomPromptContext(slide);
+                    const bottomPrompt = buildFieldPrompt("bottom-section", templateId, bottomPromptContext);
+                    bottomSuccess = await generateForTextarea(bottomTextarea, buildAssistantMessages(bottomPrompt));
+                }
+
+                const hasSuccess = sectionSucceeded || bottomSuccess;
                 if (hasSuccess) {
                     schedulePersist();
                     updateSlideEmptyState();
