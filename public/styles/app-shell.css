@@ -113,9 +113,6 @@ body.app-body {
     min-width: 32px;
 }
 
-.tab-action:hover {
-    background: #dbe2ff;
-}
 
 .nav-switch-btn {
     border: 1px solid var(--app-border, #dfe3f5);

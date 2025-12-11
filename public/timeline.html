@@ -1521,8 +1521,8 @@
                                 <label>
                                     Fond
                                     <select id="backgroundSelector">
-                                        <option value="#ffffff">Blanc</option>
-                                        <option value="transparent" selected>Transparent</option>
+                                        <option value="#ffffff" selected>Blanc</option>
+                                        <option value="transparent">Transparent</option>
                                     </select>
                                 </label>
                                 <label>
@@ -1570,7 +1570,7 @@
                     </div>
 
                     <div class="menu-trigger">
-                        <button class="btn" id="fileMenuBtn" aria-label="Capsule">⧉ Capsule</button>
+                        <button class="btn" id="fileMenuBtn" aria-label="Capsule">⬠ Capsule</button>
                         <div class="context-menu file-menu" id="fileMenu">
                             <div class="menu-panel">
                                 <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
@@ -1811,6 +1811,7 @@
         <script src="js/share-history.js"></script>
         <script src="js/prompt.js"></script>
         <script src="js/openai-client.js"></script>
+        <script src="js/template-criteria.js"></script>
         <script>
             // ============================================================
             // 1. Schema JSON · planning-v1 (doc développeur)
@@ -6051,7 +6052,10 @@
             var txtPromptCreate = document.getElementById("promptCreate");
             var txtPromptModify = document.getElementById("promptModify");
             var promptTemplateMeta = document.getElementById("promptTemplateMeta");
-            var currentPromptTemplateDescription = "";
+            var templateCriteriaStatus = {};
+            var lastAnalyzedSentenceCount = 0;
+            var lastAnalyzedTemplateId = null;
+            var criteriaAnalysisAbortController = null;
             // Tooltip element shown under the scenario textarea on focus
             var scenarioTooltip = document.createElement('div');
             scenarioTooltip.className = 'scenario-template-tooltip';
@@ -6074,17 +6078,15 @@
                 var currentId = (ctx && typeof ctx.templateId === "string" && ctx.templateId.trim()) ? ctx.templateId.trim() : (selectedPromptzillaId || "");
                 var tpl = getTemplateById(currentId);
                 var label = tpl ? tpl.title : "—";
-                var description = tpl ? tpl.text : "";
                 promptTemplateMeta.textContent = "Modèle : " + label;
-                // Ne pas définir d'attribut title ici (tooltip natif retiré)
-                currentPromptTemplateDescription = description || "";
-                // If the scenario textarea currently has focus, update displayed tooltip content
+                renderScenarioTooltip(tpl, tpl && tpl.id ? templateCriteriaStatus[tpl.id] : null);
                 if (document.activeElement === txtPromptCreate) {
-                    showScenarioTooltip(currentPromptTemplateDescription, txtPromptCreate);
+                    showScenarioTooltip(txtPromptCreate);
                 }
                 if (txtPromptCreate) {
                     txtPromptCreate.title = "";
                 }
+                triggerScenarioCriteriaAnalysis({ force: true });
             }
 
             function positionScenarioTooltipForTextarea(textarea) {
@@ -6099,9 +6101,8 @@
                 scenarioTooltip.style.maxWidth = maxW + 'px';
             }
 
-            function showScenarioTooltip(text, textarea) {
-                if (!text || !textarea) return;
-                scenarioTooltip.textContent = text;
+            function showScenarioTooltip(textarea) {
+                if (!textarea) return;
                 positionScenarioTooltipForTextarea(textarea);
                 scenarioTooltip.style.display = 'block';
                 // small initial transform for nicer appear
@@ -6136,6 +6137,87 @@
                 setTimeout(function () {
                     scenarioTooltip.style.display = 'none';
                 }, 140);
+            }
+
+            function renderScenarioTooltip(template, statusMap) {
+                if (!scenarioTooltip) return;
+                const lines = GoToolkitTemplateCriteria.renderTooltipLines(template, statusMap);
+                if (lines.length) {
+                    scenarioTooltip.innerHTML = lines.join("<br>");
+                    scenarioTooltip.setAttribute("aria-hidden", "false");
+                    return;
+                }
+                const fallback = template ? template.text || template.description || "" : "";
+                scenarioTooltip.textContent = fallback;
+                scenarioTooltip.setAttribute("aria-hidden", fallback ? "false" : "true");
+            }
+
+            async function analyzeScenarioCriteria(text, template) {
+                if (!template || !template.id) return;
+                if (criteriaAnalysisAbortController) {
+                    try { criteriaAnalysisAbortController.abort(); } catch (e) { /* noop */ }
+                }
+                const controller = new AbortController();
+                criteriaAnalysisAbortController = controller;
+                const storedKey = (iaApiKeyInput?.value || "").trim() || readSharedTimelineApiKey();
+                const useProxy = !storedKey;
+                const endpoint = useProxy ? OPENAI_PROXY_URL : GoToolkitTemplateCriteria.DEFAULT_DIRECT_ENDPOINT;
+                try {
+                    const normalized = await GoToolkitTemplateCriteria.analyzeCriteria({
+                        text,
+                        template,
+                        apiKey: useProxy ? "" : storedKey,
+                        endpoint,
+                        signal: controller.signal,
+                        model: "gpt-5-nano"
+                    });
+                    templateCriteriaStatus[template.id] = normalized;
+                    renderScenarioTooltip(template, normalized);
+                } catch (err) {
+                    if (err?.name === "AbortError") return;
+                    console.warn("Analyse des critères impossible", err);
+                } finally {
+                    if (criteriaAnalysisAbortController === controller) {
+                        criteriaAnalysisAbortController = null;
+                    }
+                }
+            }
+
+            function triggerScenarioCriteriaAnalysis(options) {
+                var force = options && options.force;
+                var template = getTemplateById(selectedPromptzillaId || "");
+                var templateId = template?.id || null;
+                if (templateId && !templateCriteriaStatus[templateId]) {
+                    templateCriteriaStatus[templateId] = {};
+                }
+                if (templateId !== lastAnalyzedTemplateId) {
+                    lastAnalyzedSentenceCount = 0;
+                    lastAnalyzedTemplateId = templateId;
+                }
+                var status = templateId ? templateCriteriaStatus[templateId] : null;
+                renderScenarioTooltip(template, status);
+                if (!txtPromptCreate) return;
+                var text = txtPromptCreate.value || "";
+                var trimmed = text.trim();
+                var criteria = GoToolkitTemplateCriteria.getTemplateCriteria(template);
+                if (!trimmed || !criteria.length) {
+                    lastAnalyzedSentenceCount = GoToolkitTemplateCriteria.countCompletedSentences(text);
+                    if (templateId) {
+                        templateCriteriaStatus[templateId] = {};
+                        renderScenarioTooltip(template, templateCriteriaStatus[templateId]);
+                    }
+                    if (criteriaAnalysisAbortController) {
+                        try { criteriaAnalysisAbortController.abort(); } catch (e) { /* noop */ }
+                        criteriaAnalysisAbortController = null;
+                    }
+                    return;
+                }
+                var sentenceCount = GoToolkitTemplateCriteria.countCompletedSentences(text);
+                if (!force && sentenceCount === lastAnalyzedSentenceCount) {
+                    return;
+                }
+                lastAnalyzedSentenceCount = sentenceCount;
+                analyzeScenarioCriteria(trimmed, template);
             }
 
             function setSelectedTemplateId(id, options) {
@@ -6180,10 +6262,9 @@
             // Show tooltip under the Scénario textarea on focus; hide after 5s inactivity.
             if (txtPromptCreate) {
                 txtPromptCreate.addEventListener('focus', function () {
-                    // Use latest template description
-                    if (currentPromptTemplateDescription) {
-                        showScenarioTooltip(currentPromptTemplateDescription, txtPromptCreate);
-                    }
+                    var tpl = getTemplateById(selectedPromptzillaId || "");
+                    renderScenarioTooltip(tpl, tpl && tpl.id ? templateCriteriaStatus[tpl.id] : null);
+                    showScenarioTooltip(txtPromptCreate);
                 });
                 txtPromptCreate.addEventListener('input', function () {
                     // reset hide timer on input
@@ -6193,6 +6274,7 @@
                         }
                         scenarioTooltipTimer = setTimeout(function () { hideScenarioTooltip(); }, 5000);
                     }
+                    triggerScenarioCriteriaAnalysis();
                 });
                 txtPromptCreate.addEventListener('blur', function () {
                     hideScenarioTooltip();
@@ -7034,7 +7116,7 @@
                 },
                 {
                     title: "Exporte ta timeline",
-                    description: "Le menu ⧉ Capsule permet de télécharger la vue courante en texte, image ou Excel et le bouton ☍ Nexus génère un lien privé pour la partager rapidement.",
+                    description: "Le menu ⬠ Capsule permet de télécharger la vue courante en texte, image ou Excel et le bouton ☍ Nexus génère un lien privé pour la partager rapidement.",
                     selectors: ["#fileMenuBtn"]
                 }
             ];

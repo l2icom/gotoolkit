@@ -267,7 +267,7 @@
         }
 
         .prompt-editor-preview {
-            font-size: 13px;
+            font-size: 14px;
             color: #111;
             background: #fefdf8;
             border: 1px solid #ded5c8;
@@ -481,18 +481,15 @@
         }
 
         /* Make the full generate button primary green */
-        #generateFullSlideBtn {
-            border: 1px solid var(--app-text);
-            position: relative;
-            background: #ffffff;
-            color: var(--app-text);
-            padding: 6px 10px;
-            border-radius: 8px;
+
+
+        .right {
+            margin-left: auto;
         }
 
-        #generateFullSlideBtn:disabled {
-            opacity: 0.6;
-        }
+
+
+
 
         .gutenberg-card-body {
             display: flex;
@@ -933,15 +930,7 @@
             flex-wrap: no-wrap;
         }
 
-        #generateFullSlideBtn {
-            border: 1px solid var(--app-text);
-            position: relative;
-            background: #ffffff;
-            color: var(--app-text);
-            padding: 8px 12px;
-            border-radius: 8px;
-            margin-left: auto;
-        }
+
 
 
         .nav-switch {
@@ -1784,7 +1773,7 @@
                                 Fond global
                                 <select id="backgroundSelector">
                                     <option value="transparent">Transparent</option>
-                                    <option value="#ffffff">Blanc</option>
+                                    <option value="#ffffff" selected>Blanc</option>
                                 </select>
                             </label>
                             <div class="ratio-wrapper">
@@ -1795,7 +1784,7 @@
                     </div>
                 </div>
                 <div class="menu-trigger" id="fileMenuTrigger">
-                    <button id="fileMenuBtn" class="btn" type="button" aria-label="Capsule">⧉ Capsule</button>
+                    <button id="fileMenuBtn" class="btn" type="button" aria-label="Capsule">⬠ Capsule</button>
                     <div class="context-menu" id="fileMenu">
                         <div class="menu-panel">
                             <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
@@ -1861,7 +1850,10 @@
                     <div class="gutenberg-card-actions-row">
                         <label>Histoire</label>
 
-                        <button class="tab-action" id="generateFullSlideBtn" type="button"
+
+                        <button class="btn right" id="clearSectionsBtn" type="button" aria-label="Vider les sections">⊘
+                            Vider</button>
+                        <button class="btn-primary" id="generateFullSlideBtn" type="button"
                             aria-label="Générer toutes les sections et la synthèse">⌘ Répondre</button>
                         <span class="gutenberg-status" id="suggestionStatusLabel" aria-live="polite"></span>
                     </div>
@@ -1910,9 +1902,9 @@
             <div class="modal-panel hide" data-panel="settings">
                 <!-- API key and reasoning settings moved to global Settings (index.html) -->
                 <div class="ia-mode-toggle" id="iaModeToggle">
-                    <div class="ia-mode-label">IA Mode</div>
+                    <div class="ia-mode-label">Prompt</div>
                     <button type="button" data-ia-mode="express">🛫︎ Auto</button>
-                    <button type="button" data-ia-mode="experimental">✋︎ Manuel</button>
+                    <button type="button" data-ia-mode="experimental">⌬ Avancé</button>
                 </div>
                 <div id="promptCustomizationArea">
                     <label>
@@ -2020,13 +2012,14 @@
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/openai-client.js"></script>
+    <script src="js/template-criteria.js"></script>
     <script>
         const stageColors = {
             "first-col": getComputedStyle(document.documentElement).getPropertyValue("--now-color").trim(),
             "second-col": getComputedStyle(document.documentElement).getPropertyValue("--next-color").trim(),
             "third-col": getComputedStyle(document.documentElement).getPropertyValue("--later-color").trim()
         };
-        document.documentElement.style.setProperty("--global-background", "transparent");
+        document.documentElement.style.setProperty("--global-background", "#ffffff");
 
         const textStyles = [
             { name: "Inter", font: "Inter, system-ui, sans-serif", size: 14 },
@@ -2108,9 +2101,9 @@
         };
         const promptPreviewMaskedKeys = new Set(["fieldValue", "globalContext", "pageContext"]);
         const sectionPromptTail =
-            ', et en tant que product owner expérimenté, en tenant compte du {{globalContext}} et le {{pageContext}}, formule en 3 éléments ( de moins de 15 mots chacun et en commençant par •). Mettre uniquement la liste à puce des 3 éléments. N\'introduis ou ne conclut pas ton propos et ne mets pas d\'emojis.';
+            ', et en tant que product owner expérimenté, en tenant compte du {{globalContext}} et du {{pageContext}}, formule en 3 éléments ( de moins de 15 mots chacun et en commençant par •). Mettre uniquement la liste à puce des 3 éléments. N\'introduis ou ne conclut pas ton propos et ne mets pas d\'emojis.';
         const defaultPromptTemplate =
-            "{{sectionGuidance}}" + ' à partir du contenu actuel éventuel "{{fieldValue}}"' + sectionPromptTail;
+            "{{sectionGuidance}}\n" + ' à partir du contenu actuel éventuel "{{fieldValue}}"' + sectionPromptTail;
         const IA_MODE_EXPRESS = "express";
         const IA_MODE_EXPERIMENTAL = "experimental";
         const promptModeMap = {
@@ -2179,25 +2172,11 @@
         }
 
         function getTemplateCriteria(template) {
-            if (!template) return [];
-            if (Array.isArray(template.criteria) && template.criteria.length) {
-                return template.criteria.filter(Boolean);
-            }
-            // Accept description OR text (some templates use `text` instead of `description`)
-            const source = String(template.description || template.text || "");
-            const lines = source.split(/\n/).map(line => line.trim()).filter(Boolean);
-            // Accept several common checklist/marker symbols (unchecked/checked)
-            const markerRe = /^[🗹☐☑✓]/;
-            return lines
-                .filter(line => markerRe.test(line))
-                .map(line => line.replace(/^[🗹☐☑✓]\s*/, "").trim())
-                .filter(Boolean);
+            return GoToolkitTemplateCriteria.getTemplateCriteria(template);
         }
 
         function getTemplateSummary(template) {
-            if (!template) return "";
-            const firstLine = (template.description || "").split(/\n/)[0] || "";
-            return (firstLine || template.name || "").trim();
+            return GoToolkitTemplateCriteria.getTemplateSummary(template);
         }
 
         let templateSlides = {};
@@ -2232,6 +2211,7 @@
         const restoreStructureBtn = document.getElementById("restoreStructureBtn");
         const generateFullSlideBtn = document.getElementById("generateFullSlideBtn");
         const suggestionStatusLabel = document.getElementById("suggestionStatusLabel");
+        const clearSectionsBtn = document.getElementById("clearSectionsBtn");
         const exportBtn = document.getElementById("exportPngBtn");
         const exportPptxBtn = document.getElementById("exportPptxBtn");
         const exportTextBtn = document.getElementById("exportTextBtn");
@@ -2431,6 +2411,8 @@
 
         const STORAGE_KEY = "go-roadmap-state";
         const API_KEY_STORAGE_KEY = "go-toolkit-api-key";
+        // user preference: default background for new slides (can be 'transparent' or a color)
+        let userDefaultBackground = "#ffffff";
 
         function getShareDraftKey(token) {
             return `${STORAGE_KEY}-share-${token}`;
@@ -2521,6 +2503,8 @@
                     promptTemplateId: activePromptTemplateId,
                     iaMode: activeIaMode,
                     defaultTemplateId: currentTemplateId
+                    ,
+                    backgroundDefault: (backgroundSelector && backgroundSelector.value) || userDefaultBackground
                 }
             };
         }
@@ -2817,6 +2801,12 @@
             if (typeof payload.fontSize === "number") {
                 currentFontSize = normalizeFontSize(payload.fontSize);
             }
+            // load user display preference for default background
+            if (payload.backgroundDefault) {
+                try { userDefaultBackground = String(payload.backgroundDefault); } catch (e) { /* noop */ }
+            }
+            // reflect the global background preference in CSS var
+            try { document.documentElement.style.setProperty("--global-background", userDefaultBackground || "#ffffff"); } catch (e) { /* noop */ }
             setPromptFieldsForTemplate(activePromptTemplateId);
             setActiveIaMode(payload.iaMode || activeIaMode);
         }
@@ -3419,6 +3409,30 @@
             return slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
         }
 
+        function clearSectionsInActiveSlide(confirmBefore = true) {
+            const slide = getActiveSlideElement();
+            if (!slide) return;
+            const sections = Array.from(slide.querySelectorAll('.section textarea.editable'));
+            if (!sections.length) return;
+            if (confirmBefore) {
+                const ok = confirm('Vider toutes les sections de ce bloc ? Cette action est irréversible.');
+                if (!ok) return;
+            }
+            sections.forEach(el => {
+                try {
+                    el.value = '';
+                    // also clear any bound placeholder UI if present
+                    if (typeof el.dataset !== 'undefined' && el.dataset.placeholder) {
+                        // leave data-placeholder intact but remove visual content already cleared
+                    }
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                } catch (e) { /* noop */ }
+            });
+            // trigger layout and persistence
+            try { resizeAllColumnSections(slide); } catch (e) { /* noop */ }
+            try { schedulePersist(); } catch (e) { /* noop */ }
+        }
+
         function applyColumnStageColor(stage, color) {
             const column = getActiveSlideElement()?.querySelector(`.column[data-stage="${stage}"]`);
             if (!column) return;
@@ -3438,7 +3452,7 @@
             if (!backgroundSelector) return;
             const slide = getActiveSlideElement();
             if (!slide) return;
-            const value = slide.dataset.bgColor ?? "transparent";
+            const value = slide.dataset.bgColor ?? userDefaultBackground ?? "#ffffff";
             backgroundSelector.value = value === "transparent" ? "transparent" : "#ffffff";
         }
 
@@ -3570,7 +3584,7 @@
         }
 
         function applyBackgroundToSlide(slide, color) {
-            const normalized = color || "transparent";
+            const normalized = color || userDefaultBackground || "#ffffff";
             slide.dataset.bgColor = normalized;
             slide.style.setProperty("--slide-bg", normalized);
             setSlideTextColor(slide, normalized);
@@ -4656,22 +4670,7 @@
 
         function renderTemplateTooltip(template, statusMap) {
             if (!canvasTemplateTooltip) return;
-            const summary = getTemplateSummary(template);
-            const criteria = getTemplateCriteria(template);
-            const normalizedStatus = {};
-            if (statusMap && typeof statusMap === "object") {
-                Object.keys(statusMap).forEach(key => {
-                    normalizedStatus[key.toLowerCase()] = Boolean(statusMap[key]);
-                });
-            }
-            const lines = [];
-            if (summary) lines.push(escapeHtml(summary));
-            criteria.forEach(item => {
-                const key = item.toLowerCase();
-                const matched = normalizedStatus[key] || false;
-                const marker = matched ? "🗹" : "☐";
-                lines.push(`${marker} ${escapeHtml(item)}`);
-            });
+            const lines = GoToolkitTemplateCriteria.renderTooltipLines(template, statusMap);
             canvasTemplateTooltip.innerHTML = lines.join("<br>");
             canvasTemplateTooltip.setAttribute("aria-hidden", lines.length ? "false" : "true");
         }
@@ -4688,9 +4687,7 @@
         }
 
         function countCompletedSentences(text) {
-            if (!text) return 0;
-            const matches = text.match(/[^.!?]+[.!?]+/g);
-            return matches ? matches.length : 0;
+            return GoToolkitTemplateCriteria.countCompletedSentences(text);
         }
 
         async function analyzePromptCriteria(text, template) {
@@ -4703,82 +4700,18 @@
             const controller = new AbortController();
             criteriaAnalysisAbortController = controller;
             const apiKey = (readSharedApiKey() || "").trim();
-
-            // If there's no API key available, fall back to a simple local heuristic
-            // to mark criteria as present when the page context text contains the
-            // criterion label or a leading token. This provides a usable tooltip
-            // without requiring OpenAI access.
-            if (!apiKey) {
-                try {
-                    const normalized = {};
-                    const lower = (text || "").toLowerCase();
-                    criteria.forEach(item => {
-                        const keyLc = item.toLowerCase();
-                        // Use either the full label or its first token as a simple match
-                        const token = (item || "").replace(/[^\w]+/g, ' ').trim().split(/\s+/)[0] || keyLc;
-                        normalized[keyLc] = lower.indexOf(item.toLowerCase()) !== -1 || (token && lower.indexOf(token.toLowerCase()) !== -1);
-                    });
-                    templateCriteriaStatus[template.id] = normalized;
-                    renderTemplateTooltip(template, normalized);
-                } finally {
-                    if (criteriaAnalysisAbortController === controller) criteriaAnalysisAbortController = null;
-                }
-                return;
-            }
             const useProxy = !apiKey;
             const endpoint = useProxy
-                ? "https://openai.gotoolkit.workers.dev/v1/chat/completions"
-                : "https://api.openai.com/v1/chat/completions";
-            const systemPrompt =
-                "Tu vérifies si un texte couvre des éléments donnés. " +
-                "Réponds uniquement avec un JSON {\"matches\":{\"critère\":true/false}} sans commentaire. " +
-                "Considère un critère rempli si le texte contient l'idée ou un synonyme clair.";
-            const userPrompt =
-                `Texte à vérifier : """${text}"""` +
-                `\nCritères attendus (${criteria.length}) : ${criteria.join(", ")}` +
-                `\nRéponds STRICTEMENT au format {"matches":{"Critère":true/false}} avec les mêmes libellés.`;
-            const body = {
-                model: "gpt-4o-mini",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: userPrompt }
-                ],
-                response_format: { type: "json_object" },
-                temperature: 0
-            };
+                ? GoToolkitTemplateCriteria.DEFAULT_PROXY_ENDPOINT
+                : GoToolkitTemplateCriteria.DEFAULT_DIRECT_ENDPOINT;
             try {
-                const res = await fetch(endpoint, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {})
-                    },
-                    body: JSON.stringify(body),
-                    signal: controller.signal
-                });
-                const rawText = await res.text();
-                if (criteriaAnalysisAbortController !== controller) return;
-                if (!res.ok) throw new Error(rawText || "Analyse des critères indisponible");
-                let content = rawText;
-                try {
-                    const parsedOuter = JSON.parse(rawText);
-                    content = parsedOuter?.choices?.[0]?.message?.content || rawText;
-                } catch (e) { /* noop */ }
-                let parsed = null;
-                try { parsed = JSON.parse(content || "{}"); } catch (e) { console.warn("Réponse analyse critères non JSON", e); }
-                const matches = parsed?.matches || parsed?.result || {};
-                const normalized = {};
-                criteria.forEach(item => {
-                    const keyLc = item.toLowerCase();
-                    const candidates = [
-                        matches[item],
-                        matches[keyLc],
-                        matches[item.replace(/\s+/g, "_")],
-                        matches[item.replace(/\s+/g, "_").toLowerCase()],
-                        matches[item.replace(/\s+/g, "").toLowerCase()]
-                    ];
-                    const val = candidates.find(v => typeof v !== "undefined");
-                    normalized[keyLc] = val === true || val === "true" || val === 1;
+                const normalized = await GoToolkitTemplateCriteria.analyzeCriteria({
+                    text,
+                    template,
+                    apiKey: useProxy ? "" : apiKey,
+                    endpoint,
+                    signal: controller.signal,
+                    model: "gpt-5-nano"
                 });
                 templateCriteriaStatus[template.id] = normalized;
                 renderTemplateTooltip(template, normalized);
@@ -5855,9 +5788,9 @@
             if (shareCreateBtn) {
                 shareCreateBtn.disabled = shareRequestInProgress || !shareWorkerAvailable;
                 if (!currentShareToken) {
-                    shareCreateBtn.classList.add("primary");
+                    shareCreateBtn.classList.add("btn-primary");
                 } else {
-                    shareCreateBtn.classList.remove("primary");
+                    shareCreateBtn.classList.remove("btn-primary");
                 }
             }
             if (shareMenuStatus) {
@@ -6118,7 +6051,7 @@
             },
             {
                 title: "Exports",
-                description: "Le bouton ⧉ Capsule ouvre le menu d’export : texte, image, PowerPoint ou capsule JSON.",
+                description: "Le bouton ⬠ Capsule ouvre le menu d’export : texte, image, PowerPoint ou capsule JSON.",
                 selector: "#fileMenuTrigger"
             },
         ];

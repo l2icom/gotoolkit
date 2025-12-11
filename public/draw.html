@@ -877,7 +877,7 @@
                 <button id="toggleDrawerBtn" class="btn drawer-toggle-btn" type="button">⸙ Gutenberg</button>
                 <button id="aiSettingsBtn" class="btn ai-button" type="button">⌘ Soulgorithm</button>
                 <div class="menu-trigger" id="capsuleMenuTrigger">
-                    <button id="capsuleMenuBtn" class="btn" type="button" title="Capsule">⧉ Capsule</button>
+                    <button id="capsuleMenuBtn" class="btn" type="button" title="Capsule">⬠ Capsule</button>
                     <div class="context-menu" id="capsuleMenu">
                         <div class="menu-panel">
                             <button id="capsuleOpenBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
@@ -1021,6 +1021,7 @@
     <script src="js/share-history.js"></script>
     <script src="js/prompt.js"></script>
     <script src="js/openai-client.js"></script>
+    <script src="js/template-criteria.js"></script>
     <script>
         var process = window.process || {};
         (function () {
@@ -1237,49 +1238,17 @@ classDiagram
             }
 
             function getTemplateCriteria(template) {
-                if (!template) return [];
-                if (Array.isArray(template.criteria) && template.criteria.length) {
-                    return template.criteria.filter(Boolean);
-                }
-                const lines = (template.description || "")
-                    .split(/\n/)
-                    .map(line => line.trim())
-                    .filter(Boolean);
-                return lines
-                    .filter(line => /^([🗹☐])/.test(line))
-                    .map(line => line.replace(/^[🗹☐]\s*/, "").trim())
-                    .filter(Boolean);
+                return GoToolkitTemplateCriteria.getTemplateCriteria(template);
             }
 
             function getTemplateSummary(template) {
-                if (!template) return "";
-                const firstLine = (template.description || "").split(/\n/)[0] || "";
-                return (firstLine || template.label || "").trim();
+                return GoToolkitTemplateCriteria.getTemplateSummary(template);
             }
 
             function renderTemplateTooltip(template, statusMap = null) {
                 const tooltip = document.getElementById("templateTooltip");
                 if (!tooltip) return;
-                const summary = getTemplateSummary(template);
-                const criteria = getTemplateCriteria(template);
-                const normalizedStatus = {};
-                if (statusMap && typeof statusMap === "object") {
-                    Object.keys(statusMap).forEach(key => {
-                        normalizedStatus[key.toLowerCase()] = Boolean(statusMap[key]);
-                    });
-                }
-                const lines = [];
-                if (summary) {
-                    lines.push(escapeHtml(summary));
-                }
-                if (criteria.length) {
-                    criteria.forEach(item => {
-                        const key = item.toLowerCase();
-                        const matched = normalizedStatus[key] || false;
-                        const marker = matched ? "🗹" : "☐";
-                        lines.push(`${marker} ${escapeHtml(item)}`);
-                    });
-                }
+                const lines = GoToolkitTemplateCriteria.renderTooltipLines(template, statusMap);
                 tooltip.innerHTML = lines.join("<br>");
                 tooltip.setAttribute("aria-hidden", lines.length ? "false" : "true");
             }
@@ -2432,9 +2401,7 @@ classDiagram
             }
 
             function countCompletedSentences(text) {
-                if (!text) return 0;
-                const matches = text.match(/[^.!?]+[.!?]+/g);
-                return matches ? matches.length : 0;
+                return GoToolkitTemplateCriteria.countCompletedSentences(text);
             }
 
             async function analyzePromptCriteria(text, template) {
@@ -2447,89 +2414,18 @@ classDiagram
                 const controller = new AbortController();
                 criteriaAnalysisAbortController = controller;
                 const apiKey = (state.apiKey || "").trim();
-
-                // If no API key is available, use a simple local heuristic to
-                // determine whether criteria appear in the text (substring or
-                // first-token match). This keeps the template tooltip functional
-                // without requiring OpenAI access.
-                if (!apiKey) {
-                    try {
-                        const normalized = {};
-                        const lower = (text || "").toLowerCase();
-                        criteria.forEach(item => {
-                            const keyLc = (item || "").toLowerCase();
-                            const token = (item || "").replace(/[^\w]+/g, ' ').trim().split(/\s+/)[0] || keyLc;
-                            normalized[keyLc] = lower.indexOf(item.toLowerCase()) !== -1 || (token && lower.indexOf(token.toLowerCase()) !== -1);
-                        });
-                        templateCriteriaStatus[template.id] = normalized;
-                        renderTemplateTooltip(template, normalized);
-                    } finally {
-                        if (criteriaAnalysisAbortController === controller) criteriaAnalysisAbortController = null;
-                    }
-                    return;
-                }
                 const useProxy = !apiKey;
                 const endpoint = useProxy
-                    ? "https://openai.gotoolkit.workers.dev/v1/chat/completions"
-                    : "https://api.openai.com/v1/chat/completions";
-                const systemPrompt =
-                    "Tu vérifies si un texte couvre des éléments donnés. " +
-                    "Réponds uniquement avec un JSON {\"matches\":{\"critère\":true/false}} sans commentaire. " +
-                    "Considère un critère rempli si le texte contient l'idée ou un synonyme clair.";
-                const userPrompt =
-                    `Texte à vérifier : """${text}"""` +
-                    `\nCritères attendus (${criteria.length}) : ${criteria.join(", ")}` +
-                    `\nRéponds STRICTEMENT au format {"matches":{"Critère":true/false}} avec les mêmes libellés.`;
-                const body = {
-                    model: "gpt-4o-mini",
-                    messages: [
-                        { role: "system", content: systemPrompt },
-                        { role: "user", content: userPrompt }
-                    ],
-                    response_format: { type: "json_object" },
-                    temperature: 0
-                };
+                    ? GoToolkitTemplateCriteria.DEFAULT_PROXY_ENDPOINT
+                    : GoToolkitTemplateCriteria.DEFAULT_DIRECT_ENDPOINT;
                 try {
-                    const response = await fetch(endpoint, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {})
-                        },
-                        body: JSON.stringify(body),
-                        signal: controller.signal
-                    });
-                    const rawText = await response.text();
-                    if (criteriaAnalysisAbortController !== controller) return;
-                    if (!response.ok) {
-                        throw new Error(rawText || "Analyse des critères indisponible");
-                    }
-                    let content = rawText;
-                    try {
-                        const parsedOuter = JSON.parse(rawText);
-                        content = parsedOuter?.choices?.[0]?.message?.content || rawText;
-                    } catch (err) {
-                        /* noop */
-                    }
-                    let parsed = null;
-                    try {
-                        parsed = JSON.parse(content || "{}");
-                    } catch (err) {
-                        console.warn("Réponse analyse critères non JSON", err);
-                    }
-                    const matches = parsed?.matches || parsed?.result || {};
-                    const normalized = {};
-                    criteria.forEach(item => {
-                        const keyLc = item.toLowerCase();
-                        const candidates = [
-                            matches[item],
-                            matches[keyLc],
-                            matches[item.replace(/\s+/g, "_")],
-                            matches[item.replace(/\s+/g, "_").toLowerCase()],
-                            matches[item.replace(/\s+/g, "").toLowerCase()]
-                        ];
-                        const val = candidates.find(v => typeof v !== "undefined");
-                        normalized[keyLc] = val === true || val === "true" || val === 1;
+                    const normalized = await GoToolkitTemplateCriteria.analyzeCriteria({
+                        text,
+                        template,
+                        apiKey: useProxy ? "" : apiKey,
+                        endpoint,
+                        signal: controller.signal,
+                        model: "gpt-5-nano"
                     });
                     templateCriteriaStatus[template.id] = normalized;
                     renderTemplateTooltip(template, normalized);
