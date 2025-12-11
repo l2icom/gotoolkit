@@ -730,9 +730,9 @@
             </div>
             <div class="launcher-grid">
                 <a class="launcher" href="canvas.html">
-                    <span class="launcher-emoji">⊞</span>
+                    <span class="launcher-emoji">◍</span>
                     <span class="launcher-name">
-                        Petit Robert
+                        50 Nuances
                         <div class="launcher-desc">Structure ton vocabulaire</div>
                     </span>
                 </a>
@@ -847,10 +847,23 @@
                             structurés. Transformer des brainstorms flous en artefacts limpides.</div>
                     </section>
                     <section>
+
                         <div class="superpower-head">
-                            <h4>⊞ Petit Robert Downey Jr</h4>
+                            <h4>◍ 50 nuances de vrai</h4>
                             <div class="superpower-tag-row">
                                 <span class="superpower-tag">Module</span>
+                            </div>
+                        </div>
+                        <div class="superpower-subtitle">Varier sincèrement les messages. Dire une même vérité de
+                            plusieurs façons, sans trahir son intention. Adapter sa voix à chaque contexte, avec
+                            justesse, empathie et cohérence.</div>
+                    </section>
+                    <section>
+
+                        <div class="superpower-head">
+                            <h4>Petit Rober Downey Jr</h4>
+                            <div class="superpower-tag-row">
+                                <span class="superpower-tag">En orbite</span>
                             </div>
                         </div>
                         <div class="superpower-subtitle">Le pouvoir du discernement sémantique. Rétablir la clarté quand
@@ -1122,7 +1135,7 @@
             const shareService = window.goToolkitShareWorker;
 
             const APP_DEFINITIONS = {
-                robert: { emoji: "⊞", name: "Petit Robert", page: "canvas.html", collection: "slides" },
+                nuances: { emoji: "◍", name: "50 Nuances", page: "canvas.html", collection: "slides" },
                 plan: { emoji: "⇥", name: "Goal Digger", page: "timeline.html", collection: "timelines" },
                 draw: { emoji: "◇", name: "Le Cardinal", page: "draw.html", collection: "diagrams" }
             };
@@ -1178,7 +1191,7 @@
             }
 
             function extractPreview(app, payload) {
-                if (app === "robert") {
+                if (app === "nuances") {
                     const firstSlide = payload?.slides?.[0];
                     const tabName = firstSlide?.title || "Sans titre";
                     const context = payload?.settings?.globalContext || payload?.settings?.context || "";
@@ -1451,7 +1464,7 @@
             try {
                 const storedKey = localStorage.getItem("go-toolkit-api-key") || "";
                 if (settingsApiKeyInput) settingsApiKeyInput.value = storedKey;
-                const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("robert-reasoning-effort") || "low";
+                const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("nuances-reasoning-effort") || "low";
                 if (settingsReasoningSelect) settingsReasoningSelect.value = storedReasoning;
             } catch (e) { /* noop */ }
             settingsModal.classList.add("open");
@@ -1477,7 +1490,7 @@
                 }
                 // Write primary shared reasoning key and also preserve canvas-specific key for compatibility
                 localStorage.setItem("plan-reasoning-effort", reasoning);
-                try { localStorage.setItem("robert-reasoning-effort", reasoning); } catch (e) { }
+                try { localStorage.setItem("nuances-reasoning-effort", reasoning); } catch (e) { }
                 // Validate API key lightly (format check)
                 if (apiKey) {
                     var openaiKeyPattern = /^sk-[A-Za-z0-9\-_]{20,}$/;

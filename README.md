@@ -1,21 +1,21 @@
 # Go-Toolkit : la boîte à idées IA des Product Owners
 
 Go-Toolkit est un trio d'apps front-only qui tournent dans le navigateur (pas de build requis) pour produire vite des supports produit :
-- **Petit Robert** (`public/canvas.html`) : grille de slides éditables avec IA pour générer contenus, suggestions par section et export PPTX/PNG/JSON.
+- **50 Nuances** (`public/canvas.html`) : grille de slides éditables avec IA pour générer contenus, suggestions par section et export PPTX/PNG/JSON.
 - **Le Cardinal** (`public/draw.html`) : générateur de diagrammes Mermaid/Excalidraw avec titre détecté automatiquement et partage optionnel.
 - **Go-Roadmap** (`public/timeline.html`) : timeline interactive (Vis.js) avec IA pour créer/modifier un planning, export texte/image/Excel/JSON.
 
 Les trois pages fonctionnent en local via un simple serveur statique, conservent l'état dans le navigateur et peuvent utiliser un proxy OpenAI/partage fourni dans `workers/`.
 
 ## Pour quoi faire ?
-  - **Préparer un atelier** : esquisser une storyline (Petit Robert), dessiner un parcours (Le Cardinal), poser les jalons (Go-Roadmap) sans ouvrir de suite bureautique.
+  - **Préparer un atelier** : esquisser une storyline (50 Nuances), dessiner un parcours (Le Cardinal), poser les jalons (Go-Roadmap) sans ouvrir de suite bureautique.
   - **Accélérer un brief** : demander à l'IA un draft par section ou un planning JSON, puis ajuster à la main directement dans la page.
   - **Partager vite** : exporter en PPTX/PNG/Excel/TXT/JSON ou publier un lien de partage si le proxy Firebase est configuré.
   - **Tester des variantes** : changer de modèle IA (via votre clé ou le proxy), ré-générer, comparer et revenir aux sauvegardes locales.
 
 ## Points forts pour les PO
 - **Zero setup** : ouvrir les HTML dans `public/` ou servir le dossier (`npx serve public`), tout est déjà packagé.
-  - **Exports natifs** : Petit Robert → PPTX/PNG/JSON, Le Cardinal → PNG/JSON Mermaid, Go-Roadmap → texte/image/Excel/JSON ; rien ne sort sans action explicite.
+  - **Exports natifs** : 50 Nuances → PPTX/PNG/JSON, Le Cardinal → PNG/JSON Mermaid, Go-Roadmap → texte/image/Excel/JSON ; rien ne sort sans action explicite.
 - **Assistants intégrés** : prompts contextualisés par outil, bouton d'effort de raisonnement (minimal/low/medium) et streaming en direct.
 - **Partage optionnel** : hooks vers un worker Cloudflare + Firestore pour publier slides/timelines/diagrams; désactivé par défaut, données locales sinon.
 
@@ -33,13 +33,13 @@ Les trois pages fonctionnent en local via un simple serveur statique, conservent
 
 ## Nouveaux outils qui compléteraient le panel
 - **Go-Backlog** : priorisation RICE/WSJF avec export vers tickets.
-- **Go-Discovery** : canevas OST / personas / insights reliés à Petit Robert.
+- **Go-Discovery** : canevas OST / personas / insights reliés à 50 Nuances.
   - **Go-Metrics** : cadrage North Star et suivis trimestriels, connecté aux timelines Go-Roadmap.
 - **Go-Pitch** : assembleur express de pitchs client/investisseur à partir des assets existants.
 
 ## Comment démarrer
 1. Cloner puis servir `public/` : `npx serve public` (ou ouvrir les fichiers directement, certaines features nécessitent un serveur pour les exports).
-2. Ouvrir une app : `canvas.html` (Petit Robert), `draw.html` (Le Cardinal), `timeline.html` (Roadmap).
+2. Ouvrir une app : `canvas.html` (50 Nuances), `draw.html` (Le Cardinal), `timeline.html` (Roadmap).
 3. Renseigner une clé OpenAI dans le modal IA ou laisser vide pour passer par `https://openai.gotoolkit.workers.dev/v1/responses` (proxy Cloudflare).
 4. Choisir l'effort de raisonnement (minimal/low/medium), lancer la génération, éditer, puis exporter ou partager.
 5. Activer le partage (optionnel) en déployant `workers/share-proxy` avec une clé de service Firebase, en définissant `GOOGLE_SERVICE_ACCOUNT_JSON` et `SHARE_ALLOWED_ORIGINS` (localhost autorisé par défaut).

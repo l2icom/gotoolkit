@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Petit Robert Downrey Jr | Go-Toolkit</title>
+    <title>50 Nuances Downrey Jr | Go-Toolkit</title>
     <link rel="stylesheet" href="styles/app-shell.css">
     <style>
         :root {
@@ -1808,7 +1808,7 @@
                 <a class="app-home-link" href="index.html" title="Revenir à l'accueil">☍</a>
                 <div class="nav-switch">
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
-                        aria-expanded="false">⊞ Petit Robert ▾</button>
+                        aria-expanded="false">◍ 50 Nuances ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
                         <a class="nav-switch-link" href="timeline.html" role="menuitem">⇥ Goal Digger</a>
                         <a class="nav-switch-link" href="draw.html" role="menuitem">◇ Le Cardinal</a>
@@ -1902,7 +1902,7 @@
 
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
-            <strong>Module Petit Robert Downey Jr</strong>
+            <strong>Module 50 Nuances Downey Jr</strong>
             <span>Version 2025.12.07</span>
             <span>Développé par Quang TRAN.</span>
             <span>Usage réservé à Savane Consulting.</span>
@@ -2070,7 +2070,7 @@
 
     <script>
         (function () {
-            var STORAGE_KEY = "robert-gutenberg-open-state-canvas";
+            var STORAGE_KEY = "nuances-gutenberg-open-state-canvas";
             function readAutoOpenState() {
                 try {
                     if (!window.localStorage) return null;
@@ -2355,7 +2355,7 @@
         const shareMenu = document.getElementById("shareMenu");
         // per-modal API key input removed; use shared localStorage key `go-toolkit-api-key` instead
         const reasoningEffortSelect = document.getElementById("reasoningEffortSelect");
-        const reasoningEffortKey = "robert-reasoning-effort";
+        const reasoningEffortKey = "nuances-reasoning-effort";
         const reasoningEfforts = ["minimal", "low", "medium", "high"];
         const fontSelect = document.getElementById("fontSelect");
         const fontSizeInput = document.getElementById("fontSizeInput");
@@ -2400,8 +2400,8 @@
 
         let slideClampRaf = null;
         const DESKTOP_GUTENBERG_BREAKPOINT = 900;
-        const GUTENBERG_SEEN_KEY = "robert-gutenberg-opened-canvas";
-        const GUTENBERG_OPEN_STATE_KEY = "robert-gutenberg-open-state-canvas";
+        const GUTENBERG_SEEN_KEY = "nuances-gutenberg-opened-canvas";
+        const GUTENBERG_OPEN_STATE_KEY = "nuances-gutenberg-open-state-canvas";
 
         function updateSlideClamp() {
             if (!slidesViewport) return;
@@ -6036,7 +6036,7 @@
                     }
                     // Reasoning effort: prefer the global key used by timeline, fallback
                     // to this page's existing key for compatibility.
-                    const PAGE_REASONING_KEY = reasoningEffortKey || "robert-reasoning-effort";
+                    const PAGE_REASONING_KEY = reasoningEffortKey || "nuances-reasoning-effort";
                     const sharedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem(PAGE_REASONING_KEY) || "";
                     if (sharedReasoning) {
                         const sel = document.getElementById("reasoningEffortSelect");
@@ -6088,7 +6088,7 @@
         const shareUpdateBtn = document.getElementById("shareUpdateBtn");
         const shareHistory = window.goToolkitShareHistory;
 
-        function getRobertSharePreview() {
+        function getNuancesSharePreview() {
             const slides = collectAllSlides();
             const firstSlide = Array.isArray(slides) && slides.length ? slides[0] : null;
             const title = (firstSlide?.title || "Sans titre").trim();
@@ -6110,15 +6110,15 @@
                 return;
             }
             try {
-                const preview = getRobertSharePreview();
-                shareHistory.upsertRecord("robert", {
+                const preview = getNuancesSharePreview();
+                shareHistory.upsertRecord("nuances", {
                     token,
                     updatedAt: updatedAt || new Date().toISOString(),
                     title: preview.title,
                     description: preview.description
                 });
             } catch (err) {
-                console.warn("Impossible d'archiver le lien Petit Robert", err);
+                console.warn("Impossible d'archiver le lien 50 Nuances", err);
             }
         }
 
@@ -6390,8 +6390,8 @@
 
         const tourSteps = [
             {
-                title: "Petit Robert, ton assistant vocabulaire",
-                description: "Petit Robert t'aide à structurer et aligner ton vocabulaire avec les intérêts de tes interlocuteurs",
+                title: "50 Nuances, ton assistant vocabulaire",
+                description: "50 Nuances t'aide à structurer et aligner ton vocabulaire avec les intérêts de tes interlocuteurs",
                 selector: null
             },
             {
