@@ -2102,6 +2102,7 @@
     <script src="js/prompt.js"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
+    <script src="js/ia-config.js"></script>
     <script src="js/openai-client.js"></script>
     <script src="js/template-criteria.js"></script>
     <script>
@@ -2564,6 +2565,9 @@
         }
 
         function readSharedApiKey() {
+            if (window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getApiKey === "function") {
+                return window.GoToolkitIAConfig.getApiKey();
+            }
             if (typeof window === "undefined" || !window.localStorage) {
                 return "";
             }
@@ -2576,6 +2580,10 @@
         }
 
         function writeSharedApiKey(value) {
+            if (window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.setApiKey === "function") {
+                window.GoToolkitIAConfig.setApiKey(value);
+                return;
+            }
             if (typeof window === "undefined" || !window.localStorage) {
                 return;
             }
@@ -5587,33 +5595,27 @@
 
         async function callOpenAI(messages) {
             try {
-                if (!window.GoToolkitOpenAI) {
-                    throw new Error("Client OpenAI indisponible");
+                if (!window.GoToolkitIA || typeof window.GoToolkitIA.chatCompletion !== "function") {
+                    throw new Error("Client IA indisponible");
                 }
-                const apiKey = (localStorage.getItem("go-toolkit-api-key") || "").trim();
-                const useProxy = !apiKey;
-                console.warn(useProxy ? "Appel OpenAI via le proxy gotoolkit.workers.dev" : "Appel OpenAI officiel");
-                const endpoint = useProxy
-                    ? "https://openai.gotoolkit.workers.dev/v1/responses"
-                    : "https://api.openai.com/v1/responses";
                 const requestText = messages
                     .map(message => (typeof message.content === "string" ? message.content : ""))
                     .filter(Boolean)
                     .join("\n---\n");
                 console.log("AI request text:", requestText);
-                const content = await GoToolkitOpenAI.chatCompletion({
-                    endpoint,
-                    apiKey: useProxy ? "" : apiKey,
-                    payload: {
-                        model: "gpt-5-nano",
-                        messages,
-                        reasoning: { effort: getReasoningEffort() },
-                        temperature: 1,
-                        stream: true
-                    }
+                const payload = {
+                    model:
+                        window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getOpenAiModel === "function"
+                            ? window.GoToolkitIAConfig.getOpenAiModel()
+                            : "gpt-5-nano",
+                    messages,
+                    reasoning: { effort: getReasoningEffort() },
+                    temperature: 1,
+                    stream: true
+                };
+                return GoToolkitIA.chatCompletion({
+                    payload
                 });
-                console.log("AI response text:", typeof content === "string" ? content : "");
-                return content;
             } catch (err) {
                 console.error("Erreur OpenAI", err);
                 showErrorToast(

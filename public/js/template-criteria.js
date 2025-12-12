@@ -151,13 +151,16 @@
         const {
             text = "",
             template = null,
-            apiKey = "",
-            endpoint = "",
             signal,
-            model = DEFAULT_MODEL,
+            model: userModel,
             systemPrompt = SYSTEM_PROMPT,
             userPrompt
         } = options;
+        const model =
+            userModel ||
+            (global.GoToolkitIAConfig && typeof global.GoToolkitIAConfig.getOpenAiModel === "function"
+                ? global.GoToolkitIAConfig.getOpenAiModel()
+                : DEFAULT_MODEL);
         if (!template || !template.id) {
             return {};
         }
@@ -169,8 +172,7 @@
         if (!trimmedText) {
             return {};
         }
-        const effectiveEndpoint = endpoint || (apiKey ? DEFAULT_DIRECT_ENDPOINT : DEFAULT_PROXY_ENDPOINT);
-        if (!effectiveEndpoint || !global.GoToolkitOpenAI || typeof global.GoToolkitOpenAI.chatCompletion !== "function") {
+        if (!global.GoToolkitIA || typeof global.GoToolkitIA.chatCompletion !== "function") {
             return fallbackStatus(trimmedText, criteria);
         }
         const payload = {
@@ -190,9 +192,7 @@
             response_format: { type: "json_object" }
         };
         try {
-            const responseText = await global.GoToolkitOpenAI.chatCompletion({
-                endpoint: effectiveEndpoint,
-                apiKey: apiKey || "",
+            const responseText = await global.GoToolkitIA.chatCompletion({
                 payload,
                 signal
             });

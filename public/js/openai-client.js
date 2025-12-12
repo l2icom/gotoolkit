@@ -271,8 +271,114 @@
         return parseJsonResponse(response);
     }
 
+    function buildOllamaPayload(payload, model) {
+        const normalized = {
+            model: model || payload?.model || ""
+        };
+        const messages = Array.isArray(payload?.messages) && payload.messages.length ? payload.messages : null;
+        if (messages) {
+            normalized.messages = messages;
+        } else if (payload?.prompt) {
+            normalized.messages = [{ role: "user", content: payload.prompt }];
+        } else if (payload?.input) {
+            normalized.messages = Array.isArray(payload.input)
+                ? payload.input.map(item => ({
+                      role: item?.role || "user",
+                      content: stringifyContent(item?.content || item)
+                  }))
+                : [{ role: "user", content: stringifyContent(payload.input) }];
+        }
+        const copyFields = ["temperature", "max_tokens", "top_p", "stop", "n", "presence_penalty", "frequency_penalty"];
+        for (const key of copyFields) {
+            if (typeof payload?.[key] !== "undefined") {
+                normalized[key] = payload[key];
+            }
+        }
+        normalized.stream = false;
+        return normalized;
+    }
+
+    async function callOllama(backend, payload, signal) {
+        const requestBody = buildOllamaPayload(payload, backend.model);
+        const response = await fetch(backend.endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(requestBody),
+            signal
+        });
+        if (!response.ok) {
+            const body = await response.text().catch(() => "");
+            throw new Error(body || "Ollama indisponible");
+        }
+        const data = await response.json();
+        const primary = data?.message?.content || data?.message || data?.output || data;
+        const normalized = extractFromOutput(primary);
+        return typeof normalized === "string" ? normalized.trim() : "";
+    }
+
+    async function executeWithBackend(backend, payload, stopCondition, signal, endpointType) {
+        const initial = { ...(payload || {}) };
+        if (!initial.model && backend?.model) {
+            initial.model = backend.model;
+        }
+        if (backend?.type === "ollama") {
+            return callOllama(backend, initial, signal);
+        }
+        try {
+            return await chatCompletion({
+                endpoint: backend.endpoint,
+                apiKey: backend.apiKey,
+                payload: initial,
+                stopCondition,
+                signal
+            });
+        } catch (err) {
+            if (err?.name === "AbortError") {
+                throw err;
+            }
+            if (backend?.type === "openai" && global.GoToolkitAIBackend) {
+                const fallback = await global.GoToolkitAIBackend.getBackend(endpointType, { forceProxy: true });
+                const fallbackPayload = { ...initial };
+                if (!fallbackPayload.model && fallback.model) {
+                    fallbackPayload.model = fallback.model;
+                }
+                return chatCompletion({
+                    endpoint: fallback.endpoint,
+                    apiKey: fallback.apiKey,
+                    payload: fallbackPayload,
+                    stopCondition,
+                    signal
+                });
+            }
+            throw err;
+        }
+    }
+
+    async function autoChatCompletion({ payload, stopCondition, signal, endpointType = "responses" } = {}) {
+        const backendProvider = global.GoToolkitAIBackend;
+        if (!backendProvider || typeof backendProvider.getBackend !== "function") {
+            const fallbackEndpoint =
+                global.GoToolkitIAConfig?.PROXY_ENDPOINTS?.responses || "https://openai.gotoolkit.workers.dev/v1/responses";
+            return chatCompletion({
+                endpoint: fallbackEndpoint,
+                apiKey: "",
+                payload: payload || {},
+                stopCondition,
+                signal
+            });
+        }
+        const backend = await backendProvider.getBackend(endpointType);
+        return executeWithBackend(backend, payload, stopCondition, signal, endpointType);
+    }
+
     global.GoToolkitOpenAI = {
         supportsStreaming: () => hasStreamingSupport,
         chatCompletion
+    };
+
+    global.GoToolkitIA = {
+        chatCompletion: autoChatCompletion
     };
 })(window);
