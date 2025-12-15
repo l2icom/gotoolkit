@@ -312,8 +312,8 @@
 
     async function callOllama(backend, payload, signal) {
         const requestBody = buildOllamaPayload(payload, backend.model);
-        if (globalThis?.console?.debug) {
-            console.debug("[Ollama] payload", requestBody);
+        if (globalThis?.console) {
+            console.info("[Ollama] payload", requestBody);
         }
         try {
             const response = await fetch(backend.endpoint, {
@@ -335,7 +335,13 @@
                 console.error("[Ollama] invalid JSON response", { endpoint: backend.endpoint, err });
                 throw err;
             });
-            const primary = data?.message?.content || data?.message || data?.output || data;
+            if (globalThis?.console) {
+                // Log only the Ollama `response` field when present; fall back to primary content
+                var responseField = data && typeof data.response !== "undefined" ? data.response : (data?.message?.content || data?.message || data?.output || data);
+                console.info("[Ollama] response", responseField);
+            }
+            // Prefer the `response` field returned by Ollama, then fall back to known shapes
+            const primary = typeof data?.response !== "undefined" ? data.response : (data?.message?.content || data?.message || data?.output || data);
             const normalized = extractFromOutput(primary);
             return typeof normalized === "string" ? normalized.trim() : "";
         } catch (err) {
@@ -410,10 +416,13 @@
         return executeWithBackend(backend, payload, stopCondition, signal, endpointType);
     }
 
-    global.GoToolkitOpenAI = {
+    global.GoToolkitIAClient = {
         supportsStreaming: () => hasStreamingSupport,
         chatCompletion
     };
+
+    // Backwards compatibility alias
+    global.GoToolkitOpenAI = global.GoToolkitIAClient;
 
     global.GoToolkitIA = {
         chatCompletion: autoChatCompletion

@@ -1937,7 +1937,7 @@
             }
         }
 
-        function checkIaConnection(showToast = false) {
+        function checkIaConnection(showNotifications = false) {
             if (!window.GoToolkitAIBackend || typeof window.GoToolkitAIBackend.getBackend !== "function") {
                 setIaStatus(null);
                 return;
@@ -1946,7 +1946,7 @@
                 .then(backend => {
                     setIaStatus(backend);
                     console.log("IA backend detected:", backend?.type || "none", backend?.endpoint || "[missing]");
-                    if (!showToast || !backend) {
+                    if (!showNotifications || !backend) {
                         return;
                     }
                     if (backend.type === "openai") {

@@ -2617,28 +2617,46 @@ classDiagram
                 }
                 const timeout = setTimeout(() => controller.abort(), timeoutMs);
                 try {
-                    const res = await fetch(endpoint, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            ...authorization
-                        },
-                        body: JSON.stringify(body),
-                        signal: controller.signal
-                    });
-                    clearTimeout(timeout);
-                    const rawText = await res.text();
-                    if (!res.ok) {
-                        console.warn("[prompt-assist] API error", rawText);
-                        setStatus("Erreur IA: " + (rawText || res.status));
-                        return null;
+                    // Prefer the unified IA client which will route to Ollama/OpenAI/proxy as configured
+                    let rawText = null;
+                    if (window.GoToolkitIA && typeof window.GoToolkitIA.chatCompletion === "function") {
+                        try {
+                            rawText = await window.GoToolkitIA.chatCompletion({ payload: body, signal: controller.signal, stopCondition: null });
+                        } catch (err) {
+                            clearTimeout(timeout);
+                            if (err && (err.message === "OllamaUnavailable" || (err.backendInfo && err.backendInfo.type === "ollama-unavailable"))) {
+                                setStatus("Serveur Ollama indisponible — vérifie l'URL ou la connexion.");
+                                return null;
+                            }
+                            throw err;
+                        }
+                    } else {
+                        // Fallback: direct fetch to computed endpoint (legacy behavior)
+                        const res = await fetch(endpoint, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                ...authorization
+                            },
+                            body: JSON.stringify(body),
+                            signal: controller.signal
+                        });
+                        clearTimeout(timeout);
+                        rawText = await res.text();
+                        if (!res.ok) {
+                            console.warn("[prompt-assist] API error", rawText);
+                            setStatus("Erreur IA: " + (rawText || res.status));
+                            return null;
+                        }
                     }
+                    clearTimeout(timeout);
+                    if (!rawText) return null;
                     let content = "";
                     try {
                         const parsedOuter = JSON.parse(rawText);
-                        content = parsedOuter?.choices?.[0]?.message?.content || "";
+                        content = parsedOuter?.choices?.[0]?.message?.content || parsedOuter?.output || parsedOuter?.result || "";
                     } catch (err) {
-                        console.warn("[prompt-assist] cannot parse outer response", err);
+                        // rawText might already be the inner content
                         content = rawText;
                     }
                     let parsedJson = null;

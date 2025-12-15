@@ -10,13 +10,13 @@
 
     var DEFAULTS = {
         OPENAI_MODEL: "gpt-5-nano",
-        OLLAMA_MODEL: "genma3",
+        OLLAMA_MODEL: "gemma3",
         OLLAMA_URL: "http://localhost:11434",
         OLLAMA_API_KEY: ""
     };
 
     var OPENAI_MODELS = ["gpt-5-nano", "gpt-5-mini"];
-    var OLLAMA_MODELS = ["gpt-oss:latest", "genma3", "ministral-3:latest", "deepseek-r1"];
+    var OLLAMA_MODELS = ["gpt-oss:latest", "gemma3", "ministral-3:latest", "deepseek-r1"];
 
     var OPENAI_ENDPOINTS = {
         responses: "https://api.openai.com/v1/responses",
@@ -29,7 +29,7 @@
     };
 
     var OLLAMA_GENERATE_PATH = "/api/generate";
-    var OLLAMA_CHAT_PATH = "/api/chat";
+    var OLLAMA_CHAT_PATH = "/api/generate";
     var OLLAMA_PING_PATH = "/api/tags";
 
     function safeStorageRead(key) {

@@ -5622,7 +5622,7 @@
                     temperature: 1,
                     stream: true
                 };
-                return GoToolkitIA.chatCompletion({
+                return await GoToolkitIA.chatCompletion({
                     payload
                 });
             } catch (err) {
