@@ -293,8 +293,8 @@
         } else {
             next.prompt = "";
         }
-        // Ollama doesn't require streaming in our usage; keep it false.
-        next.stream = false;
+        // Request streaming from Ollama as recommended (stream: true).
+        next.stream = true;
         return next;
     }
 
@@ -331,21 +331,28 @@
                 });
                 throw new Error(body || "Ollama indisponible");
             }
+            const contentType = response.headers.get("content-type") || "";
+            const wantsStream = requestBody.stream === true;
+            const isStream = wantsStream && !!response.body && contentType.includes("text/event-stream");
+            if (isStream) {
+                const aggregated = (await consumeStream(response, undefined));
+                if (globalThis?.console) {
+                    console.info("[Ollama] response", aggregated);
+                }
+                return aggregated?.trim ? aggregated.trim() : aggregated;
+            }
             const data = await response.json().catch(err => {
                 console.error("[Ollama] invalid JSON response", { endpoint: backend.endpoint, err });
                 throw err;
             });
             if (globalThis?.console) {
-                // Log only the Ollama `response` field when present; fall back to primary content
                 var responseField = data && typeof data.response !== "undefined" ? data.response : (data?.message?.content || data?.message || data?.output || data);
                 console.info("[Ollama] response", responseField);
             }
-            // Prefer the `response` field returned by Ollama, then fall back to known shapes
             const primary = typeof data?.response !== "undefined" ? data.response : (data?.message?.content || data?.message || data?.output || data);
             const normalized = extractFromOutput(primary);
             return typeof normalized === "string" ? normalized.trim() : "";
         } catch (err) {
-            // Log full context for debugging
             try {
                 console.error("[Ollama] request failed", { endpoint: backend.endpoint, model: backend.model, error: err });
             } catch (logErr) {

@@ -2,7 +2,7 @@
 <html lang="fr">
 
 <head>
-    <script>window.GO_TOOLKIT_SHARE_API_URL = 'https://gotoolkit.workers.dev'</script>
+    <script>window.GO_TOOLKIT_SHARE_API_URL = 'https://share.gotoolkit.workers.dev/'</script>
     <meta charset="UTF-8" />
     <title>Goal Digger | Go-Toolkit</title>
 
@@ -166,8 +166,7 @@
 
         textarea:focus {
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.3);
+            border: 1px solid var(--app-primary);
             scrollbar-width: thin;
         }
 
@@ -415,8 +414,8 @@
         }
 
         .gutenberg-card .gutenberg-recette {
-            flex: 0 0 50%;
-            height: 50%;
+            flex: 0 0 auto;
+            height: auto;
             min-height: 0;
             display: flex;
             flex-direction: column;
@@ -437,8 +436,8 @@
         }
 
         .gutenberg-card .gutenberg-script {
-            flex: 0 0 50%;
-            height: 50%;
+            flex: 0 0 auto;
+            height: auto;
             min-height: 0;
             display: flex;
             flex-direction: column;
@@ -447,6 +446,113 @@
 
         .gutenberg-card .gutenberg-actions {
             margin-top: -4px;
+        }
+
+        .speech-field-wrapper {
+            position: relative;
+            height: 100%;
+        }
+
+        .speech-field-wrapper textarea {
+            padding-right: 40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .speech-button {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.85);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            color: var(--muted);
+            border-radius: 999px;
+            transition: box-shadow 0.2s ease, opacity 0.2s ease;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .speech-field-wrapper:hover .speech-button,
+        .speech-field-wrapper:focus-within .speech-button {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .speech-button--active {
+            color: #B11226;
+            animation: speech-blink 2s infinite linear;
+            opacity: 1;
+        }
+
+        @keyframes speech-blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .speech-suggestion {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            pointer-events: none;
+            font: inherit;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+            z-index: 1;
+        }
+
+        .speech-suggestion span {
+            display: inline;
+        }
+
+        .speech-suggestion-current {
+            color: transparent;
+        }
+
+        .speech-suggestion-partial {
+            color: rgba(15, 23, 42, 0.45);
+        }
+
+        .speech-suggestion:not(.visible) {
+            visibility: hidden;
+        }
+
+        @keyframes speech-border {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(177, 18, 38, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 0 6px rgba(177, 18, 38, 0.12);
+            }
+        }
+
+        .speech-field-wrapper.speech-active textarea {
+            border: 2px solid #B11226;
+            animation: speech-border 2s infinite ease-in-out;
+        }
+
+        .speech-field-wrapper.speech-active textarea:focus {
+            border-color: #B11226;
         }
 
         .timeline-wrapper {
@@ -559,13 +665,14 @@
             pointer-events: none;
             white-space: pre-wrap;
             opacity: 0;
-            transform-origin: top left;
+            transform-origin: center right;
+            transform: translateX(8px);
             transition: opacity 0.12s ease, transform 0.12s ease;
         }
 
         .scenario-template-tooltip.visible {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateX(0);
         }
 
         .header-buttons {
@@ -1697,8 +1804,14 @@
                         </div>
                         <div class="ia-prompt-fields">
                             <div class="prompt-template-meta" id="promptTemplateMeta">Modèle : —</div>
-                            <textarea id="promptCreate" class="ia-prompt-field" rows="20"
-                                placeholder="Décris ici ton objectif, ton échéance et tes actions"></textarea>
+                            <div class="speech-field-wrapper">
+                                <div class="speech-suggestion" data-speech-suggestion="promptCreate" aria-hidden="true">
+                                </div>
+                                <textarea id="promptCreate" class="ia-prompt-field" rows="20"
+                                    placeholder="Décris ici ton objectif, ton échéance et tes actions"></textarea>
+                                <button class="speech-button" type="button" data-speech-target="promptCreate"
+                                    title="Dictée vocale" aria-label="Activer la dictée vocale">◉</button>
+                            </div>
                         </div>
                     </div>
                     <div class="header-row ia-header-actions gutenberg-script">
@@ -1802,6 +1915,7 @@
         </div>
 
         <div id="copyToast" class="toast" aria-live="polite" aria-atomic="true"></div>
+        <div id="speechToast" class="toast" aria-live="polite" aria-atomic="true"></div>
 
         <input type="file" id="importJsonInput" accept="application/json" style="display:none">
         <script>
@@ -3247,6 +3361,8 @@
             var timelineUpdateBtn = document.getElementById("timelineUpdateBtn");
             var copyToast = document.getElementById("copyToast");
             var copyToastTimer = null;
+            var speechToast = document.getElementById("speechToast");
+            var speechToastTimer = null;
             var shareMenu = document.getElementById("shareMenu");
             var shareBtn = document.getElementById("shareBtn");
             var shareLinkField = document.getElementById("shareLinkField");
@@ -4240,6 +4356,19 @@
                 copyToastTimer = setTimeout(function () {
                     copyToast.classList.remove("visible");
                     copyToastTimer = null;
+                }, 2200);
+            }
+
+            function showSpeechToast(message) {
+                if (!speechToast) return;
+                speechToast.textContent = message;
+                speechToast.classList.add("visible");
+                if (speechToastTimer) {
+                    clearTimeout(speechToastTimer);
+                }
+                speechToastTimer = setTimeout(function () {
+                    speechToast.classList.remove("visible");
+                    speechToastTimer = null;
                 }, 2200);
             }
 
@@ -6068,6 +6197,202 @@
             var clearTimelineBtn = document.getElementById("clearTimelineBtn");
             var iaTemplateEditor = document.getElementById("iaTemplateEditor");
             var resetTemplatesBtn = document.getElementById("resetTemplatesBtn");
+            var SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+            var activeSpeechRecognition = null;
+            var activeSpeechButton = null;
+            var activeSpeechWrapper = null;
+            var activeSpeechField = null;
+            var lastSpeechInterim = "";
+
+            function escapeHtml(value) {
+                return String(value || "")
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#39;");
+            }
+
+            function appendSpeechText(field, transcript) {
+                if (!field || !transcript) {
+                    return;
+                }
+                var normalized = transcript.trim();
+                if (!normalized) {
+                    return;
+                }
+                var separator = field.value && !field.value.endsWith("\n") ? "\n" : "";
+                field.value = field.value + (field.value ? separator : "") + normalized;
+                field.dispatchEvent(new Event("input", { bubbles: true }));
+                clearSpeechSuggestion(field);
+            }
+
+            function getSpeechSuggestionElement(field) {
+                if (!field) {
+                    return null;
+                }
+                return document.querySelector('[data-speech-suggestion="' + field.id + '"]');
+            }
+
+            function updateSpeechSuggestion(field, partial) {
+                var suggestionEl = getSpeechSuggestionElement(field);
+                if (!suggestionEl) {
+                    return;
+                }
+                if (!partial) {
+                    suggestionEl.classList.remove("visible");
+                    suggestionEl.innerHTML = "";
+                    return;
+                }
+                var safeCurrent = escapeHtml(field.value);
+                var safePartial = escapeHtml(partial);
+                suggestionEl.innerHTML =
+                    '<span class="speech-suggestion-current">' + safeCurrent + '</span>' +
+                    '<span class="speech-suggestion-partial">' + safePartial + '</span>';
+                suggestionEl.classList.add("visible");
+                if (field === activeSpeechField) {
+                    lastSpeechInterim = partial || "";
+                }
+            }
+
+            function clearSpeechSuggestion(field) {
+                updateSpeechSuggestion(field, "");
+                if (field === activeSpeechField) {
+                    lastSpeechInterim = "";
+                }
+            }
+
+            function stopActiveSpeechSession(options) {
+                options = options || {};
+                var flushInterim = Boolean(options.flushInterim);
+                var field = activeSpeechField;
+                if (flushInterim && field && lastSpeechInterim) {
+                    appendSpeechText(field, lastSpeechInterim);
+                }
+                lastSpeechInterim = "";
+                if (activeSpeechRecognition) {
+                    activeSpeechRecognition.abort();
+                    activeSpeechRecognition = null;
+                }
+                if (activeSpeechButton) {
+                    activeSpeechButton.classList.remove("speech-button--active");
+                    activeSpeechButton = null;
+                }
+                if (activeSpeechWrapper) {
+                    activeSpeechWrapper.classList.remove("speech-active");
+                    activeSpeechWrapper = null;
+                }
+                if (field) {
+                    clearSpeechSuggestion(field);
+                }
+                if (txtPromptCreate) {
+                    clearSpeechSuggestion(txtPromptCreate);
+                }
+                activeSpeechField = null;
+            }
+
+            function startSpeechRecognition(field, button) {
+                if (!SpeechRecognitionCtor) {
+                    alert("Reconnaissance vocale non disponible dans ce navigateur.");
+                    return;
+                }
+                if (!field) {
+                    return;
+                }
+                if (activeSpeechButton === button) {
+                    stopActiveSpeechSession();
+                    return;
+                }
+                stopActiveSpeechSession();
+                var recognition = new SpeechRecognitionCtor();
+                recognition.lang = "fr-FR";
+                recognition.interimResults = true;
+                recognition.maxAlternatives = 1;
+                recognition.continuous = true;
+                var wrapper = button && typeof button.closest === "function" ? button.closest(".speech-field-wrapper") : null;
+                recognition.addEventListener("start", function () {
+                    if (button) button.classList.add("speech-button--active");
+                    activeSpeechRecognition = recognition;
+                    activeSpeechButton = button;
+                    activeSpeechField = field;
+                    lastSpeechInterim = "";
+                    field.focus();
+                    clearSpeechSuggestion(field);
+                    if (wrapper) {
+                        wrapper.classList.add("speech-active");
+                        activeSpeechWrapper = wrapper;
+                    }
+                });
+                recognition.addEventListener("result", function (event) {
+                    var interimText = "";
+                    for (var i = event.resultIndex; i < event.results.length; i++) {
+                        var result = event.results[i];
+                        var transcript = (result[0] && result[0].transcript ? result[0].transcript : "").trim();
+                        if (!transcript) continue;
+                        if (result.isFinal) {
+                            appendSpeechText(field, transcript);
+                        } else {
+                            interimText += (interimText ? " " : "") + transcript;
+                        }
+                    }
+                    if (interimText) {
+                        updateSpeechSuggestion(field, interimText);
+                    } else {
+                        var lastResult = event.results[event.results.length - 1];
+                        if (lastResult && !lastResult.isFinal) {
+                            clearSpeechSuggestion(field);
+                        }
+                    }
+                });
+                recognition.addEventListener("error", function () {
+                    console.warn("Speech recognition error");
+                    showSpeechToast("Reconnaissance vocale terminée");
+                    clearSpeechSuggestion(field);
+                });
+                recognition.addEventListener("end", function () {
+                    if (activeSpeechRecognition === recognition) {
+                        activeSpeechRecognition = null;
+                    }
+                });
+                try {
+                    recognition.start();
+                } catch (err) {
+                    console.error("Speech recognition start failed", err);
+                    alert("Impossible de démarrer la dictée vocale.");
+                }
+            }
+
+            document.addEventListener("click", function (event) {
+                var targetButton =
+                    event && event.target && typeof event.target.closest === "function"
+                        ? event.target.closest(".speech-button")
+                        : null;
+                if (!targetButton) {
+                    return;
+                }
+                event.preventDefault();
+                var targetId = targetButton.getAttribute("data-speech-target");
+                var field = targetId ? document.getElementById(targetId) : null;
+                if (field) {
+                    startSpeechRecognition(field, targetButton);
+                }
+            });
+
+            function isSpeechTypingKey(event) {
+                if (!event || !event.key) return false;
+                if (event.metaKey || event.ctrlKey || event.altKey) return false;
+                var key = event.key;
+                if (key.length === 1) return true;
+                return key === "Backspace" || key === "Delete" || key === "Enter";
+            }
+
+            function handleSpeechKeydown(event) {
+                if (!activeSpeechRecognition || !activeSpeechField) return;
+                if (event.target !== activeSpeechField) return;
+                if (!isSpeechTypingKey(event)) return;
+                stopActiveSpeechSession({ flushInterim: true });
+            }
+            document.addEventListener("keydown", handleSpeechKeydown, true);
 
             function getTemplateById(id) {
                 if (!id) return null;
@@ -6092,13 +6417,11 @@
             }
 
             function positionScenarioTooltipForTextarea(textarea) {
-                if (!textarea) return;
+                if (!textarea || !scenarioTooltip) return;
                 var rect = textarea.getBoundingClientRect();
-                var left = Math.max(8, rect.left + window.scrollX);
-                var top = rect.bottom + 8 + window.scrollY;
-                scenarioTooltip.style.left = left + 'px';
-                scenarioTooltip.style.top = top + 'px';
-                // constrain width to textarea width or max-width
+                scenarioTooltip.dataset.targetLeft = (rect.left + window.scrollX).toString();
+                scenarioTooltip.dataset.targetTop = (rect.top + window.scrollY).toString();
+                scenarioTooltip.dataset.targetHeight = rect.height.toString();
                 var maxW = Math.min(rect.width, 420);
                 scenarioTooltip.style.maxWidth = maxW + 'px';
             }
@@ -6112,18 +6435,21 @@
                 }
                 positionScenarioTooltipForTextarea(textarea);
                 scenarioTooltip.style.display = 'block';
-                // small initial transform for nicer appear
-                scenarioTooltip.style.transform = 'translateY(4px)';
+                scenarioTooltip.style.transform = 'translateX(8px)';
                 requestAnimationFrame(function () {
-                    // adjust if overflowing viewport
                     var tipRect = scenarioTooltip.getBoundingClientRect();
-                    var overflowRight = tipRect.right - (window.innerWidth - 8);
-                    if (overflowRight > 0) {
-                        var currentLeft = parseFloat(scenarioTooltip.style.left || 0);
-                        scenarioTooltip.style.left = Math.max(8, currentLeft - overflowRight) + 'px';
-                    }
+                    var baseLeft = parseFloat(scenarioTooltip.dataset.targetLeft || '0') || 0;
+                    var baseTop = parseFloat(scenarioTooltip.dataset.targetTop || '0') || 0;
+                    var targetHeight = parseFloat(scenarioTooltip.dataset.targetHeight || '0') || 0;
+                    var gap = 10;
+                    var left = Math.max(8, baseLeft - tipRect.width - gap);
+                    var topCandidate = baseTop + (targetHeight - tipRect.height) / 2;
+                    var maxTop = window.innerHeight - tipRect.height - 8;
+                    var top = Math.min(maxTop, Math.max(8, topCandidate));
+                    scenarioTooltip.style.left = left + 'px';
+                    scenarioTooltip.style.top = top + 'px';
                     scenarioTooltip.classList.add('visible');
-                    scenarioTooltip.style.transform = 'translateY(0)';
+                    scenarioTooltip.style.transform = 'translateX(0)';
                 });
                 // reset timer
                 if (scenarioTooltipTimer) {
@@ -6281,6 +6607,7 @@
                         }
                         scenarioTooltipTimer = setTimeout(function () { hideScenarioTooltip(); }, 5000);
                     }
+                    clearSpeechSuggestion(txtPromptCreate);
                     triggerScenarioCriteriaAnalysis();
                 });
                 txtPromptCreate.addEventListener('blur', function () {

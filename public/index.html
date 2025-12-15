@@ -153,6 +153,9 @@
             align-items: center;
             transition: color 0.2s ease;
         }
+        .ia-status--error {
+            color: #B11226;
+        }
 
 
 
@@ -1000,7 +1003,10 @@
                                             OpenAI</a>
                                         <span class="ia-status" id="openaiStatus" aria-hidden="true"></span>
                                     </div>
-                                    <button id="openaiTestBtn" type="button" class="btn-secondary">Vérifier</button>
+                                    <div style="display:flex; gap:0.35rem;">
+                                        <button id="openaiVerifyBtn" type="button" class="btn-secondary">Vérifier</button>
+                                        <button id="openaiTestBtn" type="button" class="btn-secondary">Test</button>
+                                    </div>
                                 </div>
                                 <span class="label-subtitle">Réponse plus rapide avec votre clé</span>
                                 <input id="iaApiKeyInput" type="password" placeholder="sk-... (optionnel)" />
@@ -1039,7 +1045,10 @@
                                             target="_blank" rel="noopener noreferrer">Connexion Ollama</a>
                                         <span class="ia-status" id="ollamaStatus" aria-hidden="true"></span>
                                     </div>
-                                    <button id="ollamaTestBtn" type="button" class="btn-secondary">Vérifier</button>
+                                    <div style="display:flex; gap:0.35rem;">
+                                        <button id="ollamaVerifyBtn" type="button" class="btn-secondary">Vérifier</button>
+                                        <button id="ollamaTestBtn" type="button" class="btn-secondary">Test</button>
+                                    </div>
                                 </div>
                                 <span class="label-subtitle">Requêtes envoyées à un serveur local (par défaut
                                     http://localhost:11434)</span>
@@ -1561,6 +1570,14 @@
             } else {
                 settingsOllamaModelSelect.value = models[0];
             }
+            const selectedModel = settingsOllamaModelSelect.value;
+            if (
+                selectedModel &&
+                window.GoToolkitIAConfig &&
+                typeof window.GoToolkitIAConfig.setOllamaModel === "function"
+            ) {
+                window.GoToolkitIAConfig.setOllamaModel(selectedModel);
+            }
         }
         async function refreshOllamaModels({ showErrors = false } = {}) {
             var config = window.GoToolkitIAConfig;
@@ -1612,13 +1629,15 @@
             return headers;
         }
 
-        async function testOpenAiConnection() {
+        async function testOpenAiConnection({ showToasts = true } = {}) {
             var config = window.GoToolkitIAConfig;
             var apiKey = config && typeof config.getApiKey === "function" ? config.getApiKey() : "";
             if (!apiKey) {
                 updateStatusIcon(openaiStatusEl, "error");
-                showToast("Clé OpenAI requise pour tester la connexion.", true);
-                return;
+                if (showToasts) {
+                    showToast("Clé OpenAI requise pour tester la connexion.", true);
+                }
+                return false;
             }
             updateStatusIcon(openaiStatusEl, "verifying");
             try {
@@ -1631,34 +1650,45 @@
                 if (!response.ok) {
                     throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
                 }
-                showToast("Connexion OpenAI prête");
+                if (showToasts) {
+                    showToast("Connexion OpenAI prête");
+                }
                 updateStatusIcon(openaiStatusEl, "ready");
+                return true;
             } catch (err) {
                 console.warn("OpenAI test failed", err);
                 var message = (err && err.message) || String(err) || "erreur inconnue";
-                showToast("Échec de la connexion OpenAI (" + message + ")", true);
+                if (showToasts) {
+                    showToast("Échec de la connexion OpenAI (" + message + ")", true);
+                }
                 updateStatusIcon(openaiStatusEl, "error");
+                return false;
             }
         }
 
-        async function testOllamaConnection() {
+        async function testOllamaConnection({ showToasts = true } = {}) {
             var config = window.GoToolkitIAConfig;
             var url = config && typeof config.getOllamaUrl === "function" ? config.getOllamaUrl() : "";
             if (!url) {
                 updateStatusIcon(ollamaStatusEl, "error");
-                showToast("URL Ollama manquante pour tester la connexion.", true);
-                return;
+                if (showToasts) {
+                    showToast("URL Ollama manquante pour tester la connexion.", true);
+                }
+                return false;
             }
             var normalizedUrl = url.replace(/\/+$/, "");
             var apiKey = config && typeof config.getOllamaApiKey === "function" ? config.getOllamaApiKey() : "";
             updateStatusIcon(ollamaStatusEl, "verifying");
-            const models = await refreshOllamaModels({ showErrors: true });
+            const models = await refreshOllamaModels({ showErrors: showToasts });
             if (!models.length) {
                 updateStatusIcon(ollamaStatusEl, "error");
-                return;
+                return false;
             }
-            showToast("Modèles Ollama détectés (" + normalizedUrl + ")");
+            if (showToasts) {
+                showToast("Modèles Ollama détectés (" + normalizedUrl + ")");
+            }
             updateStatusIcon(ollamaStatusEl, "ready");
+            return true;
         }
         function openModal() {
             if (!feedbackModal) return;
@@ -1737,7 +1767,9 @@
         const settingsOllamaModelSelect = document.getElementById("ollamaModelSelect");
         const openaiStatusEl = document.getElementById("openaiStatus");
         const ollamaStatusEl = document.getElementById("ollamaStatus");
+        const openaiVerifyBtn = document.getElementById("openaiVerifyBtn");
         const openaiTestBtn = document.getElementById("openaiTestBtn");
+        const ollamaVerifyBtn = document.getElementById("ollamaVerifyBtn");
         const ollamaTestBtn = document.getElementById("ollamaTestBtn");
         const aiBackendSelect = document.getElementById("aiBackendSelect");
         const openaiSettingsEl = document.getElementById("openaiSettings");
@@ -1898,8 +1930,10 @@
         if (closeSettingsBtn) closeSettingsBtn.addEventListener("click", closeSettings);
         if (cancelSettingsBtn) cancelSettingsBtn.addEventListener("click", closeSettings);
         if (saveSettingsBtn) saveSettingsBtn.addEventListener("click", saveSettings);
-        if (openaiTestBtn) openaiTestBtn.addEventListener("click", testOpenAiConnection);
-        if (ollamaTestBtn) ollamaTestBtn.addEventListener("click", testOllamaConnection);
+        if (openaiVerifyBtn) openaiVerifyBtn.addEventListener("click", () => testOpenAiConnection({ showToasts: false }));
+        if (openaiTestBtn) openaiTestBtn.addEventListener("click", () => testOpenAiConnection({ showToasts: true }));
+        if (ollamaVerifyBtn) ollamaVerifyBtn.addEventListener("click", () => testOllamaConnection({ showToasts: false }));
+        if (ollamaTestBtn) ollamaTestBtn.addEventListener("click", () => testOllamaConnection({ showToasts: true }));
 
         openFeedbackBtn?.addEventListener("click", openModal);
         closeFeedbackBtn?.addEventListener("click", closeModal);

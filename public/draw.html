@@ -2,7 +2,7 @@
 <html lang="fr">
 
 <head>
-    <script>window.GO_TOOLKIT_SHARE_API_URL = 'https://gotoolkit.workers.dev'</script>
+    <script>window.GO_TOOLKIT_SHARE_API_URL = 'https://share.gotoolkit.workers.dev/'</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Le Cardinal | Go-Toolkit</title>
@@ -15,9 +15,9 @@
         .template-tooltip {
             display: none;
             position: absolute;
-            left: 0;
-            bottom: -8px;
-            transform: translateY(100%);
+            right: calc(100% + 8px);
+            top: 50%;
+            transform: translateY(-50%);
             background: rgba(0, 0, 0, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.06);
             padding: 8px 10px;
@@ -320,6 +320,114 @@
             box-sizing: border-box;
         }
 
+        .speech-field-wrapper {
+            position: relative;
+            height: 100%;
+        }
+
+        .speech-field-wrapper textarea {
+            padding-right: 40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .speech-button {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.85);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            color: var(--muted);
+            border-radius: 999px;
+            transition: box-shadow 0.2s ease, opacity 0.2s ease;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .speech-field-wrapper:hover .speech-button,
+        .speech-field-wrapper:focus-within .speech-button {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .speech-button--active,
+        .speech-button:active {
+            color: #B11226;
+            animation: speech-blink 2s infinite linear;
+            opacity: 1;
+        }
+
+        @keyframes speech-blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .speech-suggestion {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            pointer-events: none;
+            font: inherit;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+            z-index: 1;
+        }
+
+        .speech-suggestion span {
+            display: inline;
+        }
+
+        .speech-suggestion-current {
+            color: transparent;
+        }
+
+        .speech-suggestion-partial {
+            color: rgba(15, 23, 42, 0.45);
+        }
+
+        .speech-suggestion:not(.visible) {
+            visibility: hidden;
+        }
+
+        @keyframes speech-border {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(177, 18, 38, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 0 6px rgba(177, 18, 38, 0.12);
+            }
+        }
+
+        .speech-field-wrapper.speech-active textarea {
+            border: 2px solid #B11226;
+            animation: speech-border 2s infinite ease-in-out;
+        }
+
+        .speech-field-wrapper.speech-active textarea:focus {
+            border-color: #B11226;
+        }
+
         .prompt-suggestion {
             pointer-events: none;
             position: absolute;
@@ -411,8 +519,9 @@
         }
 
         textarea:focus {
-            outline: 2px solid #6776ff;
-            background: #ffffff;
+            outline: none;
+            border-color: var(--app-primary);
+            scrollbar-width: thin;
         }
 
         .prompt-input-card {
@@ -887,7 +996,7 @@
                     <div class="context-menu" id="capsuleMenu">
                         <div class="menu-panel">
                             <button id="capsuleOpenBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
-                            <button id="capsuleSaveBtn" type="button" class="menu-panel-btn">⭳ Enregistrer</button>
+                            <button id="capsuleSaveBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
                             <button id="infoButton" type="button" class="menu-panel-btn">⎉ Vaisseau</button>
                         </div>
                     </div>
@@ -961,8 +1070,14 @@
                     <div class="prompt-input-wrapper">
                         <div id="promptSuggestion" class="prompt-suggestion" aria-hidden="true"></div>
                         <div id="templateTooltip" class="template-tooltip" aria-hidden="true"></div>
-                        <textarea id="promptInput" rows="5"
-                            placeholder="Décris ton contexte produit, tes utilisateurs, ta problématique..."></textarea>
+                        <div class="speech-field-wrapper">
+                            <div class="speech-suggestion" data-speech-suggestion="promptInput" aria-hidden="true">
+                            </div>
+                            <textarea id="promptInput" rows="5"
+                                placeholder="Décris ton contexte produit, tes utilisateurs, ta problématique..."></textarea>
+                            <button class="speech-button" type="button" data-speech-target="promptInput"
+                                title="Dictée vocale" aria-label="Activer la dictée vocale">◉</button>
+                        </div>
                     </div>
                     <div id="promptAltRow" class="prompt-alt-row" aria-live="polite"></div>
                 </div>
@@ -972,7 +1087,7 @@
 
                         <button id="refreshExcalidrawBtn" class="btn" type="button">↺ Restaurer</button>
                     </div>
-                    <textarea id="mermaidOutput" placeholder="Le code généré apparaitra ici"></textarea>
+                    <textarea id="mermaidOutput"></textarea>
                 </div>
             </section>
         </main>
@@ -1194,33 +1309,187 @@
                 class: "Décris les éléments importants, leurs caractéristiques, leurs rôles et la manière dont ils sont reliés entre eux.",
                 sequence: "Décris qui interagit avec qui, dans quel ordre, ce que chaque échange signifie et comment la situation évolue du début à la fin."
             };
-            const mermaidPlaceholders = {
-                flow: `%% FLOW DIAGRAM PLACEHOLDER
-flowchart LR
-    A[Décris ici la première étape du flux] --> B[Explique l'étape suivante]
-    B --> C{Décris la décision ou le choix possible}
-    C -->|Option 1| D[Décris ce qui arrive si on choisit cette option]
-    C -->|Option 2| E[Décris l’autre chemin]
-    E --> F[Décris l’étape finale du processus]`,
-                class: `%% CLASS DIAGRAM PLACEHOLDER
-classDiagram
-    class Item {
-        +DécrisIciLesAttributs
-        +DécrisIciLesActions
-    }
-    class User {
-        +DécrisCeQuiCaractériseCetÉlément
-    }
-    User --> Item : "Décris le lien entre eux"`,
-                sequence: `%% SEQUENCE DIAGRAM PLACEHOLDER
-    sequenceDiagram
-        participant A as DécrisIciLePremierActeur
-        participant B as DécrisLeDeuxièmeActeur
-        A->>B: Décris la première interaction
-        B->>A: Décris la réponse
-        A->>B: Décris l’étape suivante
-        Note over A,B: Ajoute ici une explication ou un contexte`
-            };
+            const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let activeSpeechRecognition = null;
+            let activeSpeechButton = null;
+            let activeSpeechWrapper = null;
+            let activeSpeechField = null;
+            let lastSpeechInterim = "";
+
+            function appendSpeechText(field, transcript) {
+                if (!field || !transcript) {
+                    return;
+                }
+                const normalized = transcript.trim();
+                if (!normalized) {
+                    return;
+                }
+                const separator = field.value && !field.value.endsWith("\n") ? "\n" : "";
+                field.value = field.value + (field.value ? separator : "") + normalized;
+                field.dispatchEvent(new Event("input", { bubbles: true }));
+                clearSpeechSuggestion(field);
+            }
+
+            function getSpeechSuggestionElement(field) {
+                if (!field) {
+                    return null;
+                }
+                return document.querySelector(`[data-speech-suggestion="${field.id}"]`);
+            }
+
+            function updateSpeechSuggestion(field, partial) {
+                const suggestionEl = getSpeechSuggestionElement(field);
+                if (!suggestionEl) {
+                    return;
+                }
+                if (!partial) {
+                    suggestionEl.classList.remove("visible");
+                    suggestionEl.innerHTML = "";
+                    return;
+                }
+                const safeCurrent = escapeHtml(field.value);
+                const safePartial = escapeHtml(partial);
+                suggestionEl.innerHTML = `<span class="speech-suggestion-current">${safeCurrent}</span><span class="speech-suggestion-partial">${safePartial}</span>`;
+                suggestionEl.classList.add("visible");
+                if (field === activeSpeechField) {
+                    lastSpeechInterim = partial || "";
+                }
+            }
+
+            function clearSpeechSuggestion(field) {
+                updateSpeechSuggestion(field, "");
+                if (field === activeSpeechField) {
+                    lastSpeechInterim = "";
+                }
+            }
+
+            function stopActiveSpeechSession({ flushInterim = false } = {}) {
+                const field = activeSpeechField;
+                if (flushInterim && field && lastSpeechInterim) {
+                    appendSpeechText(field, lastSpeechInterim);
+                }
+                lastSpeechInterim = "";
+                if (activeSpeechRecognition) {
+                    activeSpeechRecognition.abort();
+                    activeSpeechRecognition = null;
+                }
+                if (activeSpeechButton) {
+                    activeSpeechButton.classList.remove("speech-button--active");
+                    activeSpeechButton = null;
+                }
+                if (activeSpeechWrapper) {
+                    activeSpeechWrapper.classList.remove("speech-active");
+                    activeSpeechWrapper = null;
+                }
+                if (field) {
+                    clearSpeechSuggestion(field);
+                }
+                if (promptInput) {
+                    clearSpeechSuggestion(promptInput);
+                }
+                activeSpeechField = null;
+            }
+
+            function startSpeechRecognition(field, button) {
+                if (!SpeechRecognitionCtor) {
+                    alert("Reconnaissance vocale non disponible dans ce navigateur.");
+                    return;
+                }
+                if (!field) {
+                    return;
+                }
+                if (activeSpeechButton === button) {
+                    stopActiveSpeechSession();
+                    return;
+                }
+                stopActiveSpeechSession();
+                const recognition = new SpeechRecognitionCtor();
+                recognition.lang = "fr-FR";
+                recognition.interimResults = true;
+                recognition.maxAlternatives = 1;
+                recognition.continuous = true;
+                const wrapper = button?.closest ? button.closest(".speech-field-wrapper") : null;
+                recognition.addEventListener("start", () => {
+                    button?.classList.add("speech-button--active");
+                    activeSpeechRecognition = recognition;
+                    activeSpeechButton = button;
+                    activeSpeechField = field;
+                    lastSpeechInterim = "";
+                    field.focus();
+                    clearSpeechSuggestion(field);
+                    if (wrapper) {
+                        wrapper.classList.add("speech-active");
+                        activeSpeechWrapper = wrapper;
+                    }
+                });
+                recognition.addEventListener("result", event => {
+                    let interimText = "";
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const result = event.results[i];
+                        const transcript = (result[0]?.transcript || "").trim();
+                        if (!transcript) continue;
+                        if (result.isFinal) {
+                            appendSpeechText(field, transcript);
+                        } else {
+                            interimText += (interimText ? " " : "") + transcript;
+                        }
+                    }
+                    if (interimText) {
+                        updateSpeechSuggestion(field, interimText);
+                    } else {
+                        const lastResult = event.results[event.results.length - 1];
+                        if (lastResult && !lastResult.isFinal) {
+                            clearSpeechSuggestion(field);
+                        }
+                    }
+                });
+                recognition.addEventListener("error", () => {
+                    console.warn("Speech recognition error");
+                    setStatus("Reconnaissance vocale terminée");
+                    clearSpeechSuggestion(field);
+                });
+                recognition.addEventListener("end", () => {
+                    if (activeSpeechRecognition === recognition) {
+                        activeSpeechRecognition = null;
+                    }
+                });
+                try {
+                    recognition.start();
+                } catch (err) {
+                    console.error("Speech recognition start failed", err);
+                    alert("Impossible de démarrer la dictée vocale.");
+                }
+            }
+
+            document.addEventListener("click", event => {
+                const targetButton =
+                    event.target && typeof event.target.closest === "function" ? event.target.closest(".speech-button") : null;
+                if (!targetButton) return;
+                event.preventDefault();
+                const targetId = targetButton.getAttribute("data-speech-target");
+                const field = targetId ? document.getElementById(targetId) : null;
+                if (field) {
+                    startSpeechRecognition(field, targetButton);
+                }
+            });
+
+            function isSpeechTypingKey(event) {
+                if (!event?.key) return false;
+                if (event.metaKey || event.ctrlKey || event.altKey) return false;
+                const key = event.key;
+                if (key.length === 1) return true;
+                return key === "Backspace" || key === "Delete" || key === "Enter";
+            }
+
+            function handleSpeechKeydown(event) {
+                if (!activeSpeechRecognition || !activeSpeechField) return;
+                if (event.target !== activeSpeechField) {
+                    return;
+                }
+                if (!isSpeechTypingKey(event)) return;
+                stopActiveSpeechSession({ flushInterim: true });
+            }
+            document.addEventListener("keydown", handleSpeechKeydown, true);
             let currentPromptSuggestion = "";
             let currentPromptAiSuggestion = "";
             let promptSuggestDebounce = null;
@@ -2403,10 +2672,9 @@ classDiagram
                 schedulePromptAISuggestion();
             }
 
-            function updateMermaidPlaceholder(drawType) {
+            function updateMermaidPlaceholder() {
                 if (!mermaidOutput) return;
-                const normalized = DRAW_TYPES.some(option => option.id === drawType) ? drawType : DEFAULT_DRAW_TYPE;
-                mermaidOutput.placeholder = mermaidPlaceholders[normalized] || "Le code généré apparaitra ici";
+                mermaidOutput.placeholder = "";
             }
 
             function escapeHtml(str) {
@@ -4014,6 +4282,7 @@ classDiagram
                 generateBtn.addEventListener("click", handleGenerate);
                 promptInput.addEventListener("input", () => {
                     const page = getActivePage();
+                    clearSpeechSuggestion(promptInput);
                     if (page) {
                         page.input = promptInput.value;
                         saveState();
