@@ -731,16 +731,16 @@
         }
 
         .share-actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+            display: flex;
+            justify-content: flex-end;
             gap: 6px;
         }
 
-        .share-actions .menu-panel-btn {
-            width: 100%;
+        .share-actions .btn {
+            min-width: 120px;
         }
 
-        .share-actions .menu-panel-btn.primary {
+        .share-actions .btn.btn-primary {
             border: none;
             background: var(--primary);
             color: #fff;
@@ -1704,7 +1704,7 @@
                                 <div class="share-actions">
                                     <button id="shareUpdateBtn" type="button" class="btn">🔄️
                                         Actualiser</button>
-                                    <button id="shareCreateBtn" type="button" class="menu-panel-btn primary">☍
+                                    <button id="shareCreateBtn" type="button" class="btn">☍
                                         Créer</button>
                                 </div>
                                 <p class="share-menu-status" id="shareMenuStatus"></p>
@@ -4644,23 +4644,21 @@
             }
 
             function updateShareMenuUI() {
+                var hasToken = Boolean(currentShareToken);
                 if (shareLinkField) {
-                    var hasToken = Boolean(currentShareToken);
                     shareLinkField.value = hasToken ? buildShareUrl(currentShareToken) : "";
                     shareLinkField.placeholder = hasToken ? "" : "Appuie sur Créer pour générer un lien privé.";
                 }
                 if (shareUpdateBtn) {
-                    var hasToken = Boolean(currentShareToken);
                     shareUpdateBtn.hidden = !hasToken;
                     shareUpdateBtn.disabled = shareRequestInProgress || !hasToken || !shareWorkerAvailable;
+                    shareUpdateBtn.classList.toggle("btn-primary", hasToken);
+                    shareUpdateBtn.classList.toggle("primary", hasToken);
                 }
                 if (shareCreateBtn) {
                     shareCreateBtn.disabled = shareRequestInProgress || !shareWorkerAvailable;
-                    if (!currentShareToken) {
-                        shareCreateBtn.classList.add("primary");
-                    } else {
-                        shareCreateBtn.classList.remove("primary");
-                    }
+                    shareCreateBtn.classList.toggle("btn-primary", !hasToken);
+                    shareCreateBtn.classList.toggle("primary", !hasToken);
                 }
                 if (shareMenuStatus) {
                     var text = shareStatusMessage || getShareDefaultStatusText();
@@ -4669,13 +4667,6 @@
                         (shareStatusType === "error" && Boolean(text)) ||
                         (!shareWorkerAvailable && !shareStatusMessage);
                     shareMenuStatus.classList.toggle("error", isError);
-                }
-                if (shareUpdateBtn) {
-                    if (currentShareToken) {
-                        shareUpdateBtn.classList.add("primary");
-                    } else {
-                        shareUpdateBtn.classList.remove("primary");
-                    }
                 }
             }
 
