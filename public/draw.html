@@ -14,31 +14,28 @@
     <style>
         .template-tooltip {
             display: none;
-            position: absolute;
-            right: calc(100% + 8px);
-            top: 50%;
-            transform: translateY(-50%);
+            position: fixed;
+            top: 0;
+            left: 0;
             background: rgba(0, 0, 0, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.06);
             padding: 8px 10px;
             border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            z-index: 10;
-            max-width: 340px;
+            z-index: 2200;
+            max-width: 360px;
             font-size: 12px;
             color: #ffffff;
             line-height: 1.3;
             backdrop-filter: blur(2px);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
         }
 
-        .prompt-input-wrapper.is-focused .template-tooltip {
+        .template-tooltip[aria-hidden="false"]:not(:empty) {
             display: block;
-        }
-
-        /* Hide tooltip when it's empty or explicitly marked hidden */
-        .template-tooltip[aria-hidden="true"],
-        .template-tooltip:empty {
-            display: none !important;
+            opacity: 1;
         }
 
         :root {
@@ -1526,12 +1523,46 @@
                 return GoToolkitTemplateCriteria.getTemplateSummary(template);
             }
 
+            let drawTemplateTooltipRaf = null;
+
+            function positionDrawTemplateTooltip() {
+                const tooltip = document.getElementById("templateTooltip");
+                const promptInput = document.getElementById("promptInput");
+                if (!tooltip || !promptInput) return;
+                if (tooltip.getAttribute("aria-hidden") === "true") return;
+                const targetRect = promptInput.getBoundingClientRect();
+                const tooltipRect = tooltip.getBoundingClientRect();
+                if (!targetRect.width || !targetRect.height || !tooltipRect.width || !tooltipRect.height) {
+                    return;
+                }
+                const gap = 8;
+                const left = Math.max(gap, targetRect.left - tooltipRect.width - gap);
+                const maxTop = Math.max(gap, window.innerHeight - tooltipRect.height - gap);
+                const topCandidate = targetRect.top + (targetRect.height - tooltipRect.height) / 2;
+                const top = Math.min(maxTop, Math.max(gap, topCandidate));
+                tooltip.style.left = `${left}px`;
+                tooltip.style.top = `${top}px`;
+            }
+
+            function scheduleDrawTemplateTooltipPosition() {
+                const tooltip = document.getElementById("templateTooltip");
+                if (!tooltip || tooltip.getAttribute("aria-hidden") === "true") return;
+                if (drawTemplateTooltipRaf !== null) {
+                    cancelAnimationFrame(drawTemplateTooltipRaf);
+                }
+                drawTemplateTooltipRaf = requestAnimationFrame(() => {
+                    drawTemplateTooltipRaf = null;
+                    positionDrawTemplateTooltip();
+                });
+            }
+
             function renderTemplateTooltip(template, statusMap = null) {
                 const tooltip = document.getElementById("templateTooltip");
                 if (!tooltip) return;
                 const lines = GoToolkitTemplateCriteria.renderTooltipLines(template, statusMap);
                 tooltip.innerHTML = lines.join("<br>");
                 tooltip.setAttribute("aria-hidden", lines.length ? "false" : "true");
+                scheduleDrawTemplateTooltipPosition();
             }
 
             function updateSelectedTemplateLabelDisplay() {
@@ -1725,6 +1756,7 @@
                         tooltip.setAttribute('aria-hidden', tooltip.textContent ? 'false' : 'true');
                     } catch (e) { /* noop */ }
                     startInactivityTimer();
+                    scheduleDrawTemplateTooltipPosition();
                 }
 
                 promptEl.addEventListener('focus', function () {
@@ -1734,6 +1766,7 @@
                     renderTemplateTooltip(sel, status);
                     tooltip.setAttribute('aria-hidden', tooltip.textContent ? 'false' : 'true');
                     startInactivityTimer();
+                    scheduleDrawTemplateTooltipPosition();
                 });
 
                 promptEl.addEventListener('blur', function () {
@@ -1761,6 +1794,21 @@
                         } catch (e) { }
                     };
                 }
+
+                window.addEventListener('resize', function () {
+                    if (tooltip.getAttribute('aria-hidden') === 'false') {
+                        scheduleDrawTemplateTooltipPosition();
+                    }
+                });
+                window.addEventListener(
+                    'scroll',
+                    function () {
+                        if (tooltip.getAttribute('aria-hidden') === 'false') {
+                            scheduleDrawTemplateTooltipPosition();
+                        }
+                    },
+                    true
+                );
             })();
             const capsuleOpenBtn = document.getElementById("capsuleOpenBtn");
             const capsuleSaveBtn = document.getElementById("capsuleSaveBtn");
