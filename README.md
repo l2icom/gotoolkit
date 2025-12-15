@@ -45,7 +45,7 @@ Les trois pages fonctionnent en local via un simple serveur statique, conservent
 5. Activer le partage (optionnel) en déployant `workers/share-proxy` avec une clé de service Firebase, en définissant `GOOGLE_SERVICE_ACCOUNT_JSON` et `SHARE_ALLOWED_ORIGINS` (localhost autorisé par défaut).
 
 ## Notes techniques (IA & proxy)
-- Front : `public/js/openai-client.js` appelle l'API **Responses** (`/v1/responses`) en SSE, normalise `output_text`/`output` et gère `reasoning: { effort }`.
+- Front : `public/js/ia-client.js` appelle l'API **Responses** (`/v1/responses`) en SSE, normalise `output_text`/`output` et gère `reasoning: { effort }`.
 - Proxy IA : `workers/openai-proxy` (Cloudflare) relaie vers OpenAI avec quotas KV (10 req/min, 100/jour par client), limite payload (~10KB), accepte localhost, modèle par défaut `gpt-5-nano`.
 - Partage : `workers/share-proxy` expose `/v1/shares/{slides|timelines|diagrams}/{id}` vers Firestore (service account JWT). CORS basé sur `SHARE_ALLOWED_ORIGINS` + exception localhost/127.0.0.1.
 - Hébergement : le dossier `public/` est prêt pour Firebase Hosting (`firebase.json` fourni) mais reste agnostique à l'hébergement.

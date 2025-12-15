@@ -1496,7 +1496,8 @@
                 </div>
 
                 <div class="global-actions">
-                    <button class="btn" id="openPromptzillaBtn" aria-label="Ouvrir ⊞ Petit Robert">⊞ Petit Robert</button>
+                    <button class="btn" id="openPromptzillaBtn" aria-label="Ouvrir ⊞ Petit Robert">⊞ Petit
+                        Robert</button>
                     <button class="btn" id="openContextModal" aria-label="Ouvrir Gutenberg">⸙ Gutenberg</button>
                     <button class="btn" id="openIaModal" aria-label="Ouvrir Soulgorithm">⌘ Soulgorithm</button>
 
@@ -1810,7 +1811,7 @@
         <script src="js/share-worker-client.js"></script>
         <script src="js/share-history.js"></script>
         <script src="js/prompt.js"></script>
-        <script src="js/openai-client.js"></script>
+        <script src="js/ia-client.js"></script>
         <script src="js/ia-config.js"></script>
         <script src="js/template-criteria.js"></script>
         <script>
@@ -6698,7 +6699,6 @@
                     var aiResponse = await callOpenAI(messages);
                     if (!aiResponse) return;
                     var normalized = aiResponse.trim();
-                    console.log("OpenAI response body", normalized);
 
                     var planning = null;
                     // Try parse as JSON first
@@ -7053,9 +7053,6 @@
                         var value = reasoningEffortSelect ? reasoningEffortSelect.value : "low";
                         return REASONING_EFFORTS.indexOf(value) !== -1 ? value : "low";
                     })();
-                    console.log("OpenAI request content", messages.map(function (m) {
-                        return "[" + m.role + "] " + (m.content || "");
-                    }));
                     var payload = {
                         model:
                             window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getOpenAiModel === "function"
@@ -7071,11 +7068,14 @@
                     var messageText = await window.GoToolkitIA.chatCompletion({
                         payload: payload
                     });
-                    console.log("OpenAI received text", messageText);
                     return messageText;
                 } catch (err) {
                     console.error("Erreur OpenAI", err);
-                    alert("Impossible de contacter OpenAI. Vérifie que le proxy est accessible.");
+                    if (err && (err.message === "OllamaUnavailable" || (err.backendInfo && err.backendInfo.type === "ollama-unavailable"))) {
+                        try { showCopyToast("Ollama indisponible — vérifie l'URL ou la connexion."); } catch (e) { alert("Ollama indisponible — vérifie l'URL ou la connexion."); }
+                    } else {
+                        alert("Impossible de contacter OpenAI. Vérifie que le proxy est accessible.");
+                    }
                     return null;
                 }
             }

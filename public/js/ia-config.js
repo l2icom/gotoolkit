@@ -1,15 +1,18 @@
-;(function (global) {
+; (function (global) {
     var STORAGE_KEYS = {
         API_KEY: "go-toolkit-api-key",
         OPENAI_MODEL: "go-toolkit-openai-model",
         OLLAMA_MODEL: "go-toolkit-ollama-model",
-        OLLAMA_URL: "go-toolkit-ollama-url"
+        OLLAMA_URL: "go-toolkit-ollama-url",
+        OLLAMA_API_KEY: "go-toolkit-ollama-api-key"
     };
+    var STORAGE_KEYS_BACKEND = "go-toolkit-ai-backend";
 
     var DEFAULTS = {
         OPENAI_MODEL: "gpt-5-nano",
         OLLAMA_MODEL: "genma3",
-        OLLAMA_URL: "http://localhost:11434"
+        OLLAMA_URL: "http://localhost:11434",
+        OLLAMA_API_KEY: ""
     };
 
     var OPENAI_MODELS = ["gpt-5-nano", "gpt-5-mini"];
@@ -27,7 +30,7 @@
 
     var OLLAMA_GENERATE_PATH = "/api/generate";
     var OLLAMA_CHAT_PATH = "/api/chat";
-    var OLLAMA_PING_PATH = "/api/models";
+    var OLLAMA_PING_PATH = "/api/tags";
 
     function safeStorageRead(key) {
         if (!global || !global.localStorage) {
@@ -110,6 +113,20 @@
             }
             safeStorageWrite(STORAGE_KEYS.OLLAMA_URL, normalized);
         },
+        getOllamaApiKey: function () {
+            return (safeStorageRead(STORAGE_KEYS.OLLAMA_API_KEY) || "").trim();
+        },
+        setOllamaApiKey: function (value) {
+            safeStorageWrite(STORAGE_KEYS.OLLAMA_API_KEY, (value || "").trim());
+        },
+        getBackend: function () {
+            return safeStorageRead(STORAGE_KEYS_BACKEND) || "openai";
+        },
+        setBackend: function (value) {
+            var v = (value || "").trim().toLowerCase();
+            if (!v) v = "openai";
+            safeStorageWrite(STORAGE_KEYS_BACKEND, v);
+        },
         normalizeOllamaUrl: normalizeUrl,
         DEFAULTS: DEFAULTS,
         OPENAI_ENDPOINTS: OPENAI_ENDPOINTS,
@@ -120,6 +137,19 @@
         var ongoingProbe = null;
         var lastProbeUrl = "";
         var lastProbeResult = false;
+
+        function buildOllamaHeaders() {
+            var headers = {};
+            if (GoToolkitIAConfig && typeof GoToolkitIAConfig.getOllamaApiKey === "function") {
+                var key = GoToolkitIAConfig.getOllamaApiKey();
+                if (key) {
+                    headers.Authorization = "Bearer " + key;
+                    headers["Ollama-Api-Key"] = key;
+                    headers["X-Ollama-Api-Key"] = key;
+                }
+            }
+            return headers;
+        }
 
         function probeOllama(url) {
             if (!url) {
@@ -136,6 +166,7 @@
                 try {
                     var response = await fetch(url + OLLAMA_PING_PATH, {
                         method: "GET",
+                        headers: buildOllamaHeaders(),
                         signal: controller.signal,
                         cache: "no-cache"
                     });
@@ -164,6 +195,7 @@
         async function getBackend(endpointType, options) {
             var type = endpointType === "chat" ? "chat" : "responses";
             options = options || {};
+            // respect explicit force to use the public proxy
             if (options.forceProxy) {
                 return {
                     type: "proxy",
@@ -172,6 +204,49 @@
                     model: GoToolkitIAConfig.getOpenAiModel()
                 };
             }
+            // Check selected backend preference (global flag or storage)
+            var selected = (global.GoToolkitSelectedAIBackend && String(global.GoToolkitSelectedAIBackend)) || safeStorageRead(STORAGE_KEYS_BACKEND) || "openai";
+
+            if (selected === "openai") {
+                var apiKey = GoToolkitIAConfig.getApiKey();
+                if (apiKey) {
+                    return {
+                        type: "openai",
+                        endpoint: OPENAI_ENDPOINTS[type],
+                        apiKey: apiKey,
+                        model: GoToolkitIAConfig.getOpenAiModel()
+                    };
+                }
+                // no key -> fall back to proxy when OpenAI selected
+                return {
+                    type: "proxy",
+                    endpoint: PROXY_ENDPOINTS[type],
+                    apiKey: "",
+                    model: GoToolkitIAConfig.getOpenAiModel()
+                };
+            }
+
+            if (selected === "ollama") {
+                var ollamaUrl = GoToolkitIAConfig.getOllamaUrl();
+                var available = await probeOllama(ollamaUrl);
+                if (available) {
+                    return {
+                        type: "ollama",
+                        endpoint: ollamaUrl + resolveOllamaPath(type),
+                        apiKey: GoToolkitIAConfig.getOllamaApiKey(),
+                        model: GoToolkitIAConfig.getOllamaModel()
+                    };
+                }
+                // If user explicitly chose Ollama but it's not reachable, return a sentinel so callers can show an error
+                return {
+                    type: "ollama-unavailable",
+                    endpoint: ollamaUrl,
+                    apiKey: GoToolkitIAConfig.getOllamaApiKey(),
+                    model: GoToolkitIAConfig.getOllamaModel()
+                };
+            }
+
+            // default behavior (legacy): prefer API key, then Ollama probe, then proxy
             var apiKey = GoToolkitIAConfig.getApiKey();
             if (apiKey) {
                 return {
@@ -187,7 +262,7 @@
                 return {
                     type: "ollama",
                     endpoint: ollamaUrl + resolveOllamaPath(type),
-                    apiKey: "",
+                    apiKey: GoToolkitIAConfig.getOllamaApiKey(),
                     model: GoToolkitIAConfig.getOllamaModel()
                 };
             }

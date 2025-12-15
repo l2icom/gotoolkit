@@ -35,6 +35,12 @@
             display: block;
         }
 
+        /* Hide tooltip when it's empty or explicitly marked hidden */
+        .template-tooltip[aria-hidden="true"],
+        .template-tooltip:empty {
+            display: none !important;
+        }
+
         :root {
             font-size: 12px;
             --app-text: #101428;
@@ -1020,7 +1026,7 @@
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/prompt.js"></script>
-    <script src="js/openai-client.js"></script>
+    <script src="js/ia-client.js"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/template-criteria.js"></script>
     <script>
@@ -1222,6 +1228,10 @@ classDiagram
             let promptSuggestRequestId = 0;
             let inlineSuggestion = "";
             let promptAltSuggestions = [];
+            // When the user manually moves the caret, suppress following the textarea
+            // scroll/selection so the suggestion overlay doesn't jump under the cursor.
+            let suppressSuggestionFollow = false;
+            let suppressSuggestionTimer = null;
             let templateCriteriaStatus = {};
             let lastAnalyzedSentenceCount = 0;
             let lastAnalyzedTemplateId = null;
@@ -2524,9 +2534,18 @@ classDiagram
                 promptAltRow.innerHTML = "";
                 if (!items.length) {
                     promptAltRow.style.display = "none";
+                    try {
+                        const tooltip = document.getElementById("templateTooltip");
+                        if (tooltip) tooltip.setAttribute('aria-hidden', tooltip.textContent ? 'false' : 'true');
+                    } catch (e) { }
                     return;
                 }
+                // show alternatives and hide template tooltip while alternatives are visible
                 promptAltRow.style.display = "flex";
+                try {
+                    const tooltip = document.getElementById("templateTooltip");
+                    if (tooltip) tooltip.setAttribute('aria-hidden', 'true');
+                } catch (e) { }
                 items.forEach(alt => {
                     const displayLabel = alt.label || alt.text.split(" ")[0] || alt.text;
                     const badge = document.createElement("button");
@@ -2580,6 +2599,10 @@ classDiagram
                 var backend;
                 if (window.GoToolkitAIBackend && typeof window.GoToolkitAIBackend.getBackend === "function") {
                     backend = await GoToolkitAIBackend.getBackend("chat");
+                    if (backend && backend.type === "ollama-unavailable") {
+                        setStatus("Serveur Ollama indisponible — vérifie l'URL ou la connexion.");
+                        return null;
+                    }
                 }
                 var endpoint = backend?.endpoint || "https://openai.gotoolkit.workers.dev/v1/chat/completions";
                 var authorization = backend?.apiKey ? { Authorization: `Bearer ${backend.apiKey}` } : {};
@@ -2593,42 +2616,53 @@ classDiagram
                     signal.addEventListener("abort", () => controller.abort(), { once: true });
                 }
                 const timeout = setTimeout(() => controller.abort(), timeoutMs);
-                const res = await fetch(endpoint, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        ...authorization
-                    },
-                    body: JSON.stringify(body),
-                    signal: controller.signal
-                });
-                clearTimeout(timeout);
-                const rawText = await res.text();
-                if (!res.ok) {
-                    console.warn("[prompt-assist] API error", rawText);
-                    throw new Error(rawText || "OpenAI prompt assist failed");
-                }
-                let content = "";
                 try {
-                    const parsedOuter = JSON.parse(rawText);
-                    content = parsedOuter?.choices?.[0]?.message?.content || "";
+                    const res = await fetch(endpoint, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            ...authorization
+                        },
+                        body: JSON.stringify(body),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeout);
+                    const rawText = await res.text();
+                    if (!res.ok) {
+                        console.warn("[prompt-assist] API error", rawText);
+                        setStatus("Erreur IA: " + (rawText || res.status));
+                        return null;
+                    }
+                    let content = "";
+                    try {
+                        const parsedOuter = JSON.parse(rawText);
+                        content = parsedOuter?.choices?.[0]?.message?.content || "";
+                    } catch (err) {
+                        console.warn("[prompt-assist] cannot parse outer response", err);
+                        content = rawText;
+                    }
+                    let parsedJson = null;
+                    try {
+                        parsedJson = JSON.parse(content || rawText);
+                    } catch (err) {
+                        console.warn("[prompt-assist] cannot parse content as JSON", err, { content });
+                    }
+                    const main = typeof parsedJson?.main === "string" ? parsedJson.main.trim() : "";
+                    const alts = Array.isArray(parsedJson?.alts) ? parsedJson.alts : [];
+                    console.debug("[prompt-assist] parsed", {
+                        mainLength: (main || "").length,
+                        altCount: Array.isArray(alts) ? alts.length : 0
+                    });
+                    return { main, alts: Array.isArray(alts) ? alts : [] };
                 } catch (err) {
-                    console.warn("[prompt-assist] cannot parse outer response", err);
-                    content = rawText;
+                    if (err && err.name === 'AbortError') {
+                        throw err;
+                    }
+                    console.warn('[prompt-assist] request failed', err);
+                    setStatus('Erreur lors de la requête IA — vérifie le backend.');
+                    return null;
                 }
-                let parsedJson = null;
-                try {
-                    parsedJson = JSON.parse(content || rawText);
-                } catch (err) {
-                    console.warn("[prompt-assist] cannot parse content as JSON", err, { content });
-                }
-                const main = typeof parsedJson?.main === "string" ? parsedJson.main.trim() : "";
-                const alts = Array.isArray(parsedJson?.alts) ? parsedJson.alts : [];
-                console.debug("[prompt-assist] parsed", {
-                    mainLength: (main || "").length,
-                    altCount: Array.isArray(alts) ? alts.length : 0
-                });
-                return { main, alts: Array.isArray(alts) ? alts : [] };
+
             }
 
             function renderPromptSuggestion() {
@@ -2696,6 +2730,7 @@ classDiagram
 
             function syncPromptSuggestionScroll() {
                 if (!promptInput || !promptSuggestion) return;
+                if (suppressSuggestionFollow) return;
                 promptSuggestion.scrollTop = promptInput.scrollTop;
                 promptSuggestion.scrollLeft = promptInput.scrollLeft;
             }
@@ -2967,7 +3002,8 @@ classDiagram
                 try {
                     const aiText = await callOpenAI(messages);
                     if (!aiText) {
-                        throw new Error("Réponse vide");
+                        setStatus("Réponse vide de l'IA — réessaie ou vérifie le backend.");
+                        return;
                     }
                     const mermaidCode = extractMermaidCode(aiText);
                     const extractedTitle = extractDiagramTitle(mermaidCode || aiText);
@@ -3046,24 +3082,34 @@ classDiagram
             }
 
             async function callOpenAI(messages) {
-                if (!window.GoToolkitIA || typeof window.GoToolkitIA.chatCompletion !== "function") {
-                    throw new Error("Client IA indisponible");
+                try {
+                    if (!window.GoToolkitIA || typeof window.GoToolkitIA.chatCompletion !== "function") {
+                        throw new Error("Client IA indisponible");
+                    }
+                    var reasoningEffort = state.reasoningEffort || "low";
+                    var payload = {
+                        model:
+                            window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getOpenAiModel === "function"
+                                ? window.GoToolkitIAConfig.getOpenAiModel()
+                                : "gpt-5-nano",
+                        messages: messages,
+                        reasoning: { effort: reasoningEffort },
+                        temperature: 1,
+                        stream: true
+                    };
+                    return await window.GoToolkitIA.chatCompletion({
+                        payload: payload,
+                        stopCondition: hasCompleteMermaidBlock
+                    });
+                } catch (err) {
+                    console.error("Erreur OpenAI", err);
+                    if (err && (err.message === "OllamaUnavailable" || (err.backendInfo && err.backendInfo.type === "ollama-unavailable"))) {
+                        setStatus("Ollama indisponible — vérifie l'URL ou la connexion au serveur Ollama.");
+                    } else {
+                        setStatus("Impossible de contacter le service IA — vérifie tes réglages.");
+                    }
+                    return null;
                 }
-                var reasoningEffort = state.reasoningEffort || "low";
-                var payload = {
-                    model:
-                        window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getOpenAiModel === "function"
-                            ? window.GoToolkitIAConfig.getOpenAiModel()
-                            : "gpt-5-nano",
-                    messages: messages,
-                    reasoning: { effort: reasoningEffort },
-                    temperature: 1,
-                    stream: true
-                };
-                return window.GoToolkitIA.chatCompletion({
-                    payload: payload,
-                    stopCondition: hasCompleteMermaidBlock
-                });
             }
 
             function openModal() {
@@ -3968,6 +4014,17 @@ classDiagram
                     promptInputWrapper?.classList.remove("is-focused");
                     refreshPromptSuggestion();
                 });
+                // mark that the user moved the cursor (mouse or navigation keys)
+                function markUserMovedCursor() {
+                    try {
+                        suppressSuggestionFollow = true;
+                        if (suppressSuggestionTimer) clearTimeout(suppressSuggestionTimer);
+                        suppressSuggestionTimer = setTimeout(() => {
+                            suppressSuggestionFollow = false;
+                            suppressSuggestionTimer = null;
+                        }, 1000);
+                    } catch (e) { /* noop */ }
+                }
                 promptInput.addEventListener("keydown", event => {
                     if (!currentPromptSuggestion) return;
                     const collapsed =
@@ -3981,8 +4038,17 @@ classDiagram
                         acceptPromptSuggestion();
                     }
                 });
+                // detect user navigation keys to suppress suggestion-following
+                promptInput.addEventListener("keydown", (e) => {
+                    const navKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'];
+                    if (navKeys.includes(e.key)) markUserMovedCursor();
+                });
                 promptInput.addEventListener("keyup", refreshPromptSuggestion);
-                promptInput.addEventListener("mouseup", () => setTimeout(refreshPromptSuggestion, 0));
+                promptInput.addEventListener("mouseup", () => { markUserMovedCursor(); setTimeout(refreshPromptSuggestion, 0); });
+                // clear suppression when the user types (we should follow again)
+                promptInput.addEventListener("input", () => {
+                    try { if (suppressSuggestionTimer) { clearTimeout(suppressSuggestionTimer); suppressSuggestionTimer = null; } suppressSuggestionFollow = false; } catch (e) { }
+                }, { passive: true });
                 promptInput.addEventListener("scroll", syncPromptSuggestionScroll);
                 diagramTitleInput?.addEventListener("dblclick", () => {
                     diagramTitleInput.readOnly = false;

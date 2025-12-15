@@ -142,16 +142,19 @@
             border-bottom-color: var(--primary);
             outline: none;
         }
+
         .ia-status {
             margin-left: 6px;
-            font-size: 1rem;
-            color: #10b981;
-            font-weight: 600;
+            font-size: 15px;
+            color: var(--text);
             min-width: 1ch;
             display: inline-flex;
             justify-content: center;
             align-items: center;
+            transition: color 0.2s ease;
         }
+
+
 
         .ghost-button {
             border: 1px solid var(--border-strong);
@@ -730,7 +733,7 @@
 
             <div class="hero-meta">
                 <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Antenne</button>
-                <button id="openSettingsBtn" class="feedback-button" type="button">⌘ Réglages</button>
+                <button id="openSettingsBtn" class="feedback-button" type="button">⌘ IA</button>
             </div>
         </header>
 
@@ -975,60 +978,96 @@
                 </header>
                 <form class="feedback-form" onsubmit="return false;">
                     <div class="field-row">
-                        <label style="width:100%">
-                            <div>
-                                <a href="https://platform.openai.com/settings/organization/api-keys"
-                                    class="label-title dashed-link" target="_blank" rel="noopener noreferrer">Clé API
-                                    OpenAI</a>
-                                <span class="ia-status" id="openaiStatus" aria-hidden="true"></span>
-                            </div>
-                            <span class="label-subtitle">Réponse plus rapide avec votre clé</span>
-                            <input id="iaApiKeyInput" type="password" placeholder="sk-... (optionnel)" />
-                        </label>
-                    </div>
-                    <div class="field-row">
                         <label>
-                            <span class="label-title">Modèle OpenAI</span>
-                            <span class="label-subtitle">Choisis le moteur officiel qui répond à tes prompts</span>
-                            <select id="openaiModelSelect">
-                                <option value="gpt-5-nano">gpt-5-nano</option>
-                                <option value="gpt-5-mini">gpt-5-mini</option>
+                            <span class="label-title">Moteur IA</span>
+                            <select id="aiBackendSelect">
+                                <option value="openai">OpenAI Cloud</option>
+                                <option value="ollama">Ollama Local</option>
                             </select>
                         </label>
                     </div>
-                    <div class="field-row">
-                        <label style="width:100%">
-                            <div>
-                                <a href="https://docs.ollama.com/quickstart" class="label-title dashed-link" target="_blank"
-                                    rel="noopener noreferrer">Connexion Ollama</a>
-                                <span class="ia-status" id="ollamaStatus" aria-hidden="true"></span>
-                            </div>
-                            <span class="label-subtitle">Requêtes envoyées à un serveur local (par défaut
-                                http://localhost:11434)</span>
-                            <input id="ollamaUrlInput" type="text" placeholder="http://localhost:11434" />
-                        </label>
+
+                    <div id="openaiSettings">
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <div
+                                    style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+                                    <div>
+                                        <a href="https://platform.openai.com/settings/organization/api-keys"
+                                            class="label-title dashed-link" target="_blank"
+                                            rel="noopener noreferrer">Clé
+                                            API
+                                            OpenAI</a>
+                                        <span class="ia-status" id="openaiStatus" aria-hidden="true"></span>
+                                    </div>
+                                    <button id="openaiTestBtn" type="button" class="btn-secondary">Vérifier</button>
+                                </div>
+                                <span class="label-subtitle">Réponse plus rapide avec votre clé</span>
+                                <input id="iaApiKeyInput" type="password" placeholder="sk-... (optionnel)" />
+                            </label>
+                        </div>
+
+                        <div class="field-row">
+                            <label>
+                                <span class="label-title">Modèle OpenAI</span>
+                                <select id="openaiModelSelect">
+                                    <option value="gpt-5-nano">gpt-5-nano</option>
+                                    <option value="gpt-5-mini">gpt-5-mini</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="field-row">
+                            <label>
+                                <span class="label-title">Effort de raisonnement OpenAI</span>
+                                <select id="reasoningEffortSelect">
+                                    <option value="minimal">Minimal</option>
+                                    <option value="low">Faible</option>
+                                    <option value="medium">Moyen </option>
+                                    <option value="high">Élevé</option>
+                                </select>
+                            </label>
+                        </div>
                     </div>
-                    <div class="field-row">
-                        <label>
-                            <span class="label-title">Moteur Ollama</span>
-                            <span class="label-subtitle">Choisis le modèle disponible sur ton serveur</span>
-                            <select id="ollamaModelSelect">
-                                <option value="gpt-oss:latest">gpt-oss:latest</option>
-                                <option value="genma3">genma3</option>
-                                <option value="ministral-3:latest">ministral-3:latest</option>
-                                <option value="deepseek-r1">deepseek-r1</option>
-                            </select>
-                        </label>
+
+                    <div id="ollamaSettings" style="display:none;">
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <div
+                                    style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+                                    <div>
+                                        <a href="https://docs.ollama.com/quickstart" class="label-title dashed-link"
+                                            target="_blank" rel="noopener noreferrer">Connexion Ollama</a>
+                                        <span class="ia-status" id="ollamaStatus" aria-hidden="true"></span>
+                                    </div>
+                                    <button id="ollamaTestBtn" type="button" class="btn-secondary">Vérifier</button>
+                                </div>
+                                <span class="label-subtitle">Requêtes envoyées à un serveur local (par défaut
+                                    http://localhost:11434)</span>
+                                <input id="ollamaUrlInput" type="text" placeholder="http://localhost:11434" />
+                            </label>
+                        </div>
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <span class="label-title">Clé API Ollama</span>
+                                <span class="label-subtitle">Ajoute la clé si ton serveur local exige une
+                                    authentification.</span>
+                                <input id="ollamaApiKeyInput" type="password" placeholder="Clé secrète (optionnelle)" />
+                            </label>
+                        </div>
+                        <div class="field-row">
+                            <label>
+                                <span class="label-title">Moteur Ollama</span>
+                                <span class="label-subtitle">Choisis le modèle disponible sur ton serveur</span>
+                                <select id="ollamaModelSelect">
+                                    <option value="gpt-oss:latest">gpt-oss:latest</option>
+                                    <option value="genma3">genma3</option>
+                                    <option value="ministral-3:latest">ministral-3:latest</option>
+                                    <option value="deepseek-r1">deepseek-r1</option>
+                                </select>
+                            </label>
+                        </div>
                     </div>
-                    <label>
-                        <span class="label-title">Effort de raisonnement</span>
-                        <select id="reasoningEffortSelect">
-                            <option value="minimal">Minimal (rapide)</option>
-                            <option value="low">Faible</option>
-                            <option value="medium">Moyen</option>
-                            <option value="high">Élevé (lent)</option>
-                        </select>
-                    </label>
+
                     <div class="feedback-actions">
                         <button id="cancelSettingsBtn" type="button" class="btn-secondary">Annuler</button>
                         <button id="saveSettingsBtn" type="button" class="btn-primary">Sauvegarder</button>
@@ -1433,6 +1472,194 @@
                 emailRequiredMark.textContent = requireEmail ? "*" : "";
             }
         }
+        function updateStatusIcon(el, state) {
+            if (!el) {
+                return;
+            }
+            const icons = {
+                ready: "🗹",
+                verifying: "⌛",
+                error: "✕"
+            };
+            if (!state) {
+                el.textContent = "";
+                el.classList.remove("ia-status--error");
+                return;
+            }
+            el.textContent = icons[state] || "";
+            if (state === "error") {
+                el.classList.add("ia-status--error");
+            } else {
+                el.classList.remove("ia-status--error");
+            }
+        }
+        function extractOllamaModelNames(payload) {
+            if (!payload) {
+                return [];
+            }
+            const candidates = [];
+            const pushArray = value => {
+                if (Array.isArray(value)) {
+                    candidates.push(...value);
+                }
+            };
+            pushArray(payload.tags);
+            pushArray(payload.models);
+            pushArray(payload.items);
+            if (payload.data) {
+                pushArray(payload.data.tags);
+                pushArray(payload.data.models);
+                pushArray(payload.data.items);
+            }
+            if (Array.isArray(payload)) {
+                pushArray(payload);
+            }
+            const normalized = [];
+            const seen = new Set();
+            for (const item of candidates) {
+                if (!item) {
+                    continue;
+                }
+                let name = "";
+                if (typeof item === "string") {
+                    name = item;
+                } else if (typeof item.name === "string") {
+                    name = item.name;
+                } else if (typeof item.tag === "string") {
+                    name = item.tag;
+                } else if (typeof item.model === "string") {
+                    name = item.model;
+                } else if (typeof item.id === "string") {
+                    name = item.id;
+                }
+                name = name.trim();
+                if (name && !seen.has(name)) {
+                    seen.add(name);
+                    normalized.push(name);
+                }
+            }
+            return normalized;
+        }
+        function populateOllamaModelSelect(models, preferred) {
+            if (!settingsOllamaModelSelect || !Array.isArray(models) || !models.length) {
+                return;
+            }
+            const current = preferred || (window.GoToolkitIAConfig?.getOllamaModel?.() || settingsOllamaModelSelect.value || "");
+            settingsOllamaModelSelect.innerHTML = "";
+            let matched = false;
+            for (const model of models) {
+                const option = document.createElement("option");
+                option.value = model;
+                option.textContent = model;
+                settingsOllamaModelSelect.appendChild(option);
+                if (model === current) {
+                    matched = true;
+                }
+            }
+            if (matched) {
+                settingsOllamaModelSelect.value = current;
+            } else {
+                settingsOllamaModelSelect.value = models[0];
+            }
+        }
+        async function refreshOllamaModels({ showErrors = false } = {}) {
+            var config = window.GoToolkitIAConfig;
+            var url = config && typeof config.getOllamaUrl === "function" ? config.getOllamaUrl() : "";
+            if (!url) {
+                if (showErrors) {
+                    showToast("URL Ollama manquante pour récupérer les modèles.", true);
+                }
+                return [];
+            }
+            var normalizedUrl = url.replace(/\/+$/, "");
+            var apiKey = config && typeof config.getOllamaApiKey === "function" ? config.getOllamaApiKey() : "";
+            try {
+                var response = await fetch(normalizedUrl + "/api/tags", {
+                    method: "GET",
+                    headers: buildOllamaHeaders(apiKey),
+                    cache: "no-cache"
+                });
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
+                }
+                var payload = await response.json().catch(() => null);
+                var models = extractOllamaModelNames(payload);
+                if (models.length) {
+                    populateOllamaModelSelect(models);
+                } else if (showErrors) {
+                    showToast("Aucun modèle Ollama détecté dans /api/tags.", true);
+                }
+                return models;
+            } catch (err) {
+                console.warn("Ollama tags fetch failed", err);
+                if (showErrors) {
+                    var message = (err && err.message) || "erreur inconnue";
+                    showToast("Échec de la récupération des modèles Ollama (" + message + ")", true);
+                }
+                return [];
+            }
+        }
+        function buildOllamaHeaders(apiKey, options) {
+            var headers = {};
+            if (options?.json) {
+                headers["Content-Type"] = "application/json";
+            }
+            if (apiKey) {
+                headers.Authorization = "Bearer " + apiKey;
+                headers["Ollama-Api-Key"] = apiKey;
+                headers["X-Ollama-Api-Key"] = apiKey;
+            }
+            return headers;
+        }
+
+        async function testOpenAiConnection() {
+            var config = window.GoToolkitIAConfig;
+            var apiKey = config && typeof config.getApiKey === "function" ? config.getApiKey() : "";
+            if (!apiKey) {
+                updateStatusIcon(openaiStatusEl, "error");
+                showToast("Clé OpenAI requise pour tester la connexion.", true);
+                return;
+            }
+            updateStatusIcon(openaiStatusEl, "verifying");
+            try {
+                var response = await fetch("https://api.openai.com/v1/models", {
+                    method: "GET",
+                    headers: {
+                        Authorization: "Bearer " + apiKey
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
+                }
+                showToast("Connexion OpenAI prête");
+                updateStatusIcon(openaiStatusEl, "ready");
+            } catch (err) {
+                console.warn("OpenAI test failed", err);
+                var message = (err && err.message) || String(err) || "erreur inconnue";
+                showToast("Échec de la connexion OpenAI (" + message + ")", true);
+                updateStatusIcon(openaiStatusEl, "error");
+            }
+        }
+
+        async function testOllamaConnection() {
+            var config = window.GoToolkitIAConfig;
+            var url = config && typeof config.getOllamaUrl === "function" ? config.getOllamaUrl() : "";
+            if (!url) {
+                updateStatusIcon(ollamaStatusEl, "error");
+                showToast("URL Ollama manquante pour tester la connexion.", true);
+                return;
+            }
+            var normalizedUrl = url.replace(/\/+$/, "");
+            var apiKey = config && typeof config.getOllamaApiKey === "function" ? config.getOllamaApiKey() : "";
+            updateStatusIcon(ollamaStatusEl, "verifying");
+            const models = await refreshOllamaModels({ showErrors: true });
+            if (!models.length) {
+                updateStatusIcon(ollamaStatusEl, "error");
+                return;
+            }
+            showToast("Modèles Ollama détectés (" + normalizedUrl + ")");
+            updateStatusIcon(ollamaStatusEl, "ready");
+        }
         function openModal() {
             if (!feedbackModal) return;
             feedbackModal.classList.add("open");
@@ -1506,9 +1733,29 @@
         const settingsReasoningSelect = document.getElementById("reasoningEffortSelect");
         const settingsOpenAiModelSelect = document.getElementById("openaiModelSelect");
         const settingsOllamaUrlInput = document.getElementById("ollamaUrlInput");
+        const settingsOllamaApiKeyInput = document.getElementById("ollamaApiKeyInput");
         const settingsOllamaModelSelect = document.getElementById("ollamaModelSelect");
         const openaiStatusEl = document.getElementById("openaiStatus");
         const ollamaStatusEl = document.getElementById("ollamaStatus");
+        const openaiTestBtn = document.getElementById("openaiTestBtn");
+        const ollamaTestBtn = document.getElementById("ollamaTestBtn");
+        const aiBackendSelect = document.getElementById("aiBackendSelect");
+        const openaiSettingsEl = document.getElementById("openaiSettings");
+        const ollamaSettingsEl = document.getElementById("ollamaSettings");
+
+        function updateBackendVisibility() {
+            const val = (aiBackendSelect && aiBackendSelect.value) || "openai";
+            if (openaiSettingsEl) openaiSettingsEl.style.display = val === "openai" ? "" : "none";
+            if (ollamaSettingsEl) ollamaSettingsEl.style.display = val === "ollama" ? "" : "none";
+            window.GoToolkitSelectedAIBackend = val;
+        }
+
+        aiBackendSelect?.addEventListener("change", function () {
+            try {
+                localStorage.setItem("go-toolkit-ai-backend", aiBackendSelect.value);
+            } catch (e) { }
+            updateBackendVisibility();
+        });
 
         function openSettings() {
             if (!settingsModal) return;
@@ -1530,16 +1777,24 @@
                 if (settingsOllamaUrlInput) {
                     settingsOllamaUrlInput.value = storedOllamaUrl;
                 }
+                var storedOllamaApiKey = (config && typeof config.getOllamaApiKey === "function" ? config.getOllamaApiKey() : "") || "";
+                if (settingsOllamaApiKeyInput) {
+                    settingsOllamaApiKeyInput.value = storedOllamaApiKey;
+                }
                 var storedOllamaModel = (config && typeof config.getOllamaModel === "function" ? config.getOllamaModel() : "") || "genma3";
                 if (settingsOllamaModelSelect) {
                     settingsOllamaModelSelect.value = storedOllamaModel;
                 }
+                var storedBackend = (config && typeof config.getBackend === "function" ? config.getBackend() : null) || localStorage.getItem("go-toolkit-ai-backend") || "openai";
+                if (aiBackendSelect) aiBackendSelect.value = storedBackend;
+                updateBackendVisibility();
                 const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("nuances-reasoning-effort") || "low";
                 if (settingsReasoningSelect) settingsReasoningSelect.value = storedReasoning;
             } catch (e) { /* noop */ }
             settingsModal.classList.add("open");
             settingsModal.setAttribute("aria-hidden", "false");
             settingsReasoningSelect?.focus();
+            refreshOllamaModels().catch(() => { });
         }
 
         function closeSettings() {
@@ -1548,7 +1803,7 @@
             settingsModal.setAttribute("aria-hidden", "true");
         }
 
-        function saveSettings() {
+        async function saveSettings() {
             try {
                 const apiKey = (settingsApiKeyInput?.value || "").trim();
                 const reasoning = settingsReasoningSelect?.value || "low";
@@ -1566,9 +1821,21 @@
                 if (iaConfig && typeof iaConfig.setOpenAiModel === "function" && openaiModelValue) {
                     iaConfig.setOpenAiModel(openaiModelValue);
                 }
+                var selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openai";
+                if (iaConfig && typeof iaConfig.setBackend === "function") {
+                    iaConfig.setBackend(selectedBackend);
+                } else {
+                    try { localStorage.setItem("go-toolkit-ai-backend", selectedBackend); } catch (e) { }
+                }
+                // expose immediate selection to runtime
+                try { window.GoToolkitSelectedAIBackend = selectedBackend; } catch (e) { }
                 const ollamaUrlValue = (settingsOllamaUrlInput?.value || "").trim();
                 if (iaConfig && typeof iaConfig.setOllamaUrl === "function") {
                     iaConfig.setOllamaUrl(ollamaUrlValue);
+                }
+                const ollamaApiKeyValue = (settingsOllamaApiKeyInput?.value || "").trim();
+                if (iaConfig && typeof iaConfig.setOllamaApiKey === "function") {
+                    iaConfig.setOllamaApiKey(ollamaApiKeyValue);
                 }
                 const ollamaModelValue = (settingsOllamaModelSelect?.value || "").trim();
                 if (iaConfig && typeof iaConfig.setOllamaModel === "function" && ollamaModelValue) {
@@ -1576,6 +1843,39 @@
                 }
                 localStorage.setItem("plan-reasoning-effort", reasoning);
                 try { localStorage.setItem("nuances-reasoning-effort", reasoning); } catch (e) { }
+                // If user selected Ollama, validate Ollama is reachable before closing.
+                if (selectedBackend === "ollama") {
+                    // Prefer checking via GoToolkitAIBackend if available
+                    try {
+                        if (!window.GoToolkitAIBackend || typeof window.GoToolkitAIBackend.getBackend !== "function") {
+                            // fallback to refresh models which will show errors
+                            const models = await refreshOllamaModels({ showErrors: true });
+                            if (!models || !models.length) {
+                                showToast("Impossible de contacter Ollama — vérifie l'URL ou la connexion.", true);
+                                return;
+                            }
+                            showToast("Réglages sauvegardés");
+                            closeSettings();
+                            checkIaConnection();
+                            return;
+                        }
+                        const probe = await GoToolkitAIBackend.getBackend("responses");
+                        if (!probe || probe.type !== "ollama") {
+                            showToast("Impossible de contacter Ollama — vérifie l'URL ou la connexion.", true);
+                            return;
+                        }
+                        showToast("Réglages sauvegardés");
+                        closeSettings();
+                        checkIaConnection();
+                        return;
+                    } catch (err) {
+                        console.warn("Ollama check failed", err);
+                        showToast("Impossible de contacter Ollama — vérifie l'URL ou la connexion.", true);
+                        return;
+                    }
+                }
+
+                // For non-Ollama backends (OpenAI or default), optionally validate OpenAI key but do not block save.
                 if (apiKey) {
                     var openaiKeyPattern = /^sk-[A-Za-z0-9\-_]{20,}$/;
                     if (openaiKeyPattern.test(apiKey)) {
@@ -1589,6 +1889,7 @@
             } catch (e) {
                 showToast("Impossible de sauvegarder les réglages", true);
             }
+            // Close and re-check IA backend for non-Ollama cases
             closeSettings();
             checkIaConnection();
         }
@@ -1597,6 +1898,8 @@
         if (closeSettingsBtn) closeSettingsBtn.addEventListener("click", closeSettings);
         if (cancelSettingsBtn) cancelSettingsBtn.addEventListener("click", closeSettings);
         if (saveSettingsBtn) saveSettingsBtn.addEventListener("click", saveSettings);
+        if (openaiTestBtn) openaiTestBtn.addEventListener("click", testOpenAiConnection);
+        if (ollamaTestBtn) ollamaTestBtn.addEventListener("click", testOllamaConnection);
 
         openFeedbackBtn?.addEventListener("click", openModal);
         closeFeedbackBtn?.addEventListener("click", closeModal);
@@ -1624,12 +1927,12 @@
         function setIaStatus(backend) {
             if (openaiStatusEl) {
                 const ready = backend?.type === "openai";
-                openaiStatusEl.textContent = ready ? "🗹" : "";
+                updateStatusIcon(openaiStatusEl, ready ? "ready" : null);
                 openaiStatusEl.setAttribute("aria-hidden", ready ? "false" : "true");
             }
             if (ollamaStatusEl) {
                 const ready = backend?.type === "ollama";
-                ollamaStatusEl.textContent = ready ? "🗹" : "";
+                updateStatusIcon(ollamaStatusEl, ready ? "ready" : null);
                 ollamaStatusEl.setAttribute("aria-hidden", ready ? "false" : "true");
             }
         }
