@@ -10,7 +10,6 @@
             --app-bg: #f3f4f6;
             --app-border: #cdd4ed;
             --app-border-strong: #cdd4ed;
-            --app-primary-strong: #1f2a56;
             --app-text: #101428;
             --slide-bg: #ffffff;
         }
@@ -564,6 +563,12 @@
             min-height: 0;
         }
 
+        #globalContextField:focus,
+        #globalContextField:active,
+        #globalContextField:focus-visible {
+            border: 2px solid var(--muted);
+        }
+
         .gutenberg-card-body>label:last-child {
             display: flex;
             flex-direction: column;
@@ -607,6 +612,98 @@
 
         .gutenberg-card textarea:focus {
             scrollbar-width: thin;
+        }
+
+        .speech-field-wrapper {
+            position: relative;
+        }
+
+        .speech-field-wrapper textarea {
+            padding-right: 40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .speech-button {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.85);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            color: var(--muted);
+            border-radius: 999px;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .speech-button--active {
+            color: #B11226;
+            animation: speech-blink 2s infinite linear;
+        }
+
+        @keyframes speech-blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .speech-field-wrapper.speech-active textarea {
+            border: 2px solid #B11226;
+            animation: speech-border 1.4s infinite linear;
+        }
+
+        .speech-suggestion {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            pointer-events: none;
+            font: inherit;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+            z-index: 1;
+        }
+
+        .speech-suggestion span {
+            display: inline;
+        }
+
+        .speech-suggestion-current {
+            color: transparent;
+        }
+
+        .speech-suggestion-partial {
+            color: rgba(15, 23, 42, 0.45);
+        }
+
+        .speech-suggestion:not(.visible) {
+            visibility: hidden;
+        }
+
+        @keyframes speech-border {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(177, 18, 38, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 0 6px rgba(177, 18, 38, 0.12);
+            }
         }
 
         .prompt-input-wrapper {
@@ -1941,9 +2038,13 @@
                                 Suggérer</button>
                         </div>
                     </div>
-                    <label>
+                    <label class="speech-field-wrapper">
                         <textarea id="globalContextField" rows="10"
                             placeholder="Décris le domaine, les utilisateurs, la problématique et l'intention"></textarea>
+                        <div class="speech-suggestion" data-speech-suggestion="globalContextField" aria-hidden="true">
+                        </div>
+                        <button type="button" class="speech-button" data-speech-target="globalContextField"
+                            aria-label="Activer la dictée vocale">◉</button>
                     </label>
                     <div class="scenario-section">
                         <div class="scenario-header-row">
@@ -1953,9 +2054,13 @@
                         </div>
                         <label class="scenario-input-group">
                             <div id="canvasSelectedTemplateLabel" class="template-label"></div>
-                            <div class="prompt-input-wrapper">
+                            <div class="prompt-input-wrapper speech-field-wrapper">
                                 <textarea id="pageContextField" rows="10"
                                     placeholder="Décrire la situation de manière quantitative et qualitative"></textarea>
+                                <div class="speech-suggestion" data-speech-suggestion="pageContextField"
+                                    aria-hidden="true"></div>
+                                <button type="button" class="speech-button" data-speech-target="pageContextField"
+                                    aria-label="Activer la dictée vocale">◉</button>
                                 <div id="canvasTemplateTooltip" class="template-tooltip" aria-hidden="true"></div>
                             </div>
                         </label>
@@ -1981,7 +2086,7 @@
             <button id="tourSkipBtn" class="tour-skip" type="button">×</button>
         </div>
         <div id="copyToast" class="toast" aria-live="polite" aria-atomic="true"></div>
-        <div id="errorToast" class="error-toast" role="status" aria-live="polite" aria-atomic="true"></div>
+        <div id="errorToast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
     </div>
 
     <div class="modal-overlay" id="contextModal">
@@ -2358,6 +2463,157 @@
         const reasoningEffortSelect = document.getElementById("reasoningEffortSelect");
         const reasoningEffortKey = "nuances-reasoning-effort";
         const reasoningEfforts = ["minimal", "low", "medium", "high"];
+        const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let activeSpeechRecognition = null;
+        let activeSpeechButton = null;
+        let activeSpeechWrapper = null;
+
+        function appendSpeechText(field, transcript) {
+            if (!field || !transcript) {
+                return;
+            }
+            const normalized = transcript.trim();
+            if (!normalized) {
+                return;
+            }
+            const separator = field.value && !field.value.endsWith("\n") ? "\n" : "";
+            field.value = field.value + (field.value ? separator : "") + normalized;
+            field.dispatchEvent(new Event("input", { bubbles: true }));
+            clearSpeechSuggestion(field);
+        }
+
+        function escapeHtml(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function getSpeechSuggestionElement(field) {
+            if (!field) {
+                return null;
+            }
+            return document.querySelector(`[data-speech-suggestion="${field.id}"]`);
+        }
+
+        function updateSpeechSuggestion(field, partial) {
+            const suggestionEl = getSpeechSuggestionElement(field);
+            if (!suggestionEl) {
+                return;
+            }
+            if (!partial) {
+                suggestionEl.classList.remove("visible");
+                suggestionEl.innerHTML = "";
+                return;
+            }
+            const safeCurrent = escapeHtml(field.value);
+            const safePartial = escapeHtml(partial);
+            suggestionEl.innerHTML = `<span class="speech-suggestion-current">${safeCurrent}</span><span class="speech-suggestion-partial">${safePartial}</span>`;
+            suggestionEl.classList.add("visible");
+        }
+
+        function clearSpeechSuggestion(field) {
+            updateSpeechSuggestion(field, "");
+        }
+
+        function stopActiveSpeechSession() {
+            if (activeSpeechRecognition) {
+                activeSpeechRecognition.abort();
+                activeSpeechRecognition = null;
+            }
+            if (activeSpeechButton) {
+                activeSpeechButton.classList.remove("speech-button--active");
+                activeSpeechButton = null;
+            }
+            if (activeSpeechWrapper) {
+                activeSpeechWrapper.classList.remove("speech-active");
+                activeSpeechWrapper = null;
+            }
+            clearSpeechSuggestion(globalContextField);
+            clearSpeechSuggestion(pageContextField);
+        }
+
+        function startSpeechRecognition(field, button) {
+            if (!SpeechRecognitionCtor) {
+                showErrorToast("Reconnaissance vocale non disponible dans ce navigateur.");
+                return;
+            }
+            if (!field) {
+                return;
+            }
+            if (activeSpeechButton === button) {
+                stopActiveSpeechSession();
+                return;
+            }
+            stopActiveSpeechSession();
+            const recognition = new SpeechRecognitionCtor();
+            recognition.lang = "fr-FR";
+            recognition.interimResults = true;
+            recognition.maxAlternatives = 1;
+            recognition.continuous = true;
+            const wrapper = button?.closest(".speech-field-wrapper");
+            recognition.addEventListener("start", () => {
+                button?.classList.add("speech-button--active");
+                activeSpeechRecognition = recognition;
+                activeSpeechButton = button;
+                field.focus();
+                clearSpeechSuggestion(field);
+                if (wrapper) {
+                    wrapper.classList.add("speech-active");
+                    activeSpeechWrapper = wrapper;
+                }
+            });
+            recognition.addEventListener("result", event => {
+                let interimText = "";
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const result = event.results[i];
+                    const transcript = (result[0]?.transcript || "").trim();
+                    if (!transcript) continue;
+                    if (result.isFinal) {
+                        appendSpeechText(field, transcript);
+                    } else {
+                        interimText += (interimText ? " " : "") + transcript;
+                    }
+                }
+                if (interimText) {
+                    updateSpeechSuggestion(field, interimText);
+                } else {
+                    const lastResult = event.results[event.results.length - 1];
+                    if (lastResult && !lastResult.isFinal) {
+                        clearSpeechSuggestion(field);
+                    }
+                }
+            });
+            recognition.addEventListener("error", event => {
+                console.warn("Speech recognition error", event);
+                showErrorToast("Reconnaissance vocale terminée");
+                clearSpeechSuggestion(field);
+            });
+            recognition.addEventListener("end", () => {
+                if (activeSpeechRecognition === recognition) {
+                    activeSpeechRecognition = null;
+                }
+            });
+            try {
+                recognition.start();
+            } catch (err) {
+                console.error("Speech recognition start failed", err);
+                showErrorToast("Impossible de démarrer la dictée vocale.");
+            }
+        }
+        const speechButtons = document.querySelectorAll(".speech-button");
+        speechButtons.forEach(button => {
+            button.addEventListener("click", event => {
+                const targetId = button.getAttribute("data-speech-target");
+                if (!targetId) {
+                    return;
+                }
+                const field = document.getElementById(targetId);
+                startSpeechRecognition(field, button);
+            });
+        });
         const fontSelect = document.getElementById("fontSelect");
         const fontSizeInput = document.getElementById("fontSizeInput");
         const ratioGrid = document.getElementById("ratioGrid");
@@ -3139,6 +3395,7 @@
             clearScenarioTooltipTimer();
         });
         pageContextField?.addEventListener("input", () => {
+            clearSpeechSuggestion(pageContextField);
             setActivePageContext(pageContextField.value);
             schedulePersist();
             triggerCriteriaAnalysis();
@@ -3151,6 +3408,7 @@
             // no-op: suggestion generation removed
         });
         globalContextField?.addEventListener("input", () => {
+            clearSpeechSuggestion(globalContextField);
             setSlideHistory(getActiveSlideElement(), globalContextField.value);
             schedulePersist();
         });
