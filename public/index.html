@@ -744,8 +744,8 @@
             <span class="hero-version">v2025.12.16</span>
 
             <div class="hero-meta">
-                <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Antenne</button>
-                <button id="openSettingsBtn" class="feedback-button" type="button">⌘ IA</button>
+                <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Feedback</button>
+                <button id="openSettingsBtn" class="feedback-button" type="button">⌘ Paramètres</button>
             </div>
         </header>
 
@@ -1162,6 +1162,7 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
+    <script src="js/idb-doc-store.js"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
@@ -1371,11 +1372,11 @@
                 return { tabName: "Sans titre", lines: [], templateLabel: "" };
             }
 
-            function getStoredRecords() {
+            async function getStoredRecords() {
                 if (!shareHistory) {
                     return [];
                 }
-                const records = shareHistory.getRecords() || {};
+                const records = await shareHistory.getRecords() || {};
                 return Object.entries(records)
                     .filter(([app, record]) => APP_DEFINITIONS[app] && record?.token)
                     .map(([app, record]) => ({ app, record }));
@@ -1400,7 +1401,7 @@
                     return null;
                 }
                 if (!result || !result.payload) {
-                    shareHistory?.removeRecord?.(app);
+                    await shareHistory?.removeRecord?.(app);
                     return null;
                 }
                 const preview = extractPreview(app, result.payload);
@@ -1425,12 +1426,12 @@
                 const isPinned = Boolean(record.pinned);
                 pinBtn.title = isPinned ? "Retirer des favoris" : "Ajouter aux favoris";
                 pinBtn.textContent = isPinned ? "⚲" : "⚲";
-                pinBtn.addEventListener("click", event => {
+                pinBtn.addEventListener("click", async event => {
                     event.preventDefault();
                     event.stopPropagation();
                     const nextPinned = !isPinned;
-                    shareHistory?.upsertRecord?.(app, { ...record, pinned: nextPinned });
-                    refreshGallery();
+                    await shareHistory?.upsertRecord?.(app, { ...record, pinned: nextPinned });
+                    refreshGallery().catch(() => { /* noop */ });
                 });
                 const deleteBtn = document.createElement("button");
                 deleteBtn.type = "button";
@@ -1448,8 +1449,8 @@
                         alert("Suppression distante impossible : " + (err?.message || err));
                         return;
                     }
-                    shareHistory?.removeRecord?.(app);
-                    refreshGallery();
+                    await shareHistory?.removeRecord?.(app);
+                    refreshGallery().catch(() => { /* noop */ });
                 });
                 card.appendChild(pinBtn);
                 card.appendChild(deleteBtn);
@@ -1487,32 +1488,32 @@
                 const isPinned = Boolean(record.pinned);
                 pinBtn.title = isPinned ? "Retirer des favoris" : "Ajouter aux favoris";
                 pinBtn.textContent = "⚲";
-                pinBtn.addEventListener("click", event => {
+                pinBtn.addEventListener("click", async event => {
                     event.preventDefault();
                     event.stopPropagation();
                     const nextPinned = !isPinned;
-                    capsuleDrafts.setPinned?.(record.id, nextPinned);
-                    refreshSavedGallery();
+                    await capsuleDrafts.setPinned?.(record.id, nextPinned);
+                    refreshSavedGallery().catch(() => { /* noop */ });
                 });
                 const deleteBtn = document.createElement("button");
                 deleteBtn.type = "button";
                 deleteBtn.className = "share-card-action share-card-delete";
                 deleteBtn.title = "Supprimer cette capsule";
                 deleteBtn.textContent = "×";
-                deleteBtn.addEventListener("click", event => {
+                deleteBtn.addEventListener("click", async event => {
                     event.preventDefault();
                     event.stopPropagation();
                     const confirmed = window.confirm("Supprimer cette capsule ?");
                     if (!confirmed) return;
-                    capsuleDrafts.removeRecord?.(record.id);
-                    refreshSavedGallery();
+                    await capsuleDrafts.removeRecord?.(record.id);
+                    refreshSavedGallery().catch(() => { /* noop */ });
                 });
                 card.appendChild(pinBtn);
                 card.appendChild(deleteBtn);
                 return { card, isPinned, updatedAt: record.updatedAt, preview };
             }
 
-            function refreshSavedGallery() {
+            async function refreshSavedGallery() {
                 if (!savedGallery) {
                     return;
                 }
@@ -1521,7 +1522,8 @@
                     if (savedEmpty) savedEmpty.hidden = false;
                     return;
                 }
-                const entries = capsuleDrafts.getAllRecords().filter(record => APP_DEFINITIONS[record.app]);
+                const records = await capsuleDrafts.getAllRecords();
+                const entries = records.filter(record => APP_DEFINITIONS[record.app]);
                 const staleIds = [];
                 const filtered = entries.filter(record => {
                     const hasPayload = record && record.payload && typeof record.payload === "object";
@@ -1531,7 +1533,7 @@
                     return hasPayload;
                 });
                 if (staleIds.length) {
-                    staleIds.forEach(id => capsuleDrafts.removeRecord?.(id));
+                    await Promise.all(staleIds.map(id => capsuleDrafts.removeRecord?.(id)));
                 }
                 if (!filtered.length) {
                     if (savedEmpty) savedEmpty.hidden = false;
@@ -1569,7 +1571,7 @@
                 setState({ loading: true, hasData: false, error: "", hasPinned: false, hasRegular: false });
                 gallery.innerHTML = "";
                 if (pinnedGallery) pinnedGallery.innerHTML = "";
-                const entries = getStoredRecords();
+                const entries = await getStoredRecords();
                 if (!entries.length) {
                     setState({ loading: false, hasData: false, error: "", hasPinned: false, hasRegular: false });
                     return;
@@ -1602,17 +1604,17 @@
             }
 
             refreshBtn?.addEventListener("click", () => {
-                refreshGallery();
-                refreshSavedGallery();
+                refreshGallery().catch(() => { /* noop */ });
+                refreshSavedGallery().catch(() => { /* noop */ });
             });
 
-            refreshGallery();
-            refreshSavedGallery();
+            refreshGallery().catch(() => { /* noop */ });
+            refreshSavedGallery().catch(() => { /* noop */ });
             window.addEventListener("pageshow", () => {
-                refreshGallery();
-                refreshSavedGallery();
+                refreshGallery().catch(() => { /* noop */ });
+                refreshSavedGallery().catch(() => { /* noop */ });
             });
-            window.addEventListener("storage", refreshSavedGallery);
+            window.addEventListener("storage", () => refreshSavedGallery().catch(() => { /* noop */ }));
         })();
     </script>
     <script type="module">

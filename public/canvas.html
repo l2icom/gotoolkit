@@ -1935,11 +1935,15 @@
 
 
                 <div class="menu-trigger" id="settingsMenuTrigger">
-                    <button id="templateBtn" class="btn" type="button" aria-label="Choisir un modèle" title="⊞ Petit Robert Downey Jr">⊞ Modèle</button>
-                    <button id="contextEditorBtn" class="btn" type="button" aria-label="Ouvrir Contexte" title="⸙ Gutenberg">⸙ Contexte</button>
-                    <button id="contextBtn" class="btn" type="button" aria-label="Prompt" title="⌘ Promptzilla">⌘ Prompt</button>
+                    <button id="templateBtn" class="btn" type="button" aria-label="Choisir un modèle"
+                        title="⊞ Petit Robert Downey Jr">⊞ Modèle</button>
+                    <button id="contextEditorBtn" class="btn" type="button" aria-label="Ouvrir Contexte"
+                        title="⸙ Gutenberg">⸙ Contexte</button>
+                    <button id="contextBtn" class="btn" type="button" aria-label="Prompt" title="⌘ Promptzilla">⌘
+                        Prompt</button>
 
-                    <button id="textStyleBtn" class="btn" type="button" aria-label="Affichage" title="Affichage">◯ Affichage</button>
+                    <button id="textStyleBtn" class="btn" type="button" aria-label="Affichage" title="Affichage">◯
+                        Affichage</button>
                     <div class="context-menu" id="settingsMenu">
                         <div class="menu-panel">
                             <label>
@@ -1975,11 +1979,11 @@
                 </div>
                 <div class="menu-trigger" id="fileMenuTrigger">
                     <button id="fileMenuBtn" class="btn" type="button" aria-label="Capsule">⬠ Capsule</button>
-                <div class="context-menu" id="fileMenu">
-                    <div class="menu-panel">
-                        <button id="newDocumentBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
-                        <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
-                        <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
+                    <div class="context-menu" id="fileMenu">
+                        <div class="menu-panel">
+                            <button id="newDocumentBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
+                            <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
+                            <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
                             <button id="exportJsonBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
                             <button id="exportPptxBtn" type="button" class="menu-panel-btn">▭ Powerpoint</button>
                             <button id="exportTextBtn" type="button" class="menu-panel-btn">¶ Texte</button>
@@ -2217,6 +2221,7 @@
             }
         })();
     </script>
+    <script src="js/idb-doc-store.js"></script>
     <script src="js/prompt.js"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
@@ -2965,10 +2970,10 @@
             }
         }
 
-        function loadSavedState() {
+        async function loadSavedState() {
             const editId = capsuleDrafts ? getEditIdFromUrl() : null;
             if (editId && capsuleDrafts) {
-                const savedRecord = capsuleDrafts.getRecord(editId);
+                const savedRecord = await capsuleDrafts.getRecord(editId);
                 if (savedRecord && savedRecord.payload) {
                     initializeTemplateSlides(
                         Array.isArray(savedRecord.payload.slides) ? savedRecord.payload.slides : []
@@ -3128,7 +3133,7 @@
                     id = createShareToken();
                 }
                 const now = new Date().toISOString();
-                const record = capsuleDrafts.upsertRecord({
+                const record = await capsuleDrafts.upsertRecord({
                     id,
                     app: "nuances",
                     payload,
@@ -3294,7 +3299,7 @@
             shareLoadedFromRemote = true;
             shareLastUpdatedAt = chosenUpdatedAt || new Date().toISOString();
             setShareStatus(formatRelativeTime(shareLastUpdatedAt));
-            persistShareHistoryRecord(token, shareLastUpdatedAt);
+            await persistShareHistoryRecord(token, shareLastUpdatedAt);
             writeShareDraft(token, chosenPayload, shareLastUpdatedAt);
             return true;
         }
@@ -6587,7 +6592,7 @@
             const sharedLoaded = await tryLoadSharedStateFromUrl();
             let hasLocalSlides = false;
             if (!sharedLoaded) {
-                hasLocalSlides = loadSavedState();
+                hasLocalSlides = await loadSavedState();
             }
             // Load shared Settings (global Réglages) if present so this page
             // respects the central API key and reasoning effort selection.
@@ -6671,13 +6676,13 @@
             };
         }
 
-        function persistShareHistoryRecord(token, updatedAt) {
+        async function persistShareHistoryRecord(token, updatedAt) {
             if (!shareHistory || !token) {
                 return;
             }
             try {
                 const preview = getNuancesSharePreview();
-                shareHistory.upsertRecord("nuances", {
+                await shareHistory.upsertRecord("nuances", {
                     token,
                     updatedAt: updatedAt || new Date().toISOString(),
                     title: preview.title,
@@ -6774,7 +6779,7 @@
                 setShareStatus(formatRelativeTime(updatedAt));
                 updateShareMenuUI();
                 const payload = buildStatePayload();
-                persistShareHistoryRecord(token, updatedAt);
+                await persistShareHistoryRecord(token, updatedAt);
                 writeShareDraft(token, payload, updatedAt);
                 await copyCurrentShareLinkToClipboard();
             } catch (err) {
@@ -6807,7 +6812,7 @@
                 shareLastUpdatedAt = updatedAt;
                 setShareStatus(formatRelativeTime(updatedAt));
                 updateShareMenuUI();
-                persistShareHistoryRecord(currentShareToken, updatedAt);
+                await persistShareHistoryRecord(currentShareToken, updatedAt);
                 writeShareDraft(currentShareToken, payload, updatedAt);
                 await copyCurrentShareLinkToClipboard();
             } catch (err) {

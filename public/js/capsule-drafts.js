@@ -1,30 +1,25 @@
 (() => {
     const STORAGE_KEY = "go-toolkit-capsule-drafts";
+    const STORE = window.goToolkitDocStore?.createStore("capsule-drafts");
+    const MEMORY_STORE = {};
+    let cachedRecords = null;
+    let loadPromise = null;
 
-    function readRecords() {
-        if (typeof window === "undefined" || !window.localStorage) {
-            return {};
-        }
+    async function migrateFromLocalStorage() {
+        if (!STORE || typeof localStorage === "undefined") return null;
         try {
             const raw = localStorage.getItem(STORAGE_KEY);
-            if (!raw) return {};
+            if (!raw) return null;
             const parsed = JSON.parse(raw);
-            return parsed && typeof parsed === "object" ? parsed : {};
+            if (parsed && typeof parsed === "object") {
+                await STORE.set("records", parsed);
+                localStorage.removeItem(STORAGE_KEY);
+                return parsed;
+            }
         } catch (err) {
-            console.warn("Impossible de lire les capsules locales", err);
-            return {};
+            console.warn("Migration des capsules locales échouée", err);
         }
-    }
-
-    function writeRecords(records) {
-        if (typeof window === "undefined" || !window.localStorage) {
-            return;
-        }
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(records || {}));
-        } catch (err) {
-            console.warn("Impossible de sauvegarder les capsules locales", err);
-        }
+        return null;
     }
 
     function normalizeRecord(value) {
@@ -50,27 +45,63 @@
         };
     }
 
-    function getAllRecords() {
-        const records = readRecords();
+    async function readRecords() {
+        if (cachedRecords) return cachedRecords;
+        if (loadPromise) return loadPromise;
+        loadPromise = (async () => {
+            try {
+                if (STORE) {
+                    const migrated = await migrateFromLocalStorage();
+                    const stored = migrated || await STORE.get("records");
+                    if (stored && typeof stored === "object") {
+                        cachedRecords = stored;
+                        return stored;
+                    }
+                }
+                const raw = MEMORY_STORE.records;
+                cachedRecords = raw && typeof raw === "object" ? raw : {};
+                return cachedRecords;
+            } catch (err) {
+                console.warn("Impossible de lire les capsules locales", err);
+                cachedRecords = {};
+                return cachedRecords;
+            }
+        })().finally(() => { loadPromise = null; });
+        return loadPromise;
+    }
+
+    async function writeRecords(records) {
+        cachedRecords = records || {};
+        MEMORY_STORE.records = cachedRecords;
+        if (!STORE) return;
+        try {
+            await STORE.set("records", cachedRecords);
+        } catch (err) {
+            console.warn("Impossible de sauvegarder les capsules locales", err);
+        }
+    }
+
+    async function getAllRecords() {
+        const records = await readRecords();
         return Object.values(records)
             .map(normalizeRecord)
             .filter(Boolean);
     }
 
-    function getRecord(id) {
+    async function getRecord(id) {
         if (!id) {
             return null;
         }
-        const records = readRecords();
+        const records = await readRecords();
         return normalizeRecord(records[id]);
     }
 
-    function upsertRecord(record) {
+    async function upsertRecord(record) {
         const normalized = normalizeRecord(record);
         if (!normalized) {
             return null;
         }
-        const stored = readRecords();
+        const stored = await readRecords();
         const existing = normalizeRecord(stored[normalized.id]);
         const next = {
             id: normalized.id,
@@ -85,25 +116,25 @@
                     : (existing && existing.pinned) || false
         };
         stored[next.id] = next;
-        writeRecords(stored);
+        await writeRecords(stored);
         return next;
     }
 
-    function removeRecord(id) {
+    async function removeRecord(id) {
         if (!id) {
             return false;
         }
-        const records = readRecords();
+        const records = await readRecords();
         if (!Object.prototype.hasOwnProperty.call(records, id)) {
             return false;
         }
         delete records[id];
-        writeRecords(records);
+        await writeRecords(records);
         return true;
     }
 
-    function setPinned(id, pinned) {
-        const record = getRecord(id);
+    async function setPinned(id, pinned) {
+        const record = await getRecord(id);
         if (!record) {
             return null;
         }

@@ -1632,12 +1632,16 @@
                 </div>
 
                 <div class="global-actions">
-                    <button class="btn" id="openPromptzillaBtn" aria-label="Ouvrir ⊞ Modèle" title="⊞ Petit Robert Downey Jr">⊞ Modèle</button>
-                    <button class="btn" id="openContextModal" aria-label="Ouvrir Contexte" title="⸙ Gutenberg">⸙ Contexte</button>
-                    <button class="btn" id="openIaModal" aria-label="Ouvrir Prompt" title="⌘ Promptzilla">⌘ Prompt</button>
+                    <button class="btn" id="openPromptzillaBtn" aria-label="Ouvrir ⊞ Modèle"
+                        title="⊞ Petit Robert Downey Jr">⊞ Modèle</button>
+                    <button class="btn" id="openContextModal" aria-label="Ouvrir Contexte" title="⸙ Gutenberg">⸙
+                        Contexte</button>
+                    <button class="btn" id="openIaModal" aria-label="Ouvrir Prompt" title="⌘ Promptzilla">⌘
+                        Prompt</button>
 
                     <div class="menu-trigger">
-                        <button class="btn" id="optionsBtn" aria-label="Affichage" title="Affichage">◯ Affichage</button>
+                        <button class="btn" id="optionsBtn" aria-label="Affichage" title="Affichage">◯
+                            Affichage</button>
                         <div class="context-menu" id="optionsMenu">
                             <div class="menu-panel">
                                 <label>
@@ -1710,7 +1714,8 @@
                         <div class="context-menu file-menu" id="fileMenu">
                             <div class="menu-panel">
                                 <button id="newDocumentBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
-                                <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
+                                <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫
+                                    Enregistrer</button>
                                 <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
                                 <button id="exportJsonBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
                                 <button id="exportTextBtn" type="button" class="menu-panel-btn">¶ Texte</button>
@@ -1952,6 +1957,7 @@
             window.GO_TOOLKIT_SHARE_API_URL =
                 window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
         </script>
+        <script src="js/idb-doc-store.js"></script>
         <script src="js/share-worker-client.js"></script>
         <script src="js/share-history.js"></script>
         <script src="js/capsule-drafts.js"></script>
@@ -1960,6 +1966,7 @@
         <script src="js/ia-config.js"></script>
         <script src="js/template-criteria.js"></script>
         <script>
+        (async function () {
             // ============================================================
             // 1. Schema JSON · planning-v1 (doc développeur)
             // ============================================================
@@ -2657,7 +2664,11 @@
             var savedDraftRecord = null;
             var editDraftId = getEditIdFromUrl();
             if (editDraftId && capsuleDrafts) {
-                savedDraftRecord = capsuleDrafts.getRecord(editDraftId);
+                try {
+                    savedDraftRecord = await capsuleDrafts.getRecord(editDraftId);
+                } catch (err) {
+                    console.warn("Impossible de charger la capsule locale", err);
+                }
             }
             var persistedState = savedDraftRecord ? savedDraftRecord.payload : loadPersistedTimelineState();
             shouldOpenContextOnFirstLoad = !persistedState;
@@ -3513,7 +3524,7 @@
                         id = createShareToken();
                     }
                     var now = new Date().toISOString();
-                    var record = capsuleDrafts.upsertRecord({
+                    var record = await capsuleDrafts.upsertRecord({
                         id: id,
                         app: "plan",
                         payload: payload,
@@ -3630,13 +3641,13 @@
                 };
             }
 
-            function persistRoadmapShareRecord(token, updatedAt) {
+            async function persistRoadmapShareRecord(token, updatedAt) {
                 if (!shareHistory || !token) {
                     return;
                 }
                 try {
                     var preview = getRoadmapSharePreview();
-                    shareHistory.upsertRecord("roadmap", {
+                    await shareHistory.upsertRecord("roadmap", {
                         token: token,
                         updatedAt: updatedAt || new Date().toISOString(),
                         title: preview.title,
@@ -4830,7 +4841,7 @@
                 shareLoadedFromRemote = true;
                 shareLastUpdatedAt = chosenUpdatedAt || new Date().toISOString();
                 setShareStatus(formatRelativeTime(shareLastUpdatedAt));
-                persistRoadmapShareRecord(token, shareLastUpdatedAt);
+                await persistRoadmapShareRecord(token, shareLastUpdatedAt);
                 writeShareDraft(token, chosenPayload, shareLastUpdatedAt);
                 updateShareMenuUI();
                 return true;
@@ -4921,7 +4932,7 @@
                     updateUrlWithShareToken(token);
                     setShareStatus(formatRelativeTime(updatedAt));
                     updateShareMenuUI();
-                    persistRoadmapShareRecord(token, updatedAt);
+                    await persistRoadmapShareRecord(token, updatedAt);
                     writeShareDraft(token, payload, updatedAt);
                     await copyCurrentShareLinkToClipboard();
                 } catch (err) {
@@ -4956,7 +4967,7 @@
                     shareLastUpdatedAt = updatedAt;
                     setShareStatus(formatRelativeTime(updatedAt));
                     updateShareMenuUI();
-                    persistRoadmapShareRecord(currentShareToken, updatedAt);
+                    await persistRoadmapShareRecord(currentShareToken, updatedAt);
                     writeShareDraft(currentShareToken, payload, updatedAt);
                     await copyCurrentShareLinkToClipboard();
                 } catch (err) {
@@ -7880,7 +7891,7 @@
                 txtPromptCreate.focus();
             }
 
-
+        })();
         </script>
 </body>
 

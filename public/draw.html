@@ -966,8 +966,8 @@
             <!-- Promptzilla modal: 9 diagram choices -->
             <div class="modal-overlay" id="promptzillaModal" aria-hidden="true">
                 <div class="modal promptzilla-modal">
-                        <header class="modal-header">
-                            <h3 title="⊞ Petit Robert Downey Jr">⊞ Modèle</h3>
+                    <header class="modal-header">
+                        <h3 title="⊞ Petit Robert Downey Jr">⊞ Modèle</h3>
                         <button id="closePromptzillaModal" class="btn-secondary" type="button">✕</button>
                     </header>
                     <div class="blueprint-grid" id="promptzillaList" role="listbox"
@@ -985,17 +985,20 @@
                 <button id="deletePageBtn" class="tab-action" title="Supprimer la page">×</button>
             </div>
             <div class="global-actions">
-                <button id="promptzillaBtn" class="btn drawer-toggle-btn" type="button" title="⊞ Petit Robert Downey Jr">⊞ Modèle</button>
-                <button id="toggleDrawerBtn" class="btn drawer-toggle-btn" type="button" title="⸙ Gutenberg">⸙ Contexte</button>
+                <button id="promptzillaBtn" class="btn drawer-toggle-btn" type="button"
+                    title="⊞ Petit Robert Downey Jr">⊞ Modèle</button>
+                <button id="toggleDrawerBtn" class="btn drawer-toggle-btn" type="button" title="⸙ Gutenberg">⸙
+                    Contexte</button>
                 <button id="aiSettingsBtn" class="btn ai-button" type="button" title="⌘ Promptzilla">⌘ Prompt</button>
                 <div class="menu-trigger" id="capsuleMenuTrigger">
                     <button id="capsuleMenuBtn" class="btn" type="button" title="Capsule">⬠ Capsule</button>
-                <div class="context-menu" id="capsuleMenu">
-                    <div class="menu-panel">
-                        <button id="capsuleNewDocBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
-                        <button id="capsuleDraftSaveBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
-                        <button id="capsuleOpenBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
-                        <button id="capsuleSaveBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
+                    <div class="context-menu" id="capsuleMenu">
+                        <div class="menu-panel">
+                            <button id="capsuleNewDocBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
+                            <button id="capsuleDraftSaveBtn" type="button" class="menu-panel-btn">🖫
+                                Enregistrer</button>
+                            <button id="capsuleOpenBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
+                            <button id="capsuleSaveBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
                             <button id="infoButton" type="button" class="menu-panel-btn">⎉ Vaisseau</button>
                         </div>
                     </div>
@@ -1137,6 +1140,7 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
+    <script src="js/idb-doc-store.js"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
@@ -1279,13 +1283,13 @@
                 return { title, description: desc || "Complète le contexte pour l'afficher ici." };
             }
 
-            function persistDrawShareRecord(token, updatedAt) {
+            async function persistDrawShareRecord(token, updatedAt) {
                 if (!shareHistory || !token) {
                     return;
                 }
                 try {
                     const preview = getDrawSharePreview();
-                    shareHistory.upsertRecord("draw", {
+                    await shareHistory.upsertRecord("draw", {
                         token,
                         updatedAt: updatedAt || new Date().toISOString(),
                         title: preview.title,
@@ -2220,11 +2224,11 @@
                 return true;
             }
 
-            function tryLoadLocalDraftFromUrl() {
+            async function tryLoadLocalDraftFromUrl() {
                 if (!capsuleDrafts) return false;
                 const editId = getEditIdFromUrl();
                 if (!editId) return false;
-                const record = capsuleDrafts.getRecord(editId);
+                const record = await capsuleDrafts.getRecord(editId);
                 if (!record || !record.payload) return false;
                 applyImportedCapsule(record.payload);
                 currentDraftId = record.id;
@@ -2289,59 +2293,59 @@
                 return url.toString();
             }
 
-        function updateUrlWithShareToken(token) {
-            const url = new URL(window.location.href);
-            if (token) {
-                url.searchParams.set(SHARE_QUERY_PARAM, token);
-            } else {
-                url.searchParams.delete(SHARE_QUERY_PARAM);
+            function updateUrlWithShareToken(token) {
+                const url = new URL(window.location.href);
+                if (token) {
+                    url.searchParams.set(SHARE_QUERY_PARAM, token);
+                } else {
+                    url.searchParams.delete(SHARE_QUERY_PARAM);
+                }
+                history.replaceState(null, "", url.toString());
             }
-            history.replaceState(null, "", url.toString());
-        }
 
-        function createShareToken() {
-            if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-                return crypto.randomUUID();
+            function createShareToken() {
+                if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+                    return crypto.randomUUID();
+                }
+                const bytes = new Uint8Array(16);
+                if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+                    crypto.getRandomValues(bytes);
+                } else {
+                    for (let i = 0; i < bytes.length; i++) {
+                        bytes[i] = Math.floor(Math.random() * 256);
+                    }
+                }
+                return Array.from(bytes)
+                    .map(byte => byte.toString(16).padStart(2, "0"))
+                    .join("");
             }
-            const bytes = new Uint8Array(16);
-            if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
-                crypto.getRandomValues(bytes);
-            } else {
-                for (let i = 0; i < bytes.length; i++) {
-                    bytes[i] = Math.floor(Math.random() * 256);
+
+            function getEditIdFromUrl() {
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    const value = params.get(EDIT_QUERY_PARAM);
+                    return value ? value.trim() : null;
+                } catch (err) {
+                    return null;
                 }
             }
-            return Array.from(bytes)
-                .map(byte => byte.toString(16).padStart(2, "0"))
-                .join("");
-        }
 
-        function getEditIdFromUrl() {
-            try {
-                const params = new URLSearchParams(window.location.search);
-                const value = params.get(EDIT_QUERY_PARAM);
-                return value ? value.trim() : null;
-            } catch (err) {
-                return null;
+            function updateUrlWithEditId(id) {
+                const url = new URL(window.location.href);
+                if (id) {
+                    url.searchParams.set(EDIT_QUERY_PARAM, id);
+                } else {
+                    url.searchParams.delete(EDIT_QUERY_PARAM);
+                }
+                history.replaceState(null, "", url.toString());
             }
-        }
 
-        function updateUrlWithEditId(id) {
-            const url = new URL(window.location.href);
-            if (id) {
-                url.searchParams.set(EDIT_QUERY_PARAM, id);
-            } else {
-                url.searchParams.delete(EDIT_QUERY_PARAM);
+            function createDraftId() {
+                if (capsuleDrafts && typeof capsuleDrafts.generateId === "function") {
+                    return capsuleDrafts.generateId();
+                }
+                return createShareToken();
             }
-            history.replaceState(null, "", url.toString());
-        }
-
-        function createDraftId() {
-            if (capsuleDrafts && typeof capsuleDrafts.generateId === "function") {
-                return capsuleDrafts.generateId();
-            }
-            return createShareToken();
-        }
 
             async function saveCapsuleDraft(options = {}) {
                 if (!capsuleDrafts || isDraftSaving) {
@@ -2349,95 +2353,95 @@
                 }
                 isDraftSaving = true;
                 try {
-                saveState();
-                const payload = await buildCapsulePayload();
-                const preview = getDrawSharePreview();
-                let id = currentDraftId || createDraftId();
+                    saveState();
+                    const payload = await buildCapsulePayload();
+                    const preview = getDrawSharePreview();
+                    let id = currentDraftId || createDraftId();
                 if (!id) {
                     id = createShareToken();
                 }
                 const now = new Date().toISOString();
-                const record = capsuleDrafts.upsertRecord({
+                const record = await capsuleDrafts.upsertRecord({
                     id,
                     app: "draw",
                     payload,
                     title: preview.title,
                     description: preview.description,
-                    updatedAt: now
-                });
-                if (record) {
-                    currentDraftId = record.id;
-                    if (options.updateUrl !== false) {
-                        updateUrlWithEditId(record.id);
+                        updatedAt: now
+                    });
+                    if (record) {
+                        currentDraftId = record.id;
+                        if (options.updateUrl !== false) {
+                            updateUrlWithEditId(record.id);
+                        }
+                        if (options.showToast) {
+                            setStatus("Capsule enregistrée");
+                        }
                     }
-                    if (options.showToast) {
-                        setStatus("Capsule enregistrée");
-                    }
+                    return record;
+                } catch (err) {
+                    console.error("Impossible de sauvegarder la capsule locale", err);
+                    return null;
+                } finally {
+                    isDraftSaving = false;
                 }
-                return record;
-            } catch (err) {
-                console.error("Impossible de sauvegarder la capsule locale", err);
-                return null;
-            } finally {
-                isDraftSaving = false;
             }
-        }
 
-        async function handleSaveDocumentClick() {
-            closeCapsuleMenu();
-            if (!capsuleDrafts) {
-                alert("Impossible de sauvegarder localement.");
-                return null;
-            }
-            if (capsuleDraftSaveBtn) {
-                capsuleDraftSaveBtn.disabled = true;
-            }
-            cancelScheduledDraftSave();
-            try {
-                return await saveCapsuleDraft({ showToast: true });
-            } catch (err) {
-                console.error("Erreur lors de l'enregistrement local", err);
-                return null;
-            } finally {
+            async function handleSaveDocumentClick() {
+                closeCapsuleMenu();
+                if (!capsuleDrafts) {
+                    alert("Impossible de sauvegarder localement.");
+                    return null;
+                }
                 if (capsuleDraftSaveBtn) {
-                    capsuleDraftSaveBtn.disabled = false;
+                    capsuleDraftSaveBtn.disabled = true;
+                }
+                cancelScheduledDraftSave();
+                try {
+                    return await saveCapsuleDraft({ showToast: true });
+                } catch (err) {
+                    console.error("Erreur lors de l'enregistrement local", err);
+                    return null;
+                } finally {
+                    if (capsuleDraftSaveBtn) {
+                        capsuleDraftSaveBtn.disabled = false;
+                    }
                 }
             }
-        }
 
-        async function handleNewDocumentClick() {
-            closeCapsuleMenu();
-            const hasPages = state.pages.length > 0 || Boolean(currentDraftId);
-            if (hasPages) {
-                const confirmSave = window.confirm(
-                    "Sauvegarder la capsule actuelle avant d'ouvrir un nouveau document ?"
-                );
-                if (confirmSave) {
-                    await handleSaveDocumentClick();
+            async function handleNewDocumentClick() {
+                closeCapsuleMenu();
+                const hasPages = state.pages.length > 0 || Boolean(currentDraftId);
+                if (hasPages) {
+                    const confirmSave = window.confirm(
+                        "Sauvegarder la capsule actuelle avant d'ouvrir un nouveau document ?"
+                    );
+                    if (confirmSave) {
+                        await handleSaveDocumentClick();
+                    }
                 }
+                openNewDrawDocument();
             }
-            openNewDrawDocument();
-        }
 
-        function openNewDrawDocument() {
-            try {
-                if (window.localStorage) {
-                    localStorage.removeItem(STORAGE_KEY);
+            function openNewDrawDocument() {
+                try {
+                    if (window.localStorage) {
+                        localStorage.removeItem(STORAGE_KEY);
+                    }
+                } catch (err) {
+                    console.warn("Impossible de réinitialiser l'état local", err);
                 }
-            } catch (err) {
-                console.warn("Impossible de réinitialiser l'état local", err);
+                if (currentShareToken) {
+                    updateUrlWithShareToken(null);
+                    currentShareToken = null;
+                }
+                updateUrlWithEditId(null);
+                const url = new URL(window.location.href);
+                url.searchParams.delete(SHARE_QUERY_PARAM);
+                url.searchParams.delete(EDIT_QUERY_PARAM);
+                url.hash = "";
+                window.location.href = url.toString();
             }
-            if (currentShareToken) {
-                updateUrlWithShareToken(null);
-                currentShareToken = null;
-            }
-            updateUrlWithEditId(null);
-            const url = new URL(window.location.href);
-            url.searchParams.delete(SHARE_QUERY_PARAM);
-            url.searchParams.delete(EDIT_QUERY_PARAM);
-            url.hash = "";
-            window.location.href = url.toString();
-        }
 
             async function fetchSharePayload(token) {
                 if (!shareWorkerAvailable || !shareWorkerService) {
@@ -2518,7 +2522,7 @@
                 shareLoadedFromRemote = true;
                 shareLastUpdatedAt = chosenUpdatedAt || new Date().toISOString();
                 setShareStatus(formatRelativeTime(shareLastUpdatedAt));
-                persistDrawShareRecord(token, shareLastUpdatedAt);
+                await persistDrawShareRecord(token, shareLastUpdatedAt);
                 writeShareDraft(token, chosenPayload, shareLastUpdatedAt);
                 await applySharedSceneIfPresent();
                 return true;
@@ -2715,7 +2719,7 @@
                     updateUrlWithShareToken(token);
                     setShareStatus(formatRelativeTime(updatedAt));
                     updateShareMenuUI();
-                    persistDrawShareRecord(token, updatedAt);
+                    await persistDrawShareRecord(token, updatedAt);
                     writeShareDraft(token, payload, updatedAt);
                     await copyCurrentShareLinkToClipboard();
                 } catch (err) {
@@ -2748,7 +2752,7 @@
                     shareLastUpdatedAt = updatedAt;
                     setShareStatus(formatRelativeTime(updatedAt));
                     updateShareMenuUI();
-                    persistDrawShareRecord(currentShareToken, updatedAt);
+                    await persistDrawShareRecord(currentShareToken, updatedAt);
                     writeShareDraft(currentShareToken, payload, updatedAt);
                     await copyCurrentShareLinkToClipboard();
                 } catch (err) {
@@ -4906,7 +4910,7 @@
             async function initializeAppState() {
                 initShareWorkerService();
                 const sharedLoaded = await tryLoadSharedStateFromUrl();
-                const localLoaded = !sharedLoaded && tryLoadLocalDraftFromUrl();
+                const localLoaded = !sharedLoaded && await tryLoadLocalDraftFromUrl();
                 if (!sharedLoaded && !localLoaded) {
                     loadState();
                 }
