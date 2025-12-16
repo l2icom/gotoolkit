@@ -58,6 +58,12 @@
         }
     }
 
+    async function refreshFromStore() {
+        cachedRecords = null;
+        loadPromise = null;
+        return readRecords();
+    }
+
     async function getRecords() {
         const records = await readRecords();
         return records;
@@ -97,6 +103,7 @@
         getRecords,
         upsertRecord,
         removeRecord,
+        refreshFromStore,
         STORAGE_KEY
     };
 })();

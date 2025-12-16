@@ -138,11 +138,16 @@
         var lastProbeUrl = "";
         var lastProbeResult = false;
 
-        function buildOllamaHeaders() {
+        function isLocalOllama(url) {
+            if (!url || typeof url !== "string") return false;
+            return /^https?:\/\/(localhost|127(?:\.\d+){3})(:\d+)?/i.test(url.trim());
+        }
+
+        function buildOllamaHeaders(url) {
             var headers = {};
             if (GoToolkitIAConfig && typeof GoToolkitIAConfig.getOllamaApiKey === "function") {
                 var key = GoToolkitIAConfig.getOllamaApiKey();
-                if (key) {
+                if (key && !isLocalOllama(url)) {
                     headers.Authorization = "Bearer " + key;
                     headers["Ollama-Api-Key"] = key;
                     headers["X-Ollama-Api-Key"] = key;
@@ -166,7 +171,7 @@
                 try {
                     var response = await fetch(url + OLLAMA_PING_PATH, {
                         method: "GET",
-                        headers: buildOllamaHeaders(),
+                        headers: buildOllamaHeaders(url),
                         signal: controller.signal,
                         cache: "no-cache"
                     });

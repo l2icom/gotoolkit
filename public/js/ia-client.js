@@ -399,11 +399,16 @@
         return next;
     }
 
-    function buildOllamaHeaders(apiKey) {
+    function isLocalOllama(url) {
+        if (!url || typeof url !== "string") return false;
+        return /^https?:\/\/(localhost|127(?:\.\d+){3})(:\d+)?/i.test(url.trim());
+    }
+
+    function buildOllamaHeaders(apiKey, endpoint) {
         const headers = {
             "Content-Type": "application/json"
         };
-        if (apiKey) {
+        if (apiKey && !isLocalOllama(endpoint)) {
             headers.Authorization = `Bearer ${apiKey}`;
             headers["Ollama-Api-Key"] = apiKey;
             headers["X-Ollama-Api-Key"] = apiKey;
@@ -524,7 +529,7 @@
         try {
             const response = await fetch(backend.endpoint, {
                 method: "POST",
-                headers: buildOllamaHeaders(backend.apiKey),
+                headers: buildOllamaHeaders(backend.apiKey, backend.endpoint),
                 body: JSON.stringify(requestBody),
                 signal
             });

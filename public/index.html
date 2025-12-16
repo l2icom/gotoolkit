@@ -1463,8 +1463,7 @@
                     try {
                         await shareService?.deleteSharePayload?.(definition.collection, record.token);
                     } catch (err) {
-                        alert("Suppression distante impossible : " + (err?.message || err));
-                        return;
+                        console.warn("Suppression distante impossible", err);
                     }
                     await shareHistory?.removeRecord?.(app);
                     refreshGallery().catch(() => { /* noop */ });
@@ -1621,12 +1620,26 @@
             }
 
             refreshBtn?.addEventListener("click", () => {
-                refreshGallery().catch(() => { /* noop */ });
-                refreshSavedGallery().catch(() => { /* noop */ });
+                (async () => {
+                    try {
+                        await shareHistory?.refreshFromStore?.();
+                    } catch (err) {
+                        console.warn("Impossible de rafraîchir les capsules partagées", err);
+                    }
+                    refreshGallery().catch(() => { /* noop */ });
+                    refreshSavedGallery().catch(() => { /* noop */ });
+                })();
             });
 
-            refreshGallery().catch(() => { /* noop */ });
-            refreshSavedGallery().catch(() => { /* noop */ });
+            (async () => {
+                try {
+                    await shareHistory?.refreshFromStore?.();
+                } catch (err) {
+                    console.warn("Impossible de rafraîchir les capsules partagées", err);
+                }
+                refreshGallery().catch(() => { /* noop */ });
+                refreshSavedGallery().catch(() => { /* noop */ });
+            })();
             window.addEventListener("pageshow", () => {
                 refreshGallery().catch(() => { /* noop */ });
                 refreshSavedGallery().catch(() => { /* noop */ });
@@ -2085,7 +2098,8 @@
             settingsModal.setAttribute("aria-hidden", "true");
         }
 
-        async function saveSettings() {
+        async function persistSettings({ skipClose = false, showSavedToast = true } = {}) {
+            let selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openai";
             try {
                 const apiKey = (settingsApiKeyInput?.value || "").trim();
                 const reasoning = settingsReasoningSelect?.value || "low";
@@ -2103,7 +2117,7 @@
                 if (iaConfig && typeof iaConfig.setOpenAiModel === "function" && openaiModelValue) {
                     iaConfig.setOpenAiModel(openaiModelValue);
                 }
-                var selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openai";
+                selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openai";
                 if (iaConfig && typeof iaConfig.setBackend === "function") {
                     iaConfig.setBackend(selectedBackend);
                 } else {
@@ -2125,63 +2139,76 @@
                 }
                 localStorage.setItem("plan-reasoning-effort", reasoning);
                 try { localStorage.setItem("nuances-reasoning-effort", reasoning); } catch (e) { }
-                // If user selected Ollama, validate Ollama is reachable before closing.
+                // If user selected Ollama, validate Ollama is reachable
                 if (selectedBackend === "ollama") {
-                    // Prefer checking via GoToolkitAIBackend if available
                     try {
                         if (!window.GoToolkitAIBackend || typeof window.GoToolkitAIBackend.getBackend !== "function") {
-                            // fallback to refresh models which will show errors
                             const models = await refreshOllamaModels({ showErrors: true });
                             if (!models || !models.length) {
                                 showToast("Impossible de contacter Ollama — vérifie l'URL ou la connexion.", true);
-                                return;
+                                return { success: false, selectedBackend };
                             }
-                            showToast("Réglages sauvegardés");
-                            closeSettings();
+                            if (showSavedToast) showToast("Réglages sauvegardés");
+                            if (!skipClose) closeSettings();
                             checkIaConnection();
-                            return;
+                            return { success: true, selectedBackend };
                         }
                         const probe = await GoToolkitAIBackend.getBackend("responses");
                         if (!probe || probe.type !== "ollama") {
                             showToast("Impossible de contacter Ollama — vérifie l'URL ou la connexion.", true);
-                            return;
+                            return { success: false, selectedBackend };
                         }
-                        showToast("Réglages sauvegardés");
-                        closeSettings();
+                        if (showSavedToast) showToast("Réglages sauvegardés");
+                        if (!skipClose) closeSettings();
                         checkIaConnection();
-                        return;
+                        return { success: true, selectedBackend };
                     } catch (err) {
                         console.warn("Ollama check failed", err);
                         showToast("Impossible de contacter Ollama — vérifie l'URL ou la connexion.", true);
-                        return;
+                        return { success: false, selectedBackend };
                     }
                 }
 
                 // For non-Ollama backends (OpenAI or default), optionally validate OpenAI key but do not block save.
-                if (apiKey) {
+                if (apiKey && showSavedToast) {
                     var openaiKeyPattern = /^sk-[A-Za-z0-9\-_]{20,}$/;
                     if (openaiKeyPattern.test(apiKey)) {
                         showToast("Clé OpenAI valide — réglages sauvegardés");
                     } else {
                         showToast("Clé OpenAI invalide — vérifie la clé", true);
                     }
-                } else {
+                } else if (selectedBackend !== "ollama" && showSavedToast) {
                     showToast("Réglages sauvegardés");
                 }
+                if (!skipClose) closeSettings();
+                checkIaConnection();
+                return { success: true, selectedBackend };
             } catch (e) {
                 showToast("Impossible de sauvegarder les réglages", true);
+                return { success: false, selectedBackend };
             }
-            // Close and re-check IA backend for non-Ollama cases
-            closeSettings();
-            checkIaConnection();
+        }
+
+        async function saveSettings() {
+            await persistSettings({ skipClose: false, showSavedToast: true });
         }
 
         if (openSettingsBtn) openSettingsBtn.addEventListener("click", openSettings);
         if (closeSettingsBtn) closeSettingsBtn.addEventListener("click", closeSettings);
         if (cancelSettingsBtn) cancelSettingsBtn.addEventListener("click", closeSettings);
         if (saveSettingsBtn) saveSettingsBtn.addEventListener("click", saveSettings);
-        if (openaiVerifyBtn) openaiVerifyBtn.addEventListener("click", () => testOpenAiConnection({ showToasts: false }));
-        if (ollamaVerifyBtn) ollamaVerifyBtn.addEventListener("click", () => testOllamaConnection({ showToasts: false }));
+        if (openaiVerifyBtn) openaiVerifyBtn.addEventListener("click", async () => {
+            const result = await persistSettings({ skipClose: true, showSavedToast: true });
+            if (result?.success) {
+                testOpenAiConnection({ showToasts: true }).catch(() => { /* noop */ });
+            }
+        });
+        if (ollamaVerifyBtn) ollamaVerifyBtn.addEventListener("click", async () => {
+            const result = await persistSettings({ skipClose: true, showSavedToast: true });
+            if (result?.success) {
+                testOllamaConnection({ showToasts: true }).catch(() => { /* noop */ });
+            }
+        });
 
         openFeedbackBtn?.addEventListener("click", openModal);
         closeFeedbackBtn?.addEventListener("click", closeModal);
