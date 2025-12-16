@@ -1710,6 +1710,8 @@
                         <button class="btn" id="fileMenuBtn" aria-label="Capsule">⬠ Capsule</button>
                         <div class="context-menu file-menu" id="fileMenu">
                             <div class="menu-panel">
+                                <button id="newDocumentBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
+                                <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
                                 <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
                                 <button id="exportJsonBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
                                 <button id="exportTextBtn" type="button" class="menu-panel-btn">¶ Texte</button>
@@ -1953,6 +1955,7 @@
         </script>
         <script src="js/share-worker-client.js"></script>
         <script src="js/share-history.js"></script>
+        <script src="js/capsule-drafts.js"></script>
         <script src="js/prompt.js"></script>
         <script src="js/ia-client.js"></script>
         <script src="js/ia-config.js"></script>
@@ -2540,6 +2543,7 @@
                 } catch (err) {
                     console.warn("Impossible de sauvegarder le planning", err);
                 }
+                scheduleDraftSave();
             }
 
             function loadPersistedTimelineState() {
@@ -2645,8 +2649,17 @@
                     }
                 ];
             }
-            var persistedState = loadPersistedTimelineState();
+            var savedDraftRecord = null;
+            var editDraftId = getEditIdFromUrl();
+            if (editDraftId && capsuleDrafts) {
+                savedDraftRecord = capsuleDrafts.getRecord(editDraftId);
+            }
+            var persistedState = savedDraftRecord ? savedDraftRecord.payload : loadPersistedTimelineState();
             shouldOpenContextOnFirstLoad = !persistedState;
+            if (savedDraftRecord && persistedState) {
+                currentDraftId = savedDraftRecord.id;
+                updateUrlWithEditId(savedDraftRecord.id);
+            }
             if (persistedState) {
                 if (Array.isArray(persistedState.views) && persistedState.views.length) {
                     views = persistedState.views.map(function (view, index) {
@@ -3384,6 +3397,8 @@
             var exportImageBtn = document.getElementById("exportImageBtn");
             var exportExcelBtn = document.getElementById("exportExcelBtn");
             var aboutTimelineBtn = document.getElementById("aboutTimelineBtn");
+            var newDocumentBtn = document.getElementById("newDocumentBtn");
+            var saveDocumentBtn = document.getElementById("saveDocumentBtn");
             var importJsonInput = document.getElementById("importJsonInput");
             var headerTitleElement = document.querySelector(".header-text h1");
             var infoPopup = document.getElementById("timelineInfoPopup");
@@ -3399,8 +3414,10 @@
             var shareCreateBtn = document.getElementById("shareCreateBtn");
             var shareUpdateBtn = document.getElementById("shareUpdateBtn");
             var shareHistory = window.goToolkitShareHistory;
+            var capsuleDrafts = window.goToolkitCapsuleDrafts;
             var FIRESTORE_COLLECTION = "timelines";
             var SHARE_QUERY_PARAM = "share";
+            var EDIT_QUERY_PARAM = "edit";
             var SHARE_WORKER_UNAVAILABLE_MESSAGE =
                 "Le partage privé nécessite le worker Cloudflare lié à Go-Toolkit (go-toolkit-share).";
             var shareWorkerService = window.goToolkitShareWorker;
@@ -3411,6 +3428,9 @@
             var shareStatusType = "";
             var shareRequestInProgress = false;
             var shareLastUpdatedAt = null;
+            var currentDraftId = null;
+            var draftSaveTimer = null;
+            var isDraftSaving = false;
 
             function getShareDraftKey(token) {
                 return LOCAL_STORAGE_KEY + "-share-" + token;
@@ -3441,6 +3461,153 @@
                 } catch (err) {
                     console.warn("Impossible de sauvegarder le cache local de la capsule", err);
                 }
+            }
+
+            function getEditIdFromUrl() {
+                try {
+                    var params = new URLSearchParams(window.location.search);
+                    var value = params.get(EDIT_QUERY_PARAM);
+                    return value ? value.trim() : null;
+                } catch (err) {
+                    return null;
+                }
+            }
+
+            function updateUrlWithEditId(id) {
+                var url = new URL(window.location.href);
+                if (id) {
+                    url.searchParams.set(EDIT_QUERY_PARAM, id);
+                } else {
+                    url.searchParams.delete(EDIT_QUERY_PARAM);
+                }
+                history.replaceState(null, "", url.toString());
+            }
+
+            function createDraftId() {
+                if (capsuleDrafts && typeof capsuleDrafts.generateId === "function") {
+                    return capsuleDrafts.generateId();
+                }
+                if (typeof createShareToken === "function") {
+                    return createShareToken();
+                }
+                return "";
+            }
+
+            async function saveCapsuleDraft(options) {
+                options = options || {};
+                if (!capsuleDrafts || isDraftSaving) {
+                    return null;
+                }
+                isDraftSaving = true;
+                try {
+                    persistCurrentPlanning();
+                    var payload = buildTimelineStatePayload();
+                    var preview = getRoadmapSharePreview();
+                    var id = currentDraftId || createDraftId();
+                    if (!id) {
+                        id = createShareToken();
+                    }
+                    var now = new Date().toISOString();
+                    var record = capsuleDrafts.upsertRecord({
+                        id: id,
+                        app: "plan",
+                        payload: payload,
+                        title: preview.title,
+                        description: preview.description,
+                        updatedAt: now
+                    });
+                    if (record) {
+                        currentDraftId = record.id;
+                        if (options.updateUrl !== false) {
+                            updateUrlWithEditId(record.id);
+                        }
+                        if (options.showToast) {
+                            showCopyToast("Capsule enregistrée");
+                        }
+                    }
+                    return record;
+                } catch (err) {
+                    console.error("Impossible de sauvegarder la capsule locale", err);
+                    return null;
+                } finally {
+                    isDraftSaving = false;
+                }
+            }
+
+            function scheduleDraftSave() {
+                if (!capsuleDrafts || !currentDraftId) {
+                    return;
+                }
+                if (draftSaveTimer) {
+                    clearTimeout(draftSaveTimer);
+                }
+                draftSaveTimer = window.setTimeout(function () {
+                    draftSaveTimer = null;
+                    saveCapsuleDraft({ updateUrl: false, showToast: false });
+                }, 600);
+            }
+
+            function cancelScheduledDraftSave() {
+                if (draftSaveTimer) {
+                    clearTimeout(draftSaveTimer);
+                    draftSaveTimer = null;
+                }
+            }
+
+            async function handleSaveDocumentClick() {
+                closeContextMenus();
+                if (!capsuleDrafts) {
+                    alert("Impossible de sauvegarder localement.");
+                    return null;
+                }
+                if (saveDocumentBtn) {
+                    saveDocumentBtn.disabled = true;
+                }
+                cancelScheduledDraftSave();
+                try {
+                    return await saveCapsuleDraft({ showToast: true });
+                } catch (err) {
+                    console.error("Erreur lors de l'enregistrement local", err);
+                    return null;
+                } finally {
+                    if (saveDocumentBtn) {
+                        saveDocumentBtn.disabled = false;
+                    }
+                }
+            }
+
+            async function handleNewDocumentClick() {
+                closeContextMenus();
+                var needsPrompt = hasTimelineData() || Boolean(currentDraftId);
+                if (needsPrompt) {
+                    var confirmSave = window.confirm(
+                        "Sauvegarder la capsule actuelle avant d'ouvrir un nouveau document ?"
+                    );
+                    if (confirmSave) {
+                        await handleSaveDocumentClick();
+                    }
+                }
+                openNewTimelineDocument();
+            }
+
+            function openNewTimelineDocument() {
+                try {
+                    if (window.localStorage) {
+                        localStorage.removeItem(LOCAL_STORAGE_KEY);
+                    }
+                } catch (err) {
+                    console.warn("Impossible de réinitialiser l'état local", err);
+                }
+                if (currentShareToken) {
+                    updateUrlWithShareToken(null);
+                    currentShareToken = null;
+                }
+                updateUrlWithEditId(null);
+                var url = new URL(window.location.href);
+                url.searchParams.delete(SHARE_QUERY_PARAM);
+                url.searchParams.delete(EDIT_QUERY_PARAM);
+                url.hash = "";
+                window.location.href = url.toString();
             }
 
             function getRoadmapSharePreview() {
@@ -3525,6 +3692,22 @@
                     event.stopPropagation();
                     closeContextMenus();
                     fileMenu.classList.toggle("open");
+                });
+            }
+
+            if (newDocumentBtn) {
+                newDocumentBtn.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleNewDocumentClick();
+                });
+            }
+
+            if (saveDocumentBtn) {
+                saveDocumentBtn.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleSaveDocumentClick();
                 });
             }
 

@@ -1977,9 +1977,11 @@
                 </div>
                 <div class="menu-trigger" id="fileMenuTrigger">
                     <button id="fileMenuBtn" class="btn" type="button" aria-label="Capsule">⬠ Capsule</button>
-                    <div class="context-menu" id="fileMenu">
-                        <div class="menu-panel">
-                            <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
+                <div class="context-menu" id="fileMenu">
+                    <div class="menu-panel">
+                        <button id="newDocumentBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
+                        <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
+                        <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
                             <button id="exportJsonBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
                             <button id="exportPptxBtn" type="button" class="menu-panel-btn">▭ Powerpoint</button>
                             <button id="exportTextBtn" type="button" class="menu-panel-btn">¶ Texte</button>
@@ -2220,6 +2222,7 @@
     <script src="js/prompt.js"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
+    <script src="js/capsule-drafts.js"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/template-criteria.js"></script>
@@ -2449,6 +2452,8 @@
         const exportTextBtn = document.getElementById("exportTextBtn");
         const textStyleBtn = document.getElementById("textStyleBtn");
         const fileMenuBtn = document.getElementById("fileMenuBtn");
+        const newDocumentBtn = document.getElementById("newDocumentBtn");
+        const saveDocumentBtn = document.getElementById("saveDocumentBtn");
         const templateBtn = document.getElementById("templateBtn");
         const importJsonBtn = document.getElementById("importJsonBtn");
         const exportJsonBtn = document.getElementById("exportJsonBtn");
@@ -2938,9 +2943,43 @@
             if (currentShareToken) {
                 writeShareDraft(currentShareToken, payload, new Date().toISOString());
             }
+            scheduleDraftSave();
+        }
+
+        function scheduleDraftSave() {
+            if (isDraftSaving || !capsuleDrafts || !currentDraftId) {
+                return;
+            }
+            if (draftSaveTimer) {
+                clearTimeout(draftSaveTimer);
+            }
+            draftSaveTimer = window.setTimeout(function () {
+                draftSaveTimer = null;
+                saveCapsuleDraft({ updateUrl: false, showToast: false });
+            }, 600);
+        }
+
+        function cancelScheduledDraftSave() {
+            if (draftSaveTimer) {
+                clearTimeout(draftSaveTimer);
+                draftSaveTimer = null;
+            }
         }
 
         function loadSavedState() {
+            const editId = capsuleDrafts ? getEditIdFromUrl() : null;
+            if (editId && capsuleDrafts) {
+                const savedRecord = capsuleDrafts.getRecord(editId);
+                if (savedRecord && savedRecord.payload) {
+                    initializeTemplateSlides(
+                        Array.isArray(savedRecord.payload.slides) ? savedRecord.payload.slides : []
+                    );
+                    applySettingsFromPayload(savedRecord.payload.settings || {});
+                    currentDraftId = savedRecord.id;
+                    updateUrlWithEditId(savedRecord.id);
+                    return true;
+                }
+            }
             const stored = localStorage.getItem(STORAGE_KEY);
             if (!stored) {
                 initializeTemplateSlides();
@@ -2962,6 +3001,7 @@
 
         const FIRESTORE_COLLECTION = "slides";
         const SHARE_QUERY_PARAM = "share";
+        const EDIT_QUERY_PARAM = "edit";
         const SHARE_WORKER_UNAVAILABLE_MESSAGE =
             "Le partage privé nécessite le worker Cloudflare lié à Go-Toolkit (go-toolkit-share).";
         const shareWorkerService = window.goToolkitShareWorker;
@@ -2972,6 +3012,10 @@
         let shareStatusType = "";
         let shareRequestInProgress = false;
         let shareLastUpdatedAt = null;
+        const capsuleDrafts = window.goToolkitCapsuleDrafts;
+        let currentDraftId = null;
+        let draftSaveTimer = null;
+        let isDraftSaving = false;
 
         function initShareWorkerService() {
             shareWorkerAvailable = Boolean(window.goToolkitShareWorker?.isReady);
@@ -3042,6 +3086,129 @@
             return Array.from(bytes)
                 .map(byte => byte.toString(16).padStart(2, "0"))
                 .join("");
+        }
+
+        function getEditIdFromUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const value = params.get(EDIT_QUERY_PARAM);
+                return value ? value.trim() : null;
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function updateUrlWithEditId(id) {
+            const url = new URL(window.location.href);
+            if (id) {
+                url.searchParams.set(EDIT_QUERY_PARAM, id);
+            } else {
+                url.searchParams.delete(EDIT_QUERY_PARAM);
+            }
+            history.replaceState(null, "", url.toString());
+        }
+
+        function createDraftId() {
+            if (capsuleDrafts && typeof capsuleDrafts.generateId === "function") {
+                return capsuleDrafts.generateId();
+            }
+            return createShareToken();
+        }
+
+        async function saveCapsuleDraft(options = {}) {
+            if (!capsuleDrafts || isDraftSaving) {
+                return null;
+            }
+            isDraftSaving = true;
+            try {
+                persistState();
+                const payload = buildStatePayload();
+                const preview = getNuancesSharePreview();
+                let id = currentDraftId || createDraftId();
+                if (!id) {
+                    id = createShareToken();
+                }
+                const now = new Date().toISOString();
+                const record = capsuleDrafts.upsertRecord({
+                    id,
+                    app: "nuances",
+                    payload,
+                    title: preview.title,
+                    description: preview.description,
+                    updatedAt: now
+                });
+                if (record) {
+                    currentDraftId = record.id;
+                    if (options.updateUrl !== false) {
+                        updateUrlWithEditId(record.id);
+                    }
+                    if (options.showToast) {
+                        showCopyToast("Capsule enregistrée");
+                    }
+                }
+                return record;
+            } catch (err) {
+                console.error("Impossible de sauvegarder la capsule locale", err);
+                return null;
+            } finally {
+                isDraftSaving = false;
+            }
+        }
+
+        async function handleSaveDocumentClick() {
+            closeContextMenus();
+            if (!capsuleDrafts) {
+                alert("Impossible de sauvegarder localement.");
+                return null;
+            }
+            if (saveDocumentBtn) {
+                saveDocumentBtn.disabled = true;
+            }
+            cancelScheduledDraftSave();
+            try {
+                return await saveCapsuleDraft({ showToast: true });
+            } catch (err) {
+                console.error("Erreur lors de l'enregistrement local", err);
+                return null;
+            } finally {
+                if (saveDocumentBtn) {
+                    saveDocumentBtn.disabled = false;
+                }
+            }
+        }
+
+        async function handleNewDocumentClick() {
+            closeContextMenus();
+            const hasContent = slideCount > 0 || Boolean(currentDraftId);
+            if (hasContent) {
+                const confirmSave = window.confirm(
+                    "Sauvegarder la capsule actuelle avant d'ouvrir un nouveau document ?"
+                );
+                if (confirmSave) {
+                    await handleSaveDocumentClick();
+                }
+            }
+            openNewCanvasDocument();
+        }
+
+        function openNewCanvasDocument() {
+            try {
+                if (window.localStorage) {
+                    localStorage.removeItem(STORAGE_KEY);
+                }
+            } catch (err) {
+                console.warn("Impossible de réinitialiser l'état local", err);
+            }
+            if (currentShareToken) {
+                updateUrlWithShareToken(null);
+                currentShareToken = null;
+            }
+            updateUrlWithEditId(null);
+            const url = new URL(window.location.href);
+            url.searchParams.delete(SHARE_QUERY_PARAM);
+            url.searchParams.delete(EDIT_QUERY_PARAM);
+            url.hash = "";
+            window.location.href = url.toString();
         }
 
         async function fetchSharePayload(token) {
@@ -5323,6 +5490,18 @@
         fileMenuBtn?.addEventListener("click", event => {
             event.stopPropagation();
             toggleMenu(fileMenu);
+        });
+
+        newDocumentBtn?.addEventListener("click", event => {
+            event.preventDefault();
+            event.stopPropagation();
+            handleNewDocumentClick();
+        });
+
+        saveDocumentBtn?.addEventListener("click", event => {
+            event.preventDefault();
+            event.stopPropagation();
+            handleSaveDocumentClick();
         });
 
         if (applyPromptToAllBtn) {

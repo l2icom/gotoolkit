@@ -990,10 +990,12 @@
                 <button id="aiSettingsBtn" class="btn ai-button" type="button">⌘ Soulgorithm</button>
                 <div class="menu-trigger" id="capsuleMenuTrigger">
                     <button id="capsuleMenuBtn" class="btn" type="button" title="Capsule">⬠ Capsule</button>
-                    <div class="context-menu" id="capsuleMenu">
-                        <div class="menu-panel">
-                            <button id="capsuleOpenBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
-                            <button id="capsuleSaveBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
+                <div class="context-menu" id="capsuleMenu">
+                    <div class="menu-panel">
+                        <button id="capsuleNewDocBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
+                        <button id="capsuleDraftSaveBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
+                        <button id="capsuleOpenBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
+                        <button id="capsuleSaveBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
                             <button id="infoButton" type="button" class="menu-panel-btn">⎉ Vaisseau</button>
                         </div>
                     </div>
@@ -1137,6 +1139,7 @@
     </script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
+    <script src="js/capsule-drafts.js"></script>
     <script src="js/prompt.js"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/ia-config.js"></script>
@@ -1232,6 +1235,7 @@
             }
             const FIRESTORE_COLLECTION = "diagrams";
             const SHARE_QUERY_PARAM = "share";
+            const EDIT_QUERY_PARAM = "edit";
             const SHARE_WORKER_UNAVAILABLE_MESSAGE =
                 "Le partage privé nécessite le worker Cloudflare lié à Go-Toolkit.";
             const shareWorkerService = window.goToolkitShareWorker;
@@ -1257,6 +1261,10 @@
             let shareStatusType = "";
             let shareRequestInProgress = false;
             let shareLastUpdatedAt = null;
+            const capsuleDrafts = window.goToolkitCapsuleDrafts;
+            let currentDraftId = null;
+            let draftSaveTimer = null;
+            let isDraftSaving = false;
 
             function getDrawSharePreview() {
                 const firstPage = state.pages?.[0];
@@ -1722,6 +1730,8 @@
             const shareUpdateBtn = document.getElementById("shareUpdateBtn");
             const capsuleMenuBtn = document.getElementById("capsuleMenuBtn");
             const capsuleMenu = document.getElementById("capsuleMenu");
+            const capsuleNewDocBtn = document.getElementById("capsuleNewDocBtn");
+            const capsuleDraftSaveBtn = document.getElementById("capsuleDraftSaveBtn");
             // prompt input tooltip behavior
             (function setupPromptTooltip() {
                 const promptEl = document.getElementById('promptInput');
@@ -2020,6 +2030,27 @@
                 } catch (err) {
                     console.error("Impossible de sauvegarder l'état", err);
                 }
+                scheduleDraftSave();
+            }
+
+            function scheduleDraftSave() {
+                if (isDraftSaving || !capsuleDrafts || !currentDraftId) {
+                    return;
+                }
+                if (draftSaveTimer) {
+                    clearTimeout(draftSaveTimer);
+                }
+                draftSaveTimer = setTimeout(() => {
+                    draftSaveTimer = null;
+                    saveCapsuleDraft({ updateUrl: false, showToast: false });
+                }, 600);
+            }
+
+            function cancelScheduledDraftSave() {
+                if (draftSaveTimer) {
+                    clearTimeout(draftSaveTimer);
+                    draftSaveTimer = null;
+                }
             }
 
             async function captureExcalidrawScene() {
@@ -2172,6 +2203,18 @@
                 return true;
             }
 
+            function tryLoadLocalDraftFromUrl() {
+                if (!capsuleDrafts) return false;
+                const editId = getEditIdFromUrl();
+                if (!editId) return false;
+                const record = capsuleDrafts.getRecord(editId);
+                if (!record || !record.payload) return false;
+                applyImportedCapsule(record.payload);
+                currentDraftId = record.id;
+                updateUrlWithEditId(record.id);
+                return true;
+            }
+
             function initShareWorkerService() {
                 shareWorkerAvailable = Boolean(window.goToolkitShareWorker?.isReady);
             }
@@ -2229,32 +2272,155 @@
                 return url.toString();
             }
 
-            function updateUrlWithShareToken(token) {
-                const url = new URL(window.location.href);
-                if (token) {
-                    url.searchParams.set(SHARE_QUERY_PARAM, token);
-                } else {
-                    url.searchParams.delete(SHARE_QUERY_PARAM);
-                }
-                history.replaceState(null, "", url.toString());
+        function updateUrlWithShareToken(token) {
+            const url = new URL(window.location.href);
+            if (token) {
+                url.searchParams.set(SHARE_QUERY_PARAM, token);
+            } else {
+                url.searchParams.delete(SHARE_QUERY_PARAM);
             }
+            history.replaceState(null, "", url.toString());
+        }
 
-            function createShareToken() {
-                if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-                    return crypto.randomUUID();
+        function createShareToken() {
+            if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+                return crypto.randomUUID();
+            }
+            const bytes = new Uint8Array(16);
+            if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+                crypto.getRandomValues(bytes);
+            } else {
+                for (let i = 0; i < bytes.length; i++) {
+                    bytes[i] = Math.floor(Math.random() * 256);
                 }
-                const bytes = new Uint8Array(16);
-                if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
-                    crypto.getRandomValues(bytes);
-                } else {
-                    for (let i = 0; i < bytes.length; i++) {
-                        bytes[i] = Math.floor(Math.random() * 256);
+            }
+            return Array.from(bytes)
+                .map(byte => byte.toString(16).padStart(2, "0"))
+                .join("");
+        }
+
+        function getEditIdFromUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const value = params.get(EDIT_QUERY_PARAM);
+                return value ? value.trim() : null;
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function updateUrlWithEditId(id) {
+            const url = new URL(window.location.href);
+            if (id) {
+                url.searchParams.set(EDIT_QUERY_PARAM, id);
+            } else {
+                url.searchParams.delete(EDIT_QUERY_PARAM);
+            }
+            history.replaceState(null, "", url.toString());
+        }
+
+        function createDraftId() {
+            if (capsuleDrafts && typeof capsuleDrafts.generateId === "function") {
+                return capsuleDrafts.generateId();
+            }
+            return createShareToken();
+        }
+
+        async function saveCapsuleDraft(options = {}) {
+            if (!capsuleDrafts || isDraftSaving) {
+                return null;
+            }
+            isDraftSaving = true;
+            try {
+                saveState();
+                const payload = await buildCapsulePayload();
+                const preview = getDrawSharePreview();
+                let id = currentDraftId || createDraftId();
+                if (!id) {
+                    id = createShareToken();
+                }
+                const now = new Date().toISOString();
+                const record = capsuleDrafts.upsertRecord({
+                    id,
+                    app: "draw",
+                    payload,
+                    title: preview.title,
+                    description: preview.description,
+                    updatedAt: now
+                });
+                if (record) {
+                    currentDraftId = record.id;
+                    if (options.updateUrl !== false) {
+                        updateUrlWithEditId(record.id);
+                    }
+                    if (options.showToast) {
+                        showCopyToast("Capsule enregistrée");
                     }
                 }
-                return Array.from(bytes)
-                    .map(byte => byte.toString(16).padStart(2, "0"))
-                    .join("");
+                return record;
+            } catch (err) {
+                console.error("Impossible de sauvegarder la capsule locale", err);
+                return null;
+            } finally {
+                isDraftSaving = false;
             }
+        }
+
+        async function handleSaveDocumentClick() {
+            closeCapsuleMenu();
+            if (!capsuleDrafts) {
+                alert("Impossible de sauvegarder localement.");
+                return null;
+            }
+            if (capsuleDraftSaveBtn) {
+                capsuleDraftSaveBtn.disabled = true;
+            }
+            cancelScheduledDraftSave();
+            try {
+                return await saveCapsuleDraft({ showToast: true });
+            } catch (err) {
+                console.error("Erreur lors de l'enregistrement local", err);
+                return null;
+            } finally {
+                if (capsuleDraftSaveBtn) {
+                    capsuleDraftSaveBtn.disabled = false;
+                }
+            }
+        }
+
+        async function handleNewDocumentClick() {
+            closeCapsuleMenu();
+            const hasPages = state.pages.length > 0 || Boolean(currentDraftId);
+            if (hasPages) {
+                const confirmSave = window.confirm(
+                    "Sauvegarder la capsule actuelle avant d'ouvrir un nouveau document ?"
+                );
+                if (confirmSave) {
+                    await handleSaveDocumentClick();
+                }
+            }
+            openNewDrawDocument();
+        }
+
+        function openNewDrawDocument() {
+            try {
+                if (window.localStorage) {
+                    localStorage.removeItem(STORAGE_KEY);
+                }
+            } catch (err) {
+                console.warn("Impossible de réinitialiser l'état local", err);
+            }
+            if (currentShareToken) {
+                updateUrlWithShareToken(null);
+                currentShareToken = null;
+            }
+            updateUrlWithEditId(null);
+            const url = new URL(window.location.href);
+            url.searchParams.delete(SHARE_QUERY_PARAM);
+            url.searchParams.delete(EDIT_QUERY_PARAM);
+            url.hash = "";
+            window.location.href = url.toString();
+        }
 
             async function fetchSharePayload(token) {
                 if (!shareWorkerAvailable || !shareWorkerService) {
@@ -4562,6 +4728,16 @@
                     closeInfoPopup();
                     capsuleMenu?.classList.toggle("open");
                 });
+                capsuleNewDocBtn?.addEventListener("click", event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleNewDocumentClick();
+                });
+                capsuleDraftSaveBtn?.addEventListener("click", event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleSaveDocumentClick();
+                });
                 capsuleMenu?.addEventListener("click", event => {
                     event.stopPropagation();
                 });
@@ -4659,7 +4835,8 @@
             async function initializeAppState() {
                 initShareWorkerService();
                 const sharedLoaded = await tryLoadSharedStateFromUrl();
-                if (!sharedLoaded) {
+                const localLoaded = !sharedLoaded && tryLoadLocalDraftFromUrl();
+                if (!sharedLoaded && !localLoaded) {
                     loadState();
                 }
                 // Load global Settings (shared across pages) if present in localStorage.
