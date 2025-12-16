@@ -3,7 +3,7 @@
     const DEFAULT_DIRECT_ENDPOINT = "https://api.openai.com/v1/responses";
     const DEFAULT_MODEL = "gpt-5-nano";
     const SYSTEM_PROMPT =
-        "Tu vérifies si un texte couvre des éléments donnés. Réponds uniquement avec un JSON {\"matches\":{\"critère\":true/false}} sans commentaire. Considère un critère rempli si le texte contient l'idée ou un synonyme clair.";
+        "Tu vérifies si un texte couvre les éléments donnés de manière rigoureuse. En cas de doute, répondre non. Réponds uniquement avec un JSON {\"matches\":{\"critère\":true/false}} sans commentaire. Considère un critère rempli si le texte contient l'idée ou un synonyme clair.";
     const CHECKED_MARKER = "🗹";
     const UNCHECKED_MARKER = "☐";
 

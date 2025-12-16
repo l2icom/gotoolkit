@@ -2547,16 +2547,7 @@
             }
         }
 
-        function stopActiveSpeechSession({ flushInterim = false } = {}) {
-            const field = activeSpeechField;
-            if (flushInterim && field && lastSpeechInterim) {
-                appendSpeechText(field, lastSpeechInterim);
-            }
-            lastSpeechInterim = "";
-            if (activeSpeechRecognition) {
-                activeSpeechRecognition.abort();
-                activeSpeechRecognition = null;
-            }
+        function deactivateSpeechUiClasses() {
             if (activeSpeechButton) {
                 activeSpeechButton.classList.remove("speech-button--active");
                 activeSpeechButton = null;
@@ -2565,6 +2556,21 @@
                 activeSpeechWrapper.classList.remove("speech-active");
                 activeSpeechWrapper = null;
             }
+        }
+
+        function stopActiveSpeechSession({ flushInterim = false, skipAbort = false } = {}) {
+            const field = activeSpeechField;
+            if (flushInterim && field && lastSpeechInterim) {
+                appendSpeechText(field, lastSpeechInterim);
+            }
+            lastSpeechInterim = "";
+            if (activeSpeechRecognition) {
+                if (!skipAbort) {
+                    activeSpeechRecognition.abort();
+                }
+                activeSpeechRecognition = null;
+            }
+            deactivateSpeechUiClasses();
             if (field) {
                 clearSpeechSuggestion(field);
             }
@@ -2630,10 +2636,11 @@
                 console.warn("Speech recognition error", event);
                 showErrorToast("Reconnaissance vocale terminée");
                 clearSpeechSuggestion(field);
+                stopActiveSpeechSession();
             });
             recognition.addEventListener("end", () => {
                 if (activeSpeechRecognition === recognition) {
-                    activeSpeechRecognition = null;
+                    stopActiveSpeechSession({ skipAbort: true });
                 }
             });
             try {
@@ -2660,6 +2667,31 @@
                 startSpeechRecognition(field, targetButton);
             }
         });
+
+        function autoStartSpeechForField(fieldId) {
+            if (!SpeechRecognitionCtor) {
+                return;
+            }
+            const field = document.getElementById(fieldId);
+            if (!field || field.value.trim()) {
+                return;
+            }
+            const button = document.querySelector(`[data-speech-target="${fieldId}"]`);
+            if (!button) {
+                return;
+            }
+            startSpeechRecognition(field, button);
+        }
+
+        function initAutoSpeechOnCanvasLoad() {
+            autoStartSpeechForField("globalContextField");
+        }
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initAutoSpeechOnCanvasLoad);
+        } else {
+            initAutoSpeechOnCanvasLoad();
+        }
         const fontSelect = document.getElementById("fontSelect");
         const fontSizeInput = document.getElementById("fontSizeInput");
         const ratioGrid = document.getElementById("ratioGrid");
@@ -3583,40 +3615,34 @@
             }
         }
         pageContextField?.addEventListener("focus", () => {
-            // On focus, afficher dans `canvasTemplateTooltip` la description complète
-            // du template actif (escaped + sauts de ligne conservés) puis démarrer
-            // la minuterie d'inactivité.
             try {
                 const tpl = getActiveTemplate();
                 const desc = tpl && tpl.description ? String(tpl.description) : "";
                 if (canvasTemplateTooltip) {
-                    canvasTemplateTooltip.innerHTML = escapeHtml(desc).replace(/\n/g, "<br>");
-                    canvasTemplateTooltip.setAttribute("aria-hidden", desc ? "false" : "true");
+                    if (tpl && tpl.id === defaultTemplateId) {
+                        canvasTemplateTooltip.innerHTML = "";
+                    } else {
+                        canvasTemplateTooltip.innerHTML = escapeHtml(desc).replace(/\n/g, "<br>");
+                    }
                 }
             } catch (e) {
                 /* noop */
             }
             updateSelectedTemplateLabelDisplay();
             resetScenarioTooltipTimer();
-            scheduleCanvasTemplateTooltipPosition(pageContextField);
         });
         pageContextField?.addEventListener("blur", () => {
-            if (scenarioContextWrapper) scenarioContextWrapper.classList.remove("is-focused");
-            if (canvasTemplateTooltip) {
-                canvasTemplateTooltip.setAttribute("aria-hidden", "true");
-                resetCanvasTemplateTooltipPosition();
-            }
-            clearScenarioTooltipTimer();
+            hideCanvasScenarioTooltip();
         });
         pageContextField?.addEventListener("input", () => {
             clearSpeechSuggestion(pageContextField);
             setActivePageContext(pageContextField.value);
             schedulePersist();
             triggerCriteriaAnalysis();
-            resetScenarioTooltipTimer();
+            hideCanvasScenarioTooltip({ keepFocusClass: true });
         });
         pageContextField?.addEventListener("keydown", () => {
-            resetScenarioTooltipTimer();
+            hideCanvasScenarioTooltip({ keepFocusClass: true });
         });
         globalContextField?.addEventListener("blur", () => {
             // no-op: suggestion generation removed
@@ -3691,14 +3717,36 @@
             }, SCENARIO_TOOLTIP_INACTIVITY_MS);
         }
 
+        function canShowCanvasTemplateTooltip() {
+            if (!canvasTemplateTooltip) return false;
+            const tpl = getActiveTemplate();
+            if (!tpl || tpl.id === defaultTemplateId) return false;
+            return Boolean(canvasTemplateTooltip.textContent);
+        }
+
+        function hideCanvasScenarioTooltip({ keepFocusClass = false } = {}) {
+            if (!keepFocusClass && scenarioContextWrapper) {
+                scenarioContextWrapper.classList.remove("is-focused");
+            }
+            if (canvasTemplateTooltip) {
+                canvasTemplateTooltip.setAttribute("aria-hidden", "true");
+                resetCanvasTemplateTooltipPosition();
+            }
+            clearScenarioTooltipTimer();
+        }
+
         function resetScenarioTooltipTimer() {
             if (scenarioContextWrapper) {
                 scenarioContextWrapper.classList.add("is-focused");
             }
+            const showTooltip = canShowCanvasTemplateTooltip();
             if (canvasTemplateTooltip) {
-                const hasText = Boolean(canvasTemplateTooltip.textContent);
-                canvasTemplateTooltip.setAttribute("aria-hidden", hasText ? "false" : "true");
-                scheduleCanvasTemplateTooltipPosition(pageContextField);
+                canvasTemplateTooltip.setAttribute("aria-hidden", showTooltip ? "false" : "true");
+                if (showTooltip) {
+                    scheduleCanvasTemplateTooltipPosition(pageContextField);
+                } else {
+                    resetCanvasTemplateTooltipPosition();
+                }
             }
             startScenarioTooltipTimer();
         }
@@ -4022,6 +4070,7 @@
         }
 
         async function generateFullSlideContent() {
+            stopActiveSpeechSession({ flushInterim: true });
             if (!generateFullSlideBtn || isGeneratingSuggestions || suggestionCooldownTimer) {
                 return;
             }
@@ -4249,6 +4298,11 @@
                     el.dispatchEvent(new Event('input', { bubbles: true }));
                 } catch (e) { /* noop */ }
             });
+            const bottomTextarea = slide.querySelector('.bottom-section-text');
+            if (bottomTextarea) {
+                bottomTextarea.value = '';
+                bottomTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            }
             // trigger layout and persistence
             try { resizeAllColumnSections(slide); } catch (e) { /* noop */ }
             try { schedulePersist(); } catch (e) { /* noop */ }
@@ -5599,10 +5653,15 @@
 
         function renderTemplateTooltip(template, statusMap) {
             if (!canvasTemplateTooltip) return;
+            if (!template || template.id === defaultTemplateId) {
+                canvasTemplateTooltip.innerHTML = "";
+                return;
+            }
             const lines = GoToolkitTemplateCriteria.renderTooltipLines(template, statusMap);
             canvasTemplateTooltip.innerHTML = lines.join("<br>");
-            canvasTemplateTooltip.setAttribute("aria-hidden", lines.length ? "false" : "true");
-            scheduleCanvasTemplateTooltipPosition(pageContextField);
+            if (canvasTemplateTooltip.getAttribute("aria-hidden") === "false" && lines.length) {
+                scheduleCanvasTemplateTooltipPosition(pageContextField);
+            }
         }
 
         function updateSelectedTemplateLabelDisplay() {

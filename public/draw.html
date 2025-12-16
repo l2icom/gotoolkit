@@ -1373,16 +1373,7 @@
                 }
             }
 
-            function stopActiveSpeechSession({ flushInterim = false } = {}) {
-                const field = activeSpeechField;
-                if (flushInterim && field && lastSpeechInterim) {
-                    appendSpeechText(field, lastSpeechInterim);
-                }
-                lastSpeechInterim = "";
-                if (activeSpeechRecognition) {
-                    activeSpeechRecognition.abort();
-                    activeSpeechRecognition = null;
-                }
+            function deactivateSpeechUiClasses() {
                 if (activeSpeechButton) {
                     activeSpeechButton.classList.remove("speech-button--active");
                     activeSpeechButton = null;
@@ -1391,6 +1382,21 @@
                     activeSpeechWrapper.classList.remove("speech-active");
                     activeSpeechWrapper = null;
                 }
+            }
+
+            function stopActiveSpeechSession({ flushInterim = false, skipAbort = false } = {}) {
+                const field = activeSpeechField;
+                if (flushInterim && field && lastSpeechInterim) {
+                    appendSpeechText(field, lastSpeechInterim);
+                }
+                lastSpeechInterim = "";
+                if (activeSpeechRecognition) {
+                    if (!skipAbort) {
+                        activeSpeechRecognition.abort();
+                    }
+                    activeSpeechRecognition = null;
+                }
+                deactivateSpeechUiClasses();
                 if (field) {
                     clearSpeechSuggestion(field);
                 }
@@ -1457,10 +1463,11 @@
                     console.warn("Speech recognition error");
                     setStatus("Reconnaissance vocale terminée");
                     clearSpeechSuggestion(field);
+                    stopActiveSpeechSession();
                 });
                 recognition.addEventListener("end", () => {
                     if (activeSpeechRecognition === recognition) {
-                        activeSpeechRecognition = null;
+                        stopActiveSpeechSession({ skipAbort: true });
                     }
                 });
                 try {
@@ -1482,6 +1489,31 @@
                     startSpeechRecognition(field, targetButton);
                 }
             });
+
+            function autoStartSpeechForField(fieldId) {
+                if (!SpeechRecognitionCtor) {
+                    return;
+                }
+                const field = document.getElementById(fieldId);
+                if (!field || field.value.trim()) {
+                    return;
+                }
+                const button = document.querySelector(`[data-speech-target="${fieldId}"]`);
+                if (!button) {
+                    return;
+                }
+                startSpeechRecognition(field, button);
+            }
+
+            function initAutoSpeechOnDrawLoad() {
+                autoStartSpeechForField("promptInput");
+            }
+
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", initAutoSpeechOnDrawLoad);
+            } else {
+                initAutoSpeechOnDrawLoad();
+            }
 
             function isSpeechTypingKey(event) {
                 if (!event?.key) return false;
@@ -1766,17 +1798,7 @@
                     }, INACTIVITY_MS);
                 }
 
-                function resetInactivityTimer() {
-                    // maintain tooltip visible and restart timeout
-                    try {
-                        if (!wrapper.classList.contains('is-focused')) wrapper.classList.add('is-focused');
-                        tooltip.setAttribute('aria-hidden', tooltip.textContent ? 'false' : 'true');
-                    } catch (e) { /* noop */ }
-                    startInactivityTimer();
-                    scheduleDrawTemplateTooltipPosition();
-                }
-
-                promptEl.addEventListener('focus', function () {
+                function showPromptTooltip() {
                     wrapper.classList.add('is-focused');
                     const sel = getSelectedPromptzilla();
                     const status = sel?.id ? templateCriteriaStatus[sel.id] : null;
@@ -1784,17 +1806,30 @@
                     tooltip.setAttribute('aria-hidden', tooltip.textContent ? 'false' : 'true');
                     startInactivityTimer();
                     scheduleDrawTemplateTooltipPosition();
-                });
+                }
 
-                promptEl.addEventListener('blur', function () {
-                    wrapper.classList.remove('is-focused');
+                function hidePromptTooltip({ removeFocus = false } = {}) {
                     tooltip.setAttribute('aria-hidden', 'true');
                     clearInactivityTimer();
+                    if (removeFocus) {
+                        wrapper.classList.remove('is-focused');
+                    }
+                }
+
+                promptEl.addEventListener('focus', () => {
+                    showPromptTooltip();
                 });
 
-                // Consider typing or keydown as activity
-                promptEl.addEventListener('input', resetInactivityTimer);
-                promptEl.addEventListener('keydown', resetInactivityTimer);
+                promptEl.addEventListener('blur', () => {
+                    hidePromptTooltip({ removeFocus: true });
+                });
+
+                promptEl.addEventListener('input', () => {
+                    hidePromptTooltip();
+                });
+                promptEl.addEventListener('keydown', () => {
+                    hidePromptTooltip();
+                });
 
                 // update tooltip when selection is applied
                 const origApply = window.applyPromptzillaSelection;
@@ -1805,9 +1840,9 @@
                             const sel = getSelectedPromptzilla();
                             const status = sel?.id ? templateCriteriaStatus[sel.id] : null;
                             renderTemplateTooltip(sel, status);
-                            tooltip.setAttribute('aria-hidden', tooltip.textContent ? 'false' : 'true');
-                            // if the textarea is focused, keep tooltip visible and reset timer
-                            if (document.activeElement === promptEl) resetInactivityTimer();
+                            if (document.activeElement === promptEl && tooltip.getAttribute('aria-hidden') === 'false') {
+                                scheduleDrawTemplateTooltipPosition();
+                            }
                         } catch (e) { }
                     };
                 }
@@ -1824,7 +1859,7 @@
                             scheduleDrawTemplateTooltipPosition();
                         }
                     },
-                    true
+                    { passive: true }
                 );
             })();
             const capsuleOpenBtn = document.getElementById("capsuleOpenBtn");
@@ -3097,6 +3132,19 @@
                 refreshPromptSuggestion();
             }
 
+            function extractJsonFromMarkdown(value) {
+                if (!value) return value;
+                const fenceRe = /```(?:json)?\s*([\s\S]*?)\s*```/gi;
+                let match;
+                while ((match = fenceRe.exec(value)) !== null) {
+                    const candidate = (match[1] || "").trim();
+                    if (candidate) {
+                        return candidate;
+                    }
+                }
+                return value.trim();
+            }
+
             async function fetchPromptAssist({ text, cursor, placeholder, templateDescription, signal, timeoutMs = 15000 }) {
                 const template = state.systemPrompt || DEFAULT_SYSTEM_PROMPT;
                 const systemPrompt = (template || DEFAULT_SYSTEM_PROMPT).replace(/{{TEMPLATE_DESCRIPTION}}/g, templateDescription || "le modèle sélectionné");
@@ -3182,10 +3230,14 @@
                         content = rawText;
                     }
                     let parsedJson = null;
+                    const jsonCandidate = extractJsonFromMarkdown(content || rawText);
                     try {
-                        parsedJson = JSON.parse(content || rawText);
+                        parsedJson = JSON.parse(jsonCandidate);
                     } catch (err) {
-                        console.warn("[prompt-assist] cannot parse content as JSON", err, { content });
+                        console.warn("[prompt-assist] cannot parse content as JSON", err, {
+                            content,
+                            jsonCandidate
+                        });
                     }
                     const main = typeof parsedJson?.main === "string" ? parsedJson.main.trim() : "";
                     const alts = Array.isArray(parsedJson?.alts) ? parsedJson.alts : [];
@@ -3518,6 +3570,7 @@
             }
 
             async function handleGenerate() {
+                stopActiveSpeechSession({ flushInterim: true });
                 const page = getActivePage();
                 if (!page) return;
                 const inputText = promptInput.value.trim();

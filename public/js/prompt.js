@@ -280,11 +280,11 @@
         },
         {
             id: "default",
-            name: "🕊️ Libre",
-            label: "Grille libre pour structurer tes idées",
-            defaultTitle: "Libre",
+            name: "🕊️ Générique",
+            label: "Modèle générique pour structurer tes idées",
+            defaultTitle: "Générique",
             description:
-                "Grille libre pour structurer tes idées.\n",
+                "Modèle générique pour structurer tes idées.\n",
             columns: [
                 { stage: "first-col", label: "Colonne 1" },
                 { stage: "second-col", label: "Colonne 2" },
@@ -828,14 +828,44 @@
         },
         {
             id: "project",
-            title: "🧩 Projet d'intégration'",
+            title: "🧩 Projet d'intégration",
             text:
                 "Piloter un projet d’intégration avec phases et risques.\n" +
                 "☐ Acteurs\n" +
                 "☐ Phases\n" +
                 "☐ Livrables\n" +
                 "☐ Risques"
-        }
+        },
+        {
+            id: "journey",
+            title: "👤 Customer Journey Timeline",
+            text:
+                "Visualiser l’expérience utilisateur dans le temps.\n" +
+                "☐ Étapes clés\n" +
+                "☐ Émotions / irritants\n" +
+                "☐ Points de contact\n" +
+                "☐ Opportunités"
+        },
+        {
+            id: "change-management",
+            title: "🔄 Conduite du changement",
+            text:
+                "Piloter l’adoption et l’alignement des acteurs.\n" +
+                "☐ Parties prenantes\n" +
+                "☐ Messages clés\n" +
+                "☐ Actions d’accompagnement\n" +
+                "☐ Indicateurs d’adoption"
+        },
+        {
+            id: "default",
+            title: "🕊️ Générique",
+            text:
+                "Organiser des événements dans le temps.\n" +
+                "☐ Actions\n" +
+                "☐ Groupes\n" +
+                "☐ Repères\n" +
+                "☐ Types"
+        },
     ];
 
     const timelineCreateSystemTemplate = `Tu vas aider à générer un planning précis à partir des infos fournises.

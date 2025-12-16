@@ -2726,7 +2726,20 @@
             views.forEach(ensureViewContext);
             if (persistedTimelineBrief && views.length) {
                 var firstContext = ensureViewContext(views[0]);
-                if (!firstContext.prompts.create) {
+                var persistedFirstScenario =
+                    persistedState &&
+                    Array.isArray(persistedState.views) &&
+                    persistedState.views[0] &&
+                    persistedState.views[0].context &&
+                    persistedState.views[0].context.prompts &&
+                    typeof persistedState.views[0].context.prompts.create === "string"
+                        ? persistedState.views[0].context.prompts.create
+                        : "";
+                if (
+                    !firstContext.prompts.create &&
+                    persistedFirstScenario &&
+                    persistedTimelineBrief === persistedFirstScenario
+                ) {
                     firstContext.prompts.create = persistedTimelineBrief;
                 }
             }
@@ -6481,18 +6494,7 @@
                 }
             }
 
-            function stopActiveSpeechSession(options) {
-                options = options || {};
-                var flushInterim = Boolean(options.flushInterim);
-                var field = activeSpeechField;
-                if (flushInterim && field && lastSpeechInterim) {
-                    appendSpeechText(field, lastSpeechInterim);
-                }
-                lastSpeechInterim = "";
-                if (activeSpeechRecognition) {
-                    activeSpeechRecognition.abort();
-                    activeSpeechRecognition = null;
-                }
+            function deactivateSpeechUiClasses() {
                 if (activeSpeechButton) {
                     activeSpeechButton.classList.remove("speech-button--active");
                     activeSpeechButton = null;
@@ -6501,6 +6503,24 @@
                     activeSpeechWrapper.classList.remove("speech-active");
                     activeSpeechWrapper = null;
                 }
+            }
+
+            function stopActiveSpeechSession(options) {
+                options = options || {};
+                var flushInterim = Boolean(options.flushInterim);
+                var skipAbort = Boolean(options.skipAbort);
+                var field = activeSpeechField;
+                if (flushInterim && field && lastSpeechInterim) {
+                    appendSpeechText(field, lastSpeechInterim);
+                }
+                lastSpeechInterim = "";
+                if (activeSpeechRecognition) {
+                    if (!skipAbort) {
+                        activeSpeechRecognition.abort();
+                    }
+                    activeSpeechRecognition = null;
+                }
+                deactivateSpeechUiClasses();
                 if (field) {
                     clearSpeechSuggestion(field);
                 }
@@ -6567,10 +6587,11 @@
                     console.warn("Speech recognition error");
                     showSpeechToast("Reconnaissance vocale terminée");
                     clearSpeechSuggestion(field);
+                    stopActiveSpeechSession();
                 });
                 recognition.addEventListener("end", function () {
                     if (activeSpeechRecognition === recognition) {
-                        activeSpeechRecognition = null;
+                        stopActiveSpeechSession({ skipAbort: true });
                     }
                 });
                 try {
@@ -6596,6 +6617,31 @@
                     startSpeechRecognition(field, targetButton);
                 }
             });
+
+            function maybeAutoStartSpeechForField(fieldId) {
+                if (!SpeechRecognitionCtor) {
+                    return;
+                }
+                var field = document.getElementById(fieldId);
+                if (!field || field.value.trim()) {
+                    return;
+                }
+                var button = document.querySelector('[data-speech-target="' + fieldId + '"]');
+                if (!button) {
+                    return;
+                }
+                startSpeechRecognition(field, button);
+            }
+
+            function initAutoSpeechOnTimelineLoad() {
+                maybeAutoStartSpeechForField("promptCreate");
+            }
+
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", initAutoSpeechOnTimelineLoad);
+            } else {
+                initAutoSpeechOnTimelineLoad();
+            }
 
             function isSpeechTypingKey(event) {
                 if (!event || !event.key) return false;
@@ -6821,15 +6867,12 @@
                     showScenarioTooltip(txtPromptCreate);
                 });
                 txtPromptCreate.addEventListener('input', function () {
-                    // reset hide timer on input
-                    if (scenarioTooltip.style.display !== 'none') {
-                        if (scenarioTooltipTimer) {
-                            clearTimeout(scenarioTooltipTimer);
-                        }
-                        scenarioTooltipTimer = setTimeout(function () { hideScenarioTooltip(); }, 5000);
-                    }
+                    hideScenarioTooltip();
                     clearSpeechSuggestion(txtPromptCreate);
                     triggerScenarioCriteriaAnalysis();
+                });
+                txtPromptCreate.addEventListener('keydown', function () {
+                    hideScenarioTooltip();
                 });
                 txtPromptCreate.addEventListener('blur', function () {
                     hideScenarioTooltip();
@@ -7198,6 +7241,7 @@
 
             // Centralized generator used by both buttons
             async function generateFromMode(triggerButton, mode) {
+                stopActiveSpeechSession({ flushInterim: true });
                 if (!triggerButton) triggerButton = null;
                 if (mode === "modify") {
                     ensureModifyPrompt({ refreshModify: true });
