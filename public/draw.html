@@ -1961,12 +1961,12 @@
                         return;
                     }
                     const parsed = JSON.parse(raw);
-                    const storedPages = Array.isArray(parsed.pages) && parsed.pages.length ? parsed.pages : [createPage(1)];
-                    const normalizedPages = storedPages.map((page, index) => normalizePage(page, index));
-                    state = {
-                        pages: normalizedPages,
-                        activeIndex: Math.max(0, Math.min(normalizedPages.length - 1, parsed.activeIndex || 0)),
-                        apiKey: parsed.apiKey || storedApiKey || "",
+                const storedPages = Array.isArray(parsed.pages) && parsed.pages.length ? parsed.pages : [createPage(1)];
+                const normalizedPages = storedPages.map((page, index) => normalizePage(page, index));
+                state = {
+                    pages: normalizedPages,
+                    activeIndex: Math.max(0, Math.min(normalizedPages.length - 1, parsed.activeIndex || 0)),
+                    apiKey: parsed.apiKey || storedApiKey || "",
                         promptTemplate: parsed.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
                         systemPrompt: parsed.systemPrompt || DEFAULT_SYSTEM_PROMPT,
                         reasoningEffort: parsed.reasoningEffort || parsed.reasoning?.effort || "low"
@@ -2097,7 +2097,7 @@
                 state.systemPrompt = payload.systemPrompt || DEFAULT_SYSTEM_PROMPT;
                 state.reasoningEffort = payload.reasoningEffort || payload.reasoning?.effort || "low";
                 if (payload.scene) {
-                    sharedScenePayload = normalizeScene(payload.scene);
+                    sharedScenePayload = sanitizeScene(payload.scene);
                 }
                 return true;
             }
@@ -2326,12 +2326,12 @@
             return createShareToken();
         }
 
-        async function saveCapsuleDraft(options = {}) {
-            if (!capsuleDrafts || isDraftSaving) {
-                return null;
-            }
-            isDraftSaving = true;
-            try {
+            async function saveCapsuleDraft(options = {}) {
+                if (!capsuleDrafts || isDraftSaving) {
+                    return null;
+                }
+                isDraftSaving = true;
+                try {
                 saveState();
                 const payload = await buildCapsulePayload();
                 const preview = getDrawSharePreview();
@@ -2354,7 +2354,7 @@
                         updateUrlWithEditId(record.id);
                     }
                     if (options.showToast) {
-                        showCopyToast("Capsule enregistrée");
+                        setStatus("Capsule enregistrée");
                     }
                 }
                 return record;
@@ -2771,12 +2771,29 @@
                     return null;
                 }
                 const elements = Array.isArray(scene.elements) ? scene.elements : [];
-                const appState = scene.appState && typeof scene.appState === "object" ? scene.appState : undefined;
+                const appState = scene.appState && typeof scene.appState === "object" ? { ...scene.appState } : undefined;
+                if (appState && appState.collaborators) {
+                    delete appState.collaborators;
+                }
                 const files = toBinaryFilesObject(scene.files);
                 if (!elements.length && !appState && !files) {
                     return null;
                 }
                 return { elements, appState, files };
+            }
+
+            function sanitizeScene(scene) {
+                const normalized = normalizeScene(scene);
+                if (!normalized) return null;
+                if (!Array.isArray(normalized.elements)) {
+                    return null;
+                }
+                const filesObj = toBinaryFilesObject(normalized.files);
+                return {
+                    elements: normalized.elements,
+                    appState: normalized.appState,
+                    files: filesObj
+                };
             }
 
             function toBinaryFilesObject(files) {
@@ -2815,11 +2832,13 @@
                     : DEFAULT_DRAW_TYPE;
                 const mermaid = page?.mermaid || "";
                 const lastAiMermaid = page?.lastAiMermaid || mermaid || "";
-                const scene = normalizeScene(page?.scene);
+                const titleFromScript = extractDiagramTitle(mermaid);
+                const label = page?.label || titleFromScript || fallback.label;
+                const scene = sanitizeScene(page?.scene);
                 return {
                     id: page?.id || fallback.id,
-                    label: page?.label || fallback.label,
-                    title: page?.title || page?.label || fallback.title,
+                    label,
+                    title: titleFromScript || page?.title || page?.label || fallback.title,
                     input: page?.input || "",
                     mermaid,
                     lastAiMermaid,
@@ -3384,13 +3403,22 @@
 
             async function renderPageScene(page) {
                 if (!page) return;
-                const storedScene = normalizeScene(page.scene);
+                const storedScene = sanitizeScene(page.scene);
                 if (storedScene) {
                     try {
-                        await applySceneToExcalidraw(storedScene);
-                        return;
+                        const applied = await applySceneToExcalidraw(storedScene);
+                        if (applied) {
+                            return;
+                        }
                     } catch (err) {
                         console.warn("Impossible d'appliquer la scène sauvegardée", err);
+                    }
+                    // If the stored scene is invalid, drop it to avoid repeated crashes
+                    page.scene = null;
+                    try {
+                        saveState();
+                    } catch (e) {
+                        /* noop */
                     }
                 }
                 await updateExcalidrawScene(page?.mermaid || "");
@@ -3512,6 +3540,10 @@
                     page.lastAiMermaid = mermaidCode;
                     if (extractedTitle) {
                         page.title = extractedTitle;
+                        if (!page.label || page.label === `Bloc ${state.activeIndex + 1}` || page.label === diagramTitleInput?.value) {
+                            page.label = extractedTitle;
+                            renderTabs();
+                        }
                         if (diagramTitleInput) {
                             diagramTitleInput.value = extractedTitle;
                         }
@@ -4354,9 +4386,13 @@
 
             function buildExcalidrawAppState(api, overrides = {}) {
                 const base = (api && typeof api.getAppState === "function") ? api.getAppState() : {};
+                const sanitized = { ...overrides };
+                if (!(sanitized.collaborators instanceof Map)) {
+                    delete sanitized.collaborators;
+                }
                 return {
                     ...base,
-                    ...overrides,
+                    ...sanitized,
                     viewBackgroundColor: "#fdfdfd",
                     gridModeEnabled: false,
                     isLoading: false,
@@ -4365,14 +4401,12 @@
             }
 
             async function applySceneToExcalidraw(scene, options = {}) {
-                const normalized = normalizeScene(scene);
+                const normalized = sanitizeScene(scene);
                 if (!normalized) return false;
                 const api = await getExcalidrawApi();
                 const appState = buildExcalidrawAppState(api, normalized.appState || {});
                 const filesObj = toBinaryFilesObject(normalized.files);
-                // Prepare files for the Excalidraw API: if we have a plain object (from storage),
-                // convert to a Map which Excalidraw expects internally. If it's already a Map,
-                // keep it as-is.
+                // Prepare files for the Excalidraw API: prefer a Map; if conversion fails, omit files.
                 let filesForApi = null;
                 if (filesObj) {
                     if (filesObj instanceof Map) {
@@ -4387,26 +4421,27 @@
                 }
 
                 const scenePayload = {
-                    elements: normalized.elements || [],
+                    elements: Array.isArray(normalized.elements) ? normalized.elements : [],
                     appState
                 };
                 if (filesForApi) {
                     scenePayload.files = filesForApi;
-                } else if (filesObj) {
-                    // fall back to plain object if conversion failed
-                    scenePayload.files = filesObj;
                 }
 
-                const applied = applySceneUpdate(api, scenePayload);
+                let applied = false;
+                try {
+                    applied = applySceneUpdate(api, scenePayload);
+                } catch (err) {
+                    console.warn("Excalidraw updateScene failed, will fallback to mermaid", err);
+                    applied = false;
+                }
                 if (filesForApi && typeof api.addFiles === "function") {
                     api.addFiles(Array.from(filesForApi.values()));
-                } else if (filesObj && typeof api.addFiles === "function") {
-                    api.addFiles(Object.values(filesObj));
                 }
                 if (applied && !options.skipStore) {
                     const activePage = getActivePage();
                     if (activePage) {
-                        activePage.scene = normalizeScene({
+                        activePage.scene = sanitizeScene({
                             elements: scenePayload.elements,
                             appState,
                             files: scenePayload.files || null
@@ -4447,8 +4482,6 @@
                     };
                     if (filesForApi) {
                         scenePayload.files = filesForApi;
-                    } else if (filesObj) {
-                        scenePayload.files = filesObj;
                     }
                     if (!applySceneUpdate(api, scenePayload)) {
                         console.warn("Aucune méthode disponible pour mettre à jour Excalidraw", {
@@ -4459,8 +4492,6 @@
                     }
                     if (filesForApi && typeof api.addFiles === "function") {
                         api.addFiles(Array.from(filesForApi.values()));
-                    } else if (filesObj && typeof api.addFiles === "function") {
-                        api.addFiles(Object.values(filesObj));
                     }
                     if (requestId === sceneBuildRequestId) {
                         const activePage = getActivePage();
@@ -4571,6 +4602,17 @@
                     if (page) {
                         page.mermaid = value;
                         page.scene = null;
+                        const titleFromScript = extractDiagramTitle(value);
+                        if (titleFromScript) {
+                            page.title = titleFromScript;
+                            if (!page.label || page.label === `Bloc ${state.activeIndex + 1}` || page.label === diagramTitleInput?.value) {
+                                page.label = titleFromScript;
+                                renderTabs();
+                            }
+                            if (diagramTitleInput) {
+                                diagramTitleInput.value = titleFromScript;
+                            }
+                        }
                         saveState();
                     }
                     updateExcalidrawScene(value);
@@ -4634,6 +4676,7 @@
                     if (page) {
                         page.mermaid = "";
                         page.scene = null;
+                        page.title = page.label || page.title;
                     }
                     mermaidOutput.value = "";
                     updateExcalidrawScene("");
@@ -4649,6 +4692,17 @@
                     }
                     page.mermaid = restoreCode;
                     page.scene = null;
+                    const titleFromScript = extractDiagramTitle(restoreCode);
+                    if (titleFromScript) {
+                        page.title = titleFromScript;
+                        if (!page.label || page.label === `Bloc ${state.activeIndex + 1}` || page.label === diagramTitleInput?.value) {
+                            page.label = titleFromScript;
+                            renderTabs();
+                        }
+                        if (diagramTitleInput) {
+                            diagramTitleInput.value = titleFromScript;
+                        }
+                    }
                     mermaidOutput.value = restoreCode;
                     updateExcalidrawScene(restoreCode);
                     saveState();

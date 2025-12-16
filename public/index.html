@@ -153,6 +153,7 @@
             align-items: center;
             transition: color 0.2s ease;
         }
+
         .ia-status--error {
             color: #B11226;
         }
@@ -1009,7 +1010,8 @@
                                         <span class="ia-status" id="openaiStatus" aria-hidden="true"></span>
                                     </div>
                                     <div style="display:flex; gap:0.35rem;">
-                                        <button id="openaiVerifyBtn" type="button" class="btn-secondary">Vérifier</button>
+                                        <button id="openaiVerifyBtn" type="button"
+                                            class="btn-secondary">Vérifier</button>
                                         <button id="openaiTestBtn" type="button" class="btn-secondary">Test</button>
                                     </div>
                                 </div>
@@ -1051,7 +1053,8 @@
                                         <span class="ia-status" id="ollamaStatus" aria-hidden="true"></span>
                                     </div>
                                     <div style="display:flex; gap:0.35rem;">
-                                        <button id="ollamaVerifyBtn" type="button" class="btn-secondary">Vérifier</button>
+                                        <button id="ollamaVerifyBtn" type="button"
+                                            class="btn-secondary">Vérifier</button>
                                         <button id="ollamaTestBtn" type="button" class="btn-secondary">Test</button>
                                     </div>
                                 </div>
@@ -1360,7 +1363,7 @@
                 card.setAttribute("data-app", app);
                 card.innerHTML = `
                     <p class="share-card-title">${definition.emoji} ${preview.tabName}</p>
-                    <p class="share-card-desc">${preview.lines.join(" · ") || "Complète le contexte pour l'afficher ici."}</p>
+                    <p class="share-card-desc">${preview.lines.join(" · ") || "(sans contexte)"}</p>
                     <p class="share-card-date">${formattedDate}</p>
                 `;
                 const pinBtn = document.createElement("button");
