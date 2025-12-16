@@ -104,6 +104,7 @@
             max-width: 320px;
             display: none;
             z-index: 40;
+            transform: translateX(2px);
         }
 
         .context-menu.open {
@@ -347,6 +348,7 @@
             opacity: 0;
             pointer-events: none;
             z-index: 3;
+            transform: translateX(2px);
         }
 
         .speech-field-wrapper:hover .speech-button,
@@ -385,7 +387,7 @@
             line-height: 1.4;
             white-space: pre-wrap;
             word-break: break-word;
-            z-index: 1;
+            z-index: 3;
         }
 
         .speech-suggestion span {
@@ -441,7 +443,7 @@
             line-height: inherit;
             color: #c8cee8;
             overflow: hidden;
-            z-index: 2;
+            z-index: 40;
         }
 
         .prompt-suggestion .prompt-suggestion-mask {
@@ -1301,6 +1303,7 @@
             }
 
             const promptInput = document.getElementById("promptInput");
+            const promptOriginalPlaceholder = promptInput ? (promptInput.getAttribute('placeholder') || '') : '';
             const promptSuggestion = document.getElementById("promptSuggestion");
             const promptAltRow = document.getElementById("promptAltRow");
             const selectedTemplateLabel = document.getElementById("selectedTemplateLabel");
@@ -1311,13 +1314,55 @@
             if (promptAltRow) {
                 promptAltRow.style.display = "none";
             }
+            // Hide suggestions when the caret is moved by user action
+            try {
+                let lastCaretPos = promptInput ? (promptInput.selectionStart ?? 0) : 0;
+                function hideBothSuggestionsOnCaretMove() {
+                    try {
+                        if (promptSuggestion) {
+                            promptSuggestion.innerHTML = "";
+                            promptSuggestion.style.opacity = "0";
+                        }
+                        if (promptInput) {
+                            const ss = document.querySelector(`[data-speech-suggestion="${promptInput.id}"]`);
+                            if (ss) {
+                                ss.classList.remove("visible");
+                                ss.innerHTML = "";
+                            }
+                            const saved = promptInput.getAttribute('data-original-placeholder');
+                            if (saved !== null) {
+                                promptInput.setAttribute('placeholder', saved || '');
+                                promptInput.removeAttribute('data-original-placeholder');
+                            } else if (promptOriginalPlaceholder) {
+                                promptInput.setAttribute('placeholder', promptOriginalPlaceholder);
+                            }
+                        }
+                    } catch (e) { /* noop */ }
+                }
+                if (promptInput) {
+                    const checkCaret = () => {
+                        try {
+                            const pos = promptInput.selectionStart ?? 0;
+                            if (pos !== lastCaretPos) {
+                                lastCaretPos = pos;
+                                hideBothSuggestionsOnCaretMove();
+                            }
+                        } catch (e) { /* noop */ }
+                    };
+                    promptInput.addEventListener('mouseup', () => setTimeout(checkCaret, 0));
+                    promptInput.addEventListener('keyup', checkCaret);
+                    promptInput.addEventListener('click', checkCaret);
+                    promptInput.addEventListener('input', checkCaret);
+                    promptInput.addEventListener('keydown', () => setTimeout(checkCaret, 0));
+                }
+            } catch (e) { /* noop */ }
             const diagramTitleInput = document.getElementById("diagramTitleInput");
             const mermaidOutput = document.getElementById("mermaidOutput");
             const drawTypeButtons = Array.from(document.querySelectorAll(".draw-type-btn[data-draw-type]"));
             const drawTypePlaceholders = {
-                flow: "Décris les étapes du processus, ce qui se passe à chaque moment, les décisions possibles et comment on arrive au résultat final.",
-                class: "Décris les éléments importants, leurs caractéristiques, leurs rôles et la manière dont ils sont reliés entre eux.",
-                sequence: "Décris qui interagit avec qui, dans quel ordre, ce que chaque échange signifie et comment la situation évolue du début à la fin."
+                flow: "Décris le processus, les décisions et les résultats.",
+                class: "Décris les éléments, leurs caractéristiques, leurs rôles et leurs relations.",
+                sequence: "Décris les acteurs, les interactions et l'ordre."
             };
             const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
             let activeSpeechRecognition = null;
@@ -1334,10 +1379,40 @@
                 if (!normalized) {
                     return;
                 }
-                const separator = field.value && !field.value.endsWith("\n") ? "\n" : "";
+                // Smart separator: prefer a space between fragments, insert a newline
+                // only if the existing text ends with sentence punctuation.
+                const lastChar = field.value.slice(-1);
+                const endsWithNewline = lastChar === "\n";
+                const endsWithSentencePunct = /[.!?]\s*$/.test(field.value);
+                const startsWithPunct = /^[,;:.!?)\]}]/.test(normalized);
+                let separator = "";
+                if (field.value && !endsWithNewline) {
+                    if (startsWithPunct) separator = "";
+                    else if (endsWithSentencePunct) separator = "\n";
+                    else separator = " ";
+                }
                 field.value = field.value + (field.value ? separator : "") + normalized;
                 field.dispatchEvent(new Event("input", { bubbles: true }));
                 clearSpeechSuggestion(field);
+            }
+
+            function sanitizeScenarioText(raw) {
+                if (!raw) return "";
+                let text = String(raw);
+                try {
+                    const ps = document.getElementById('promptSuggestion');
+                    if (ps) {
+                        const overlay = ps.textContent || ps.innerText || '';
+                        if (overlay) {
+                            // remove overlay text if accidentally present in the value
+                            const idx = text.indexOf(overlay);
+                            if (idx !== -1) {
+                                text = (text.slice(0, idx) + text.slice(idx + overlay.length)).trim();
+                            }
+                        }
+                    }
+                } catch (e) { /* noop */ }
+                return text;
             }
 
             function getSpeechSuggestionElement(field) {
@@ -1364,6 +1439,22 @@
                 if (field === activeSpeechField) {
                     lastSpeechInterim = partial || "";
                 }
+                // Hide prompt inline suggestion while speech interim is visible to avoid overlap.
+                try {
+                    const ps = document.getElementById("promptSuggestion");
+                    if (ps) {
+                        ps.setAttribute("data-hidden-by-speech", "true");
+                        ps.style.opacity = "0";
+                    }
+                    // hide the textarea placeholder while speech interim is visible
+                    try {
+                        if (field && field.setAttribute) {
+                            const existing = field.getAttribute('placeholder') || '';
+                            if (existing) field.setAttribute('data-original-placeholder', existing);
+                            field.setAttribute('placeholder', '');
+                        }
+                    } catch (e) { /* noop */ }
+                } catch (e) { /* noop */ }
             }
 
             function clearSpeechSuggestion(field) {
@@ -1371,6 +1462,32 @@
                 if (field === activeSpeechField) {
                     lastSpeechInterim = "";
                 }
+                // If the prompt inline suggestion was hidden while speech interim was visible,
+                // restore it so the prompt assist can re-render.
+                try {
+                    const ps = document.getElementById("promptSuggestion");
+                    if (ps && ps.getAttribute("data-hidden-by-speech") === "true") {
+                        ps.removeAttribute("data-hidden-by-speech");
+                        // allow renderPromptSuggestion to repopulate the UI
+                        requestAnimationFrame(() => {
+                            try {
+                                refreshPromptSuggestion();
+                            } catch (e) { /* noop */ }
+                        });
+                    }
+                    // restore placeholder if it was hidden for speech
+                    try {
+                        if (promptInput) {
+                            const saved = promptInput.getAttribute('data-original-placeholder');
+                            if (saved !== null) {
+                                promptInput.setAttribute('placeholder', saved || '');
+                                promptInput.removeAttribute('data-original-placeholder');
+                            } else if (promptOriginalPlaceholder) {
+                                promptInput.setAttribute('placeholder', promptOriginalPlaceholder);
+                            }
+                        }
+                    } catch (e) { /* noop */ }
+                } catch (e) { /* noop */ }
             }
 
             function deactivateSpeechUiClasses() {
@@ -2392,16 +2509,16 @@
                     const payload = await buildCapsulePayload();
                     const preview = getDrawSharePreview();
                     let id = currentDraftId || createDraftId();
-                if (!id) {
-                    id = createShareToken();
-                }
-                const now = new Date().toISOString();
-                const record = await capsuleDrafts.upsertRecord({
-                    id,
-                    app: "draw",
-                    payload,
-                    title: preview.title,
-                    description: preview.description,
+                    if (!id) {
+                        id = createShareToken();
+                    }
+                    const now = new Date().toISOString();
+                    const record = await capsuleDrafts.upsertRecord({
+                        id,
+                        app: "draw",
+                        payload,
+                        title: preview.title,
+                        description: preview.description,
                         updatedAt: now
                     });
                     if (record) {
@@ -2895,7 +3012,7 @@
                     id: page?.id || fallback.id,
                     label,
                     title: titleFromScript || page?.title || page?.label || fallback.title,
-                    input: page?.input || "",
+                    input: sanitizeScenarioText(page?.input || ""),
                     mermaid,
                     lastAiMermaid,
                     drawType,
@@ -3145,116 +3262,13 @@
                 return value.trim();
             }
 
-            async function fetchPromptAssist({ text, cursor, placeholder, templateDescription, signal, timeoutMs = 15000 }) {
-                const template = state.systemPrompt || DEFAULT_SYSTEM_PROMPT;
-                const systemPrompt = (template || DEFAULT_SYSTEM_PROMPT).replace(/{{TEMPLATE_DESCRIPTION}}/g, templateDescription || "le modèle sélectionné");
-                const body = {
-                    model: "gpt-4o-mini",
-                    messages: [
-                        { role: "system", content: systemPrompt },
-                        {
-                            role: "user",
-                            content:
-                                `Texte complet :\n"""${text || ""}"""\n` +
-                                `Position du curseur (index): ${cursor}\n` +
-                                `Contexte/tonalité : ${placeholder || ""}\n` +
-                                `Format attendu (JSON strict) : {"main":"(4 à 6 mots)","alts":[{"label":"mot clé","text":"3 à 6 mots"}...]}\n` +
-                                `Ne retourne rien d'autre que ce JSON.`
-                        }
-                    ],
-                    max_tokens: 220,
-                    temperature: 0.35,
-                    response_format: { type: "json_object" }
-                };
-                var backend;
-                if (window.GoToolkitAIBackend && typeof window.GoToolkitAIBackend.getBackend === "function") {
-                    backend = await GoToolkitAIBackend.getBackend("chat");
-                    if (backend && backend.type === "ollama-unavailable") {
-                        setStatus("Serveur Ollama indisponible — vérifie l'URL ou la connexion.");
-                        return null;
-                    }
-                }
-                var endpoint = backend?.endpoint || "https://openai.gotoolkit.workers.dev/v1/chat/completions";
-                var authorization = backend?.apiKey ? { Authorization: `Bearer ${backend.apiKey}` } : {};
-                console.debug("[prompt-assist] outbound payload", {
-                    backendType: backend?.type || "proxy",
-                    textLength: (text || "").length,
-                    cursor
-                });
-                const controller = new AbortController();
-                if (signal) {
-                    signal.addEventListener("abort", () => controller.abort(), { once: true });
-                }
-                const timeout = setTimeout(() => controller.abort(), timeoutMs);
+            async function fetchPromptAssist(/* params omitted - API disabled */) {
+                // Prompt-assist API disabled: return no suggestion to avoid external calls.
                 try {
-                    // Prefer the unified IA client which will route to Ollama/OpenAI/proxy as configured
-                    let rawText = null;
-                    if (window.GoToolkitIA && typeof window.GoToolkitIA.chatCompletion === "function") {
-                        try {
-                            rawText = await window.GoToolkitIA.chatCompletion({ payload: body, signal: controller.signal, stopCondition: null });
-                        } catch (err) {
-                            clearTimeout(timeout);
-                            if (err && (err.message === "OllamaUnavailable" || (err.backendInfo && err.backendInfo.type === "ollama-unavailable"))) {
-                                setStatus("Serveur Ollama indisponible — vérifie l'URL ou la connexion.");
-                                return null;
-                            }
-                            throw err;
-                        }
-                    } else {
-                        // Fallback: direct fetch to computed endpoint (legacy behavior)
-                        const res = await fetch(endpoint, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                ...authorization
-                            },
-                            body: JSON.stringify(body),
-                            signal: controller.signal
-                        });
-                        clearTimeout(timeout);
-                        rawText = await res.text();
-                        if (!res.ok) {
-                            console.warn("[prompt-assist] API error", rawText);
-                            setStatus("Erreur IA: " + (rawText || res.status));
-                            return null;
-                        }
-                    }
-                    clearTimeout(timeout);
-                    if (!rawText) return null;
-                    let content = "";
-                    try {
-                        const parsedOuter = JSON.parse(rawText);
-                        content = parsedOuter?.choices?.[0]?.message?.content || parsedOuter?.output || parsedOuter?.result || "";
-                    } catch (err) {
-                        // rawText might already be the inner content
-                        content = rawText;
-                    }
-                    let parsedJson = null;
-                    const jsonCandidate = extractJsonFromMarkdown(content || rawText);
-                    try {
-                        parsedJson = JSON.parse(jsonCandidate);
-                    } catch (err) {
-                        console.warn("[prompt-assist] cannot parse content as JSON", err, {
-                            content,
-                            jsonCandidate
-                        });
-                    }
-                    const main = typeof parsedJson?.main === "string" ? parsedJson.main.trim() : "";
-                    const alts = Array.isArray(parsedJson?.alts) ? parsedJson.alts : [];
-                    console.debug("[prompt-assist] parsed", {
-                        mainLength: (main || "").length,
-                        altCount: Array.isArray(alts) ? alts.length : 0
-                    });
-                    return { main, alts: Array.isArray(alts) ? alts : [] };
-                } catch (err) {
-                    if (err && err.name === 'AbortError') {
-                        throw err;
-                    }
-                    console.warn('[prompt-assist] request failed', err);
-                    setStatus('Erreur lors de la requête IA — vérifie le backend.');
+                    return { main: "", alts: [] };
+                } catch (e) {
                     return null;
                 }
-
             }
 
             function renderPromptSuggestion() {
@@ -3269,8 +3283,27 @@
                 if (!hint) {
                     promptSuggestion.innerHTML = "";
                     promptSuggestion.style.opacity = "0";
+                    try {
+                        if (promptInput) {
+                            const saved = promptInput.getAttribute('data-original-placeholder');
+                            if (saved !== null) {
+                                promptInput.setAttribute('placeholder', saved || '');
+                                promptInput.removeAttribute('data-original-placeholder');
+                            } else if (promptOriginalPlaceholder) {
+                                promptInput.setAttribute('placeholder', promptOriginalPlaceholder);
+                            }
+                        }
+                    } catch (e) { /* noop */ }
                     return;
                 }
+                // Hide textarea placeholder while prompt inline suggestion is visible
+                try {
+                    if (promptInput) {
+                        const existing = promptInput.getAttribute('placeholder') || '';
+                        if (existing) promptInput.setAttribute('data-original-placeholder', existing);
+                        promptInput.setAttribute('placeholder', '');
+                    }
+                } catch (e) { /* noop */ }
                 const before = escapeHtml(value.slice(0, caret));
                 const after = escapeHtml(value.slice(caret));
                 const hintHtml = escapeHtml(hint);
@@ -3344,7 +3377,7 @@
                 if (promptSuggestDebounce) {
                     clearTimeout(promptSuggestDebounce);
                 }
-                promptSuggestDebounce = setTimeout(startPromptAISuggestion, 650);
+                promptSuggestDebounce = setTimeout(startPromptAISuggestion, 250);
             }
 
             async function startPromptAISuggestion() {
@@ -3356,7 +3389,7 @@
                 const apiKey = (state.apiKey || "").trim();
                 const rawValue = promptInput.value || "";
                 const valueLength = rawValue.trim().length;
-                if (!valueLength || valueLength < 12) {
+                if (!valueLength || valueLength < 6) {
                     console.debug("[prompt-assist] skip: text too short", { length: valueLength });
                     clearPromptAiSuggestion();
                     clearPromptAlternatives();
@@ -4603,7 +4636,7 @@
                     const page = getActivePage();
                     clearSpeechSuggestion(promptInput);
                     if (page) {
-                        page.input = promptInput.value;
+                        page.input = sanitizeScenarioText(promptInput.value);
                         saveState();
                     }
                     setInlineSuggestion("");
