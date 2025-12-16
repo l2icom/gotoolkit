@@ -1618,9 +1618,9 @@
                     aria-labelledby="promptzillaTitle">
                     <div class="modal promptzilla-modal">
                         <div class="modal-header">
-                            <h3 id="promptzillaTitle">⊞ Petit Robert</h3>
+                            <h3 id="promptzillaTitle" title="⊞ Petit Robert Downey Jr">⊞ Modèle</h3>
                             <button class="modal-close" id="promptzillaClose" type="button"
-                                aria-label="Fermer ⊞ Petit Robert">×</button>
+                                aria-label="Fermer ⊞ Modèle">×</button>
                         </div>
                         <div class="promptzilla-grid" id="promptzillaList">
                             <!-- cards rendered by JS -->
@@ -1632,13 +1632,12 @@
                 </div>
 
                 <div class="global-actions">
-                    <button class="btn" id="openPromptzillaBtn" aria-label="Ouvrir ⊞ Petit Robert">⊞ Petit
-                        Robert</button>
-                    <button class="btn" id="openContextModal" aria-label="Ouvrir Gutenberg">⸙ Gutenberg</button>
-                    <button class="btn" id="openIaModal" aria-label="Ouvrir Soulgorithm">⌘ Soulgorithm</button>
+                    <button class="btn" id="openPromptzillaBtn" aria-label="Ouvrir ⊞ Modèle" title="⊞ Petit Robert Downey Jr">⊞ Modèle</button>
+                    <button class="btn" id="openContextModal" aria-label="Ouvrir Contexte" title="⸙ Gutenberg">⸙ Contexte</button>
+                    <button class="btn" id="openIaModal" aria-label="Ouvrir Prompt" title="⌘ Promptzilla">⌘ Prompt</button>
 
                     <div class="menu-trigger">
-                        <button class="btn" id="optionsBtn" aria-label="Hublot">◯ Hublot</button>
+                        <button class="btn" id="optionsBtn" aria-label="Affichage" title="Affichage">◯ Affichage</button>
                         <div class="context-menu" id="optionsMenu">
                             <div class="menu-panel">
                                 <label>
@@ -1862,7 +1861,7 @@
         <div class="modal-overlay" id="iaModalOverlay" role="dialog" aria-modal="true" aria-labelledby="iaModalTitle">
             <div class="modal">
                 <div class="modal-header">
-                    <h3 id="iaModalTitle">⌘ Soulgorithm</h3>
+                    <h3 id="iaModalTitle" title="⌘ Promptzilla">⌘ Prompt</h3>
                     <button class="modal-close" id="iaModalClose" type="button" aria-label="Fermer l'IA">×</button>
                 </div>
                 <div class="ia-actions">
@@ -2500,6 +2499,9 @@
             }
 
             function buildTimelineStatePayload() {
+                var primaryView = views[0] || {};
+                var primaryCtx = normalizeContextState(primaryView.context);
+                var tplMeta = getTemplateById(primaryCtx.templateId || selectedPromptzillaId || "");
                 return {
                     views: views.map(function (view) {
                         return {
@@ -2515,6 +2517,8 @@
                     templates: {
                         create: customSystemTemplates.create
                     },
+                    templateId: primaryCtx.templateId || selectedPromptzillaId || null,
+                    templateName: primaryCtx.templateName || tplMeta?.title || tplMeta?.label || null,
                     brief: getTimelineBrief()
                 };
             }
@@ -2596,6 +2600,7 @@
                 base.prompts.create = typeof base.prompts.create === "string" ? base.prompts.create : "";
                 base.prompts.modify = typeof base.prompts.modify === "string" ? base.prompts.modify : null;
                 base.templateId = typeof base.templateId === "string" ? base.templateId : null;
+                base.templateName = typeof base.templateName === "string" ? base.templateName : null;
                 return base;
             }
 
@@ -6761,6 +6766,8 @@
                 var ctx = getActiveViewContext();
                 if (ctx) {
                     ctx.templateId = selectedPromptzillaId;
+                    var tplMeta = getTemplateById(selectedPromptzillaId || "");
+                    ctx.templateName = tplMeta?.title || tplMeta?.label || selectedPromptzillaId || null;
                 }
                 updatePromptTemplateMeta();
                 if (!options || !options.skipPersist) {

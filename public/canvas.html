@@ -1935,13 +1935,11 @@
 
 
                 <div class="menu-trigger" id="settingsMenuTrigger">
-                    <button id="templateBtn" class="btn" type="button" aria-label="Choisir un Promptzilla">⊞ Petit
-                        Robert</button>
-                    <button id="contextEditorBtn" class="btn" type="button" aria-label="Ouvrir Gutenberg">⸙
-                        Gutenberg</button>
-                    <button id="contextBtn" class="btn" type="button" aria-label="Soulgorithm">⌘ Soulgorithm</button>
+                    <button id="templateBtn" class="btn" type="button" aria-label="Choisir un modèle" title="⊞ Petit Robert Downey Jr">⊞ Modèle</button>
+                    <button id="contextEditorBtn" class="btn" type="button" aria-label="Ouvrir Contexte" title="⸙ Gutenberg">⸙ Contexte</button>
+                    <button id="contextBtn" class="btn" type="button" aria-label="Prompt" title="⌘ Promptzilla">⌘ Prompt</button>
 
-                    <button id="textStyleBtn" class="btn" type="button" aria-label="Hublot">◯ Hublot</button>
+                    <button id="textStyleBtn" class="btn" type="button" aria-label="Affichage" title="Affichage">◯ Affichage</button>
                     <div class="context-menu" id="settingsMenu">
                         <div class="menu-panel">
                             <label>
@@ -2107,7 +2105,7 @@
     <div class="modal-overlay" id="contextModal">
         <div class="modal promptzilla-modal">
             <div class="modal-header">
-                <h3>⌘ Soulgorithm</h3>
+                <h3 title="⌘ Promptzilla">⌘ Prompt</h3>
                 <button class="modal-close" data-close="contextModal">×</button>
             </div>
             <div class="modal-panel hide" data-panel="settings">
@@ -2146,7 +2144,7 @@
     <div class="modal-overlay" id="templateModal">
         <div class="modal">
             <div class="modal-header">
-                <h3>⊞ Petit Robert</h3>
+                <h3 title="⊞ Petit Robert Downey Jr">⊞ Modèle</h3>
                 <button class="modal-close" data-close="templateModal">×</button>
             </div>
             <div class="modal-panel">
@@ -2926,8 +2924,9 @@
                     prompts: promptLibrary,
                     promptTemplateId: activePromptTemplateId,
                     iaMode: activeIaMode,
-                    defaultTemplateId: currentTemplateId
-                    ,
+                    defaultTemplateId: currentTemplateId,
+                    templateId: currentTemplateId,
+                    templateName: (getTemplateById(currentTemplateId)?.name || getTemplateById(currentTemplateId)?.defaultTitle || currentTemplateId || "").toString(),
                     backgroundDefault: (backgroundSelector && backgroundSelector.value) || userDefaultBackground
                 }
             };
@@ -6963,7 +6962,7 @@
             },
             {
                 title: "Choisis un modèle",
-                description: "Ouvre ⊞ Petit Robert pour parcourir et appliquer différents modèles de canvas.",
+                description: "Ouvre ⊞ Modèle pour parcourir et appliquer différents modèles de canvas.",
                 selector: "#promptzillaBtn"
             },
             {

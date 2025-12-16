@@ -287,6 +287,12 @@
             margin: 0;
         }
 
+        .share-card-meta {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
         .share-card-desc {
             margin: 0;
             color: var(--muted);
@@ -470,6 +476,8 @@
         }
 
         .superpower-tag {
+            display: inline-flex;
+            align-items: center;
             font-size: 0.65rem;
             letter-spacing: 0.15em;
             text-transform: uppercase;
@@ -1298,26 +1306,69 @@
                     .slice(0, 2);
             }
 
+            const DRAW_TYPE_LABELS = {
+                sequence: "Échange",
+                flow: "Processus",
+                class: "Structure"
+            };
+
+            function stripEmojiPrefix(text) {
+                if (!text || typeof text !== "string") return "";
+                try {
+                    return text.replace(/^[\p{Emoji_Presentation}\p{Emoji}\u200d\ufe0f]+\s*/u, "").trim();
+                } catch (e) {
+                    return text.trim();
+                }
+            }
+
+            function buildMetaBadge(label) {
+                if (!label) return "";
+                const clean = stripEmojiPrefix(label);
+                if (!clean) return "";
+                const safe = clean.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                return `<span class="superpower-tag">${safe}</span>`;
+            }
+
             function extractPreview(app, payload) {
+                let templateLabel = "";
                 if (app === "nuances") {
                     const firstSlide = payload?.slides?.[0];
                     const tabName = firstSlide?.title || "Sans titre";
                     const context = payload?.settings?.globalContext || payload?.settings?.context || "";
-                    return { tabName, lines: normalizeLines(context) };
+                    templateLabel =
+                        payload?.settings?.templateName ||
+                        payload?.settings?.defaultTemplateId ||
+                        firstSlide?.templateName ||
+                        firstSlide?.templateId ||
+                        "";
+                    return { tabName, lines: normalizeLines(context), templateLabel };
                 }
                 if (app === "plan") {
                     const firstView = payload?.views?.[0];
                     const tabName = firstView?.title || firstView?.name || "Planning";
                     const brief = payload?.brief || "";
-                    return { tabName, lines: normalizeLines(brief) };
+                    templateLabel =
+                        payload?.templateName ||
+                        firstView?.context?.templateName ||
+                        firstView?.context?.templateId ||
+                        "";
+                    return { tabName, lines: normalizeLines(brief), templateLabel };
                 }
                 if (app === "draw") {
                     const firstPage = payload?.pages?.[0];
                     const tabName = firstPage?.title || firstPage?.label || "Page 1";
                     const context = firstPage?.input || "";
-                    return { tabName, lines: normalizeLines(context) };
+                    templateLabel =
+                        payload?.templateName ||
+                        payload?.templateId ||
+                        payload?.template?.name ||
+                        payload?.template?.id ||
+                        "";
+                    const drawType = firstPage?.drawType || payload?.drawType || "";
+                    const drawTypeLabel = DRAW_TYPE_LABELS[drawType] || drawType || "";
+                    return { tabName, lines: normalizeLines(context), templateLabel, drawTypeLabel };
                 }
-                return { tabName: "Sans titre", lines: [] };
+                return { tabName: "Sans titre", lines: [], templateLabel: "" };
             }
 
             function getStoredRecords() {
@@ -1361,8 +1412,10 @@
                 card.target = "_blank";
                 card.rel = "noopener noreferrer";
                 card.setAttribute("data-app", app);
+                const metaHtml = buildMetaBadge(preview.templateLabel || preview.drawTypeLabel);
                 card.innerHTML = `
                     <p class="share-card-title">${definition.emoji} ${preview.tabName}</p>
+                    ${metaHtml}
                     <p class="share-card-desc">${preview.lines.join(" · ") || "(sans contexte)"}</p>
                     <p class="share-card-date">${formattedDate}</p>
                 `;
@@ -1421,8 +1474,10 @@
                 card.target = "_self";
                 card.rel = "noopener";
                 card.setAttribute("data-app", record.app);
+                const metaHtml = buildMetaBadge(preview.templateLabel || preview.drawTypeLabel);
                 card.innerHTML = `
                     <p class="share-card-title">${definition.emoji} ${preview.tabName}</p>
+                    ${metaHtml}
                     <p class="share-card-desc">${preview.lines.join(" · ") || "Complète le contexte pour l'afficher ici."}</p>
                     <p class="share-card-date">${formattedDate}</p>
                 `;
@@ -1467,12 +1522,23 @@
                     return;
                 }
                 const entries = capsuleDrafts.getAllRecords().filter(record => APP_DEFINITIONS[record.app]);
-                if (!entries.length) {
+                const staleIds = [];
+                const filtered = entries.filter(record => {
+                    const hasPayload = record && record.payload && typeof record.payload === "object";
+                    if (!hasPayload && record?.id) {
+                        staleIds.push(record.id);
+                    }
+                    return hasPayload;
+                });
+                if (staleIds.length) {
+                    staleIds.forEach(id => capsuleDrafts.removeRecord?.(id));
+                }
+                if (!filtered.length) {
                     if (savedEmpty) savedEmpty.hidden = false;
                     return;
                 }
                 if (savedEmpty) savedEmpty.hidden = true;
-                const cards = entries
+                const cards = filtered
                     .map(buildSavedCard)
                     .filter(Boolean);
                 const pinned = cards
@@ -1542,6 +1608,11 @@
 
             refreshGallery();
             refreshSavedGallery();
+            window.addEventListener("pageshow", () => {
+                refreshGallery();
+                refreshSavedGallery();
+            });
+            window.addEventListener("storage", refreshSavedGallery);
         })();
     </script>
     <script type="module">

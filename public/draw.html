@@ -966,8 +966,8 @@
             <!-- Promptzilla modal: 9 diagram choices -->
             <div class="modal-overlay" id="promptzillaModal" aria-hidden="true">
                 <div class="modal promptzilla-modal">
-                    <header class="modal-header">
-                        <h3>⊞ Petit Robert</h3>
+                        <header class="modal-header">
+                            <h3 title="⊞ Petit Robert Downey Jr">⊞ Modèle</h3>
                         <button id="closePromptzillaModal" class="btn-secondary" type="button">✕</button>
                     </header>
                     <div class="blueprint-grid" id="promptzillaList" role="listbox"
@@ -985,9 +985,9 @@
                 <button id="deletePageBtn" class="tab-action" title="Supprimer la page">×</button>
             </div>
             <div class="global-actions">
-                <button id="promptzillaBtn" class="btn drawer-toggle-btn" type="button">⊞ Petit Robert</button>
-                <button id="toggleDrawerBtn" class="btn drawer-toggle-btn" type="button">⸙ Gutenberg</button>
-                <button id="aiSettingsBtn" class="btn ai-button" type="button">⌘ Soulgorithm</button>
+                <button id="promptzillaBtn" class="btn drawer-toggle-btn" type="button" title="⊞ Petit Robert Downey Jr">⊞ Modèle</button>
+                <button id="toggleDrawerBtn" class="btn drawer-toggle-btn" type="button" title="⸙ Gutenberg">⸙ Contexte</button>
+                <button id="aiSettingsBtn" class="btn ai-button" type="button" title="⌘ Promptzilla">⌘ Prompt</button>
                 <div class="menu-trigger" id="capsuleMenuTrigger">
                     <button id="capsuleMenuBtn" class="btn" type="button" title="Capsule">⬠ Capsule</button>
                 <div class="context-menu" id="capsuleMenu">
@@ -1112,7 +1112,7 @@
     <div class="modal-overlay" id="aiModal">
         <div class="modal">
             <header class="modal-header">
-                <h3>⌘ Soulgorithm</h3>
+                <h3 title="⌘ Promptzilla">⌘ Prompt</h3>
                 <button id="closeAiModal" class="btn-secondary" type="button">✕</button>
             </header>
             <!-- API key and reasoning settings are global (Réglages) and moved to index.html -->
@@ -1249,7 +1249,8 @@
                 apiKey: "",
                 promptTemplate: DEFAULT_PROMPT_TEMPLATE,
                 systemPrompt: DEFAULT_SYSTEM_PROMPT,
-                reasoningEffort: "low"
+                reasoningEffort: "low",
+                templateId: null
             };
             let pendingSceneCode = "";
             let bridgeDetectionPromise = null;
@@ -1680,7 +1681,9 @@
                     closePromptzillaModal();
                     return;
                 }
+                state.templateId = selectedPromptzillaId;
                 updateSelectedTemplateLabelDisplay();
+                try { saveState(); } catch (e) { /* noop */ }
                 const promptInputEl = document.getElementById("promptInput");
                 try { updateActivePageDrawType(bp.drawType); } catch (err) { }
                 closePromptzillaModal();
@@ -1829,7 +1832,7 @@
             const drawerMediaQuery = window.matchMedia("(max-width: 1200px)");
             const shareHistory = window.goToolkitShareHistory;
             const generateDefaultLabel = generateBtn?.textContent || "⌘ Répondre";
-            const drawerDefaultLabel = toggleDrawerBtn?.textContent || "⸙ Gutenberg";
+            const drawerDefaultLabel = toggleDrawerBtn?.textContent || "⸙ Contexte";
             let generateCooldownTimer = null;
             let generateCooldownEndTime = 0;
             let currentTourIndex = 0;
@@ -1851,7 +1854,7 @@
                 },
                 {
                     title: "Choisir un cas métier",
-                    description: "Ouvre ⊞ Petit Robert pour sélectionner le modèle de diagramme le plus adapté à ton contexte.",
+                    description: "Ouvre ⊞ Modèle pour sélectionner le modèle de diagramme le plus adapté à ton contexte.",
                     selector: "#promptzillaBtn"
                 },
                 {
@@ -1961,15 +1964,16 @@
                         return;
                     }
                     const parsed = JSON.parse(raw);
-                const storedPages = Array.isArray(parsed.pages) && parsed.pages.length ? parsed.pages : [createPage(1)];
-                const normalizedPages = storedPages.map((page, index) => normalizePage(page, index));
-                state = {
-                    pages: normalizedPages,
-                    activeIndex: Math.max(0, Math.min(normalizedPages.length - 1, parsed.activeIndex || 0)),
-                    apiKey: parsed.apiKey || storedApiKey || "",
+                    const storedPages = Array.isArray(parsed.pages) && parsed.pages.length ? parsed.pages : [createPage(1)];
+                    const normalizedPages = storedPages.map((page, index) => normalizePage(page, index));
+                    state = {
+                        pages: normalizedPages,
+                        activeIndex: Math.max(0, Math.min(normalizedPages.length - 1, parsed.activeIndex || 0)),
+                        apiKey: parsed.apiKey || storedApiKey || "",
                         promptTemplate: parsed.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
                         systemPrompt: parsed.systemPrompt || DEFAULT_SYSTEM_PROMPT,
-                        reasoningEffort: parsed.reasoningEffort || parsed.reasoning?.effort || "low"
+                        reasoningEffort: parsed.reasoningEffort || parsed.reasoning?.effort || "low",
+                        templateId: parsed.templateId || null
                     };
                 } catch (err) {
                     console.warn("Impossible de charger l'état", err);
@@ -2017,8 +2021,10 @@
                 try {
                     const persistable = {
                         ...state,
+                        templateId: selectedPromptzillaId || state.templateId || null,
                         pages: state.pages.map((page, index) => normalizePage(page, index))
                     };
+                    state.templateId = persistable.templateId;
                     state.pages = persistable.pages;
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(persistable));
                     if (state.apiKey) {
@@ -2072,6 +2078,7 @@
 
             async function buildSharePayload() {
                 const scene = await captureExcalidrawScene();
+                const selectedTemplate = getSelectedPromptzilla();
                 return {
                     pages: state.pages.map((page, index) => normalizePage(page, index)),
                     activeIndex: state.activeIndex,
@@ -2079,6 +2086,8 @@
                     promptTemplate: state.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
                     systemPrompt: state.systemPrompt || DEFAULT_SYSTEM_PROMPT,
                     reasoningEffort: state.reasoningEffort || "low",
+                    templateId: selectedPromptzillaId || state.templateId || null,
+                    templateName: selectedTemplate?.label || selectedTemplate?.title || null,
                     scene
                 };
             }
@@ -2096,9 +2105,12 @@
                 state.promptTemplate = payload.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
                 state.systemPrompt = payload.systemPrompt || DEFAULT_SYSTEM_PROMPT;
                 state.reasoningEffort = payload.reasoningEffort || payload.reasoning?.effort || "low";
+                state.templateId = payload.templateId || null;
+                selectedPromptzillaId = state.templateId;
                 if (payload.scene) {
                     sharedScenePayload = sanitizeScene(payload.scene);
                 }
+                updateSelectedTemplateLabelDisplay();
                 return true;
             }
 
@@ -2166,7 +2178,9 @@
                     apiKey: state.apiKey || "",
                     promptTemplate: state.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
                     systemPrompt: state.systemPrompt || DEFAULT_SYSTEM_PROMPT,
-                    reasoningEffort: state.reasoningEffort || "low"
+                    reasoningEffort: state.reasoningEffort || "low",
+                    templateId: selectedPromptzillaId || state.templateId || null,
+                    templateName: getSelectedPromptzilla()?.label || getSelectedPromptzilla()?.title || null
                 };
             }
 
@@ -2185,6 +2199,8 @@
                 state.apiKey = payload.apiKey || state.apiKey || "";
                 state.promptTemplate = payload.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
                 state.reasoningEffort = payload.reasoningEffort || payload.reasoning?.effort || "low";
+                state.templateId = payload.templateId || null;
+                selectedPromptzillaId = state.templateId;
                 sharedScenePayload = null;
                 currentShareToken = null;
                 shareLoadedFromRemote = false;
@@ -2198,6 +2214,7 @@
                 if (systemPromptField) {
                     systemPromptField.value = state.systemPrompt || DEFAULT_SYSTEM_PROMPT;
                 }
+                updateSelectedTemplateLabelDisplay();
                 updateShareMenuUI();
                 saveState();
                 return true;
@@ -4912,6 +4929,9 @@
                     }
                 } catch (e) {
                     /* noop */
+                }
+                if (state.templateId && !selectedPromptzillaId) {
+                    selectedPromptzillaId = state.templateId;
                 }
                 renderTabs();
                 syncFormWithPage();
