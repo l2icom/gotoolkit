@@ -677,6 +677,7 @@
         }
 
         .label-title {
+            margin-top: 6px;
             display: inline-flex;
             align-items: center;
             gap: 4px;
@@ -998,8 +999,8 @@
                         <label>
                             <span class="label-title">Moteur IA</span>
                             <select id="aiBackendSelect">
-                                <option value="openai">OpenAI Cloud</option>
-                                <option value="ollama">Ollama Local</option>
+                                <option value="openai">OpenAI</option>
+                                <option value="ollama">Ollama</option>
                             </select>
                         </label>
                     </div>
@@ -1020,7 +1021,6 @@
                                     <div style="display:flex; gap:0.35rem;">
                                         <button id="openaiVerifyBtn" type="button"
                                             class="btn-secondary">Vérifier</button>
-                                        <button id="openaiTestBtn" type="button" class="btn-secondary">Test</button>
                                     </div>
                                 </div>
                                 <span class="label-subtitle">Réponse plus rapide avec votre clé</span>
@@ -1059,30 +1059,47 @@
                                         <a href="https://docs.ollama.com/quickstart" class="label-title dashed-link"
                                             target="_blank" rel="noopener noreferrer">Connexion Ollama</a>
                                         <span class="ia-status" id="ollamaStatus" aria-hidden="true"></span>
+                                        </span>
                                     </div>
                                     <div style="display:flex; gap:0.35rem;">
                                         <button id="ollamaVerifyBtn" type="button"
                                             class="btn-secondary">Vérifier</button>
-                                        <button id="ollamaTestBtn" type="button" class="btn-secondary">Test</button>
                                     </div>
                                 </div>
-                                <span class="label-subtitle">Requêtes envoyées à un serveur local (par défaut
-                                    http://localhost:11434)</span>
+
+                            </label>
+                        </div>
+
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <span class="label-title">Serveur Ollama</span>
+                                <select id="ollamaAddressSelect">
+                                <option value="local">Local : http://localhost:11434</option>
+                                    <option value="cloud">Cloud : https://ollama.com</option>
+                                    <option value="custom">Personnalisé</option>
+                                </select>
+                            </label>
+
+                        </div>
+
+                        <div class="field-row" id="ollamaUrlRow" style="margin-top:6px;">
+                            <label style="width:100%">
                                 <input id="ollamaUrlInput" type="text" placeholder="http://localhost:11434" />
                             </label>
                         </div>
                         <div class="field-row">
-                            <label style="width:100%">
-                                <span class="label-title">Clé API Ollama</span>
-                                <span class="label-subtitle">Ajoute la clé si ton serveur local exige une
-                                    authentification.</span>
-                                <input id="ollamaApiKeyInput" type="password" placeholder="Clé secrète (optionnelle)" />
-                            </label>
+                            <div id="ollamaApiKeyRow">
+                                <label style="width:100%">
+                                    <a href="https://ollama.com/settings/keys" class="label-title dashed-link"
+                                        target="_blank" rel="noopener noreferrer">Clé API Ollama (en ligne)</a>
+                                    <input id="ollamaApiKeyInput" type="password"
+                                        placeholder="Clé secrète (optionnelle)" style="width:100%" />
+                                </label>
+                            </div>
                         </div>
                         <div class="field-row">
                             <label>
                                 <span class="label-title">Moteur Ollama</span>
-                                <span class="label-subtitle">Choisis le modèle disponible sur ton serveur</span>
                                 <select id="ollamaModelSelect">
                                     <option value="gpt-oss:latest">gpt-oss:latest</option>
                                     <option value="genma3">genma3</option>
@@ -1756,7 +1773,21 @@
         }
         async function refreshOllamaModels({ showErrors = false } = {}) {
             var config = window.GoToolkitIAConfig;
-            var url = config && typeof config.getOllamaUrl === "function" ? config.getOllamaUrl() : "";
+            var url = "";
+            var addressSelection = settingsOllamaAddressSelect ? settingsOllamaAddressSelect.value : "";
+            if (addressSelection === "local") {
+                url = "http://localhost:11434";
+            } else if (addressSelection === "cloud") {
+                url = "https://ollama.com";
+            } else if (settingsOllamaUrlInput && settingsOllamaUrlInput.value) {
+                url = settingsOllamaUrlInput.value;
+            } else if (config && typeof config.getOllamaUrl === "function") {
+                url = config.getOllamaUrl();
+            }
+            // keep config/storage in sync with the selection so future calls use the right base URL
+            if (config && typeof config.setOllamaUrl === "function" && url) {
+                config.setOllamaUrl(url);
+            }
             if (!url) {
                 if (showErrors) {
                     showToast("URL Ollama manquante pour récupérer les modèles.", true);
@@ -1768,7 +1799,7 @@
             try {
                 var response = await fetch(normalizedUrl + "/api/tags", {
                     method: "GET",
-                    headers: buildOllamaHeaders(apiKey),
+                    headers: buildOllamaHeaders(apiKey, { targetUrl: normalizedUrl }),
                     cache: "no-cache"
                 });
                 if (!response.ok) {
@@ -1791,12 +1822,17 @@
                 return [];
             }
         }
+        function isLocalOllama(url) {
+            if (!url || typeof url !== "string") return false;
+            return /^https?:\/\/(localhost|127(?:\.\d+){3})(:\d+)?/i.test(url.trim());
+        }
         function buildOllamaHeaders(apiKey, options) {
             var headers = {};
             if (options?.json) {
                 headers["Content-Type"] = "application/json";
             }
-            if (apiKey) {
+            // Avoid adding custom auth headers for local Ollama to dodge CORS preflight blocks.
+            if (apiKey && !isLocalOllama(options?.targetUrl)) {
                 headers.Authorization = "Bearer " + apiKey;
                 headers["Ollama-Api-Key"] = apiKey;
                 headers["X-Ollama-Api-Key"] = apiKey;
@@ -1939,13 +1975,14 @@
         const settingsOpenAiModelSelect = document.getElementById("openaiModelSelect");
         const settingsOllamaUrlInput = document.getElementById("ollamaUrlInput");
         const settingsOllamaApiKeyInput = document.getElementById("ollamaApiKeyInput");
+        const settingsOllamaAddressSelect = document.getElementById("ollamaAddressSelect");
+        const settingsOllamaUrlRow = document.getElementById("ollamaUrlRow");
+        const settingsOllamaApiKeyRow = document.getElementById("ollamaApiKeyRow");
         const settingsOllamaModelSelect = document.getElementById("ollamaModelSelect");
         const openaiStatusEl = document.getElementById("openaiStatus");
         const ollamaStatusEl = document.getElementById("ollamaStatus");
         const openaiVerifyBtn = document.getElementById("openaiVerifyBtn");
-        const openaiTestBtn = document.getElementById("openaiTestBtn");
         const ollamaVerifyBtn = document.getElementById("ollamaVerifyBtn");
-        const ollamaTestBtn = document.getElementById("ollamaTestBtn");
         const aiBackendSelect = document.getElementById("aiBackendSelect");
         const openaiSettingsEl = document.getElementById("openaiSettings");
         const ollamaSettingsEl = document.getElementById("ollamaSettings");
@@ -1956,6 +1993,44 @@
             if (ollamaSettingsEl) ollamaSettingsEl.style.display = val === "ollama" ? "" : "none";
             window.GoToolkitSelectedAIBackend = val;
         }
+
+        function updateOllamaAddressUI() {
+            if (!settingsOllamaAddressSelect) return;
+            const val = settingsOllamaAddressSelect.value || 'local';
+            if (settingsOllamaUrlRow) {
+                settingsOllamaUrlRow.style.display = (val === 'custom') ? '' : 'none';
+            }
+            if (settingsOllamaUrlInput) {
+                if (val === 'local') {
+                    settingsOllamaUrlInput.value = 'http://localhost:11434';
+                } else if (val === 'cloud') {
+                    settingsOllamaUrlInput.value = 'https://ollama.com';
+                }
+            }
+            if (settingsOllamaApiKeyRow) {
+                settingsOllamaApiKeyRow.style.display = (val === 'local') ? 'none' : '';
+            }
+        }
+
+        settingsOllamaAddressSelect?.addEventListener('change', () => {
+            updateOllamaAddressUI();
+        });
+
+        (function initOllamaAddressSelection() {
+            const configUrl = (window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getOllamaUrl === 'function') ? window.GoToolkitIAConfig.getOllamaUrl() : (settingsOllamaUrlInput?.value || '');
+            if (!settingsOllamaAddressSelect) return;
+            if (configUrl.startsWith('http://localhost') || configUrl.startsWith('https://localhost')) {
+                settingsOllamaAddressSelect.value = 'local';
+            } else if (configUrl.startsWith('https://ollama.com')) {
+                settingsOllamaAddressSelect.value = 'cloud';
+            } else if (configUrl) {
+                settingsOllamaAddressSelect.value = 'custom';
+                if (settingsOllamaUrlInput && !settingsOllamaUrlInput.value) settingsOllamaUrlInput.value = configUrl;
+            } else {
+                settingsOllamaAddressSelect.value = 'local';
+            }
+            updateOllamaAddressUI();
+        })();
 
         aiBackendSelect?.addEventListener("change", function () {
             try {
@@ -2106,9 +2181,7 @@
         if (cancelSettingsBtn) cancelSettingsBtn.addEventListener("click", closeSettings);
         if (saveSettingsBtn) saveSettingsBtn.addEventListener("click", saveSettings);
         if (openaiVerifyBtn) openaiVerifyBtn.addEventListener("click", () => testOpenAiConnection({ showToasts: false }));
-        if (openaiTestBtn) openaiTestBtn.addEventListener("click", () => testOpenAiConnection({ showToasts: true }));
         if (ollamaVerifyBtn) ollamaVerifyBtn.addEventListener("click", () => testOllamaConnection({ showToasts: false }));
-        if (ollamaTestBtn) ollamaTestBtn.addEventListener("click", () => testOllamaConnection({ showToasts: true }));
 
         openFeedbackBtn?.addEventListener("click", openModal);
         closeFeedbackBtn?.addEventListener("click", closeModal);

@@ -86,6 +86,10 @@
             return payload.content;
         }
 
+        if (typeof payload.response === "string") {
+            return payload.response;
+        }
+
         const choice = payload?.choices && payload.choices[0];
         if (choice) {
             const delta = choice.delta || {};
@@ -202,6 +206,92 @@
         }
     }
 
+    async function consumeNdjsonStream(response, stopCondition) {
+        const reader = response.body?.getReader?.();
+        if (!reader) {
+            return parseJsonResponse(response);
+        }
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let aggregated = "";
+
+        const releaseReader = () => {
+            try {
+                reader.releaseLock();
+            } catch (error) {
+                // ignore
+            }
+        };
+
+        const cancelStream = async () => {
+            try {
+                await reader.cancel();
+            } catch (error) {
+                // ignore
+            }
+        };
+
+        async function handlePayload(payload) {
+            try {
+                const chunk = normalizeChunk(payload);
+                if (chunk) {
+                    aggregated += chunk;
+                    if (typeof stopCondition === "function" && stopCondition(aggregated)) {
+                        await cancelStream();
+                        releaseReader();
+                        return true;
+                    }
+                }
+                if (payload?.done || payload?.done_reason) {
+                    await cancelStream();
+                    releaseReader();
+                    return true;
+                }
+            } catch (err) {
+                console.warn("NDJSON stream chunk parse failed", err);
+            }
+            return false;
+        }
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split("\n");
+            buffer = parts.pop() || "";
+            for (const part of parts) {
+                const trimmed = part.trim();
+                if (!trimmed) {
+                    continue;
+                }
+                try {
+                    const payload = JSON.parse(trimmed);
+                    const shouldStop = await handlePayload(payload);
+                    if (shouldStop) {
+                        return aggregated.trim();
+                    }
+                } catch (error) {
+                    console.warn("NDJSON chunk JSON parse failed", error);
+                }
+            }
+        }
+
+        const leftover = buffer.trim();
+        if (leftover) {
+            try {
+                const payload = JSON.parse(leftover);
+                await handlePayload(payload);
+            } catch (error) {
+                console.warn("NDJSON leftover parse failed", error);
+            }
+        }
+
+        releaseReader();
+        return aggregated.trim();
+    }
+
     function toResponsesPayload(payload) {
         const next = { ...payload };
 
@@ -293,8 +383,19 @@
         } else {
             next.prompt = "";
         }
-        // Request streaming from Ollama as recommended (stream: true).
-        next.stream = true;
+        // For compatibility: keep streaming for `gpt-oss` models, but request
+        // non-streaming JSON responses for other Ollama models (matches the
+        // /api/generate OpenAPI shape which returns a `response` field).
+        try {
+            var modelName = (next.model || "").toString().toLowerCase();
+            if (modelName.startsWith("gpt-oss")) {
+                next.stream = true;
+            } else {
+                next.stream = false;
+            }
+        } catch (e) {
+            next.stream = false;
+        }
         return next;
     }
 
@@ -310,7 +411,112 @@
         return headers;
     }
 
-    async function callOllama(backend, payload, signal) {
+    async function callOllama(backend, payload, signal, endpointType = "responses") {
+        const modelName = (backend?.model || "").toString().toLowerCase();
+        // If this is a gpt-oss model, use Ollama's OpenAI-compatible endpoints (/v1/...)
+        if (modelName.startsWith("gpt-oss")) {
+            try {
+                // Prefer the configured Ollama URL from `GoToolkitIAConfig` (matches `ollamaUrlInput`),
+                // fallback to the origin derived from backend.endpoint.
+                var baseUrl = "";
+                try {
+                    if (global.GoToolkitIAConfig && typeof global.GoToolkitIAConfig.getOllamaUrl === "function") {
+                        baseUrl = String(global.GoToolkitIAConfig.getOllamaUrl() || "").replace(/\/+$/, "");
+                    }
+                } catch (e) {
+                    baseUrl = "";
+                }
+                if (!baseUrl) {
+                    try {
+                        baseUrl = new URL(backend.endpoint).origin;
+                    } catch (e) {
+                        baseUrl = backend.endpoint || "";
+                    }
+                }
+                const targetPath = endpointType === "chat" ? "/v1/chat/completions" : "/v1/responses";
+                const requestUrl = (baseUrl || "") + targetPath;
+                const headers = buildOllamaHeaders(backend.apiKey);
+                // Ensure JSON content-type for OpenAI-compatible endpoints
+                headers["Content-Type"] = "application/json";
+
+                // Build an OpenAI-compatible body
+                let openaiBody = { model: backend.model };
+                if (endpointType === "chat") {
+                    if (Array.isArray(payload?.messages) && payload.messages.length) {
+                        openaiBody.messages = payload.messages;
+                    } else if (typeof payload?.prompt === "string") {
+                        openaiBody.messages = [{ role: "user", content: payload.prompt }];
+                    } else if (payload?.input) {
+                        // convert input -> messages
+                        const input = payload.input;
+                        if (typeof input === "string") {
+                            openaiBody.messages = [{ role: "user", content: input }];
+                        } else if (Array.isArray(input)) {
+                            openaiBody.messages = input.map(it => ({ role: "user", content: it }));
+                        }
+                    }
+                    if (typeof payload?.stream !== "undefined") openaiBody.stream = Boolean(payload.stream);
+                    else openaiBody.stream = false;
+                    // pass through common generation params
+                    ["temperature", "top_p", "max_tokens", "stop", "seed", "frequency_penalty", "presence_penalty"].forEach(k => {
+                        if (typeof payload?.[k] !== "undefined") openaiBody[k] = payload[k];
+                    });
+                } else {
+                    // responses endpoint expects `input`
+                    if (typeof payload?.input !== "undefined") {
+                        openaiBody.input = payload.input;
+                    } else if (typeof payload?.prompt === "string") {
+                        openaiBody.input = payload.prompt;
+                    } else if (Array.isArray(payload?.messages) && payload.messages.length) {
+                        openaiBody.input = payload.messages.map(m => (typeof m.content === "string" ? m.content : stringifyContent(m.content || m))).join("\n\n");
+                    }
+                    if (typeof payload?.stream !== "undefined") openaiBody.stream = Boolean(payload.stream);
+                    else openaiBody.stream = false;
+                    ["temperature", "top_p", "max_output_tokens", "max_tokens", "stop", "seed"].forEach(k => {
+                        if (typeof payload?.[k] !== "undefined") openaiBody[k] = payload[k];
+                    });
+                }
+
+                if (globalThis?.console) console.info("[Ollama][OpenAI-compat] request", { url: requestUrl, body: openaiBody });
+
+                const response = await fetch(requestUrl, {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify(openaiBody),
+                    signal
+                });
+
+                if (!response.ok) {
+                    const body = await response.text().catch(() => "");
+                    console.error("[Ollama][OpenAI-compat] non-ok response", { url: requestUrl, status: response.status, body });
+                    throw new Error(body || "Ollama OpenAI-compatible endpoint returned error");
+                }
+
+                const contentType = response.headers.get("content-type") || "";
+                const wantsStream = openaiBody.stream === true;
+                const isNdjsonStream = contentType.includes("application/x-ndjson") || contentType.includes("text/event-stream");
+                if (wantsStream && !!response.body && isNdjsonStream) {
+                    const aggregated = contentType.includes("application/x-ndjson") ? await consumeNdjsonStream(response, undefined) : await consumeStream(response, undefined);
+                    if (globalThis?.console) console.info("[Ollama][OpenAI-compat] stream response", aggregated);
+                    return aggregated?.trim ? aggregated.trim() : aggregated;
+                }
+
+                // Non-streaming: try JSON parse and normalize
+                try {
+                    const parsed = await parseJsonResponse(response);
+                    return parsed;
+                } catch (err) {
+                    // fallback to raw text
+                    const raw = await response.text().catch(() => "");
+                    if (globalThis?.console) console.info("[Ollama][OpenAI-compat] raw response", raw);
+                    return typeof raw === "string" ? raw.trim() : raw;
+                }
+            } catch (err) {
+                console.error("[Ollama][OpenAI-compat] request failed", err);
+                throw err;
+            }
+        }
+
         const requestBody = buildOllamaPayload(payload, backend.model);
         if (globalThis?.console) {
             console.info("[Ollama] payload", requestBody);
@@ -333,18 +539,56 @@
             }
             const contentType = response.headers.get("content-type") || "";
             const wantsStream = requestBody.stream === true;
-            const isStream = wantsStream && !!response.body && contentType.includes("text/event-stream");
+            const isNdjsonStream = contentType.includes("application/x-ndjson");
+            const isStream =
+                wantsStream &&
+                !!response.body &&
+                (contentType.includes("text/event-stream") || isNdjsonStream);
             if (isStream) {
-                const aggregated = (await consumeStream(response, undefined));
+                const aggregated = isNdjsonStream
+                    ? await consumeNdjsonStream(response, undefined)
+                    : await consumeStream(response, undefined);
                 if (globalThis?.console) {
                     console.info("[Ollama] response", aggregated);
                 }
                 return aggregated?.trim ? aggregated.trim() : aggregated;
             }
-            const data = await response.json().catch(err => {
+            const rawText = await response.text();
+            let data;
+            try {
+                data = JSON.parse(rawText);
+            } catch (err) {
+                // Ollama can return NDJSON without a streaming content-type; try to salvage it
+                const lines = rawText
+                    .split("\n")
+                    .map(line => line.trim())
+                    .filter(Boolean);
+                if (lines.length) {
+                    try {
+                        const aggregated = lines
+                            .map(line => {
+                                try {
+                                    return normalizeChunk(JSON.parse(line));
+                                } catch (parseErr) {
+                                    console.warn("Ollama NDJSON line parse failed", parseErr);
+                                    return "";
+                                }
+                            })
+                            .filter(Boolean)
+                            .join("");
+                        if (aggregated) {
+                            if (globalThis?.console) {
+                                console.info("[Ollama] response (ndjson)", aggregated);
+                            }
+                            return aggregated.trim();
+                        }
+                    } catch (ndjsonErr) {
+                        console.error("[Ollama] invalid NDJSON response", { endpoint: backend.endpoint, ndjsonErr });
+                    }
+                }
                 console.error("[Ollama] invalid JSON response", { endpoint: backend.endpoint, err });
                 throw err;
-            });
+            }
             if (globalThis?.console) {
                 var responseField = data && typeof data.response !== "undefined" ? data.response : (data?.message?.content || data?.message || data?.output || data);
                 console.info("[Ollama] response", responseField);
@@ -368,7 +612,7 @@
             initial.model = backend.model;
         }
         if (backend?.type === "ollama") {
-            return callOllama(backend, initial, signal);
+            return callOllama(backend, initial, signal, endpointType);
         }
         try {
             return await chatCompletion({
