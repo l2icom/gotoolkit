@@ -1001,11 +1001,18 @@
                             <select id="aiBackendSelect">
                                 <option value="openai">OpenAI</option>
                                 <option value="ollama">Ollama (dev)</option>
+                                <option value="webllm">WebLLM (navigateur)</option>
                             </select>
                         </label>
                     </div>
 
                     <div id="openaiSettings">
+                        <div class="field-row">
+                            <label>
+                                <span class="label-title">Fenêtre de contexte (tokens)</span>
+                                <input id="contextWindowInput" type="number" min="512" step="256" placeholder="4000" />
+                            </label>
+                        </div>
                         <div class="field-row">
                             <label style="width:100%">
                                 <div
@@ -1106,6 +1113,33 @@
                                     <option value="ministral-3:latest">ministral-3:latest</option>
                                     <option value="deepseek-r1">deepseek-r1</option>
                                 </select>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="webllmSettings" style="display:none;">
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <div
+                                    style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+                                    <div>
+                                        <span class="label-title">WebLLM</span>
+                                        <span class="ia-status" id="webllmStatus" aria-hidden="true"></span>
+                                    </div>
+                                    <div style="display:flex; gap:0.35rem;">
+                                        <button id="webllmInstallBtn" type="button" class="btn-secondary">Installer</button>
+                                        <button id="webllmClearBtn" type="button" class="btn-secondary">Vider</button>
+                                        <button id="webllmVerifyBtn" type="button" class="btn-secondary">Vérifier</button>
+                                    </div>
+                                </div>
+                                <span class="label-subtitle">Précharge le modèle MLC dans ton navigateur (WebGPU).</span>
+                            </label>
+                        </div>
+
+                        <div class="field-row">
+                            <label>
+                                <span class="label-title">Engine WebLLM</span>
+                                <select id="webllmModelSelect"></select>
                             </label>
                         </div>
                     </div>
@@ -1716,6 +1750,269 @@
                 el.classList.remove("ia-status--error");
             }
         }
+
+        function getWebllmModelLabel(modelId) {
+            if (!modelId) return "WebLLM";
+            const models = window.GoToolkitIAConfig?.WEBLLM_MODELS || [];
+            const match = models.find(entry => entry.id === modelId);
+            return (match && match.label) || modelId || "WebLLM";
+        }
+
+        function isSupportedWebllmModel(modelId) {
+            const models = window.GoToolkitIAConfig?.WEBLLM_MODELS || [];
+            return models.some(entry => entry.id === modelId);
+        }
+
+        function formatWebllmOptionLabel(entry, installed, meta, rawLabel) {
+            const base = rawLabel || entry.label || entry.id;
+            const parts = [];
+            if (meta?.features?.length) parts.push(meta.features.join(","));
+            const suffix = parts.length ? ` (${parts.join(" · ")})` : "";
+            const icon = installed === false ? "⭳ " : "";
+            return icon + base + suffix;
+        }
+
+        async function detectGpuCapabilities() {
+            if (!navigator.gpu || typeof navigator.gpu.requestAdapter !== "function") {
+                return { adapter: null, features: new Set(), limits: {} };
+            }
+            try {
+                const adapter = await navigator.gpu.requestAdapter();
+                if (!adapter) return { adapter: null, features: new Set(), limits: {} };
+                const features = new Set(adapter.features ? Array.from(adapter.features) : []);
+                const limits = adapter.limits ? { ...adapter.limits } : {};
+                return { adapter, features, limits };
+            } catch (err) {
+                console.warn("GPU capability detection failed", err);
+                return { adapter: null, features: new Set(), limits: {} };
+            }
+        }
+
+        function meetsModelRequirements(model, gpuInfo) {
+            if (!model) return true;
+            const features = gpuInfo.features || new Set();
+            const limits = gpuInfo.limits || {};
+            const requiredFeatures = model.required_features || [];
+            for (const feat of requiredFeatures) {
+                if (!features.has(feat)) return false;
+            }
+            if (model.buffer_size_required_bytes && limits.maxStorageBufferBindingSize) {
+                if (limits.maxStorageBufferBindingSize < model.buffer_size_required_bytes) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        async function buildWebllmModelOptions() {
+            if (!webllmModelSelect) return;
+            webllmModelSelect.innerHTML = "";
+            const appConfig = await (window.GoToolkitWebLLM?.getAppConfig?.() || window.GoToolkitIAConfig?.WEBLLM_MODELS);
+            const gpuInfo = await detectGpuCapabilities();
+            const prebuiltList = appConfig?.model_list || [];
+            const fallbackList = window.GoToolkitIAConfig?.WEBLLM_MODELS || [];
+            const mappedPrebuilt = prebuiltList.map(item => ({
+                id: item.model_id,
+                label: item.model_id,
+                required_features: item.required_features,
+                buffer_size_required_bytes: item.buffer_size_required_bytes,
+                vram_required_MB: item.vram_required_MB
+            }));
+            const mappedFallback = fallbackList.map(entry => ({
+                id: entry.id,
+                label: entry.label,
+                required_features: entry.required_features || [],
+                buffer_size_required_bytes: entry.buffer_size_required_bytes,
+                vram_required_MB: entry.vram_required_MB
+            }));
+            const mergedMap = new Map();
+            [...mappedPrebuilt, ...mappedFallback].forEach(entry => {
+                if (entry.id && !mergedMap.has(entry.id)) {
+                    mergedMap.set(entry.id, entry);
+                }
+            });
+            const list = Array.from(mergedMap.values());
+            const options = [];
+            let hasModelInCacheFn = null;
+            try {
+                const mod = await import("https://esm.sh/@mlc-ai/web-llm");
+                hasModelInCacheFn = mod.hasModelInCache || (mod.default && mod.default.hasModelInCache);
+            } catch (err) {
+                /* ignore */
+            }
+            for (const entry of list) {
+                const opt = document.createElement("option");
+                opt.value = entry.id;
+                const label = entry.label || entry.id;
+                const meta = [];
+                if (entry.required_features && entry.required_features.length) {
+                    meta.push(entry.required_features.join(","));
+                }
+                opt.textContent = meta.length ? `${label} (${meta.join(" · ")})` : label;
+                const supported = meetsModelRequirements(entry, gpuInfo);
+                if (!supported) {
+                    opt.disabled = true;
+                    opt.textContent += " — non supporté";
+                }
+                opt.dataset.metaVram = entry.vram_required_MB ? Math.round(entry.vram_required_MB) + "MB" : "";
+                opt.dataset.metaFeatures = entry.required_features ? entry.required_features.join(",") : "";
+                opt.dataset.installed = "0";
+                options.push(opt);
+            }
+            if (typeof hasModelInCacheFn === "function") {
+                for (const opt of options) {
+                    try {
+                        const installed = await hasModelInCacheFn(opt.value);
+                        opt.dataset.installed = installed ? "1" : "0";
+                        opt.textContent = formatWebllmOptionLabel(
+                            { id: opt.value, label: opt.textContent.replace(/^⭳\s*/, "") },
+                            installed === true ? true : false,
+                            {
+                                features: opt.dataset.metaFeatures ? opt.dataset.metaFeatures.split(",").filter(Boolean) : []
+                            },
+                            opt.textContent.replace(/^⭳\s*/, "")
+                        );
+                    } catch (err) {
+                        /* ignore per option */
+                    }
+                }
+            }
+            options
+                .sort((a, b) => {
+                    const ai = a.dataset.installed === "1" ? 0 : 1;
+                    const bi = b.dataset.installed === "1" ? 0 : 1;
+                    if (ai !== bi) return ai - bi;
+                    return String(a.value).localeCompare(String(b.value));
+                })
+                .forEach(opt => webllmModelSelect.appendChild(opt));
+            const preferred = getSelectedWebllmModel();
+            if (preferred) {
+                webllmModelSelect.value = preferred;
+            }
+            webllmModelSelect.dataset.initialized = "1";
+        }
+
+        function populateWebllmModelSelect() {
+            if (!webllmModelSelect) return;
+            webllmModelSelect.dataset.initialized = "";
+            webllmModelSelect.innerHTML = "";
+            buildWebllmModelOptions().catch(() => {
+                const models = window.GoToolkitIAConfig?.WEBLLM_MODELS || [];
+                if (!models.length) {
+                    const option = document.createElement("option");
+                    option.textContent = "Modèles WebLLM indisponibles";
+                    option.disabled = true;
+                    webllmModelSelect.appendChild(option);
+                    return;
+                }
+                models.forEach(entry => {
+                    const option = document.createElement("option");
+                    option.value = entry.id;
+                    option.textContent = entry.label || entry.id;
+                    webllmModelSelect.appendChild(option);
+                });
+            });
+        }
+
+        function getSelectedWebllmModel() {
+            if (webllmModelSelect && webllmModelSelect.value) {
+                const val = webllmModelSelect.value;
+                return isSupportedWebllmModel(val) ? val : (window.GoToolkitIAConfig?.DEFAULTS?.WEBLLM_MODEL || "");
+            }
+            if (window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getWebllmModel === "function") {
+                const stored = window.GoToolkitIAConfig.getWebllmModel();
+                return isSupportedWebllmModel(stored)
+                    ? stored
+                    : (window.GoToolkitIAConfig?.DEFAULTS?.WEBLLM_MODEL || "");
+            }
+            return window.GoToolkitIAConfig?.DEFAULTS?.WEBLLM_MODEL || "";
+        }
+
+        async function installWebllmModel() {
+            if (!window.GoToolkitWebLLM) {
+                showToast("WebLLM indisponible dans ce navigateur.", true);
+                return;
+            }
+            const model = getSelectedWebllmModel();
+            if (!model) {
+                showToast("Sélectionne un moteur WebLLM.", true);
+                return;
+            }
+            const baseLabel = "Installer";
+            if (webllmInstallBtn) {
+                webllmInstallBtn.disabled = true;
+                let lastPercent = -1;
+                webllmInstallBtn.textContent = `${baseLabel} (0%)`;
+                try {
+                    await window.GoToolkitWebLLM.installModel(model, progress => {
+                        const percent = Math.min(
+                            100,
+                            Math.max(0, Math.round((progress?.progress ?? 0) * 100))
+                        );
+                        if (percent !== lastPercent) {
+                            lastPercent = percent;
+                            webllmInstallBtn.textContent = `${baseLabel} (${percent}%)`;
+                        }
+                    });
+                    updateStatusIcon(webllmStatusEl, "ready");
+                    showToast("Modèle WebLLM prêt (" + getWebllmModelLabel(model) + ")");
+                } catch (err) {
+                    console.warn("WebLLM install failed", err);
+                    updateStatusIcon(webllmStatusEl, "error");
+                    showToast(
+                        "Échec de l'installation WebLLM (" + ((err && err.message) || "erreur") + ")",
+                        true
+                    );
+                } finally {
+                    webllmInstallBtn.disabled = false;
+                    webllmInstallBtn.textContent = baseLabel;
+                }
+            } else {
+                await window.GoToolkitWebLLM.installModel(model);
+            }
+        }
+
+        async function verifyWebllmModel({ showToasts = true } = {}) {
+            if (!window.GoToolkitWebLLM) {
+                if (showToasts) {
+                    showToast("WebLLM indisponible dans ce navigateur.", true);
+                }
+                return false;
+            }
+            const model = getSelectedWebllmModel();
+            if (!model) {
+                if (showToasts) {
+                    showToast("Sélectionne un moteur WebLLM.", true);
+                }
+                return false;
+            }
+            if (webllmVerifyBtn) {
+                webllmVerifyBtn.disabled = true;
+            }
+            updateStatusIcon(webllmStatusEl, "verifying");
+            try {
+                await window.GoToolkitWebLLM.verifyModel(model);
+                updateStatusIcon(webllmStatusEl, "ready");
+                if (showToasts) {
+                    showToast("WebLLM prêt (" + getWebllmModelLabel(model) + ")");
+                }
+                return true;
+            } catch (err) {
+                console.warn("WebLLM verify failed", err);
+                updateStatusIcon(webllmStatusEl, "error");
+                if (showToasts) {
+                    showToast(
+                        "Échec de la vérification WebLLM (" + ((err && err.message) || "erreur") + ")",
+                        true
+                    );
+                }
+                return false;
+            } finally {
+                if (webllmVerifyBtn) {
+                    webllmVerifyBtn.disabled = false;
+                }
+            }
+        }
         function extractOllamaModelNames(payload) {
             if (!payload) {
                 return [];
@@ -1995,6 +2292,7 @@
         const settingsApiKeyInput = document.getElementById("iaApiKeyInput");
         const settingsReasoningSelect = document.getElementById("reasoningEffortSelect");
         const settingsOpenAiModelSelect = document.getElementById("openaiModelSelect");
+        const contextWindowInput = document.getElementById("contextWindowInput");
         const settingsOllamaUrlInput = document.getElementById("ollamaUrlInput");
         const settingsOllamaApiKeyInput = document.getElementById("ollamaApiKeyInput");
         const settingsOllamaAddressSelect = document.getElementById("ollamaAddressSelect");
@@ -2003,16 +2301,23 @@
         const settingsOllamaModelSelect = document.getElementById("ollamaModelSelect");
         const openaiStatusEl = document.getElementById("openaiStatus");
         const ollamaStatusEl = document.getElementById("ollamaStatus");
+        const webllmStatusEl = document.getElementById("webllmStatus");
         const openaiVerifyBtn = document.getElementById("openaiVerifyBtn");
         const ollamaVerifyBtn = document.getElementById("ollamaVerifyBtn");
+        const webllmInstallBtn = document.getElementById("webllmInstallBtn");
+        const webllmClearBtn = document.getElementById("webllmClearBtn");
+        const webllmVerifyBtn = document.getElementById("webllmVerifyBtn");
         const aiBackendSelect = document.getElementById("aiBackendSelect");
         const openaiSettingsEl = document.getElementById("openaiSettings");
         const ollamaSettingsEl = document.getElementById("ollamaSettings");
+        const webllmSettingsEl = document.getElementById("webllmSettings");
+        const webllmModelSelect = document.getElementById("webllmModelSelect");
 
         function updateBackendVisibility() {
             const val = (aiBackendSelect && aiBackendSelect.value) || "openai";
             if (openaiSettingsEl) openaiSettingsEl.style.display = val === "openai" ? "" : "none";
             if (ollamaSettingsEl) ollamaSettingsEl.style.display = val === "ollama" ? "" : "none";
+            if (webllmSettingsEl) webllmSettingsEl.style.display = val === "webllm" ? "" : "none";
             window.GoToolkitSelectedAIBackend = val;
         }
 
@@ -2061,6 +2366,46 @@
             updateBackendVisibility();
         });
 
+        webllmInstallBtn?.addEventListener("click", () => {
+            installWebllmModel().catch(() => { /* noop */ });
+        });
+        webllmClearBtn?.addEventListener("click", async () => {
+            if (!window.GoToolkitWebLLM || typeof window.GoToolkitWebLLM.getAppConfig !== "function") {
+                showToast("WebLLM indisponible pour vider le cache.", true);
+                return;
+            }
+            try {
+                const mod = await import("https://esm.sh/@mlc-ai/web-llm");
+                const deleteModelAllInfoInCache = mod.deleteModelAllInfoInCache || (mod.default && mod.default.deleteModelAllInfoInCache);
+                if (!deleteModelAllInfoInCache) {
+                    showToast("Nettoyage WebLLM indisponible.", true);
+                    return;
+                }
+                const appConfig = await (window.GoToolkitWebLLM.getAppConfig());
+                const models = appConfig?.model_list || [];
+                for (const m of models) {
+                    try { await deleteModelAllInfoInCache(m.model_id); } catch (err) { /* ignore individual failures */ }
+                }
+                if (window.GoToolkitWebLLM && typeof window.GoToolkitWebLLM.resetEngine === "function") {
+                    window.GoToolkitWebLLM.resetEngine();
+                }
+                updateStatusIcon(webllmStatusEl);
+                showToast("Cache WebLLM vidé.");
+            } catch (err) {
+                console.warn("WebLLM clear cache failed", err);
+                showToast("Échec du nettoyage WebLLM.", true);
+            }
+        });
+        webllmVerifyBtn?.addEventListener("click", () => {
+            verifyWebllmModel().catch(() => { /* noop */ });
+        });
+        webllmModelSelect?.addEventListener("change", () => {
+            if (window.GoToolkitWebLLM && typeof window.GoToolkitWebLLM.resetEngine === "function") {
+                window.GoToolkitWebLLM.resetEngine();
+            }
+            updateStatusIcon(webllmStatusEl);
+        });
+
         function openSettings() {
             if (!settingsModal) return;
             // populate current values from localStorage
@@ -2077,6 +2422,10 @@
                 if (settingsOpenAiModelSelect) {
                     settingsOpenAiModelSelect.value = storedOpenAiModel;
                 }
+                var storedContextWindow = (config && typeof config.getContextWindow === "function" ? config.getContextWindow() : "") || "4000";
+                if (contextWindowInput) {
+                    contextWindowInput.value = storedContextWindow;
+                }
                 var storedOllamaUrl = (config && typeof config.getOllamaUrl === "function" ? config.getOllamaUrl() : "") || "http://localhost:11434";
                 if (settingsOllamaUrlInput) {
                     settingsOllamaUrlInput.value = storedOllamaUrl;
@@ -2088,6 +2437,14 @@
                 var storedOllamaModel = (config && typeof config.getOllamaModel === "function" ? config.getOllamaModel() : "") || "genma3";
                 if (settingsOllamaModelSelect) {
                     settingsOllamaModelSelect.value = storedOllamaModel;
+                }
+                populateWebllmModelSelect();
+                var storedWebllmModel = (config && typeof config.getWebllmModel === "function" ? config.getWebllmModel() : "") || window.GoToolkitIAConfig?.DEFAULTS?.WEBLLM_MODEL || "";
+                if (!isSupportedWebllmModel(storedWebllmModel)) {
+                    storedWebllmModel = window.GoToolkitIAConfig?.DEFAULTS?.WEBLLM_MODEL || "";
+                }
+                if (webllmModelSelect && storedWebllmModel) {
+                    webllmModelSelect.value = storedWebllmModel;
                 }
                 var storedBackend = (config && typeof config.getBackend === "function" ? config.getBackend() : null) || localStorage.getItem("go-toolkit-ai-backend") || "openai";
                 if (aiBackendSelect) aiBackendSelect.value = storedBackend;
@@ -2126,6 +2483,10 @@
                 if (iaConfig && typeof iaConfig.setOpenAiModel === "function" && openaiModelValue) {
                     iaConfig.setOpenAiModel(openaiModelValue);
                 }
+                const contextWindowValue = (contextWindowInput?.value || "").trim();
+                if (iaConfig && typeof iaConfig.setContextWindow === "function" && contextWindowValue) {
+                    iaConfig.setContextWindow(contextWindowValue);
+                }
                 selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openai";
                 if (iaConfig && typeof iaConfig.setBackend === "function") {
                     iaConfig.setBackend(selectedBackend);
@@ -2145,6 +2506,13 @@
                 const ollamaModelValue = (settingsOllamaModelSelect?.value || "").trim();
                 if (iaConfig && typeof iaConfig.setOllamaModel === "function" && ollamaModelValue) {
                     iaConfig.setOllamaModel(ollamaModelValue);
+                }
+                const webllmModelValue = (webllmModelSelect?.value || "").trim();
+                if (iaConfig && typeof iaConfig.setWebllmModel === "function" && webllmModelValue) {
+                    iaConfig.setWebllmModel(webllmModelValue);
+                }
+                if (window.GoToolkitWebLLM && typeof window.GoToolkitWebLLM.resetEngine === "function") {
+                    window.GoToolkitWebLLM.resetEngine();
                 }
                 localStorage.setItem("plan-reasoning-effort", reasoning);
                 try { localStorage.setItem("nuances-reasoning-effort", reasoning); } catch (e) { }

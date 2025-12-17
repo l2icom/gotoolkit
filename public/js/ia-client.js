@@ -1,4 +1,53 @@
 (function (global) {
+    function ensureToastContainer() {
+        if (typeof document === "undefined") return null;
+        let el = document.getElementById("goToolkitToast");
+        if (!el) {
+            el = document.createElement("div");
+            el.id = "goToolkitToast";
+            el.style.position = "fixed";
+            el.style.right = "16px";
+            el.style.bottom = "16px";
+            el.style.zIndex = "9999";
+            el.style.maxWidth = "320px";
+            el.style.background = "#1f2937";
+            el.style.color = "#fff";
+            el.style.padding = "10px 12px";
+            el.style.borderRadius = "8px";
+            el.style.boxShadow = "0 10px 30px rgba(0,0,0,0.25)";
+            el.style.fontSize = "13px";
+            el.style.lineHeight = "1.3";
+            el.style.display = "none";
+            document.body.appendChild(el);
+        }
+        return el;
+    }
+
+    function showToast(message, isError) {
+        const el = ensureToastContainer();
+        if (!el) return;
+        el.textContent = message;
+        el.style.background = isError ? "#7f1d1d" : "#1f2937";
+        el.style.display = "block";
+        clearTimeout(el._hidetimer);
+        el._hidetimer = setTimeout(() => {
+            el.style.display = "none";
+        }, 3500);
+    }
+
+    function mapWebllmError(err) {
+        const msg = (err && err.message) || String(err) || "";
+        if (/WebGPU is not enabled/i.test(msg) || /navigator\.gpu/i.test(msg)) {
+            return "WebGPU indisponible dans ce navigateur.";
+        }
+        if (/ModelNotFound/i.test(msg) || /SpecifiedModelNotFound/i.test(msg)) {
+            return "Modèle WebLLM introuvable. Réinstalle le modèle et réessaie.";
+        }
+        if (/require is unavailable/i.test(msg) || /fileURLToPath/i.test(msg) || /dirname is not a function/i.test(msg)) {
+            return "Initialisation WebLLM échouée (environnement). Rafraîchis la page et réinstalle.";
+        }
+        return msg || "Erreur WebLLM inconnue.";
+    }
     const hasStreamingSupport =
         typeof ReadableStream !== "undefined" && typeof TextDecoder !== "undefined";
 
@@ -611,10 +660,59 @@
         }
     }
 
+    async function collectWebllmStream(stream, stopCondition) {
+        if (!stream || typeof stream[Symbol.asyncIterator] !== "function") {
+            const normalized = normalizeChunk(stream);
+            return typeof normalized === "string" ? normalized.trim() : "";
+        }
+        let aggregated = "";
+        try {
+            for await (const chunk of stream) {
+                const normalized = normalizeChunk(chunk);
+                if (normalized) {
+                    aggregated += normalized;
+                }
+                if (typeof stopCondition === "function" && stopCondition(aggregated)) {
+                    break;
+                }
+            }
+        } catch (err) {
+            console.warn("WebLLM streaming error", err);
+            throw err;
+        }
+        return aggregated.trim();
+    }
+
+    async function executeWebllm(backend, payload, stopCondition) {
+        if (!window.GoToolkitWebLLM || typeof window.GoToolkitWebLLM.ensureEngine !== "function") {
+            throw new Error("WebLLM indisponible");
+        }
+        try {
+            const engine = await window.GoToolkitWebLLM.ensureEngine(backend.model);
+            const nextPayload = { ...(payload || {}) };
+            // Always use the loaded WebLLM model to avoid SpecifiedModelNotFound errors.
+            nextPayload.model = backend.model;
+            const wantsStream = Boolean(payload && payload.stream);
+            const response = await engine.chat.completions.create(nextPayload);
+            if (wantsStream) {
+                return collectWebllmStream(response, stopCondition);
+            }
+            const normalized = normalizeChunk(response);
+            return typeof normalized === "string" ? normalized.trim() : "";
+        } catch (err) {
+            const friendly = mapWebllmError(err);
+            showToast(friendly, true);
+            throw err;
+        }
+    }
+
     async function executeWithBackend(backend, payload, stopCondition, signal, endpointType) {
         const initial = { ...(payload || {}) };
         if (!initial.model && backend?.model) {
             initial.model = backend.model;
+        }
+        if (backend?.type === "webllm") {
+            return executeWebllm(backend, initial, stopCondition);
         }
         if (backend?.type === "ollama") {
             return callOllama(backend, initial, signal, endpointType);
