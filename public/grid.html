@@ -12,7 +12,8 @@
     <link rel="stylesheet" href="styles/app-shell.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
-    <script src="https://cdn.jsdelivr.net/npm/@ag-grid-community/locale@32.3.3/dist/umd/@ag-grid-community/locale.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/@ag-grid-community/locale@32.3.3/dist/umd/@ag-grid-community/locale.min.js"></script>
     <style>
         #clearGridBtn {
             margin-left: auto;
@@ -837,8 +838,7 @@
                             <button id="applyScriptBtn" class="btn" type="button">↺ Restaurer</button>
                         </div>
                     </div>
-                    <textarea id="gridScript" spellcheck="false"
-                        placeholder='Le JSON du dataset AG Grid apparaîtra ici'></textarea>
+                    <textarea id="gridScript" spellcheck="false"></textarea>
                 </div>
             </section>
         </main>
@@ -978,7 +978,10 @@
                         resizable: true
                     },
                     localeText: typeof AG_GRID_LOCALE_FR !== "undefined" ? AG_GRID_LOCALE_FR : undefined,
-                    autoSizeStrategy: "fitCellContents",
+                    autoSizeStrategy: {
+                        type: "fitGridWidth",
+                        defaultMinWidth: 85
+                    },
                     rowHeight: DISPLAY_PREFERENCE_DEFAULTS.rowHeight,
                     rowData: [],
                     columnDefs: [],
@@ -1112,7 +1115,7 @@
                         const btn = document.createElement("button");
                         btn.className = `tab${index === state.activeIndex ? " active" : ""}`;
                         btn.type = "button";
-                        btn.textContent = page.title || `Page ${index + 1}`;
+                        btn.textContent = `Page ${index + 1}`;
                         btn.title = btn.textContent;
                         btn.addEventListener("click", () => setActivePage(index));
                         pageTabs.appendChild(btn);
@@ -1206,8 +1209,12 @@
                 }
 
                 function autoSizeColumns() {
-                    if (!gridColumnApi) return;
-                    gridColumnApi.autoSizeAllColumns(true);
+                    if (!gridColumnApi || typeof gridColumnApi.autoSizeAllColumns !== "function") return;
+                    gridColumnApi.autoSizeAllColumns({
+                        scaleUpToFitGridWidth: false,
+                        defaultMinWidth: 85,
+                        defaultMaxWidth: 200
+                    });
                 }
 
                 function scheduleAutoSizeAndPinMenu() {
@@ -1846,6 +1853,7 @@
                     if (fontSizeInput && fontSizeInput.value !== String(normalized)) {
                         fontSizeInput.value = normalized;
                     }
+                    scheduleAutoSizeAndPinMenu();
                 }
 
                 function applyRowHeight(value, options = {}) {
@@ -1963,9 +1971,6 @@
                 function updateGenerateLabel(label) {
                     if (generateBtn) {
                         generateBtn.textContent = label;
-                    }
-                    if (toggleDrawerBtn) {
-                        toggleDrawerBtn.textContent = label;
                     }
                 }
 
@@ -2392,6 +2397,7 @@
                     if (gridTitleInput) {
                         gridTitleInput.addEventListener("input", () => {
                             const page = getActivePage();
+                            if (!page) return;
                             page.title = gridTitleInput.value;
                             renderTabs();
                             persistState();

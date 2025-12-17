@@ -679,7 +679,7 @@ TYPES DE COLONNES (à utiliser quand pertinent)
 
 1) TEXTE
 {
-  "field": "name",
+  "field": "nom",
   "headerName": "Name",
   "editable": true
 }
@@ -695,7 +695,7 @@ TYPES DE COLONNES (à utiliser quand pertinent)
 3) BOOLEEN (checkbox)
 {
   "field": "active",
-  "headerName": "Active",
+  "headerName": "Actif",
   "editable": true,
   "cellRenderer": "agCheckboxCellRenderer"
 }
@@ -704,14 +704,14 @@ TYPES DE COLONNES (à utiliser quand pertinent)
 - Valeur dans rowData : "YYYY-MM-DD"
 {
   "field": "startDate",
-  "headerName": "Start Date",
+  "headerName": "Date",
   "editable": true
 }
 
 5) SELECT SIMPLE (dropdown)
 {
   "field": "status",
-  "headerName": "Status",
+  "headerName": "Statut",
   "editable": true,
   "cellEditor": "agSelectCellEditor",
   "cellEditorParams": {
@@ -723,14 +723,14 @@ TYPES DE COLONNES (à utiliser quand pertinent)
 - Valeur dans rowData : tableau de chaînes
 {
   "field": "tags",
-  "headerName": "Tags",
+  "headerName": "Mots-clés",
   "editable": true
 }
 
 7) LECTURE SEULE
 {
   "field": "id",
-  "headerName": "ID",
+  "headerName": "Id",
   "editable": false
 }
 
@@ -739,10 +739,13 @@ RÈGLES POUR rowData
 - Pour multi-select, toujours un tableau (tableau vide si aucun)
 - Pour boolean, true / false
 - Pour les dates, uniquement le format ISO
+- Les champs "id" et "name" sont obligatoires
+- Toutes les valeurs des cellules et les titres des colonnes (headerName) ont en français
+- Les clés restent en anglais
 
 EXEMPLE DE TYPES DE VALEURS
 {
-  "id": "A1",
+  "id": 1, 
   "name": "Alice",
   "score": 92,
   "active": true,
