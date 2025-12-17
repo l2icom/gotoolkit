@@ -1842,7 +1842,7 @@
                             <div class="speech-field-wrapper">
                                 <div class="speech-suggestion" data-speech-suggestion="promptCreate" aria-hidden="true">
                                 </div>
-                                <textarea id="promptCreate" class="ia-prompt-field" rows="20"
+                                <textarea id="promptCreate" class="ia-prompt-field" rows="16"
                                     placeholder="Décris ici ton objectif, ton échéance et tes actions"></textarea>
                                 <button class="speech-button" type="button" data-speech-target="promptCreate"
                                     title="Dictée vocale" aria-label="Activer la dictée vocale">◉</button>
@@ -1853,6 +1853,7 @@
                         <div class="gutenberg-recette-header">
                             <label for="promptModify"
                                 style="margin-top:0;display:block;font-size:13px;color:var(--muted)">Script</label>
+                            <button class="btn" type="button" id="restoreScriptBtn" title="Restaurer la dernière réponse IA">↺ Restaurer</button>
                             <!-- `openModifyPromptBtn` removed: button hidden per user request -->
                         </div>
                         <div class="ia-prompt-fields">
@@ -1872,8 +1873,8 @@
                 <div class="ia-actions">
                     <div class="header-row ia-header-actions">
                         <label for="iaTemplateEditor">Prompt</label>
-                        <textarea id="iaTemplateEditor" rows="18"
-                            style="font-family: Menlo, Consolas, 'Courier New', monospace; font-size:13px; line-height:1.28; height:400px; overflow:auto; resize:vertical; padding:8px;">
+                        <textarea id="iaTemplateEditor" rows="14"
+                            style="font-family: Menlo, Consolas, 'Courier New', monospace; font-size:13px; line-height:1.2; height:350px; overflow:auto; resize:vertical; padding:8px;">
                         </textarea>
                     </div>
                     <div class="header-row ia-header-actions ia-key-row">
@@ -4565,6 +4566,32 @@
                     return lines.join("\n");
                 }
 
+                function buildPlanningJsonString(planning, viewTitle) {
+                    if (!planning) {
+                        return "";
+                    }
+                    var cloned = deepClone(planning);
+                    try {
+                        if (!cloned.page) {
+                            var activeView = views && views[activeViewIndex] ? views[activeViewIndex] : null;
+                            var title = viewTitle || (activeView && (activeView.title || activeView.name));
+                            if (title) {
+                                cloned.page = title;
+                            }
+                        }
+                    } catch (e) {
+                        /* noop */
+                    }
+                    try {
+                        return JSON.stringify(cloned, null, 2);
+                    } catch (err) {
+                        console.warn("Impossible de sérialiser le planning en JSON", err);
+                        return "";
+                    }
+                }
+
+                var lastAiPlanningJson = null;
+
                 function copyTextToClipboard(text) {
                     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
                         return navigator.clipboard.writeText(text);
@@ -6131,7 +6158,15 @@
 
                 function dateToIso(d) {
                     if (!d) return null;
-                    return new Date(d).toISOString().slice(0, 10);
+                    var local = new Date(d);
+                    if (isNaN(local.getTime())) return null;
+                    return (
+                        local.getFullYear() +
+                        "-" +
+                        padTwoDigits(local.getMonth() + 1) +
+                        "-" +
+                        padTwoDigits(local.getDate())
+                    );
                 }
 
                 function applyPlanningFromJson(planning) {
@@ -6546,6 +6581,11 @@
                     if (txtPromptCreate) {
                         clearSpeechSuggestion(txtPromptCreate);
                     }
+                    // Hide scenario tooltip when speech recognition ends
+                    try {
+                        if (typeof hideScenarioTooltip === 'function') hideScenarioTooltip();
+                    } catch (e) { /* noop */ }
+
                     activeSpeechField = null;
                 }
 
@@ -6604,7 +6644,6 @@
                     });
                     recognition.addEventListener("error", function () {
                         console.warn("Speech recognition error");
-                        showSpeechToast("Reconnaissance vocale terminée");
                         clearSpeechSuggestion(field);
                         stopActiveSpeechSession();
                     });
@@ -6991,26 +7030,52 @@
                         } catch (e) { }
                     });
 
-                    // On focus, build a textual export of the current planning and put it into the script textarea
+                    // On focus, export the latest planning as JSON into the script textarea
                     txtPromptModify.addEventListener("focus", function () {
                         try {
+                            persistCurrentPlanning();
                             var currentView = views && views[activeViewIndex] ? views[activeViewIndex] : null;
-                            var planning = (currentView && currentView.planning) || exportPlanningToJson();
+                            var planning = exportPlanningToJson();
                             var viewTitle = currentView && (currentView.title || currentView.name);
-                            try {
-                                var text = buildTextExport(planning, viewTitle);
-                                if (text && txtPromptModify) {
-                                    txtPromptModify.value = text;
-                                    persistActiveContext(function (ctx) {
-                                        ctx.prompts = ctx.prompts || {};
-                                        ctx.prompts.modify = txtPromptModify.value || "";
-                                    });
-                                }
-                            } catch (e) {
-                                console.warn('Erreur lors de la génération du texte d\'export pour le script', e);
+                            var jsonText = buildPlanningJsonString(planning, viewTitle);
+                            if (txtPromptModify) {
+                                txtPromptModify.value = jsonText || "";
+                                persistActiveContext(function (ctx) {
+                                    ctx.prompts = ctx.prompts || {};
+                                    ctx.prompts.modify = txtPromptModify.value || "";
+                                });
                             }
                         } catch (e) {
-                            // ignore
+                            console.warn("Erreur lors de la génération du JSON pour le script", e);
+                        }
+                    });
+                    txtPromptModify.addEventListener("blur", function () {
+                        try {
+                            var text = txtPromptModify.value || "";
+                            if (!text.trim()) return;
+                            var previousRange = null;
+                            try {
+                                if (timeline && typeof timeline.getWindow === "function") {
+                                    var w = timeline.getWindow();
+                                    if (w && w.start && w.end) {
+                                        previousRange = { start: new Date(w.start), end: new Date(w.end) };
+                                    }
+                                }
+                            } catch (e) { /* noop */ }
+                            var parsed = JSON.parse(text);
+                            if (parsed && typeof parsed === "object") {
+                                applyPlanningFromJson(parsed);
+                                persistActiveContext(function (ctx) {
+                                    ctx.prompts.modify = txtPromptModify.value || "";
+                                });
+                                if (previousRange && timeline && typeof timeline.setWindow === "function") {
+                                    try {
+                                        timeline.setWindow(previousRange.start, previousRange.end, { animation: false });
+                                    } catch (e) { /* noop */ }
+                                }
+                            }
+                        } catch (e) {
+                            console.warn("JSON invalide dans le script, aucune mise à jour de la timeline", e);
                         }
                     });
                 }
@@ -7048,7 +7113,7 @@
                 var reasoningEffortSelect = document.getElementById("reasoningEffortSelect");
                 var REASONING_EFFORT_KEY = "plan-reasoning-effort";
                 var REASONING_EFFORTS = ["minimal", "low", "medium", "high"];
-                var OPENAI_MESSAGE_MAX_CHARS = 6000;
+                var OPENAI_MESSAGE_MAX_CHARS = 3000;
 
                 function buildChunkedPayloadMessages(jsonText) {
                     if (!jsonText) {
@@ -7144,9 +7209,6 @@
                 }
 
                 function getModifyPromptContent() {
-                    if (!items || typeof items.get !== "function" || !hasTimelineData()) {
-                        return "";
-                    }
                     persistCurrentPlanning();
                     var currentView = views[activeViewIndex];
                     var planning = exportPlanningToJson();
@@ -7154,7 +7216,17 @@
                         currentView && (currentView.title || currentView.name)
                             ? currentView.title || currentView.name
                             : "";
-                    return buildTextExport(planning, title);
+                    if (!planning.page && title) {
+                        planning.page = title;
+                    }
+                    // Ensure page is first in the object for readability
+                    var reordered = {};
+                    if (planning.page) reordered.page = planning.page;
+                    Object.keys(planning).forEach(function (key) {
+                        if (key === "page") return;
+                        reordered[key] = planning[key];
+                    });
+                    return buildPlanningJsonString(reordered, title);
                 }
 
                 function determineGenerationMode() {
@@ -7231,16 +7303,29 @@
                     }, 1000);
                 }
 
-                function fillPromptTemplate(template, instructions, planningJson, mode) {
+                function fillPromptTemplate(template, instructions, existingData, mode) {
                     var text = template || "";
+                    var INLINE_JSON_LIMIT = 2000;
+                    var inlinePlanning = "";
+                    if (existingData && existingData.length <= INLINE_JSON_LIMIT) {
+                        inlinePlanning = existingData;
+                    } else if (existingData) {
+                        inlinePlanning = "(JSON/script complet fourni dans le champ existingData du payload utilisateur)";
+                    }
                     // Replace explicit placeholders with the appropriate textarea contents
                     try {
                         if (text.indexOf("{{contenu_script}}") >= 0) {
                             var createContent = txtPromptCreate && txtPromptCreate.value ? txtPromptCreate.value : "";
+                            if (createContent.length > INLINE_JSON_LIMIT) {
+                                createContent = createContent.slice(0, INLINE_JSON_LIMIT) + "... (texte complet fourni dans le champ prompt du payload utilisateur)";
+                            }
                             text = text.replace(/\{\{contenu_script\}\}/g, createContent);
                         }
                         if (text.indexOf("{{contenu_recit}}") >= 0) {
                             var modifyContent = txtPromptModify && txtPromptModify.value ? txtPromptModify.value : "";
+                            if (modifyContent.length > INLINE_JSON_LIMIT) {
+                                modifyContent = modifyContent.slice(0, INLINE_JSON_LIMIT) + "... (texte complet fourni dans le champ existingData du payload utilisateur)";
+                            }
                             text = text.replace(/\{\{contenu_recit\}\}/g, modifyContent);
                         }
                         // Backwards compatibility: replace old generic placeholder
@@ -7253,7 +7338,7 @@
 
                     var placeholder = "{{(contenu au format JSON du planning existant)}}";
                     if (text.indexOf(placeholder) >= 0) {
-                        var planningContent = planningJson && planningJson.trim() ? planningJson : "(aucun planning existant)";
+                        var planningContent = inlinePlanning || "(aucun planning existant)";
                         text = text.replace(placeholder, planningContent);
                     }
                     return text;
@@ -7283,31 +7368,27 @@
                         return;
                     }
 
-                    var currentPlanning = null;
-                    var planningJson = "";
-                    if (mode === "modify") {
-                        if (hasTimelineData()) {
-                            currentPlanning = exportPlanningToJson();
-                            planningJson = JSON.stringify(currentPlanning, null, 2);
-                        }
-                    }
-
                     var systemContent = fillPromptTemplate(
                         getSystemTemplate(),
                         promptText,
-                        planningJson,
+                        trimmedScript || "",
                         mode
                     );
 
                     var scriptContent = txtPromptModify ? (txtPromptModify.value || "") : "";
+                    var trimmedScript = scriptContent.trim();
                     var payload = {
                         schema: "planning-v1",
                         mode: mode,
                         prompt: promptText,
-                        script: scriptContent
+                        script: trimmedScript
                     };
+                    var trimmedExisting = trimmedScript;
+                    if (trimmedExisting) {
+                        payload.existingData = trimmedExisting;
+                    }
 
-                    var payloadText = JSON.stringify(payload, null, 2);
+                    var payloadText = JSON.stringify(payload);
                     var payloadMessages = buildChunkedPayloadMessages(payloadText);
                     var messages = [{ role: "system", content: systemContent }].concat(payloadMessages);
 
@@ -7316,15 +7397,21 @@
                     lastTimelineGenerationAt = Date.now();
                     startWaitingTimer(triggerButton);
                     closeIaModal();
-                    try {
-                        var aiResponse = await callOpenAI(messages, controller);
-                        if (!aiResponse) return;
-                        var normalized = aiResponse.trim();
-
-                        var planning = null;
-                        // Try parse as JSON first
                         try {
-                            planning = JSON.parse(normalized);
+                            var aiResponse = await callOpenAI(messages, controller);
+                            if (!aiResponse) return;
+                            var normalized = aiResponse.trim();
+                            if (txtPromptModify) {
+                                txtPromptModify.value = normalized;
+                                persistActiveContext(function (ctx) {
+                                    ctx.prompts.modify = normalized;
+                                });
+                            }
+
+                            var planning = null;
+                            // Try parse as JSON first
+                            try {
+                                planning = JSON.parse(normalized);
                         } catch (err) {
                             // If modify mode, try to parse a human-readable script into planning
                             if (mode === "modify") {
@@ -7347,6 +7434,14 @@
                             }
                         }
 
+                        try {
+                            if (planning) {
+                                lastAiPlanningJson = JSON.stringify(planning, null, 2);
+                            }
+                        } catch (e) {
+                            lastAiPlanningJson = null;
+                        }
+
                         if (planning && typeof planning.page === "string") {
                             var pageTitle = planning.page.trim();
                             if (pageTitle) {
@@ -7357,30 +7452,6 @@
                                     persistTimelineState();
                                 }
                             }
-                        }
-
-                        // If the assistant also returned a textual script, update the script textarea
-                        try {
-                            if (planning && planning.script && txtPromptModify) {
-                                txtPromptModify.value = planning.script;
-                                // persist in context
-                                var ctx = ensureViewContext(views[activeViewIndex]);
-                                if (ctx && ctx.prompts) {
-                                    ctx.prompts.modify = txtPromptModify.value;
-                                    persistTimelineState();
-                                }
-                            }
-                            // If modify mode and we parsed from a textual script, update textarea with the raw text
-                            if (mode === "modify" && !planning.script && typeof normalized === "string" && txtPromptModify) {
-                                txtPromptModify.value = normalized;
-                                var ctx2 = ensureViewContext(views[activeViewIndex]);
-                                if (ctx2 && ctx2.prompts) {
-                                    ctx2.prompts.modify = txtPromptModify.value;
-                                    persistTimelineState();
-                                }
-                            }
-                        } catch (e) {
-                            console.warn("Impossible de mettre à jour le script depuis la réponse IA", e);
                         }
 
                         applyPlanningFromJson(planning);
@@ -7714,6 +7785,27 @@
                 if (clearTimelineBtn) {
                     clearTimelineBtn.addEventListener("click", function () {
                         clearActiveView({ clearRecit: false });
+                    });
+                }
+
+                var restoreScriptBtn = document.getElementById("restoreScriptBtn");
+                if (restoreScriptBtn) {
+                    restoreScriptBtn.addEventListener("click", function () {
+                        if (!lastAiPlanningJson) {
+                            alert("Aucune réponse IA JSON récente à restaurer.");
+                            return;
+                        }
+                        try {
+                            txtPromptModify.value = lastAiPlanningJson;
+                            persistActiveContext(function (ctx) {
+                                ctx.prompts.modify = txtPromptModify.value || "";
+                            });
+                            var parsed = JSON.parse(lastAiPlanningJson);
+                            applyPlanningFromJson(parsed);
+                        } catch (e) {
+                            console.warn("Impossible de restaurer la réponse IA", e);
+                            alert("Impossible de restaurer la réponse IA.");
+                        }
                     });
                 }
 

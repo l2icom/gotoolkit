@@ -888,7 +888,7 @@ Contraintes de planification :
 - Optimiser la durée totale : actions enchaînées sans pause.
 - Actions parallèles possibles si cohérentes.
 - Dépendances implicites obligatoirement respectées.
-- Si un planning est fourni, faire seulement les modifications demandées par l'utilisateur au planning existant en conservant les ids
+- Si un planning est fourni, faire les modifications demandées par l'utilisateur sur le planning existant et le renvoyer en entier.
 
 Contraintes de nommage et quantités :
 - Un seul mot pour les labels des \`types\` et \`markers\`.

@@ -1009,8 +1009,6 @@
                     <div id="openaiSettings">
                         <div class="field-row">
                             <label>
-                                <span class="label-title">Fenêtre de contexte (tokens)</span>
-                                <input id="contextWindowInput" type="number" min="512" step="256" placeholder="4000" />
                             </label>
                         </div>
                         <div class="field-row">
@@ -1134,14 +1132,12 @@
                                             class="btn-secondary">Vérifier</button>
                                     </div>
                                 </div>
-                                <span class="label-subtitle">Précharge le modèle MLC dans ton navigateur
-                                    (WebGPU).</span>
                             </label>
                         </div>
 
                         <div class="field-row">
                             <label>
-                                <span class="label-title">Engine WebLLM</span>
+                                <span class="label-title">Moteur WebLLM</span>
                                 <select id="webllmModelSelect"></select>
                             </label>
                         </div>
@@ -2295,7 +2291,6 @@
         const settingsApiKeyInput = document.getElementById("iaApiKeyInput");
         const settingsReasoningSelect = document.getElementById("reasoningEffortSelect");
         const settingsOpenAiModelSelect = document.getElementById("openaiModelSelect");
-        const contextWindowInput = document.getElementById("contextWindowInput");
         const settingsOllamaUrlInput = document.getElementById("ollamaUrlInput");
         const settingsOllamaApiKeyInput = document.getElementById("ollamaApiKeyInput");
         const settingsOllamaAddressSelect = document.getElementById("ollamaAddressSelect");
@@ -2426,9 +2421,6 @@
                     settingsOpenAiModelSelect.value = storedOpenAiModel;
                 }
                 var storedContextWindow = (config && typeof config.getContextWindow === "function" ? config.getContextWindow() : "") || "4000";
-                if (contextWindowInput) {
-                    contextWindowInput.value = storedContextWindow;
-                }
                 var storedOllamaUrl = (config && typeof config.getOllamaUrl === "function" ? config.getOllamaUrl() : "") || "http://localhost:11434";
                 if (settingsOllamaUrlInput) {
                     settingsOllamaUrlInput.value = storedOllamaUrl;
@@ -2485,10 +2477,6 @@
                 const openaiModelValue = (settingsOpenAiModelSelect?.value || "").trim();
                 if (iaConfig && typeof iaConfig.setOpenAiModel === "function" && openaiModelValue) {
                     iaConfig.setOpenAiModel(openaiModelValue);
-                }
-                const contextWindowValue = (contextWindowInput?.value || "").trim();
-                if (iaConfig && typeof iaConfig.setContextWindow === "function" && contextWindowValue) {
-                    iaConfig.setContextWindow(contextWindowValue);
                 }
                 selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openai";
                 if (iaConfig && typeof iaConfig.setBackend === "function") {

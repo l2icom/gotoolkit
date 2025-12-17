@@ -25,6 +25,10 @@
             flex-wrap: wrap;
         }
 
+        #clearSectionsBtn {
+            margin-left: auto;
+        }
+
         .menu-trigger {
             position: relative;
             display: inline-flex;
@@ -2062,8 +2066,7 @@
                         <div class="gutenberg-card-actions-row-right">
 
 
-                            <button class="btn" id="generateFullSlideBtn" type="button"
-                                aria-label="Générer toutes les sections et la synthèse">⌘ Répondre</button>
+
                             <button class="btn-primary" id="adviceBtn" type="button"
                                 aria-label="Conseiller la saisie IA">✧
                                 Suggérer</button>
@@ -2082,6 +2085,9 @@
                             <label>Scénario</label>
                             <button class="btn" id="clearSectionsBtn" type="button" aria-label="Vider les sections">⊘
                                 Vider</button>
+                            <button class="btn" id="generateFullSlideBtn" type="button"
+                                aria-label="Générer toutes les sections et la synthèse">⌘
+                                Répondre</button>
                         </div>
                         <label class="scenario-input-group">
                             <div id="canvasSelectedTemplateLabel" class="template-label"></div>
@@ -2637,6 +2643,16 @@
             }
             clearSpeechSuggestion(globalContextField);
             clearSpeechSuggestion(pageContextField);
+            // Hide canvas template tooltip when speech recognition ends
+            try {
+                if (typeof canvasTemplateTooltip !== "undefined" && canvasTemplateTooltip) {
+                    canvasTemplateTooltip.setAttribute("aria-hidden", "true");
+                    if (typeof resetCanvasTemplateTooltipPosition === "function") {
+                        resetCanvasTemplateTooltipPosition();
+                    }
+                }
+            } catch (e) { /* noop */ }
+
             activeSpeechField = null;
         }
 

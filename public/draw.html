@@ -1126,11 +1126,6 @@
                 <textarea id="promptTemplateField" rows="6"
                     style="font-family: Menlo, Consolas, 'Courier New', monospace;"></textarea>
             </label>
-            <label>
-                <span>Prompt système (personnalisable par document)</span>
-                <textarea id="systemPromptField" rows="4"
-                    style="font-family: Menlo, Consolas, 'Courier New', monospace;"></textarea>
-            </label>
             <div class="modal-actions">
                 <button id="resetPromptBtn" class="btn" type="button">↺ Réinitialiser</button>
                 <button id="applyAiSettingsBtn" class="btn-primary" type="button">Appliquer</button>
@@ -1520,6 +1515,16 @@
                 if (promptInput) {
                     clearSpeechSuggestion(promptInput);
                 }
+                // Hide the template tooltip when speech recognition ends
+                try {
+                    const tt = document.getElementById("templateTooltip");
+                    if (tt) tt.setAttribute("aria-hidden", "true");
+                    if (typeof drawTemplateTooltipRaf !== "undefined" && drawTemplateTooltipRaf !== null) {
+                        cancelAnimationFrame(drawTemplateTooltipRaf);
+                        drawTemplateTooltipRaf = null;
+                    }
+                } catch (e) { /* noop */ }
+
                 activeSpeechField = null;
             }
 
