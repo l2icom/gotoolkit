@@ -797,6 +797,16 @@
                 "☐ Risques"
         },
         {
+            id: "default",
+            title: "🕊️ Générique",
+            text:
+                "Organiser des événements dans le temps.\n" +
+                "☐ Actions\n" +
+                "☐ Groupes\n" +
+                "☐ Repères\n" +
+                "☐ Types"
+        },
+        {
             id: "sprint",
             title: "⚡Calendrier de sprints",
             text:
@@ -855,16 +865,6 @@
                 "☐ Messages clés\n" +
                 "☐ Actions d’accompagnement\n" +
                 "☐ Indicateurs d’adoption"
-        },
-        {
-            id: "default",
-            title: "🕊️ Générique",
-            text:
-                "Organiser des événements dans le temps.\n" +
-                "☐ Actions\n" +
-                "☐ Groupes\n" +
-                "☐ Repères\n" +
-                "☐ Types"
         },
     ];
 

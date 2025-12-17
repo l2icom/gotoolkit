@@ -678,7 +678,21 @@
             line-height: 1.4;
             white-space: pre-wrap;
             word-break: break-word;
-            z-index: 1;
+            z-index: 4;
+        }
+
+        .section-text-row .speech-suggestion,
+        .slide-bottom-section .speech-suggestion {
+            font-family: var(--slide-font-family, var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif));
+            font-size: var(--slide-font-size, 16px);
+        }
+
+        .section-text-row .speech-suggestion {
+            line-height: 1.3;
+        }
+
+        .slide-bottom-section .speech-suggestion {
+            line-height: 1.5;
         }
 
         .speech-suggestion span {
@@ -710,12 +724,12 @@
         }
 
         .speech-field-wrapper.speech-active textarea {
-            border: 2px solid #B11226;
+            border: 2px solid #B11226 !important;
             animation: speech-border 2s infinite ease-in-out;
         }
 
         .speech-field-wrapper.speech-active textarea:focus {
-            border-color: #B11226;
+            border: 2px solid #B11226 !important;
         }
 
         textarea:focus {
@@ -1680,7 +1694,7 @@
         }
 
         .section textarea:focus-visible {
-            outline: 1px solid rgba(42, 122, 87, 0.8);
+            border: 1px solid rgba(42, 122, 87, 0.8);
             box-shadow: none;
             scrollbar-width: thin;
         }
@@ -2490,6 +2504,7 @@
         let activeSpeechWrapper = null;
         let activeSpeechField = null;
         let lastSpeechInterim = "";
+        let speechFieldIdCounter = 0;
 
         function appendSpeechText(field, transcript) {
             if (!field || !transcript) {
@@ -2499,7 +2514,7 @@
             if (!normalized) {
                 return;
             }
-            const separator = field.value && !field.value.endsWith("\n") ? "\n" : "";
+            const separator = field.value ? (/\s$/.test(field.value) ? "" : " ") : "";
             field.value = field.value + (field.value ? separator : "") + normalized;
             field.dispatchEvent(new Event("input", { bubbles: true }));
             clearSpeechSuggestion(field);
@@ -2521,6 +2536,34 @@
             return document.querySelector(`[data-speech-suggestion="${field.id}"]`);
         }
 
+        function ensureSpeechSuggestionField(field) {
+            if (!field) {
+                return;
+            }
+            if (!field.id) {
+                speechFieldIdCounter += 1;
+                field.id = `speech-field-${speechFieldIdCounter}`;
+            }
+            const wrapper = field.closest(".speech-field-wrapper") || field.closest(".textarea-wrapper");
+            if (!wrapper) {
+                return;
+            }
+            if (!wrapper.classList.contains("speech-field-wrapper")) {
+                wrapper.classList.add("speech-field-wrapper");
+            }
+            const selector = `[data-speech-suggestion="${field.id}"]`;
+            let suggestionEl = wrapper.querySelector(selector);
+            if (!suggestionEl) {
+                suggestionEl = document.createElement("div");
+                suggestionEl.className = "speech-suggestion";
+                suggestionEl.setAttribute("aria-hidden", "true");
+                suggestionEl.dataset.speechSuggestion = field.id;
+                field.insertAdjacentElement("afterend", suggestionEl);
+            } else {
+                suggestionEl.dataset.speechSuggestion = field.id;
+            }
+        }
+
         function updateSpeechSuggestion(field, partial) {
             const suggestionEl = getSpeechSuggestionElement(field);
             if (!suggestionEl) {
@@ -2538,6 +2581,14 @@
             if (field === activeSpeechField) {
                 lastSpeechInterim = partial || "";
             }
+            // hide placeholder while interim speech suggestion is visible
+            try {
+                if (field && field.setAttribute) {
+                    const existing = field.getAttribute('placeholder') || '';
+                    if (existing) field.setAttribute('data-original-placeholder', existing);
+                    field.setAttribute('placeholder', '');
+                }
+            } catch (e) { /* noop */ }
         }
 
         function clearSpeechSuggestion(field) {
@@ -2545,6 +2596,16 @@
             if (field === activeSpeechField) {
                 lastSpeechInterim = "";
             }
+            // restore placeholder if it was hidden for speech
+            try {
+                if (field && field.setAttribute) {
+                    const saved = field.getAttribute('data-original-placeholder');
+                    if (saved !== null) {
+                        field.setAttribute('placeholder', saved || '');
+                        field.removeAttribute('data-original-placeholder');
+                    }
+                }
+            } catch (e) { /* noop */ }
         }
 
         function deactivateSpeechUiClasses() {
@@ -4696,6 +4757,7 @@
             });
 
             column.querySelectorAll("textarea").forEach(bindTextareaPlaceholder);
+            column.querySelectorAll("textarea").forEach(ensureSpeechSuggestionField);
 
             column.addEventListener("click", () => {
                 selectColumnForPalette(column);
@@ -4812,7 +4874,7 @@
             const textRow = document.createElement("div");
             textRow.className = "section-text-row";
             const textareaWrapper = document.createElement("div");
-            textareaWrapper.className = "textarea-wrapper";
+            textareaWrapper.className = "textarea-wrapper speech-field-wrapper";
             const textarea = document.createElement("textarea");
             textarea.className = "editable";
             textarea.dataset.section = sectionKey;
@@ -4827,7 +4889,7 @@
             }
             const adviceButton = document.createElement("button");
             adviceButton.type = "button";
-            adviceButton.className = "section-advice-btn field-ai-btn inside";
+            adviceButton.className = "section-advice-btn inside";
             adviceButton.dataset.action = "advice";
             adviceButton.dataset.section = sectionKey;
             adviceButton.title = "Conseiller la saisie";
@@ -4841,7 +4903,16 @@
             aiButton.title = "Générer le contenu";
             aiButton.setAttribute("aria-label", "Générer le contenu");
             aiButton.textContent = "⌘";
-            textareaWrapper.append(textarea, adviceButton, aiButton);
+            const speechButton = document.createElement("button");
+            speechButton.type = "button";
+            speechButton.className = "speech-button";
+            speechButton.setAttribute("data-speech-target-selector", ".editable");
+            speechButton.title = "Dictée vocale";
+            speechButton.setAttribute("aria-label", "Activer la dictée vocale");
+            speechButton.textContent = "◉";
+            textareaWrapper.append(textarea);
+            ensureSpeechSuggestionField(textarea);
+            textareaWrapper.append(adviceButton, aiButton, speechButton);
             textRow.appendChild(textareaWrapper);
 
             section.append(labelRow, textRow);
@@ -5074,6 +5145,7 @@
                 const bottomPlaceholder = (slideTemplate && slideTemplate.bottomPlaceholder) || bottomSectionPlaceholderText;
                 // No native tooltip for the bottom textarea (keep empty / placeholder-driven)
                 bindTextareaPlaceholder(bottomTextarea);
+                ensureSpeechSuggestionField(bottomTextarea);
                 monitorTextareaOverflow(bottomTextarea);
                 bottomTextarea.addEventListener("input", () => schedulePersist());
                 bottomTextarea.addEventListener("focus", () => setBottomSectionFocusState(slide, true));

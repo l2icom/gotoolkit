@@ -894,7 +894,7 @@
                         <div class="superpower-head">
                             <h4>⊞ Le Petit Robert Downey Jr</h4>
                             <div class="superpower-tag-row">
-                                <span class="superpower-tag">En orbite</span>
+                                <span class="superpower-tag superpower-tag--soon">En orbite</span>
                             </div>
                         </div>
                         <div class="superpower-subtitle">Le pouvoir du discernement sémantique. Rétablir la clarté quand
@@ -1405,30 +1405,13 @@
                 return url.toString();
             }
 
-            async function buildShareCard(app, record) {
-                const definition = APP_DEFINITIONS[app];
-                if (!definition || !shareService?.isReady) {
-                    return null;
-                }
-                let result;
-                try {
-                    result = await shareService.fetchSharePayload(definition.collection, record.token);
-                } catch (err) {
-                    console.error(`Impossible de récupérer la capsule ${app}`, err);
-                    return null;
-                }
-                if (!result || !result.payload) {
-                    await shareHistory?.removeRecord?.(app);
-                    return null;
-                }
-                const preview = extractPreview(app, result.payload);
-                const updatedAt = record.updatedAt || result.meta?.updatedAt || new Date().toISOString();
-                const formattedDate = formatFriendlyDate(updatedAt);
+            function createShareCardElement(cardInfo, target = "_blank") {
+                const { definition, preview, formattedDate, href, app, record } = cardInfo;
                 const card = document.createElement("a");
                 card.className = "share-card";
-                card.href = buildShareUrl(definition, record.token);
-                card.target = "_blank";
-                card.rel = "noopener noreferrer";
+                card.href = href;
+                card.target = target;
+                card.rel = target === "_self" ? "noopener" : "noopener noreferrer";
                 card.setAttribute("data-app", app);
                 const metaHtml = buildMetaBadge(preview.templateLabel || preview.drawTypeLabel);
                 card.innerHTML = `
@@ -1470,7 +1453,33 @@
                 });
                 card.appendChild(pinBtn);
                 card.appendChild(deleteBtn);
-                return { card, preview, updatedAt, isPinned, app };
+                return card;
+            }
+
+            async function buildShareCard(app, record) {
+                const definition = APP_DEFINITIONS[app];
+                if (!definition || !shareService?.isReady) {
+                    return null;
+                }
+                let result;
+                try {
+                    result = await shareService.fetchSharePayload(definition.collection, record.token);
+                } catch (err) {
+                    console.error(`Impossible de récupérer la capsule ${app}`, err);
+                    return null;
+                }
+                if (!result || !result.payload) {
+                    await shareHistory?.removeRecord?.(app);
+                    return null;
+                }
+                const preview = extractPreview(app, result.payload);
+                const updatedAt = record.updatedAt || result.meta?.updatedAt || new Date().toISOString();
+                const formattedDate = formatFriendlyDate(updatedAt);
+                const href = buildShareUrl(definition, record.token);
+                const isPinned = Boolean(record.pinned);
+                const cardInfo = { app, definition, record, preview, formattedDate, href };
+                const card = createShareCardElement(cardInfo);
+                return { ...cardInfo, card, updatedAt, isPinned };
             }
 
             function buildSavedCard(record) {
@@ -1602,7 +1611,7 @@
                     .filter(item => item.isPinned)
                     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
                 const regular = validCards
-                    .filter(item => !item.isPinned)
+                    .filter(card => !card.isPinned)
                     .sort((a, b) => {
                         const nameA = (a.preview?.tabName || "").toLowerCase();
                         const nameB = (b.preview?.tabName || "").toLowerCase();
