@@ -1594,7 +1594,15 @@
                     return;
                 }
                 const records = await capsuleDrafts.getAllRecords();
-                const entries = records.filter(record => APP_DEFINITIONS[record.app]);
+                const seenIds = new Set();
+                const entries = records.filter(record => {
+                    const definition = APP_DEFINITIONS[record.app];
+                    if (!definition) return false;
+                    const key = `${record.app}::${record.id}`;
+                    if (seenIds.has(key)) return false;
+                    seenIds.add(key);
+                    return true;
+                });
                 const staleIds = [];
                 const filtered = entries.filter(record => {
                     const hasPayload = record && record.payload && typeof record.payload === "object";
@@ -1611,13 +1619,38 @@
                     return;
                 }
                 if (savedEmpty) savedEmpty.hidden = true;
+                // Deduplicate saved drafts that are already present in shared gallery
+                const sharedKeys = window.__goToolkitSharedPreviewKeys || new Set();
+                // Deduplicate both against shared and within saved
+                const seenSavedKeys = new Set();
                 const cards = filtered
                     .map(buildSavedCard)
-                    .filter(Boolean);
-                const pinned = cards
+                    .filter(Boolean)
+                    .filter(item => {
+                        try {
+                            const definition = APP_DEFINITIONS[item.card.getAttribute("data-app")];
+                            const key = `${definition.collection}::${item.preview.tabName}::${(item.preview.lines || []).join("|")}`;
+                            if (sharedKeys.has(key)) return false;
+                            if (seenSavedKeys.has(key)) return false;
+                            seenSavedKeys.add(key);
+                            return true;
+                        } catch (e) {
+                            return true;
+                        }
+                    });
+                // Front dedupe: avoid duplicate hrefs
+                const hrefSeen = new Set();
+                const uniqueCards = cards.filter(item => {
+                    const href = item.card?.getAttribute("href");
+                    if (!href) return true;
+                    if (hrefSeen.has(href)) return false;
+                    hrefSeen.add(href);
+                    return true;
+                });
+                const pinned = uniqueCards
                     .filter(card => card.isPinned)
                     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-                const regular = cards
+                const regular = uniqueCards
                     .filter(card => !card.isPinned)
                     .sort((a, b) => {
                         const nameA = (a.preview?.tabName || "").toLowerCase();
@@ -1649,6 +1682,18 @@
                 }
                 const cards = await Promise.all(entries.map(({ app, record }) => buildShareCard(app, record)));
                 const validCards = cards.filter(Boolean);
+                // Build a quick set of preview keys to help deduplicate saved drafts that refer to the same content
+                try {
+                    const previewKeys = new Set(validCards.map(item => {
+                        const coll = item.definition.collection || String(item.definition.name || item.app);
+                        const tab = item.preview?.tabName || "";
+                        const lines = (item.preview?.lines || []).join("|");
+                        return `${coll}::${tab}::${lines}`;
+                    }));
+                    window.__goToolkitSharedPreviewKeys = previewKeys;
+                } catch (e) {
+                    window.__goToolkitSharedPreviewKeys = new Set();
+                }
                 if (!validCards.length) {
                     setState({ loading: false, hasData: false, error: "", hasPinned: false, hasRegular: false });
                     return;

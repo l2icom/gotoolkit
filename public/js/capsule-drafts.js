@@ -57,6 +57,21 @@
                         cachedRecords = stored;
                         return stored;
                     }
+                    console.warn("capsule-drafts: no stored records found in IndexedDB, using fallback");
+                }
+                if (typeof localStorage !== "undefined") {
+                    try {
+                        const rawLocal = localStorage.getItem(STORAGE_KEY);
+                        if (rawLocal) {
+                            const parsedLocal = JSON.parse(rawLocal);
+                            if (parsedLocal && typeof parsedLocal === "object") {
+                                cachedRecords = parsedLocal;
+                                return cachedRecords;
+                            }
+                        }
+                    } catch (err) {
+                        console.warn("capsule-drafts: lecture fallback localStorage échouée", err);
+                    }
                 }
                 const raw = MEMORY_STORE.records;
                 cachedRecords = raw && typeof raw === "object" ? raw : {};
@@ -73,6 +88,13 @@
     async function writeRecords(records) {
         cachedRecords = records || {};
         MEMORY_STORE.records = cachedRecords;
+        try {
+            if (typeof localStorage !== "undefined") {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(cachedRecords));
+            }
+        } catch (err) {
+            console.warn("Impossible de sauvegarder la sauvegarde locale des capsules", err);
+        }
         if (!STORE) return;
         try {
             await STORE.set("records", cachedRecords);

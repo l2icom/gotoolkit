@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="styles/app-shell.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
+    <script src="https://cdn.jsdelivr.net/npm/@ag-grid-community/locale@32.3.3/dist/umd/@ag-grid-community/locale.min.js"></script>
     <style>
         #clearGridBtn {
             margin-left: auto;
@@ -747,17 +748,30 @@
                 <button id="toggleDrawerBtn" class="btn drawer-toggle-btn" type="button" title="⸙ Gutenberg">⸙
                     Contexte</button>
                 <button id="aiSettingsBtn" class="btn ai-button" type="button" title="⌘ Promptzilla">⌘ Prompt</button>
+                <div class="menu-trigger">
+                    <button id="affichageBtn" class="btn" type="button" aria-label="Affichage" title="Affichage">◯
+                        Affichage</button>
+                    <div class="context-menu" id="affichageMenu">
+                        <div class="menu-panel display-panel">
+                            <label>
+                                Taille (px)
+                                <select id="gridFontSize" aria-label="Taille des cellules"></select>
+                            </label>
+                        </div>
+                    </div>
+                </div>
                 <div class="menu-trigger" id="capsuleMenuTrigger">
                     <button id="capsuleMenuBtn" class="btn" type="button" title="Capsule">⬠ Capsule</button>
                     <div class="context-menu" id="capsuleMenu">
                         <div class="menu-panel">
                             <button id="capsuleNewBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
-                            <button id="capsuleSaveBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
+                            <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
                             <button id="capsuleDownloadBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
                             <button id="infoButton" type="button" class="menu-panel-btn">⎉ Vaisseau</button>
                         </div>
                     </div>
                 </div>
+
                 <div class="share-menu-wrapper">
                     <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
                         title="Lien de la capsule">☍ Nexus</button>
@@ -778,18 +792,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="menu-trigger">
-                    <button id="affichageBtn" class="btn" type="button" aria-label="Affichage" title="Affichage">◯
-                        Affichage</button>
-                    <div class="context-menu" id="affichageMenu">
-                        <div class="menu-panel display-panel">
-                            <label>
-                                Taille (px)
-                                <select id="gridFontSize" aria-label="Taille des cellules"></select>
-                            </label>
-                        </div>
-                    </div>
-                </div>
+
             </div>
         </header>
 
@@ -802,18 +805,6 @@
                         placeholder="Titre du jeu de données">
                 </div>
                 <div class="grid-card">
-                    <div class="grid-toolbar">
-                        <div class="status-label"></div>
-                        <div class="grid-toolbar-actions">
-                            <div class="menu-trigger">
-                                <button class="btn" data-column-pin-trigger type="button"
-                                    aria-label="Colonnes épinglées" title="Colonnes">⇤ Colonnes</button>
-                                <div class="context-menu" id="columnPinMenu">
-                                    <div class="menu-panel" id="columnPinList"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                     <div id="gridContainer" class="ag-theme-quartz"></div>
                 </div>
             </section>
@@ -843,7 +834,7 @@
                     <div class="card-title-row">
                         <label>Script</label>
                         <div class="card-actions">
-                            <button id="applyScriptBtn" class="btn" type="button">↺ Charger</button>
+                            <button id="applyScriptBtn" class="btn" type="button">↺ Restaurer</button>
                         </div>
                     </div>
                     <textarea id="gridScript" spellcheck="false"
@@ -887,6 +878,7 @@
     <script src="js/prompt.js"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/ia-client.js"></script>
+    <script src="js/idb-doc-store.js"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
@@ -940,7 +932,7 @@
                 const capsuleMenuBtn = document.getElementById("capsuleMenuBtn");
                 const capsuleMenu = document.getElementById("capsuleMenu");
                 const capsuleNewBtn = document.getElementById("capsuleNewBtn");
-                const capsuleSaveBtn = document.getElementById("capsuleSaveBtn");
+                const saveDocumentBtn = document.getElementById("saveDocumentBtn");
                 const capsuleDownloadBtn = document.getElementById("capsuleDownloadBtn");
                 const infoButton = document.getElementById("infoButton");
                 const infoPopup = document.getElementById("infoPopup");
@@ -985,6 +977,7 @@
                         filter: true,
                         resizable: true
                     },
+                    localeText: typeof AG_GRID_LOCALE_FR !== "undefined" ? AG_GRID_LOCALE_FR : undefined,
                     autoSizeStrategy: "fitCellContents",
                     rowHeight: DISPLAY_PREFERENCE_DEFAULTS.rowHeight,
                     rowData: [],
@@ -1003,6 +996,7 @@
                         title: `Page ${index}`,
                         scenario: "",
                         script: "",
+                        lastAiScript: "",
                         data: { columnDefs: [], rowData: [] }
                     };
                 }
@@ -1016,6 +1010,7 @@
                         title: page.title || `Page ${index + 1}`,
                         scenario: page.scenario || "",
                         script: page.script || "",
+                        lastAiScript: page.lastAiScript || "",
                         data: page.data && typeof page.data === "object"
                             ? {
                                 columnDefs: Array.isArray(page.data.columnDefs) ? page.data.columnDefs : [],
@@ -1436,7 +1431,8 @@
                         columnDefs: gridData.columnDefs,
                         rowData: gridData.rowData,
                         scenario,
-                        script
+                        script,
+                        lastAiScript: page?.lastAiScript || ""
                     };
                 }
 
@@ -1479,6 +1475,9 @@
                     if (promptInput && typeof payload.scenario === "string") {
                         promptInput.value = payload.scenario;
                         page.scenario = payload.scenario;
+                    }
+                    if (typeof payload.lastAiScript === "string") {
+                        page.lastAiScript = payload.lastAiScript;
                     }
                     applyGridData(page.data);
                     renderTabs();
@@ -1561,14 +1560,14 @@
                         showStatus("Module Capsule indisponible.", true);
                         return null;
                     }
-                    if (capsuleSaveBtn) {
-                        capsuleSaveBtn.disabled = true;
+                    if (saveDocumentBtn) {
+                        saveDocumentBtn.disabled = true;
                     }
                     try {
                         return await saveGridDraft({ showToast: true });
                     } finally {
-                        if (capsuleSaveBtn) {
-                            capsuleSaveBtn.disabled = false;
+                        if (saveDocumentBtn) {
+                            saveDocumentBtn.disabled = false;
                         }
                     }
                 }
@@ -2072,8 +2071,8 @@
                         page.script = JSON.stringify(page.data, null, 2);
                         applyGridData(page.data);
                         gridScript.value = page.script;
-                        if (!page.title && parsed.title) {
-                            page.title = parsed.title;
+                        if (parsed && typeof parsed.title === "string" && parsed.title.trim()) {
+                            page.title = parsed.title.trim();
                             if (gridTitleInput) gridTitleInput.value = page.title;
                         }
                         showStatus("Jeu de données mis à jour.");
@@ -2102,7 +2101,7 @@
                     showStatus("Grille et script vidés.");
                 }
 
-                function applyScriptToGrid() {
+                function applyScriptToGrid(options = {}) {
                     const raw = gridScript.value || "";
                     if (!raw.trim()) {
                         clearGrid();
@@ -2115,14 +2114,30 @@
                         const page = getActivePage();
                         page.data = { columnDefs, rowData };
                         page.script = JSON.stringify(page.data, null, 2);
+                        page.lastAiScript = page.script;
                         applyGridData(page.data);
                         gridScript.value = page.script;
                         persistState();
-                        showStatus("Script appliqué sur la grille.");
+                        if (!options.silentOnSuccess) {
+                            showStatus("Script appliqué sur la grille.");
+                        }
                     } catch (err) {
                         console.error("Erreur de parsing JSON", err);
-                        showStatus("JSON invalide dans le Script.", true);
+                        if (!options.silentOnError) {
+                            showStatus("JSON invalide dans le Script.", true);
+                        }
                     }
+                }
+
+                function restoreLastAiResponse() {
+                    const page = getActivePage();
+                    const script = page?.lastAiScript || page?.script || "";
+                    if (!script.trim()) {
+                        showStatus("Aucune réponse IA à restaurer.", true);
+                        return;
+                    }
+                    gridScript.value = script;
+                    applyScriptToGrid();
                 }
 
                 function wireNavSwitcher() {
@@ -2171,8 +2186,8 @@
                         await handleNewDocumentClick();
                     });
                 }
-                if (capsuleSaveBtn) {
-                    capsuleSaveBtn.addEventListener("click", event => {
+                if (saveDocumentBtn) {
+                    saveDocumentBtn.addEventListener("click", event => {
                         event.preventDefault();
                         event.stopPropagation();
                         void handleSaveDocumentClick();
@@ -2250,12 +2265,17 @@
                     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                     if (!SpeechRecognition) return;
                     let recognizer = null;
-                    let committedText = "";
+                    let lastSpeechInterim = "";
+                    const originalPromptPlaceholder = promptInput?.getAttribute("placeholder") || "";
                     function hideSpeechSuggestion() {
                         if (promptSpeechSuggestion) {
                             promptSpeechSuggestion.classList.remove("visible");
                             promptSpeechSuggestion.innerHTML = "";
                         }
+                        lastSpeechInterim = "";
+                        try {
+                            if (promptInput) promptInput.setAttribute("placeholder", originalPromptPlaceholder);
+                        } catch (e) { /* noop */ }
                     }
                     function stopRecognition() {
                         if (recognizer) {
@@ -2267,6 +2287,7 @@
                         activeBtn?.classList.remove("speech-button--active");
                         activeWrapper?.classList.remove("speech-active");
                         hideSpeechSuggestion();
+                        lastSpeechInterim = "";
                     }
                     function renderSpeechSuggestion(current, partial) {
                         if (!promptSpeechSuggestion) return;
@@ -2276,15 +2297,32 @@
                             hideSpeechSuggestion();
                             return;
                         }
+                        lastSpeechInterim = partial || "";
+                        try {
+                            if (promptInput) promptInput.setAttribute("placeholder", "");
+                        } catch (e) { /* noop */ }
                         promptSpeechSuggestion.innerHTML = `<span class="speech-suggestion-current">${safeCurrent}</span><span class="speech-suggestion-partial">${safePartial}</span>`;
                         promptSpeechSuggestion.classList.add("visible");
+                    }
+                    function appendSpeechText(field, transcript) {
+                        if (!field || !transcript) {
+                            return;
+                        }
+                        const normalized = transcript.trim();
+                        if (!normalized) {
+                            return;
+                        }
+                        const separator = field.value ? (/\s$/.test(field.value) ? "" : " ") : "";
+                        field.value = field.value + (field.value ? separator : "") + normalized;
+                        field.dispatchEvent(new Event("input", { bubbles: true }));
+                        hideSpeechSuggestion();
+                        lastSpeechInterim = "";
                     }
                     function startRecognition() {
                         const field = promptInput;
                         const btn = document.querySelector(`[data-speech-target="promptInput"]`);
                         if (!field || !btn) return;
                         stopRecognition();
-                        committedText = field.value || "";
                         const wrapper = btn.closest(".speech-field-wrapper");
                         recognizer = new SpeechRecognition();
                         recognizer.lang = "fr-FR";
@@ -2296,29 +2334,24 @@
                             for (let i = event.resultIndex; i < event.results.length; i++) {
                                 const res = event.results[i];
                                 if (res.isFinal) {
-                                    finalText += res[0].transcript;
+                                    finalText += (finalText ? " " : "") + (res[0].transcript || "");
                                 } else {
-                                    interimText += res[0].transcript;
+                                    interimText += (interimText ? " " : "") + (res[0].transcript || "");
                                 }
                             }
-                            committedText = (committedText + " " + finalText).trim();
-                            const currentValue = (committedText + (interimText ? " " + interimText : "")).trim();
-                            field.value = currentValue;
-                            renderSpeechSuggestion(committedText, interimText);
-                            const page = getActivePage();
-                            if (page) {
-                                page.scenario = field.value;
-                                persistState();
+                            if (finalText) {
+                                appendSpeechText(field, finalText);
+                            }
+                            if (interimText) {
+                                renderSpeechSuggestion(field.value, interimText);
+                            } else {
+                                hideSpeechSuggestion();
                             }
                         };
                         recognizer.onend = () => {
                             if (promptInput) {
-                                promptInput.value = committedText.trim();
-                            }
-                            const page = getActivePage();
-                            if (page) {
-                                page.scenario = promptInput.value;
-                                persistState();
+                                promptInput.value = promptInput.value.trim();
+                                promptInput.dispatchEvent(new Event("input", { bubbles: true }));
                             }
                             stopRecognition();
                         };
@@ -2355,7 +2388,7 @@
                     if (applyAiSettingsBtn) applyAiSettingsBtn.addEventListener("click", applyPromptSettings);
                     if (generateBtn) generateBtn.addEventListener("click", requestData);
                     if (clearGridBtn) clearGridBtn.addEventListener("click", clearGrid);
-                    if (applyScriptBtn) applyScriptBtn.addEventListener("click", applyScriptToGrid);
+                    if (applyScriptBtn) applyScriptBtn.addEventListener("click", restoreLastAiResponse);
                     if (gridTitleInput) {
                         gridTitleInput.addEventListener("input", () => {
                             const page = getActivePage();
@@ -2376,6 +2409,9 @@
                             const page = getActivePage();
                             page.script = gridScript.value;
                             persistState();
+                        });
+                        gridScript.addEventListener("blur", () => {
+                            applyScriptToGrid({ silentOnError: true, silentOnSuccess: true });
                         });
                     }
                     if (drawerBtn && sidebar && drawerOverlay) {

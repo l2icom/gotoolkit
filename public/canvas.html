@@ -2068,8 +2068,7 @@
 
 
 
-                            <button class="btn-primary" id="adviceBtn" type="button"
-                                aria-label="Conseiller la saisie IA">✧
+                            <button class="btn" id="adviceBtn" type="button" aria-label="Conseiller la saisie IA">✧
                                 Suggérer</button>
                         </div>
                     </div>
@@ -2086,7 +2085,7 @@
                             <label>Scénario</label>
                             <button class="btn" id="clearSectionsBtn" type="button" aria-label="Vider les sections">⊘
                                 Vider</button>
-                            <button class="btn" id="generateFullSlideBtn" type="button"
+                            <button class="btn-primary" id="generateFullSlideBtn" type="button"
                                 aria-label="Générer toutes les sections et la synthèse">⌘
                                 Répondre</button>
                         </div>
@@ -5143,7 +5142,7 @@
             const titleValue = (seed.title || getDefaultTitle(templateId)).replace(/"/g, '&quot;');
             const subtitleValue = (seed.subtitle || defaultSubtitle).replace(/"/g, '&quot;');
             slide.dataset.templateId = templateId;
-            slide.dataset.tabLabel = seed.tabLabel || `Bloc ${index + 1}`;
+            slide.dataset.tabLabel = seed.tabLabel || `Page ${index + 1}`;
             slide.dataset.pageContext = seed.pageContext ?? seed.context ?? "";
             setSlideHistory(slide, seed.history ?? seed.globalContext ?? "");
             if (seed.canvasExamples) {
@@ -5277,7 +5276,7 @@
             btn.className = "tab";
             btn.dataset.index = index;
             const slide = slidesContainer.querySelector(`.slide[data-index="${index}"]`);
-            const label = (slide?.dataset.tabLabel || `Bloc ${index + 1}`).trim();
+            const label = (slide?.dataset.tabLabel || `Page ${index + 1}`).trim();
             btn.textContent = label;
             btn.addEventListener("click", () => setActiveTab(index));
             btn.addEventListener("dblclick", () => {
@@ -5663,7 +5662,7 @@
             const slide = slidesContainer.querySelector(`.slide[data-index="${activeIndex}"]`);
             if (!slide) return;
             if (slideCount <= 1) return;
-            const label = (slide.dataset.tabLabel || `Bloc ${activeIndex + 1}`).trim();
+            const label = (slide.dataset.tabLabel || `Page ${activeIndex + 1}`).trim();
             if (!confirm(`Supprimer la vue '${label}' ? Cette action est irréversible.`)) {
                 return;
             }
