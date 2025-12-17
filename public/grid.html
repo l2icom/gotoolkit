@@ -193,14 +193,14 @@
             left: 6px;
             right: 6px;
             bottom: 6px;
-            width: calc(100% - 12px);
+            width: 100%;
             flex-wrap: nowrap;
             align-items: center;
             justify-content: space-between;
             padding: 4px 6px;
             border-radius: 8px;
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid #dde3f5;
+            background: transparent;
+            border: none;
             z-index: 4;
         }
 
@@ -239,23 +239,23 @@
             color: #7f1d1d;
             cursor: pointer;
             padding: 0;
-            font-size: 13px;
+            font-size: 12px;
+            margin-right: 4px;
         }
 
         .prompt-file-btn {
             position: relative;
-            width: 28px;
-            height: 28px;
+            width: 24px;
+            height: 24px;
             border-radius: 999px;
             border: none;
-            background: rgba(255, 255, 255, 0.9);
+            background: transparent;
             color: var(--app-muted);
-            font-size: 16px;
+            font-size: 14px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
         .speech-button {
@@ -973,6 +973,7 @@
                     (window.GoPrompts && window.GoPrompts.gridSystemPrompt) || "";
                 const STORAGE_KEY = "grid-ai-state";
                 const OPEN_AI_MESSAGE_MAX_CHARS = 3000;
+                const AI_BACKEND_STORAGE_KEY = "go-toolkit-ai-backend";
 
                 const navSwitcherBtn = document.getElementById("navSwitcherBtn");
                 const navSwitcherMenu = document.getElementById("navSwitcherMenu");
@@ -1032,6 +1033,7 @@
                 let generateCooldownEndTime = 0;
 
                 let activeRequestController = null;
+                let pendingAbortStatus = false;
 
                 const FONT_SIZE_CHOICES = [8, 9, 10, 11, 12, 13, 14, 15, 16];
                 const FIRESTORE_COLLECTION = "grids";
@@ -2286,13 +2288,77 @@
                     }
                 }
 
+                function getSelectedAiBackend() {
+                    try {
+                        const forced = window.GoToolkitSelectedAIBackend;
+                        if (forced) {
+                            return String(forced).trim().toLowerCase();
+                        }
+                    } catch (err) {
+                        /* noop */
+                    }
+                    try {
+                        if (window.localStorage) {
+                            const stored = window.localStorage.getItem(AI_BACKEND_STORAGE_KEY);
+                            if (stored) {
+                                return stored.trim().toLowerCase();
+                            }
+                        }
+                    } catch (err) {
+                        console.warn("Impossible de lire le backend IA", err);
+                    }
+                    return "openai";
+                }
+
+                function isWebllmBackendSelected() {
+                    return getSelectedAiBackend() === "webllm";
+                }
+
+                function shouldSignalWebllmServiceWorker() {
+                    if (typeof navigator === "undefined" || !navigator.serviceWorker || !navigator.serviceWorker.controller) {
+                        return false;
+                    }
+                    if (!window.GoToolkitWebLLM || typeof window.GoToolkitWebLLM.getEngineKind !== "function") {
+                        return false;
+                    }
+                    return window.GoToolkitWebLLM.getEngineKind() === "service-worker";
+                }
+
+                function signalWebllmServiceWorkerAbort() {
+                    if (!isWebllmBackendSelected() || !shouldSignalWebllmServiceWorker()) {
+                        return;
+                    }
+                    try {
+                        const uuid =
+                            typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+                                ? crypto.randomUUID()
+                                : `grid-webllm-abort-${Date.now()}`;
+                        navigator.serviceWorker.controller.postMessage({
+                            kind: "interruptGenerate",
+                            uuid,
+                            content: null
+                        });
+                    } catch (err) {
+                        console.warn("Impossible d'interrompre le worker WebLLM", err);
+                    }
+                }
+
+                function cancelActiveAiRequest() {
+                    if (!activeRequestController) {
+                        return;
+                    }
+                    pendingAbortStatus = true;
+                    activeRequestController.abort();
+                    signalWebllmServiceWorkerAbort();
+                    showStatus("Requête annulée.", true);
+                }
+
                 function handleGenerateClick(event) {
                     if (event) {
                         event.preventDefault();
                     }
                     if (activeRequestController) {
-                        activeRequestController.abort();
-                        showStatus("Requête annulée.");
+                        cancelActiveAiRequest();
                         return;
                     }
                     requestData();
@@ -2423,12 +2489,15 @@
                         renderTabs();
                     } catch (err) {
                         if (err && err.name === "AbortError") {
-                            showStatus("Requête annulée.", true);
+                            if (!pendingAbortStatus) {
+                                showStatus("Requête annulée.", true);
+                            }
                         } else {
                             console.error("Erreur IA", err);
                             showStatus("Impossible de générer le dataset.", true);
                         }
                     } finally {
+                        pendingAbortStatus = false;
                         setLoading(false);
                         activeRequestController = null;
                     }

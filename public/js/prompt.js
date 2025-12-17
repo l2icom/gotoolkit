@@ -743,17 +743,6 @@ RÈGLES POUR rowData
 - Toutes les valeurs des cellules et les titres des colonnes (headerName) ont en français
 - Les clés restent en anglais
 
-EXEMPLE DE TYPES DE VALEURS
-{
-  "id": 1, 
-  "name": "Alice",
-  "score": 92,
-  "active": true,
-  "startDate": "2024-06-01",
-  "status": "ok",
-  "tags": ["backend", "urgent"]
-}
-
 Génère des données réalistes.
 Assure une cohérence parfaite entre columnDefs et rowData.
 En cas de fichier(s) fourni(s), prendre en compte comme si c'était des données à modifier. 
