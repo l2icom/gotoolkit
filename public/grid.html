@@ -182,8 +182,80 @@
 
         .speech-field-wrapper textarea {
             padding-right: 40px;
+            padding-bottom: 42px;
             position: relative;
             z-index: 2;
+        }
+
+        .prompt-file-row {
+            display: none;
+            position: absolute;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            width: calc(100% - 12px);
+            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 6px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #dde3f5;
+            z-index: 4;
+        }
+
+        .prompt-file-row.visible {
+            display: flex;
+        }
+
+        .prompt-file-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+            flex: 1 1 auto;
+            min-height: 24px;
+        }
+
+        .prompt-file-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            border: 1px solid #bfc6dc;
+            background: #f4f5fb;
+            font-size: 11px;
+        }
+
+        .prompt-file-item.is-error {
+            border-color: #b42318;
+            color: #b42318;
+        }
+
+        .prompt-file-item button {
+            border: none;
+            background: transparent;
+            color: #7f1d1d;
+            cursor: pointer;
+            padding: 0;
+            font-size: 13px;
+        }
+
+        .prompt-file-btn {
+            position: relative;
+            width: 28px;
+            height: 28px;
+            border-radius: 999px;
+            border: none;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--app-muted);
+            font-size: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
         .speech-button {
@@ -827,6 +899,15 @@
                                 placeholder="Décris le contexte des données attendues (acteur, périmètre, règles)..."></textarea>
                             <button class="speech-button" type="button" data-speech-target="promptInput"
                                 title="Dictée vocale" aria-label="Activer la dictée vocale">◉</button>
+                            <div id="promptFileRow" class="prompt-file-row" aria-hidden="true">
+                                <div id="promptFileList" class="prompt-file-list"></div>
+                                <div class="prompt-file-actions">
+                                    <input id="promptFileInput" type="file" multiple style="display: none;"
+                                        aria-hidden="true">
+                                    <button id="promptFileBtn" class="prompt-file-btn" type="button"
+                                        title="Ajouter des fichiers" aria-label="Ajouter des fichiers">🗁</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div id="promptAltRow" class="prompt-alt-row" aria-live="polite"></div>
@@ -918,6 +999,10 @@
                 const sidebar = document.querySelector(".connect-left");
                 const connectRight = document.querySelector(".connect-right");
                 const promptSpeechSuggestion = document.querySelector('[data-speech-suggestion="promptInput"]');
+                const promptFileRow = document.getElementById("promptFileRow");
+                const promptFileList = document.getElementById("promptFileList");
+                const promptFileInput = document.getElementById("promptFileInput");
+                const promptFileBtn = document.getElementById("promptFileBtn");
                 const affichageBtn = document.getElementById("affichageBtn");
                 const affichageMenu = document.getElementById("affichageMenu");
                 const fontSizeInput = document.getElementById("gridFontSize");
@@ -971,6 +1056,7 @@
                 const DEFAULT_PINNED_FIELDS = new Set(["id", "name"]);
                 const DESKTOP_DRAWER_BREAKPOINT = 1200;
                 let sidebarOpenDesktop = true;
+                let fileUploads = [];
                 let autoSizeTimer = null;
                 const gridElement = document.getElementById("gridContainer");
                 const gridOptions = {
@@ -1913,6 +1999,171 @@
                     }
                 }
 
+                function isOpenAIBackendSelected() {
+                    const backendValue =
+                        (window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getBackend === "function"
+                            ? window.GoToolkitIAConfig.getBackend()
+                            : "openai") || "openai";
+                    return String(backendValue).toLowerCase() === "openai";
+                }
+
+                function getOpenAIApiKey() {
+                    return (
+                        (window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getApiKey === "function"
+                            ? window.GoToolkitIAConfig.getApiKey()
+                            : "") || ""
+                    ).trim();
+                }
+
+                function updateFileRowVisibility() {
+                    if (!promptFileRow || !promptFileBtn) return;
+                    const visible = isOpenAIBackendSelected() && Boolean(getOpenAIApiKey());
+                    promptFileRow.classList.toggle("visible", visible);
+                    promptFileRow.setAttribute("aria-hidden", visible ? "false" : "true");
+                    promptFileBtn.disabled = !visible;
+                }
+
+                function renderFileList() {
+                    if (!promptFileList) return;
+                    promptFileList.innerHTML = "";
+                    fileUploads.forEach(entry => {
+                        const item = document.createElement("div");
+                        item.className = "prompt-file-item";
+                        item.dataset.fileId = entry.id;
+                        if (entry.status === "error") {
+                            item.classList.add("is-error");
+                        }
+                        const label = document.createElement("span");
+                        if (entry.status === "uploading") {
+                            const pct = Number.isFinite(entry.progress) ? Math.max(0, Math.min(100, entry.progress)) : 0;
+                            label.textContent = `${pct}%`;
+                        } else if (entry.status === "error") {
+                            label.textContent = entry.error || entry.name || "Erreur";
+                        } else {
+                            label.textContent = entry.name || "Fichier";
+                        }
+                        const removeBtn = document.createElement("button");
+                        removeBtn.type = "button";
+                        removeBtn.dataset.removeFileId = entry.id;
+                        removeBtn.title = "Retirer le fichier";
+                        removeBtn.textContent = "×";
+                        item.append(label, removeBtn);
+                        promptFileList.appendChild(item);
+                    });
+                }
+
+                function removeFileUpload(id) {
+                    const index = fileUploads.findIndex(entry => entry.id === id);
+                    if (index === -1) return;
+                    const entry = fileUploads[index];
+                    if (entry && entry.xhr && entry.status === "uploading") {
+                        try {
+                            entry.xhr.abort();
+                        } catch (err) { /* ignore */ }
+                    }
+                    fileUploads.splice(index, 1);
+                    renderFileList();
+                }
+
+                function uploadFileToOpenAI(entry) {
+                    const apiKey = getOpenAIApiKey();
+                    if (!apiKey) {
+                        entry.status = "error";
+                        entry.error = "Clé OpenAI manquante.";
+                        renderFileList();
+                        showStatus("Ajoute une clé OpenAI pour téléverser un fichier.", true);
+                        return;
+                    }
+                    entry.status = "uploading";
+                    entry.progress = 0;
+                    renderFileList();
+
+                    const formData = new FormData();
+                    formData.append("file", entry.file);
+                    formData.append("purpose", "assistants");
+
+                    const xhr = new XMLHttpRequest();
+                    entry.xhr = xhr;
+                    xhr.open("POST", "https://api.openai.com/v1/files");
+                    xhr.setRequestHeader("Authorization", `Bearer ${apiKey}`);
+                    xhr.upload.onprogress = event => {
+                        if (!event || !event.lengthComputable) return;
+                        const pct = Math.round((event.loaded / Math.max(event.total, 1)) * 100);
+                        entry.progress = pct;
+                        renderFileList();
+                    };
+                    xhr.onerror = () => {
+                        entry.status = "error";
+                        entry.error = "Erreur réseau.";
+                        entry.xhr = null;
+                        renderFileList();
+                        showStatus("Téléversement interrompu.", true);
+                    };
+                    xhr.onabort = () => {
+                        entry.status = "error";
+                        entry.error = "Téléversement annulé.";
+                        entry.xhr = null;
+                        renderFileList();
+                    };
+                    xhr.onreadystatechange = () => {
+                        if (xhr.readyState !== 4) return;
+                        entry.xhr = null;
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            let data = null;
+                            try {
+                                data = JSON.parse(xhr.responseText);
+                            } catch (err) { /* ignore */ }
+                            entry.status = "uploaded";
+                            entry.progress = 100;
+                            entry.openaiId = data?.id || "";
+                            entry.url = data?.url || data?.id || "";
+                            renderFileList();
+                            showStatus("Fichier téléversé.");
+                        } else {
+                            entry.status = "error";
+                            entry.error = xhr.responseText || "Échec du téléversement.";
+                            renderFileList();
+                            showStatus("Échec du téléversement de fichier.", true);
+                        }
+                    };
+                    xhr.send(formData);
+                }
+
+                function handlePromptFileInputChange(event) {
+                    const files = (event && event.target && event.target.files) || (promptFileInput && promptFileInput.files);
+                    if (!files || !files.length) return;
+                    const items = Array.from(files);
+                    if (promptFileInput) {
+                        promptFileInput.value = "";
+                    }
+                    items.forEach(file => {
+                        const entry = {
+                            id: `file-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                            file,
+                            name: file.name,
+                            status: "queued",
+                            progress: 0,
+                            xhr: null,
+                            openaiId: "",
+                            url: "",
+                            error: ""
+                        };
+                        fileUploads.push(entry);
+                        uploadFileToOpenAI(entry);
+                    });
+                    renderFileList();
+                }
+
+                function getUploadedFileAttachments() {
+                    return fileUploads
+                        .filter(entry => entry.status === "uploaded" && entry.openaiId)
+                        .map(entry => ({
+                            file_id: entry.openaiId,
+                            name: entry.name,
+                            url: entry.url || entry.openaiId
+                        }));
+                }
+
                 function isDesktopDrawerMode() {
                     return typeof window !== "undefined" && window.innerWidth > DESKTOP_DRAWER_BREAKPOINT;
                 }
@@ -2021,12 +2272,10 @@
                     state.reasoningEffort = state.reasoningEffort || "low";
                     persistState();
                     closeModal();
+                    updateFileRowVisibility();
                 }
 
                 function setLoading(isLoading) {
-                    if (generateBtn) {
-                        generateBtn.disabled = isLoading;
-                    }
                     if (clearGridBtn) {
                         clearGridBtn.disabled = isLoading;
                     }
@@ -2035,6 +2284,18 @@
                     } else {
                         clearGenerateCooldown();
                     }
+                }
+
+                function handleGenerateClick(event) {
+                    if (event) {
+                        event.preventDefault();
+                    }
+                    if (activeRequestController) {
+                        activeRequestController.abort();
+                        showStatus("Requête annulée.");
+                        return;
+                    }
+                    requestData();
                 }
 
                 function updateGenerateLabel(label) {
@@ -2098,9 +2359,6 @@
                 }
 
                 async function requestData() {
-                    if (activeRequestController) {
-                        activeRequestController.abort();
-                    }
                     const controller = new AbortController();
                     activeRequestController = controller;
                     setLoading(true);
@@ -2109,6 +2367,7 @@
                     const scenarioText = (promptInput?.value || "").trim();
                     const scriptText = (gridScript?.value || "").trim();
                     const userPrompt = (state.promptTemplate || DEFAULT_PROMPT_TEMPLATE).replace("{{scenario_prompt}}", scenarioText || "ton sujet");
+                    const fileAttachments = isOpenAIBackendSelected() ? getUploadedFileAttachments() : [];
 
                     const messages = [
                         { role: "system", content: state.systemPrompt || DEFAULT_SYSTEM_PROMPT }
@@ -2116,6 +2375,15 @@
                     if (scriptText) {
                         const datasetMessages = buildChunkedDatasetMessages(scriptText);
                         datasetMessages.forEach(chunk => messages.push(chunk));
+                    }
+                    if (fileAttachments.length) {
+                        const listText = fileAttachments
+                            .map(file => `- ${file.name || file.file_id} (${file.url || file.file_id})`)
+                            .join("\n");
+                        messages.push({
+                            role: "user",
+                            content: `Fichiers joints disponibles via OpenAI Files:\n${listText}`
+                        });
                     }
                     messages.push({ role: "user", content: userPrompt });
 
@@ -2127,6 +2395,7 @@
                                     : "gpt-5-nano",
                             messages,
                             reasoning: { effort: state.reasoningEffort || "low" },
+                            attachments: fileAttachments,
                             stream: true
                         };
                         const response = await window.GoToolkitIA.chatCompletion({
@@ -2460,7 +2729,7 @@
                     if (closeAiModal) closeAiModal.addEventListener("click", closeModal);
                     if (resetPromptBtn) resetPromptBtn.addEventListener("click", resetPrompt);
                     if (applyAiSettingsBtn) applyAiSettingsBtn.addEventListener("click", applyPromptSettings);
-                    if (generateBtn) generateBtn.addEventListener("click", requestData);
+                    if (generateBtn) generateBtn.addEventListener("click", handleGenerateClick);
                     if (clearGridBtn) clearGridBtn.addEventListener("click", clearGrid);
                     if (applyScriptBtn) applyScriptBtn.addEventListener("click", restoreLastAiResponse);
                     if (gridTitleInput) {
@@ -2489,6 +2758,19 @@
                             applyScriptToGrid({ silentOnError: true, silentOnSuccess: true });
                         });
                     }
+                    if (promptFileBtn && promptFileInput) {
+                        promptFileBtn.addEventListener("click", () => promptFileInput.click());
+                        promptFileInput.addEventListener("change", handlePromptFileInputChange);
+                    }
+                    if (promptFileList) {
+                        promptFileList.addEventListener("click", event => {
+                            const target = event.target;
+                            const removeId = target?.getAttribute?.("data-remove-file-id");
+                            if (removeId) {
+                                removeFileUpload(removeId);
+                            }
+                        });
+                    }
                     if (drawerBtn) {
                         drawerBtn.addEventListener("click", () => toggleSidebar());
                     }
@@ -2497,6 +2779,8 @@
                     }
                     window.addEventListener("resize", syncSidebarLayout);
                     syncSidebarLayout();
+                    updateFileRowVisibility();
+                    renderFileList();
                 }
 
                 wireEvents();

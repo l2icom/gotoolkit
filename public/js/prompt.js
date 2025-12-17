@@ -756,7 +756,7 @@ EXEMPLE DE TYPES DE VALEURS
 
 Génère des données réalistes.
 Assure une cohérence parfaite entre columnDefs et rowData.
-
+En cas de fichier(s) fourni(s), prendre en compte comme si c'était des données à modifier. 
 En cas de modification, utilise les données fournies sans changer les ids et renvoie tout le dataset.`;
 
     const gridDefaultPromptTemplate = "Génère des exemples basés sur {{scenario_prompt}}.";
