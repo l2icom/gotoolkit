@@ -1,0 +1,2412 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <script>window.GO_TOOLKIT_SHARE_API_URL = 'https://share.gotoolkit.workers.dev/'</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grid | Go-Toolkit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="styles/app-shell.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
+    <style>
+        #clearGridBtn {
+            margin-left: auto;
+            margin-right: 6px;
+        }
+
+        .template-tooltip {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 8px 10px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 2200;
+            max-width: 360px;
+            font-size: 12px;
+            color: #ffffff;
+            line-height: 1.3;
+            backdrop-filter: blur(2px);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        .template-tooltip[aria-hidden="false"]:not(:empty) {
+            display: block;
+            opacity: 1;
+        }
+
+        :root {
+            font-size: 12px;
+            --app-text: #101428;
+            --app-bg: #f3f4f6;
+            --app-border: #cdd4ed;
+            --app-border-strong: #cdd4ed;
+            --app-primary-strong: #1f2a56;
+        }
+
+        .tabs-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            flex-wrap: nowrap;
+        }
+
+        .nav-switch {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .nav-switch-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            min-width: 180px;
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 6px;
+            display: none;
+            z-index: 50;
+        }
+
+        .nav-switch-menu.open {
+            display: block;
+        }
+
+        .nav-switch-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #1f2a56;
+        }
+
+        .nav-switch-link:hover,
+        .nav-switch-link:focus-visible {
+            background: rgba(42, 122, 87, 0.08);
+        }
+
+        .connect-layout {
+            flex: 1;
+            padding: 5px 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .connect-left {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid #dfe3f5;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .connect-left.collapsed {
+            display: none;
+        }
+
+        .connect-right.full-width {
+            flex: 1 1 100%;
+            width: 100%;
+        }
+
+
+        .connect-right {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 0px;
+            border: 1px solid #dfe3f5;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .connect-left,
+        .connect-right {
+            flex: 1;
+        }
+
+        .connect-left textarea {
+            font-size: 12px;
+            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+        }
+
+        .connect-left {
+            flex: 0 0 350px;
+            max-width: 350px;
+            width: 100%;
+        }
+
+        .prompt-input-wrapper {
+            position: relative;
+        }
+
+        .prompt-input-wrapper textarea {
+            position: relative;
+            background: #fbfbff;
+            z-index: 1;
+            padding: 8px;
+            margin: 0;
+            border: 1px solid #d6dbf2;
+            border-radius: 4px;
+            color: #101428;
+            box-sizing: border-box;
+        }
+
+        .speech-field-wrapper {
+            position: relative;
+            height: 100%;
+        }
+
+        .speech-field-wrapper textarea {
+            padding-right: 40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .speech-button {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.85);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            color: var(--app-muted);
+            border-radius: 999px;
+            transition: box-shadow 0.2s ease, opacity 0.2s ease;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 3;
+            transform: translateX(2px);
+        }
+
+        .speech-field-wrapper:hover .speech-button,
+        .speech-field-wrapper:focus-within .speech-button {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .speech-button--active,
+        .speech-button:active {
+            color: #B11226;
+            animation: speech-blink 2s infinite linear;
+            opacity: 1;
+        }
+
+        @keyframes speech-blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .speech-suggestion {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            pointer-events: none;
+            font: inherit;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+            z-index: 3;
+        }
+
+        .speech-suggestion span {
+            display: inline;
+        }
+
+        .speech-suggestion-current {
+            color: transparent;
+        }
+
+        .speech-suggestion-partial {
+            color: rgba(15, 23, 42, 0.45);
+        }
+
+        .speech-suggestion:not(.visible) {
+            visibility: hidden;
+        }
+
+        @keyframes speech-border {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(177, 18, 38, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 0 6px rgba(177, 18, 38, 0.12);
+            }
+        }
+
+        .speech-field-wrapper.speech-active textarea {
+            border: 2px solid #B11226;
+            animation: speech-border 2s infinite ease-in-out;
+        }
+
+        .speech-field-wrapper.speech-active textarea:focus {
+            border-color: #B11226;
+        }
+
+        .prompt-suggestion {
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 0;
+            box-sizing: border-box;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: inherit;
+            font-size: inherit;
+            line-height: inherit;
+            color: #c8cee8;
+            overflow: hidden;
+            z-index: 40;
+        }
+
+        .prompt-suggestion .prompt-suggestion-mask {
+            color: transparent;
+        }
+
+        .prompt-suggestion .prompt-suggestion-hint {
+            color: #c8cee8;
+        }
+
+        .prompt-alt-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .prompt-alt-badge {
+            border: 1px solid #d6dbf2;
+            background: #ffffff;
+            color: #1f2a56;
+            border-radius: 12px;
+            padding: 3px 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease;
+            text-transform: capitalize;
+        }
+
+        .prompt-alt-badge:hover,
+        .prompt-alt-badge:focus-visible {
+            background: #f0f4ff;
+            border-color: #c0c8ee;
+            outline: none;
+        }
+
+        .drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(2px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 60;
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .card-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0px;
+            margin-bottom: 0px;
+        }
+
+        .card-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        textarea {
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid #d6dbf2;
+            padding: 8px;
+            resize: none;
+            font-family: inherit;
+            font-size: 12px;
+            line-height: 1.5;
+            background: #fbfbff;
+            color: #101428;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--app-primary);
+            scrollbar-width: thin;
+        }
+
+        .prompt-input-card {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .prompt-input-card textarea {
+            height: 260px;
+            margin-bottom: 0px;
+        }
+
+        .mermaid-output-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-height: 0;
+        }
+
+        .mermaid-output-card textarea {
+            flex: 1;
+            min-height: 0;
+        }
+
+        .generate-btn,
+        .refresh-btn {
+            align-self: flex-start;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .generate-btn {
+            border: none;
+            background: #2a7a57;
+            color: #ffffff;
+            box-shadow: none;
+            border-radius: 8px;
+            padding: 6px 10px;
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+        }
+
+        .status-label {
+            font-size: 12px;
+            color: #566188;
+            min-height: 18px;
+        }
+
+        .status-toast {
+            position: fixed;
+            left: 24px;
+            bottom: 24px;
+            max-width: 280px;
+            background: rgba(16, 20, 40, 0.92);
+            color: #ffffff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: 0 12px 24px rgba(16, 20, 40, 0.35);
+            font-size: 13px;
+            line-height: 1.4;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .status-toast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .grid-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px;
+            min-height: 0;
+        }
+
+        .diagram-title-row {
+            margin: 0 10px 2px 0;
+        }
+
+        .diagram-title-input {
+            width: 100%;
+            padding: 6px 6px;
+            font-size: 14px;
+            font-weight: 700;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #0f172a;
+        }
+
+        .grid-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .grid-toolbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .menu-trigger {
+            position: relative;
+            display: inline-flex;
+        }
+
+        .context-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: #ffffff;
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.2);
+            display: none;
+            min-width: 220px;
+            z-index: 60;
+        }
+
+        .context-menu.open {
+            display: block;
+        }
+
+        .context-menu label {
+            font-size: 13px;
+            color: #0f172a;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .context-menu select {
+            border-radius: 8px;
+            border: 1px solid #dfe3f5;
+            padding: 6px 8px;
+            font-size: 13px;
+            background: #ffffff;
+            color: #0f172a;
+        }
+
+        .column-pin-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .share-menu-wrapper {
+            position: relative;
+            display: inline-flex;
+        }
+
+        .share-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            width: 260px;
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.15);
+            display: none;
+            z-index: 120;
+        }
+
+        .share-menu.open {
+            display: block;
+        }
+
+        .share-menu-header {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 10px 12px 6px;
+            letter-spacing: 0.2em;
+            color: #65748a;
+        }
+
+        .share-link-line {
+            padding: 0 12px;
+        }
+
+        .share-link-field {
+            width: 100%;
+            border: 1px solid #dfe3f5;
+            border-radius: 8px;
+            padding: 6px 8px;
+            font-size: 12px;
+            background: #f7f8ff;
+            color: #101428;
+        }
+
+        .share-actions {
+            display: flex;
+            gap: 8px;
+            padding-top: 8px;
+        }
+
+        .share-menu-status {
+            padding: 0 12px 12px;
+            font-size: 11px;
+            color: #566188;
+            min-height: 18px;
+        }
+
+        .share-menu-status.error {
+            color: #b42318;
+        }
+
+        .info-popup {
+            position: absolute;
+            top: 56px;
+            right: 12px;
+            width: 280px;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 12px;
+            z-index: 60;
+        }
+
+        .info-popup.open {
+            display: flex;
+        }
+
+        .display-panel {
+            padding: 10px;
+        }
+
+        .info-popup img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            align-self: center;
+        }
+
+        .info-popup a {
+            color: #2a7a57;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .info-popup button {
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 12px;
+            background: var(--app-primary, #2a7a57);
+            border-color: var(--app-primary, #2a7a57);
+            cursor: pointer;
+        }
+
+        #gridContainer {
+            flex: 1;
+            min-height: 420px;
+            width: 100%;
+        }
+
+        .ag-theme-quartz {
+            --ag-font-size: var(--grid-font-size, 12px);
+            --ag-border-color: #dfe3f5;
+            --ag-header-foreground-color: #0f172a;
+            --ag-foreground-color: #0f172a;
+            --ag-background-color: #ffffff;
+        }
+
+        .ag-theme-quartz .ag-body-viewport,
+        .ag-theme-quartz .ag-body-horizontal-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(15, 23, 42, 0.45) rgba(255, 255, 255, 0.8);
+        }
+
+        .ag-theme-quartz ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        .ag-theme-quartz ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .ag-theme-quartz ::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.35);
+        }
+
+        @media (max-width: 1200px) {
+            .connect-layout {
+                position: relative;
+                gap: 6px;
+            }
+
+            .connect-right {
+                width: 100%;
+            }
+
+            .connect-left {
+                position: fixed;
+                top: 0;
+                right: 0;
+                height: 100vh;
+                max-width: min(420px, 90vw);
+                width: 90vw;
+                box-shadow: -12px 0 30px rgba(16, 20, 40, 0.25);
+                transform: translateX(110%);
+                transition: transform 0.22s ease;
+                z-index: 70;
+                overflow-y: auto;
+            }
+
+            .connect-left.open {
+                transform: translateX(0);
+            }
+
+            .drawer-overlay.visible {
+                opacity: 1;
+                pointer-events: all;
+            }
+
+            #gridContainer {
+                min-height: 60vh;
+            }
+        }
+    </style>
+</head>
+
+
+<body class="app-body">
+    <div class="app">
+        <header class="app-header">
+            <a class="app-home-link" href="index.html" title="Revenir à l'accueil">☍</a>
+            <div class="nav-switch">
+                <button id="navSwitcherBtn" class="nav-switch-btn" type="button">▦ Grid ▾</button>
+                <div id="navSwitcherMenu" class="nav-switch-menu">
+                    <a class="nav-switch-link" href="canvas.html">◍ Canvas</a>
+                    <a class="nav-switch-link" href="draw.html">◇ Draw</a>
+                    <a class="nav-switch-link" href="timeline.html">⇥ Timeline</a>
+                </div>
+            </div>
+
+            <div class="tabs-actions">
+                <div id="pageTabs" class="tabs"></div>
+                <button id="addPageBtn" class="tab-action" title="Ajouter une page">+</button>
+                <button id="deletePageBtn" class="tab-action" title="Supprimer la page">×</button>
+            </div>
+            <div class="global-actions">
+                <button id="toggleDrawerBtn" class="btn drawer-toggle-btn" type="button" title="⸙ Gutenberg">⸙
+                    Contexte</button>
+                <button id="aiSettingsBtn" class="btn ai-button" type="button" title="⌘ Promptzilla">⌘ Prompt</button>
+                <div class="menu-trigger" id="capsuleMenuTrigger">
+                    <button id="capsuleMenuBtn" class="btn" type="button" title="Capsule">⬠ Capsule</button>
+                    <div class="context-menu" id="capsuleMenu">
+                        <div class="menu-panel">
+                            <button id="capsuleNewBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
+                            <button id="capsuleSaveBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
+                            <button id="capsuleDownloadBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
+                            <button id="infoButton" type="button" class="menu-panel-btn">⎉ Vaisseau</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="share-menu-wrapper">
+                    <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
+                        title="Lien de la capsule">☍ Nexus</button>
+                    <div id="shareMenu" class="share-menu" role="dialog" aria-live="polite">
+                        <div class="menu-panel">
+                            <div class="share-menu-header">Lien de la capsule</div>
+                            <div class="share-link-line">
+                                <input id="shareLinkField" class="share-link-field" type="text" readonly
+                                    placeholder="Créer un lien privé">
+                            </div>
+                            <div class="share-actions">
+                                <button id="shareUpdateBtn" type="button" class="menu-panel-btn btn-primary">🔄
+                                    Actualiser</button>
+                                <button id="shareCreateBtn" type="button" class="menu-panel-btn btn-primary">☍
+                                    Créer</button>
+                            </div>
+                            <p class="share-menu-status" id="shareMenuStatus"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="menu-trigger">
+                    <button id="affichageBtn" class="btn" type="button" aria-label="Affichage" title="Affichage">◯
+                        Affichage</button>
+                    <div class="context-menu" id="affichageMenu">
+                        <div class="menu-panel display-panel">
+                            <label>
+                                Taille (px)
+                                <select id="gridFontSize" aria-label="Taille des cellules"></select>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div id="drawerOverlay" class="drawer-overlay" aria-hidden="true"></div>
+
+        <main class="connect-layout">
+            <section class="connect-right">
+                <div class="diagram-title-row">
+                    <input id="gridTitleInput" class="diagram-title-input" type="text"
+                        placeholder="Titre du jeu de données">
+                </div>
+                <div class="grid-card">
+                    <div class="grid-toolbar">
+                        <div class="status-label"></div>
+                        <div class="grid-toolbar-actions">
+                            <div class="menu-trigger">
+                                <button class="btn" data-column-pin-trigger type="button"
+                                    aria-label="Colonnes épinglées" title="Colonnes">⇤ Colonnes</button>
+                                <div class="context-menu" id="columnPinMenu">
+                                    <div class="menu-panel" id="columnPinList"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="gridContainer" class="ag-theme-quartz"></div>
+                </div>
+            </section>
+
+            <section class="connect-left">
+                <div class="prompt-input-card" id="prompt-input-card">
+                    <div class="card-title-row">
+                        <label>Scénario</label>
+                        <button id="clearGridBtn" class="btn" type="button">⊘ Vider</button>
+                        <button id="generateBtn" class="btn-primary generate-btn" type="button">⌘ Répondre</button>
+                    </div>
+                    <div class="prompt-input-wrapper">
+                        <div id="promptSuggestion" class="prompt-suggestion" aria-hidden="true"></div>
+                        <div id="templateTooltip" class="template-tooltip" aria-hidden="true"></div>
+                        <div class="speech-field-wrapper">
+                            <div class="speech-suggestion" data-speech-suggestion="promptInput" aria-hidden="true">
+                            </div>
+                            <textarea id="promptInput" rows="5"
+                                placeholder="Décris le contexte des données attendues (acteur, périmètre, règles)..."></textarea>
+                            <button class="speech-button" type="button" data-speech-target="promptInput"
+                                title="Dictée vocale" aria-label="Activer la dictée vocale">◉</button>
+                        </div>
+                    </div>
+                    <div id="promptAltRow" class="prompt-alt-row" aria-live="polite"></div>
+                </div>
+                <div class="mermaid-output-card">
+                    <div class="card-title-row">
+                        <label>Script</label>
+                        <div class="card-actions">
+                            <button id="applyScriptBtn" class="btn" type="button">↺ Charger</button>
+                        </div>
+                    </div>
+                    <textarea id="gridScript" spellcheck="false"
+                        placeholder='Le JSON du dataset AG Grid apparaîtra ici'></textarea>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="statusToast" class="status-toast" role="status"></div>
+    <div id="infoPopup" class="context-menu info-popup" role="dialog" aria-live="polite">
+        <img src="logo.gif" alt="Logo Go-Toolkit">
+        <strong>Module Grid (Le Cardinal)</strong>
+        <p>Les tableaux générés ici peuvent être partagés et exportés pour enrichir vos capsules métier.</p>
+        <button id="closeInfoPopup" type="button" class="btn-primary">Réinitialiser</button>
+    </div>
+
+    <div class="modal-overlay" id="aiModal">
+        <div class="modal">
+            <header class="modal-header">
+                <h3 title="⌘ Promptzilla">⌘ Prompt</h3>
+                <button id="closeAiModal" class="btn-secondary" type="button">✕</button>
+            </header>
+            <label>
+                <span>Prompt utilisateur</span>
+                <textarea id="promptTemplateField" rows="4"
+                    style="font-family: Menlo, Consolas, 'Courier New', monospace;"></textarea>
+            </label>
+            <label>
+                <span>System prompt</span>
+                <textarea id="systemPromptField" rows="10"
+                    style="font-family: Menlo, Consolas, 'Courier New', monospace;"></textarea>
+            </label>
+            <div class="modal-actions">
+                <button id="resetPromptBtn" class="btn" type="button">↺ Réinitialiser</button>
+                <button id="applyAiSettingsBtn" class="btn-primary" type="button">Appliquer</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/prompt.js"></script>
+    <script src="js/ia-config.js"></script>
+    <script src="js/ia-client.js"></script>
+    <script src="js/share-worker-client.js"></script>
+    <script src="js/share-history.js"></script>
+    <script src="js/capsule-drafts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.noStyle.js"></script>
+    <script>
+            (() => {
+                const DEFAULT_PROMPT_TEMPLATE =
+                    (window.GoPrompts && window.GoPrompts.gridDefaultPromptTemplate) ||
+                    "Génère 60 exemples basés sur {{scenario_prompt}}.";
+                const DEFAULT_SYSTEM_PROMPT =
+                    (window.GoPrompts && window.GoPrompts.gridSystemPrompt) || "";
+                const STORAGE_KEY = "grid-ai-state";
+                const OPEN_AI_MESSAGE_MAX_CHARS = 3000;
+
+                const navSwitcherBtn = document.getElementById("navSwitcherBtn");
+                const navSwitcherMenu = document.getElementById("navSwitcherMenu");
+                const promptInput = document.getElementById("promptInput");
+                const promptTemplateField = document.getElementById("promptTemplateField");
+                const systemPromptField = document.getElementById("systemPromptField");
+                const aiModal = document.getElementById("aiModal");
+                const aiSettingsBtn = document.getElementById("aiSettingsBtn");
+                const closeAiModal = document.getElementById("closeAiModal");
+                const resetPromptBtn = document.getElementById("resetPromptBtn");
+                const applyAiSettingsBtn = document.getElementById("applyAiSettingsBtn");
+                const generateBtn = document.getElementById("generateBtn");
+                const clearGridBtn = document.getElementById("clearGridBtn");
+                const applyScriptBtn = document.getElementById("applyScriptBtn");
+                const gridScript = document.getElementById("gridScript");
+                const gridTitleInput = document.getElementById("gridTitleInput");
+                const statusToast = document.getElementById("statusToast");
+                const statusLabel = document.querySelector(".status-label");
+                const pageTabs = document.getElementById("pageTabs");
+                const addPageBtn = document.getElementById("addPageBtn");
+                const deletePageBtn = document.getElementById("deletePageBtn");
+                const drawerOverlay = document.getElementById("drawerOverlay");
+                const drawerBtn = document.getElementById("toggleDrawerBtn");
+                const sidebar = document.querySelector(".connect-left");
+                const promptSpeechSuggestion = document.querySelector('[data-speech-suggestion="promptInput"]');
+                const affichageBtn = document.getElementById("affichageBtn");
+                const affichageMenu = document.getElementById("affichageMenu");
+                const fontSizeInput = document.getElementById("gridFontSize");
+                const columnPinBtn = document.querySelector("[data-column-pin-trigger]");
+                const columnPinMenu = document.getElementById("columnPinMenu");
+                const columnPinList = document.getElementById("columnPinList");
+                const shareBtn = document.getElementById("shareBtn");
+                const shareMenu = document.getElementById("shareMenu");
+                const shareLinkField = document.getElementById("shareLinkField");
+                const shareCreateBtn = document.getElementById("shareCreateBtn");
+                const shareUpdateBtn = document.getElementById("shareUpdateBtn");
+                const shareMenuStatus = document.getElementById("shareMenuStatus");
+                const capsuleMenuBtn = document.getElementById("capsuleMenuBtn");
+                const capsuleMenu = document.getElementById("capsuleMenu");
+                const capsuleNewBtn = document.getElementById("capsuleNewBtn");
+                const capsuleSaveBtn = document.getElementById("capsuleSaveBtn");
+                const capsuleDownloadBtn = document.getElementById("capsuleDownloadBtn");
+                const infoButton = document.getElementById("infoButton");
+                const infoPopup = document.getElementById("infoPopup");
+                const closeInfoPopup = document.getElementById("closeInfoPopup");
+                const shareHistory = window.goToolkitShareHistory;
+                const shareService = window.goToolkitShareWorker;
+                const capsuleDrafts = window.goToolkitCapsuleDrafts;
+                const generateDefaultLabel = generateBtn?.textContent || "⌘ Répondre";
+                const drawerDefaultLabel = drawerBtn?.textContent || "⸙ Contexte";
+                let generateCooldownTimer = null;
+                let generateCooldownEndTime = 0;
+
+                let activeRequestController = null;
+
+                const FONT_SIZE_CHOICES = [8, 9, 10, 11, 12, 13, 14, 15, 16];
+                const FIRESTORE_COLLECTION = "grids";
+                const SHARE_QUERY_PARAM = "share";
+                const EDIT_QUERY_PARAM = "edit";
+                const SHARE_WORKER_UNAVAILABLE_MESSAGE =
+                    "Le partage privé nécessite le worker Cloudflare lié à Go-Toolkit (go-toolkit-share).";
+                const SHARE_DRAFT_PREFIX = `${STORAGE_KEY}-share-`;
+                let shareWorkerAvailable = Boolean(shareService && shareService.isReady);
+                let shareRequestInProgress = false;
+                let shareLastUpdatedAt = null;
+                let shareLoadedFromRemote = false;
+                let shareStatusMessage = "";
+                let shareStatusType = "";
+                let currentShareToken = null;
+                let currentDraftId = null;
+                let isDraftSaving = false;
+                const DISPLAY_PREFERENCE_DEFAULTS = {
+                    fontSize: 12,
+                    rowHeight: 32
+                };
+                const DEFAULT_PINNED_FIELDS = new Set(["id", "name"]);
+                let autoSizeTimer = null;
+                const gridElement = document.getElementById("gridContainer");
+                const gridOptions = {
+                    defaultColDef: {
+                        editable: true,
+                        sortable: true,
+                        filter: true,
+                        resizable: true
+                    },
+                    autoSizeStrategy: "fitCellContents",
+                    rowHeight: DISPLAY_PREFERENCE_DEFAULTS.rowHeight,
+                    rowData: [],
+                    columnDefs: [],
+                    onCellValueChanged: syncScriptFromGrid,
+                    onColumnMoved: syncScriptFromGrid,
+                    onColumnPinned: syncScriptFromGrid,
+                    onColumnResized: syncScriptFromGrid
+                };
+                const gridApi = agGrid.createGrid(gridElement, gridOptions);
+                const gridColumnApi = gridOptions.columnApi;
+
+                function createPage(index) {
+                    return {
+                        id: `page-${Date.now()}-${index}-${Math.floor(Math.random() * 10000)}`,
+                        title: `Page ${index}`,
+                        scenario: "",
+                        script: "",
+                        data: { columnDefs: [], rowData: [] }
+                    };
+                }
+
+                function normalizePage(page, index) {
+                    if (!page || typeof page !== "object") {
+                        return createPage(index + 1);
+                    }
+                    return {
+                        id: page.id || `page-${Date.now()}-${index}`,
+                        title: page.title || `Page ${index + 1}`,
+                        scenario: page.scenario || "",
+                        script: page.script || "",
+                        data: page.data && typeof page.data === "object"
+                            ? {
+                                columnDefs: Array.isArray(page.data.columnDefs) ? page.data.columnDefs : [],
+                                rowData: Array.isArray(page.data.rowData) ? page.data.rowData : []
+                            }
+                            : { columnDefs: [], rowData: [] }
+                    };
+                }
+
+                function loadState() {
+                    try {
+                        const raw = localStorage.getItem(STORAGE_KEY);
+                        if (!raw) {
+                            return {
+                                pages: [createPage(1)],
+                                activeIndex: 0,
+                                promptTemplate: DEFAULT_PROMPT_TEMPLATE,
+                                systemPrompt: DEFAULT_SYSTEM_PROMPT,
+                                reasoningEffort: "low",
+                                displayPreferences: { ...DISPLAY_PREFERENCE_DEFAULTS }
+                            };
+                        }
+                        const parsed = JSON.parse(raw);
+                        const pages = Array.isArray(parsed.pages)
+                            ? parsed.pages.map(normalizePage)
+                            : [createPage(1)];
+                        const activeIndex = Math.max(0, Math.min((parsed.activeIndex || 0), pages.length - 1));
+                        return {
+                            pages,
+                            activeIndex,
+                            promptTemplate: parsed.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
+                            systemPrompt: parsed.systemPrompt || DEFAULT_SYSTEM_PROMPT,
+                            reasoningEffort: parsed.reasoningEffort || "low",
+                            displayPreferences: Object.assign({}, DISPLAY_PREFERENCE_DEFAULTS, parsed.displayPreferences || {})
+                        };
+                    } catch (err) {
+                        console.warn("Impossible de charger l'état Grid", err);
+                        return {
+                            pages: [createPage(1)],
+                            activeIndex: 0,
+                            promptTemplate: DEFAULT_PROMPT_TEMPLATE,
+                            systemPrompt: DEFAULT_SYSTEM_PROMPT,
+                            reasoningEffort: "low",
+                            displayPreferences: { ...DISPLAY_PREFERENCE_DEFAULTS }
+                        };
+                    }
+                }
+
+                let state = loadState();
+                renderFontSizeOptions();
+                applyGridDisplayPreferences({ persist: false });
+                buildColumnPinMenu();
+
+                function persistState() {
+                    try {
+                        const payload = {
+                            pages: state.pages.map((page, index) => normalizePage(page, index)),
+                            activeIndex: Math.max(0, Math.min(state.activeIndex, state.pages.length - 1)),
+                            promptTemplate: state.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
+                            systemPrompt: state.systemPrompt || DEFAULT_SYSTEM_PROMPT,
+                            reasoningEffort: state.reasoningEffort || "low",
+                            displayPreferences: state.displayPreferences || { ...DISPLAY_PREFERENCE_DEFAULTS }
+                        };
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+                    } catch (err) {
+                        console.warn("Impossible de sauvegarder l'état Grid", err);
+                    }
+                }
+
+                function showStatus(message, isError) {
+                    const text = message ? message.toString().trim() : "";
+                    if (statusLabel) {
+                        statusLabel.textContent = text;
+                        statusLabel.style.color = isError ? "#b42318" : "#566188";
+                    }
+                    if (!text) {
+                        statusToast?.classList.remove("visible");
+                        return;
+                    }
+                    if (!statusToast) return;
+                    statusToast.textContent = text;
+                    statusToast.classList.add("visible");
+                    if (isError) {
+                        statusToast.style.background = "#7f1d1d";
+                    } else {
+                        statusToast.style.background = "rgba(16, 20, 40, 0.92)";
+                    }
+                    setTimeout(() => statusToast.classList.remove("visible"), 3200);
+                }
+
+                function getActivePage() {
+                    return state.pages[state.activeIndex];
+                }
+
+                function renderTabs() {
+                    if (!pageTabs) return;
+                    pageTabs.innerHTML = "";
+                    state.pages.forEach((page, index) => {
+                        const btn = document.createElement("button");
+                        btn.className = `tab${index === state.activeIndex ? " active" : ""}`;
+                        btn.type = "button";
+                        btn.textContent = page.title || `Page ${index + 1}`;
+                        btn.title = btn.textContent;
+                        btn.addEventListener("click", () => setActivePage(index));
+                        pageTabs.appendChild(btn);
+                    });
+                }
+
+                function applyGridData(data) {
+                    if (!data) return;
+                    const columnDefs = Array.isArray(data.columnDefs) ? data.columnDefs : [];
+                    const rowData = Array.isArray(data.rowData) ? data.rowData : [];
+                    const normalizedColumnDefs = ensureDefaultPinned(columnDefs);
+                    if (typeof gridApi.setGridOption === "function") {
+                        gridApi.setGridOption("columnDefs", normalizedColumnDefs);
+                        gridApi.setGridOption("rowData", rowData);
+                    } else {
+                        gridApi.setColumnDefs(normalizedColumnDefs);
+                        gridApi.setRowData(rowData);
+                    }
+                    data.columnDefs = normalizedColumnDefs;
+                    scheduleAutoSizeAndPinMenu();
+                }
+
+                function syncScriptFromGrid() {
+                    const page = getActivePage();
+                    if (!page) return;
+                    const gridData = collectGridData();
+                    page.data = gridData;
+                    page.script = JSON.stringify(gridData, null, 2);
+                    gridScript.value = page.script;
+                    persistState();
+                }
+
+                function collectGridData() {
+                    const columnDefs =
+                        typeof gridApi.getColumnDefs === "function"
+                            ? gridApi.getColumnDefs() || []
+                            : (typeof gridApi.getGridOption === "function"
+                                ? gridApi.getGridOption("columnDefs") || []
+                                : []);
+                    const rowData = [];
+                    gridApi.forEachNode(node => {
+                        if (node && node.data) {
+                            rowData.push({ ...node.data });
+                        }
+                    });
+                    return { columnDefs, rowData };
+                }
+
+                function ensureDefaultPinned(columnDefs = []) {
+                    return columnDefs.map(def => {
+                        if (!def || typeof def !== "object") return def;
+                        const identifiers = [
+                            typeof def.field === "string" ? def.field.toLowerCase() : "",
+                            typeof def.colId === "string" ? def.colId.toLowerCase() : "",
+                            typeof def.headerName === "string" ? def.headerName.toLowerCase() : ""
+                        ];
+                        const shouldPin = identifiers.some(id => DEFAULT_PINNED_FIELDS.has(id));
+                        if (shouldPin && def.pinned !== "left") {
+                            return { ...def, pinned: "left" };
+                        }
+                        return def;
+                    });
+                }
+
+                function buildChunkedDatasetMessages(rawText) {
+                    const instruction =
+                        "Voici le dataset actuel, conserve les ids si fournis et renvoie tout le contenu :\n";
+                    if (!rawText) {
+                        return [];
+                    }
+                    const trimmed = rawText.trim();
+                    if (!trimmed) {
+                        return [];
+                    }
+                    if (trimmed.length <= OPEN_AI_MESSAGE_MAX_CHARS) {
+                        return [{ role: "user", content: instruction + trimmed }];
+                    }
+                    const parts = [];
+                    for (let i = 0; i < trimmed.length; i += OPEN_AI_MESSAGE_MAX_CHARS) {
+                        parts.push(trimmed.slice(i, i + OPEN_AI_MESSAGE_MAX_CHARS));
+                    }
+                    const total = parts.length;
+                    return parts.map((chunk, index) => {
+                        const header = `Partie ${index + 1} / ${total} du JSON du dataset actuel.`;
+                        const footer = index === total - 1 ? "\n(Fin du JSON du dataset actuel.)" : "";
+                        return {
+                            role: "user",
+                            content: `${instruction}${header}\n${chunk}${footer}`
+                        };
+                    });
+                }
+
+                function autoSizeColumns() {
+                    if (!gridColumnApi) return;
+                    gridColumnApi.autoSizeAllColumns(true);
+                }
+
+                function scheduleAutoSizeAndPinMenu() {
+                    if (autoSizeTimer) {
+                        clearTimeout(autoSizeTimer);
+                    }
+                    autoSizeTimer = setTimeout(() => {
+                        autoSizeTimer = null;
+                        autoSizeColumns();
+                        buildColumnPinMenu();
+                    }, 0);
+                }
+
+                function buildColumnPinMenu() {
+                    if (!columnPinList) return;
+                    if (!gridColumnApi) {
+                        columnPinList.textContent = "Aucune colonne";
+                        return;
+                    }
+                    const columns = gridColumnApi.getAllColumns?.() || [];
+                    columnPinList.innerHTML = "";
+                    if (!columns.length) {
+                        columnPinList.textContent = "Aucune colonne";
+                        return;
+                    }
+                    columns.forEach(column => {
+                        const row = document.createElement("div");
+                        row.className = "column-pin-row";
+                        const span = document.createElement("span");
+                        const headerName = column.getColDef()?.headerName || column.getColId();
+                        span.textContent = headerName || column.getColId();
+                        const action = document.createElement("button");
+                        action.type = "button";
+                        action.className = "btn btn-small";
+                        const pinnedLeft = column.getPinned() === "left";
+                        action.textContent = pinnedLeft ? "Dépingler" : "Épingler à gauche";
+                        action.addEventListener("click", event => {
+                            event.stopPropagation();
+                            const targetState = pinnedLeft ? null : "left";
+                            gridColumnApi.setColumnPinned(column.getColId(), targetState);
+                            buildColumnPinMenu();
+                        });
+                        row.append(span, action);
+                        columnPinList.append(row);
+                    });
+                }
+
+                function getShareDraftKey(token) {
+                    return token ? `${SHARE_DRAFT_PREFIX}${token}` : "";
+                }
+
+                function readShareDraft(token) {
+                    if (!token || typeof window === "undefined" || !window.localStorage) return null;
+                    try {
+                        const raw = localStorage.getItem(getShareDraftKey(token));
+                        if (!raw) return null;
+                        const parsed = JSON.parse(raw);
+                        if (!parsed || typeof parsed !== "object") return null;
+                        return parsed;
+                    } catch (err) {
+                        console.warn("Impossible de lire le cache de partage Grid", err);
+                        return null;
+                    }
+                }
+
+                function writeShareDraft(token, payload, updatedAt) {
+                    if (!token || typeof window === "undefined" || !window.localStorage) return;
+                    try {
+                        const value = {
+                            payload,
+                            updatedAt: updatedAt || new Date().toISOString()
+                        };
+                        localStorage.setItem(getShareDraftKey(token), JSON.stringify(value));
+                    } catch (err) {
+                        console.warn("Impossible de sauvegarder le cache de partage", err);
+                    }
+                }
+
+                function copyTextToClipboard(text) {
+                    if (!text) return false;
+                    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+                        return navigator.clipboard.writeText(text).then(() => true);
+                    }
+                    const textarea = document.createElement("textarea");
+                    textarea.value = text;
+                    textarea.setAttribute("readonly", "");
+                    textarea.style.position = "absolute";
+                    textarea.style.left = "-9999px";
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    try {
+                        document.execCommand("copy");
+                        return true;
+                    } finally {
+                        textarea.remove();
+                    }
+                }
+
+                function getShareTokenFromUrl() {
+                    try {
+                        const params = new URLSearchParams(window.location.search || "");
+                        const value = params.get(SHARE_QUERY_PARAM);
+                        return value ? value.trim() : null;
+                    } catch (err) {
+                        return null;
+                    }
+                }
+
+                function updateUrlWithShareToken(token) {
+                    try {
+                        const url = new URL(window.location.href);
+                        if (token) {
+                            url.searchParams.set(SHARE_QUERY_PARAM, token);
+                        } else {
+                            url.searchParams.delete(SHARE_QUERY_PARAM);
+                        }
+                        history.replaceState(null, "", url.toString());
+                    } catch (err) {
+                        console.warn("Impossible de mettre à jour l'URL de partage", err);
+                    }
+                }
+
+                function createShareToken() {
+                    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+                        return crypto.randomUUID();
+                    }
+                    const bytes = new Uint8Array(16);
+                    if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+                        crypto.getRandomValues(bytes);
+                    } else {
+                        for (let i = 0; i < bytes.length; i += 1) {
+                            bytes[i] = Math.floor(Math.random() * 256);
+                        }
+                    }
+                    return Array.from(bytes)
+                        .map(byte => byte.toString(16).padStart(2, "0"))
+                        .join("");
+                }
+
+                function clearAppCookies() {
+                    if (typeof document === "undefined" || !document.cookie) return;
+                    document.cookie.split(";").forEach(cookie => {
+                        const [namePart] = cookie.split("=");
+                        const name = namePart?.trim();
+                        if (!name) return;
+                        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+                        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${location.hostname}`;
+                    });
+                }
+
+                function resetGridState() {
+                    const confirmed = window.confirm(
+                        "Réinitialiser supprimera le cache, les préférences et les cookies. Continuer ?"
+                    );
+                    if (!confirmed) return;
+                    try {
+                        if (window.localStorage) {
+                            localStorage.removeItem(STORAGE_KEY);
+                            if (shareHistory?.STORAGE_KEY) localStorage.removeItem(shareHistory.STORAGE_KEY);
+                            if (capsuleDrafts?.STORAGE_KEY) localStorage.removeItem(capsuleDrafts.STORAGE_KEY);
+                            Object.keys(localStorage)
+                                .filter(key => key.startsWith(SHARE_DRAFT_PREFIX))
+                                .forEach(key => localStorage.removeItem(key));
+                        }
+                    } catch (err) {
+                        console.warn("Réinitialisation locale impossible", err);
+                    }
+                    clearAppCookies();
+                    window.location.reload();
+                }
+
+                function buildShareUrl(token) {
+                    if (!token) return "";
+                    try {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set(SHARE_QUERY_PARAM, token);
+                        return url.toString();
+                    } catch (err) {
+                        console.warn("Impossible de construire l'URL partagée", err);
+                        return "";
+                    }
+                }
+
+                function setShareStatus(message, type) {
+                    shareStatusMessage = message || "";
+                    shareStatusType = type || "";
+                }
+
+                function formatRelativeTime(value) {
+                    if (!value) return "";
+                    try {
+                        const timestamp = new Date(value).getTime();
+                        if (Number.isNaN(timestamp)) return "";
+                        const deltaSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+                        if (deltaSeconds < 60) {
+                            return "Mis à jour à l'instant";
+                        }
+                        const deltaMinutes = Math.floor(deltaSeconds / 60);
+                        if (deltaMinutes < 60) {
+                            return `Mis à jour il y a ${deltaMinutes} minute${deltaMinutes > 1 ? "s" : ""}`;
+                        }
+                        const deltaHours = Math.floor(deltaMinutes / 60);
+                        if (deltaHours < 24) {
+                            return `Mis à jour il y a ${deltaHours} heure${deltaHours > 1 ? "s" : ""}`;
+                        }
+                        const deltaDays = Math.floor(deltaHours / 24);
+                        return `Mis à jour il y a ${deltaDays} jour${deltaDays > 1 ? "s" : ""}`;
+                    } catch (err) {
+                        return "";
+                    }
+                }
+
+                function buildGridSharePayload() {
+                    const page = getActivePage();
+                    const gridData = collectGridData();
+                    const title = (gridTitleInput?.value || page?.title || "Grid").trim();
+                    const scenario = (promptInput?.value || "").trim();
+                    const script = gridScript?.value || "";
+                    return {
+                        title,
+                        columnDefs: gridData.columnDefs,
+                        rowData: gridData.rowData,
+                        scenario,
+                        script
+                    };
+                }
+
+                function buildGridSharePreview() {
+                    const title = (gridTitleInput?.value || getActivePage()?.title || "Grid").trim();
+                    const scenario = (promptInput?.value || "").trim();
+                    return {
+                        title: title || "Grid",
+                        description: scenario || "Sans contexte"
+                    };
+                }
+
+                async function persistGridShareRecord(token, updatedAt) {
+                    if (!shareHistory || !token) return;
+                    try {
+                        const preview = buildGridSharePreview();
+                        await shareHistory.upsertRecord("grid", {
+                            token,
+                            updatedAt: updatedAt || new Date().toISOString(),
+                            title: preview.title,
+                            description: preview.description
+                        });
+                    } catch (err) {
+                        console.warn("Impossible d'archiver le lien partagé Grid", err);
+                    }
+                }
+
+                function applySharedPayload(payload) {
+                    if (!payload) return;
+                    const columnDefs = Array.isArray(payload.columnDefs) ? payload.columnDefs : [];
+                    const rowData = Array.isArray(payload.rowData) ? payload.rowData : [];
+                    const page = getActivePage();
+                    page.data = { columnDefs, rowData };
+                    page.script = JSON.stringify(page.data, null, 2);
+                    if (gridScript) gridScript.value = page.script;
+                    if (gridTitleInput && payload.title) {
+                        gridTitleInput.value = payload.title;
+                        page.title = payload.title;
+                    }
+                    if (promptInput && typeof payload.scenario === "string") {
+                        promptInput.value = payload.scenario;
+                        page.scenario = payload.scenario;
+                    }
+                    applyGridData(page.data);
+                    renderTabs();
+                    persistState();
+                }
+
+                function getEditIdFromUrl() {
+                    try {
+                        const params = new URLSearchParams(window.location.search || "");
+                        const value = params.get(EDIT_QUERY_PARAM);
+                        return value ? value.trim() : null;
+                    } catch (err) {
+                        return null;
+                    }
+                }
+
+                function updateUrlWithEditId(id) {
+                    try {
+                        const url = new URL(window.location.href);
+                        if (id) {
+                            url.searchParams.set(EDIT_QUERY_PARAM, id);
+                        } else {
+                            url.searchParams.delete(EDIT_QUERY_PARAM);
+                        }
+                        history.replaceState(null, "", url.toString());
+                    } catch (err) {
+                        console.warn("Impossible de mettre à jour l'URL d'édition", err);
+                    }
+                }
+
+                function createDraftId() {
+                    if (capsuleDrafts && typeof capsuleDrafts.generateId === "function") {
+                        return capsuleDrafts.generateId();
+                    }
+                    return createShareToken();
+                }
+
+                async function saveGridDraft(options = {}) {
+                    if (!capsuleDrafts || isDraftSaving) return null;
+                    isDraftSaving = true;
+                    try {
+                        persistState();
+                        const payload = buildGridSharePayload();
+                        const preview = buildGridSharePreview();
+                        let id = currentDraftId || createDraftId();
+                        if (!id) {
+                            id = createShareToken();
+                        }
+                        const now = new Date().toISOString();
+                        const record = await capsuleDrafts.upsertRecord({
+                            id,
+                            app: "grid",
+                            payload,
+                            title: preview.title,
+                            description: preview.description,
+                            updatedAt: now
+                        });
+                        if (record) {
+                            currentDraftId = record.id;
+                            if (options.updateUrl !== false) {
+                                updateUrlWithEditId(record.id);
+                            }
+                            if (options.showToast) {
+                                showStatus("Capsule enregistrée localement.");
+                            }
+                        }
+                        return record;
+                    } catch (err) {
+                        console.error("Erreur Capsule", err);
+                        showStatus("Impossible de sauvegarder la capsule.", true);
+                        return null;
+                    } finally {
+                        isDraftSaving = false;
+                    }
+                }
+
+                async function handleSaveDocumentClick() {
+                    closeGridMenus();
+                    if (!capsuleDrafts) {
+                        showStatus("Module Capsule indisponible.", true);
+                        return null;
+                    }
+                    if (capsuleSaveBtn) {
+                        capsuleSaveBtn.disabled = true;
+                    }
+                    try {
+                        return await saveGridDraft({ showToast: true });
+                    } finally {
+                        if (capsuleSaveBtn) {
+                            capsuleSaveBtn.disabled = false;
+                        }
+                    }
+                }
+
+                async function tryLoadLocalDraftFromUrl() {
+                    if (!capsuleDrafts || typeof capsuleDrafts.getRecord !== "function") {
+                        return false;
+                    }
+                    const editId = getEditIdFromUrl();
+                    if (!editId) {
+                        return false;
+                    }
+                    try {
+                        const record = await capsuleDrafts.getRecord(editId);
+                        if (!record || !record.payload) {
+                            return false;
+                        }
+                        applySharedPayload(record.payload);
+                        currentDraftId = record.id;
+                        updateUrlWithEditId(record.id);
+                        return true;
+                    } catch (err) {
+                        console.warn("Impossible de charger la capsule locale", err);
+                        return false;
+                    }
+                }
+
+                function openNewGridDocument() {
+                    try {
+                        if (window.localStorage) {
+                            localStorage.removeItem(STORAGE_KEY);
+                        }
+                    } catch (err) {
+                        console.warn("Impossible de réinitialiser l'état local", err);
+                    }
+                    if (currentShareToken) {
+                        updateUrlWithShareToken(null);
+                        currentShareToken = null;
+                    }
+                    currentDraftId = null;
+                    updateUrlWithEditId(null);
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete(SHARE_QUERY_PARAM);
+                    url.searchParams.delete(EDIT_QUERY_PARAM);
+                    url.hash = "";
+                    window.location.href = url.toString();
+                }
+
+                async function handleNewDocumentClick() {
+                    closeGridMenus();
+                    const page = getActivePage();
+                    const scriptHasContent = Boolean(gridScript?.value?.trim());
+                    const dataHasContent =
+                        Array.isArray(page?.data?.rowData) && page.data.rowData.length > 0;
+                    if (scriptHasContent || dataHasContent || currentDraftId) {
+                        const confirmSave = window.confirm(
+                            "Sauvegarder la capsule actuelle avant d'ouvrir un nouveau document ?"
+                        );
+                        if (confirmSave) {
+                            await handleSaveDocumentClick();
+                        }
+                    }
+                    openNewGridDocument();
+                }
+
+                async function fetchSharePayload(token) {
+                    if (!shareWorkerAvailable || !shareService) {
+                        throw new Error(SHARE_WORKER_UNAVAILABLE_MESSAGE);
+                    }
+                    return shareService.fetchSharePayload(FIRESTORE_COLLECTION, token);
+                }
+
+                async function tryLoadSharedStateFromUrl() {
+                    const token = getShareTokenFromUrl();
+                    if (!token) return false;
+                    if (!shareWorkerAvailable) {
+                        setShareStatus(SHARE_WORKER_UNAVAILABLE_MESSAGE, "error");
+                        updateShareMenuUI();
+                        return false;
+                    }
+                    const localDraft = readShareDraft(token);
+                    let remoteResult = null;
+                    try {
+                        remoteResult = await fetchSharePayload(token);
+                    } catch (err) {
+                        console.error("Erreur de chargement distant du lien partagé :", err);
+                    }
+                    const remotePayload = remoteResult?.payload;
+                    const remoteUpdatedAt = remoteResult?.meta?.updatedAt;
+                    const localPayload = localDraft?.payload;
+                    const localUpdatedAt = localDraft?.updatedAt;
+                    const remoteTime = remoteUpdatedAt ? new Date(remoteUpdatedAt).getTime() : 0;
+                    const localTime = localUpdatedAt ? new Date(localUpdatedAt).getTime() : 0;
+                    let selectedPayload = null;
+                    let selectedUpdatedAt = null;
+                    if (remotePayload && (!localPayload || remoteTime >= localTime)) {
+                        selectedPayload = remotePayload;
+                        selectedUpdatedAt = remoteUpdatedAt;
+                        shareLoadedFromRemote = true;
+                    } else if (localPayload) {
+                        selectedPayload = localPayload;
+                        selectedUpdatedAt = localUpdatedAt;
+                    }
+                    if (!selectedPayload) {
+                        setShareStatus("Lien privé introuvable.", "error");
+                        updateShareMenuUI();
+                        return false;
+                    }
+                    applySharedPayload(selectedPayload);
+                    currentShareToken = token;
+                    shareLastUpdatedAt = selectedUpdatedAt || new Date().toISOString();
+                    setShareStatus(formatRelativeTime(shareLastUpdatedAt));
+                    updateShareMenuUI();
+                    await persistGridShareRecord(token, shareLastUpdatedAt);
+                    writeShareDraft(token, selectedPayload, shareLastUpdatedAt);
+                    return true;
+                }
+
+                async function saveSharePayload(token, payload) {
+                    if (!shareWorkerAvailable || !shareService) {
+                        throw new Error(SHARE_WORKER_UNAVAILABLE_MESSAGE);
+                    }
+                    const meta = await shareService.saveSharePayload(FIRESTORE_COLLECTION, token, payload);
+                    return (meta && meta.updatedAt) || new Date().toISOString();
+                }
+
+                function updateShareMenuUI() {
+                    const hasToken = Boolean(currentShareToken);
+                    if (shareLinkField) {
+                        shareLinkField.value = hasToken ? buildShareUrl(currentShareToken) : "";
+                        shareLinkField.placeholder = hasToken ? "" : "Créer un lien privé";
+                    }
+                    if (shareUpdateBtn) {
+                        shareUpdateBtn.hidden = !hasToken;
+                        shareUpdateBtn.disabled = shareRequestInProgress || !hasToken || !shareWorkerAvailable;
+                    }
+                    if (shareCreateBtn) {
+                        shareCreateBtn.disabled = shareRequestInProgress || !shareWorkerAvailable;
+                    }
+                    if (shareMenuStatus) {
+                        const text = shareStatusMessage || buildShareStatusText();
+                        shareMenuStatus.textContent = text;
+                        const isError =
+                            (shareStatusType === "error" && Boolean(text)) ||
+                            (!shareWorkerAvailable && !shareStatusMessage);
+                        shareMenuStatus.classList.toggle("error", isError);
+                    }
+                }
+
+                function buildShareStatusText() {
+                    if (!shareWorkerAvailable) {
+                        return SHARE_WORKER_UNAVAILABLE_MESSAGE;
+                    }
+                    if (shareLastUpdatedAt) {
+                        return formatRelativeTime(shareLastUpdatedAt);
+                    }
+                    if (shareLoadedFromRemote && currentShareToken) {
+                        return "Ce lien charge la version enregistrée via le worker Cloudflare.";
+                    }
+                    if (currentShareToken) {
+                        return "Un lien privé existe déjà pour cette session.";
+                    }
+                    return "Seules les personnes disposant du lien peuvent y accéder.";
+                }
+
+                async function copyCurrentShareLinkToClipboard() {
+                    if (!currentShareToken) return false;
+                    const link = buildShareUrl(currentShareToken);
+                    if (!link) return false;
+                    try {
+                        await copyTextToClipboard(link);
+                        showStatus("Lien privé copié dans le presse-papier.");
+                        return true;
+                    } catch (err) {
+                        console.error("Copie du lien privé impossible", err);
+                        return false;
+                    }
+                }
+
+                async function handleShareCreateClick() {
+                    if (!shareWorkerAvailable) {
+                        setShareStatus(SHARE_WORKER_UNAVAILABLE_MESSAGE, "error");
+                        updateShareMenuUI();
+                        return;
+                    }
+                    if (shareRequestInProgress) return;
+                    shareRequestInProgress = true;
+                    updateShareMenuUI();
+                    try {
+                        const payload = buildGridSharePayload();
+                        const token = createShareToken();
+                        const updatedAt = await saveSharePayload(token, payload);
+                        currentShareToken = token;
+                        shareLoadedFromRemote = true;
+                        shareLastUpdatedAt = updatedAt;
+                        updateUrlWithShareToken(token);
+                        setShareStatus(formatRelativeTime(updatedAt));
+                        updateShareMenuUI();
+                        await persistGridShareRecord(token, updatedAt);
+                        writeShareDraft(token, payload, updatedAt);
+                        await copyCurrentShareLinkToClipboard();
+                    } catch (err) {
+                        console.error("Erreur lors de la création du lien partagé :", err);
+                        setShareStatus("Impossible de créer le lien partagé.", "error");
+                        updateShareMenuUI();
+                    } finally {
+                        shareRequestInProgress = false;
+                        updateShareMenuUI();
+                    }
+                }
+
+                async function handleShareUpdateClick() {
+                    if (!shareWorkerAvailable) {
+                        setShareStatus(SHARE_WORKER_UNAVAILABLE_MESSAGE, "error");
+                        updateShareMenuUI();
+                        return;
+                    }
+                    if (!currentShareToken) {
+                        setShareStatus("Pas de lien privé à mettre à jour.", "error");
+                        updateShareMenuUI();
+                        return;
+                    }
+                    if (shareRequestInProgress) return;
+                    shareRequestInProgress = true;
+                    updateShareMenuUI();
+                    try {
+                        const payload = buildGridSharePayload();
+                        const updatedAt = await saveSharePayload(currentShareToken, payload);
+                        shareLoadedFromRemote = true;
+                        shareLastUpdatedAt = updatedAt;
+                        setShareStatus(formatRelativeTime(updatedAt));
+                        updateShareMenuUI();
+                        await persistGridShareRecord(currentShareToken, updatedAt);
+                        writeShareDraft(currentShareToken, payload, updatedAt);
+                        await copyCurrentShareLinkToClipboard();
+                    } catch (err) {
+                        console.error("Erreur lors de la mise à jour du lien partagé :", err);
+                        setShareStatus("Impossible de mettre à jour le lien partagé.", "error");
+                        updateShareMenuUI();
+                    } finally {
+                        shareRequestInProgress = false;
+                        updateShareMenuUI();
+                    }
+                }
+
+                function renderFontSizeOptions() {
+                    if (!fontSizeInput) return;
+                    fontSizeInput.innerHTML = "";
+                    FONT_SIZE_CHOICES.forEach(size => {
+                        const option = document.createElement("option");
+                        option.value = size;
+                        option.textContent = `${size} px`;
+                        option.style.fontSize = `${size}px`;
+                        fontSizeInput.appendChild(option);
+                    });
+                }
+
+                function syncDisplayControls() {
+                    if (fontSizeInput) {
+                        const fontSize = state.displayPreferences?.fontSize || DISPLAY_PREFERENCE_DEFAULTS.fontSize;
+                        fontSizeInput.value = fontSize;
+                    }
+                }
+
+                function applyGridFontSize(value, options = {}) {
+                    const normalized = parseInt(value, 10);
+                    if (isNaN(normalized)) return;
+                    if (gridElement) {
+                        gridElement.style.setProperty("--grid-font-size", `${normalized}px`);
+                    }
+                    state.displayPreferences = state.displayPreferences || { ...DISPLAY_PREFERENCE_DEFAULTS };
+                    state.displayPreferences.fontSize = normalized;
+                    if (options.persist !== false) {
+                        persistState();
+                    }
+                    if (fontSizeInput && fontSizeInput.value !== String(normalized)) {
+                        fontSizeInput.value = normalized;
+                    }
+                }
+
+                function applyRowHeight(value, options = {}) {
+                    const normalized = parseInt(value, 10);
+                    if (isNaN(normalized)) return;
+                    gridOptions.rowHeight = normalized;
+                    if (gridApi && typeof gridApi.resetRowHeights === "function") {
+                        gridApi.resetRowHeights();
+                    }
+                    state.displayPreferences = state.displayPreferences || { ...DISPLAY_PREFERENCE_DEFAULTS };
+                    state.displayPreferences.rowHeight = normalized;
+                    if (options.persist !== false) {
+                        persistState();
+                    }
+                }
+
+                function applyGridDisplayPreferences(options = {}) {
+                    const shouldPersist = options.persist !== false;
+                    const preferences = state.displayPreferences || { ...DISPLAY_PREFERENCE_DEFAULTS };
+                    applyGridFontSize(preferences.fontSize || DISPLAY_PREFERENCE_DEFAULTS.fontSize, {
+                        persist: shouldPersist
+                    });
+                    applyRowHeight(preferences.rowHeight || DISPLAY_PREFERENCE_DEFAULTS.rowHeight, {
+                        persist: shouldPersist
+                    });
+                    syncDisplayControls();
+                }
+
+                function closeGridMenus(except) {
+                    if (affichageMenu && affichageMenu !== except) {
+                        affichageMenu.classList.remove("open");
+                    }
+                    if (columnPinMenu && columnPinMenu !== except) {
+                        columnPinMenu.classList.remove("open");
+                    }
+                    if (shareMenu && shareMenu !== except) {
+                        shareMenu.classList.remove("open");
+                    }
+                    if (capsuleMenu && capsuleMenu !== except) {
+                        capsuleMenu.classList.remove("open");
+                    }
+                }
+
+
+                function setActivePage(index) {
+                    const targetIndex = Math.max(0, Math.min(index, state.pages.length - 1));
+                    state.activeIndex = targetIndex;
+                    const page = getActivePage();
+                    if (gridTitleInput) gridTitleInput.value = page.title || "";
+                    if (promptInput) promptInput.value = page.scenario || "";
+                    if (gridScript) gridScript.value = page.script || "";
+                    applyGridData(page.data);
+                    renderTabs();
+                    persistState();
+                }
+
+                function addPage() {
+                    const newPage = createPage(state.pages.length + 1);
+                    state.pages.push(newPage);
+                    setActivePage(state.pages.length - 1);
+                }
+
+                function deleteActivePage() {
+                    if (state.pages.length <= 1) return;
+                    state.pages.splice(state.activeIndex, 1);
+                    state.activeIndex = Math.max(0, state.activeIndex - 1);
+                    setActivePage(state.activeIndex);
+                    renderTabs();
+                    persistState();
+                }
+
+                function toggleNavMenu(force) {
+                    if (!navSwitcherMenu) return;
+                    const shouldOpen = typeof force === "boolean" ? force : !navSwitcherMenu.classList.contains("open");
+                    navSwitcherMenu.classList.toggle("open", shouldOpen);
+                }
+
+                function openModal() {
+                    aiModal?.classList.add("open");
+                    if (promptTemplateField) promptTemplateField.value = state.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                    if (systemPromptField) systemPromptField.value = state.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+                }
+
+                function closeModal() {
+                    aiModal?.classList.remove("open");
+                }
+
+                function resetPrompt() {
+                    if (promptTemplateField) promptTemplateField.value = DEFAULT_PROMPT_TEMPLATE;
+                    if (systemPromptField) systemPromptField.value = DEFAULT_SYSTEM_PROMPT;
+                }
+
+                function applyPromptSettings() {
+                    state.promptTemplate = promptTemplateField?.value || DEFAULT_PROMPT_TEMPLATE;
+                    state.systemPrompt = systemPromptField?.value || DEFAULT_SYSTEM_PROMPT;
+                    state.reasoningEffort = state.reasoningEffort || "low";
+                    persistState();
+                    closeModal();
+                }
+
+                function setLoading(isLoading) {
+                    if (generateBtn) {
+                        generateBtn.disabled = isLoading;
+                    }
+                    if (clearGridBtn) {
+                        clearGridBtn.disabled = isLoading;
+                    }
+                    if (isLoading) {
+                        startGenerateCooldown();
+                    } else {
+                        clearGenerateCooldown();
+                    }
+                }
+
+                function updateGenerateLabel(label) {
+                    if (generateBtn) {
+                        generateBtn.textContent = label;
+                    }
+                    if (toggleDrawerBtn) {
+                        toggleDrawerBtn.textContent = label;
+                    }
+                }
+
+                function clearGenerateCooldown() {
+                    if (generateCooldownTimer) {
+                        clearInterval(generateCooldownTimer);
+                        generateCooldownTimer = null;
+                    }
+                    generateCooldownEndTime = 0;
+                    updateGenerateLabel(generateDefaultLabel);
+                    if (toggleDrawerBtn) {
+                        toggleDrawerBtn.disabled = false;
+                        toggleDrawerBtn.textContent = drawerDefaultLabel;
+                    }
+                }
+
+                function startGenerateCooldown(seconds = 30) {
+                    if (!generateBtn) return;
+                    clearGenerateCooldown();
+                    const duration = Math.max(1, seconds);
+                    generateCooldownEndTime = Date.now() + duration * 1000;
+                    if (toggleDrawerBtn) {
+                        toggleDrawerBtn.disabled = true;
+                    }
+                    const frames = ["◴", "◷", "◶", "◵"];
+                    const updateLabel = () => {
+                        if (!generateBtn) {
+                            clearGenerateCooldown();
+                            return;
+                        }
+                        const remainingMs = generateCooldownEndTime - Date.now();
+                        const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+                        if (remainingSeconds <= 0 && activeRequestController) {
+                            updateGenerateLabel("⌛ en cours");
+                            return;
+                        }
+                        const frame = frames[remainingSeconds % frames.length];
+                        const label = `${frame} ${remainingSeconds}s`;
+                        updateGenerateLabel(label);
+                        if (remainingSeconds <= 0 && !activeRequestController) {
+                            clearGenerateCooldown();
+                        }
+                    };
+                    updateLabel();
+                    generateCooldownTimer = setInterval(updateLabel, 1000);
+                }
+
+                function cleanJson(raw) {
+                    if (!raw) return "";
+                    const trimmed = raw.trim();
+                    if (trimmed.startsWith("```")) {
+                        const match = trimmed.match(/```(?:json)?\\s*([\\s\\S]*?)```/i);
+                        if (match && match[1]) return match[1].trim();
+                    }
+                    return trimmed;
+                }
+
+                async function requestData() {
+                    if (activeRequestController) {
+                        activeRequestController.abort();
+                    }
+                    const controller = new AbortController();
+                    activeRequestController = controller;
+                    setLoading(true);
+                    showStatus("Génération en cours…");
+                    const page = getActivePage();
+                    const scenarioText = (promptInput?.value || "").trim();
+                    const scriptText = (gridScript?.value || "").trim();
+                    const userPrompt = (state.promptTemplate || DEFAULT_PROMPT_TEMPLATE).replace("{{scenario_prompt}}", scenarioText || "ton sujet");
+
+                    const messages = [
+                        { role: "system", content: state.systemPrompt || DEFAULT_SYSTEM_PROMPT }
+                    ];
+                    if (scriptText) {
+                        const datasetMessages = buildChunkedDatasetMessages(scriptText);
+                        datasetMessages.forEach(chunk => messages.push(chunk));
+                    }
+                    messages.push({ role: "user", content: userPrompt });
+
+                    try {
+                        const payload = {
+                            model:
+                                window.GoToolkitIAConfig && typeof window.GoToolkitIAConfig.getOpenAiModel === "function"
+                                    ? window.GoToolkitIAConfig.getOpenAiModel()
+                                    : "gpt-5-nano",
+                            messages,
+                            reasoning: { effort: state.reasoningEffort || "low" },
+                            stream: true
+                        };
+                        const response = await window.GoToolkitIA.chatCompletion({
+                            payload,
+                            stopCondition: () => false,
+                            signal: controller.signal
+                        });
+                        const cleaned = cleanJson(response);
+                        const parsed = JSON.parse(cleaned);
+                        if (!parsed || typeof parsed !== "object") {
+                            throw new Error("Réponse IA invalide");
+                        }
+                        const columnDefs = Array.isArray(parsed.columnDefs) ? parsed.columnDefs : [];
+                        const rowData = Array.isArray(parsed.rowData) ? parsed.rowData : [];
+                        page.data = { columnDefs, rowData };
+                        page.script = JSON.stringify(page.data, null, 2);
+                        applyGridData(page.data);
+                        gridScript.value = page.script;
+                        if (!page.title && parsed.title) {
+                            page.title = parsed.title;
+                            if (gridTitleInput) gridTitleInput.value = page.title;
+                        }
+                        showStatus("Jeu de données mis à jour.");
+                        persistState();
+                        renderTabs();
+                    } catch (err) {
+                        if (err && err.name === "AbortError") {
+                            showStatus("Requête annulée.", true);
+                        } else {
+                            console.error("Erreur IA", err);
+                            showStatus("Impossible de générer le dataset.", true);
+                        }
+                    } finally {
+                        setLoading(false);
+                        activeRequestController = null;
+                    }
+                }
+
+                function clearGrid() {
+                    const page = getActivePage();
+                    page.data = { columnDefs: [], rowData: [] };
+                    page.script = "";
+                    applyGridData(page.data);
+                    gridScript.value = "";
+                    persistState();
+                    showStatus("Grille et script vidés.");
+                }
+
+                function applyScriptToGrid() {
+                    const raw = gridScript.value || "";
+                    if (!raw.trim()) {
+                        clearGrid();
+                        return;
+                    }
+                    try {
+                        const parsed = JSON.parse(cleanJson(raw));
+                        const columnDefs = Array.isArray(parsed.columnDefs) ? parsed.columnDefs : [];
+                        const rowData = Array.isArray(parsed.rowData) ? parsed.rowData : [];
+                        const page = getActivePage();
+                        page.data = { columnDefs, rowData };
+                        page.script = JSON.stringify(page.data, null, 2);
+                        applyGridData(page.data);
+                        gridScript.value = page.script;
+                        persistState();
+                        showStatus("Script appliqué sur la grille.");
+                    } catch (err) {
+                        console.error("Erreur de parsing JSON", err);
+                        showStatus("JSON invalide dans le Script.", true);
+                    }
+                }
+
+                function wireNavSwitcher() {
+                    if (navSwitcherBtn) {
+                        navSwitcherBtn.addEventListener("click", () => toggleNavMenu());
+                    }
+                    document.addEventListener("click", event => {
+                        if (!navSwitcherMenu) return;
+                        const isInside = navSwitcherMenu.contains(event.target) || navSwitcherBtn.contains(event.target);
+                        if (!isInside) {
+                            navSwitcherMenu.classList.remove("open");
+                        }
+                    });
+                }
+
+                if (affichageBtn && affichageMenu) {
+                    affichageBtn.addEventListener("click", event => {
+                        event.stopPropagation();
+                        closeGridMenus(affichageMenu);
+                        syncDisplayControls();
+                        affichageMenu.classList.toggle("open");
+                    });
+                    affichageMenu.addEventListener("click", event => event.stopPropagation());
+                }
+                if (columnPinBtn && columnPinMenu) {
+                    columnPinBtn.addEventListener("click", event => {
+                        event.stopPropagation();
+                        closeGridMenus(columnPinMenu);
+                        buildColumnPinMenu();
+                        columnPinMenu.classList.toggle("open");
+                    });
+                    columnPinMenu.addEventListener("click", event => event.stopPropagation());
+                }
+                if (capsuleMenuBtn && capsuleMenu) {
+                    capsuleMenuBtn.addEventListener("click", event => {
+                        event.stopPropagation();
+                        closeGridMenus(capsuleMenu);
+                        capsuleMenu.classList.toggle("open");
+                    });
+                    capsuleMenu.addEventListener("click", event => event.stopPropagation());
+                }
+                if (capsuleNewBtn) {
+                    capsuleNewBtn.addEventListener("click", async event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        await handleNewDocumentClick();
+                    });
+                }
+                if (capsuleSaveBtn) {
+                    capsuleSaveBtn.addEventListener("click", event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        void handleSaveDocumentClick();
+                    });
+                }
+                if (capsuleDownloadBtn) {
+                    capsuleDownloadBtn.addEventListener("click", event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        if (gridApi && typeof gridApi.exportDataAsCsv === "function") {
+                            gridApi.exportDataAsCsv({ fileName: "grid.csv" });
+                            showStatus("Export CSV généré.");
+                        } else {
+                            showStatus("Export CSV indisponible.", true);
+                        }
+                        closeGridMenus();
+                    });
+                }
+                if (shareBtn && shareMenu) {
+                    shareBtn.addEventListener("click", event => {
+                        event.stopPropagation();
+                        closeGridMenus(shareMenu);
+                        shareMenu.classList.toggle("open");
+                        updateShareMenuUI();
+                    });
+                    shareMenu.addEventListener("click", event => event.stopPropagation());
+                }
+                if (shareCreateBtn) {
+                    shareCreateBtn.addEventListener("click", event => {
+                        event.stopPropagation();
+                        handleShareCreateClick();
+                    });
+                }
+                if (shareUpdateBtn) {
+                    shareUpdateBtn.addEventListener("click", event => {
+                        event.stopPropagation();
+                        handleShareUpdateClick();
+                    });
+                }
+                if (infoButton && infoPopup) {
+                    infoButton.addEventListener("click", event => {
+                        event.stopPropagation();
+                        infoPopup.classList.toggle("open");
+                    });
+                }
+                if (closeInfoPopup) {
+                    closeInfoPopup.addEventListener("click", event => {
+                        event.stopPropagation();
+                        resetGridState();
+                    });
+                }
+                document.addEventListener("click", event => {
+                    if (affichageMenu && !affichageMenu.contains(event.target) && event.target !== affichageBtn) {
+                        affichageMenu.classList.remove("open");
+                    }
+                    if (columnPinMenu && !columnPinMenu.contains(event.target) && event.target !== columnPinBtn) {
+                        columnPinMenu.classList.remove("open");
+                    }
+                    if (capsuleMenu && !capsuleMenu.contains(event.target) && event.target !== capsuleMenuBtn) {
+                        capsuleMenu.classList.remove("open");
+                    }
+                    if (shareMenu && !shareMenu.contains(event.target) && event.target !== shareBtn) {
+                        shareMenu.classList.remove("open");
+                    }
+                    if (infoPopup && !infoPopup.contains(event.target) && event.target !== infoButton) {
+                        infoPopup.classList.remove("open");
+                    }
+                });
+                if (fontSizeInput) {
+                    fontSizeInput.addEventListener("change", function () {
+                        applyGridFontSize(this.value);
+                    });
+                }
+                function wireSpeech() {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    if (!SpeechRecognition) return;
+                    let recognizer = null;
+                    let committedText = "";
+                    function hideSpeechSuggestion() {
+                        if (promptSpeechSuggestion) {
+                            promptSpeechSuggestion.classList.remove("visible");
+                            promptSpeechSuggestion.innerHTML = "";
+                        }
+                    }
+                    function stopRecognition() {
+                        if (recognizer) {
+                            recognizer.stop();
+                            recognizer = null;
+                        }
+                        const activeBtn = document.querySelector(".speech-button--active");
+                        const activeWrapper = document.querySelector(".speech-field-wrapper.speech-active");
+                        activeBtn?.classList.remove("speech-button--active");
+                        activeWrapper?.classList.remove("speech-active");
+                        hideSpeechSuggestion();
+                    }
+                    function renderSpeechSuggestion(current, partial) {
+                        if (!promptSpeechSuggestion) return;
+                        const safeCurrent = (current || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                        const safePartial = (partial || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                        if (!safePartial.trim()) {
+                            hideSpeechSuggestion();
+                            return;
+                        }
+                        promptSpeechSuggestion.innerHTML = `<span class="speech-suggestion-current">${safeCurrent}</span><span class="speech-suggestion-partial">${safePartial}</span>`;
+                        promptSpeechSuggestion.classList.add("visible");
+                    }
+                    function startRecognition() {
+                        const field = promptInput;
+                        const btn = document.querySelector(`[data-speech-target="promptInput"]`);
+                        if (!field || !btn) return;
+                        stopRecognition();
+                        committedText = field.value || "";
+                        const wrapper = btn.closest(".speech-field-wrapper");
+                        recognizer = new SpeechRecognition();
+                        recognizer.lang = "fr-FR";
+                        recognizer.continuous = true;
+                        recognizer.interimResults = true;
+                        recognizer.onresult = event => {
+                            let finalText = "";
+                            let interimText = "";
+                            for (let i = event.resultIndex; i < event.results.length; i++) {
+                                const res = event.results[i];
+                                if (res.isFinal) {
+                                    finalText += res[0].transcript;
+                                } else {
+                                    interimText += res[0].transcript;
+                                }
+                            }
+                            committedText = (committedText + " " + finalText).trim();
+                            const currentValue = (committedText + (interimText ? " " + interimText : "")).trim();
+                            field.value = currentValue;
+                            renderSpeechSuggestion(committedText, interimText);
+                            const page = getActivePage();
+                            if (page) {
+                                page.scenario = field.value;
+                                persistState();
+                            }
+                        };
+                        recognizer.onend = () => {
+                            if (promptInput) {
+                                promptInput.value = committedText.trim();
+                            }
+                            const page = getActivePage();
+                            if (page) {
+                                page.scenario = promptInput.value;
+                                persistState();
+                            }
+                            stopRecognition();
+                        };
+                        recognizer.start();
+                        btn.classList.add("speech-button--active");
+                        wrapper?.classList.add("speech-active");
+                    }
+
+                    document.addEventListener("click", event => {
+                        const btn = event.target?.closest?.(".speech-button");
+                        if (!btn) return;
+                        const targetId = btn.getAttribute("data-speech-target");
+                        if (targetId !== "promptInput") return;
+                        if (btn.classList.contains("speech-button--active")) {
+                            stopRecognition();
+                        } else {
+                            startRecognition();
+                        }
+                    });
+                    window.addEventListener("beforeunload", stopRecognition);
+                }
+
+                function wireEvents() {
+                    renderTabs();
+                    setActivePage(state.activeIndex);
+                    wireNavSwitcher();
+                    wireSpeech();
+
+                    if (addPageBtn) addPageBtn.addEventListener("click", addPage);
+                    if (deletePageBtn) deletePageBtn.addEventListener("click", deleteActivePage);
+                    if (aiSettingsBtn) aiSettingsBtn.addEventListener("click", openModal);
+                    if (closeAiModal) closeAiModal.addEventListener("click", closeModal);
+                    if (resetPromptBtn) resetPromptBtn.addEventListener("click", resetPrompt);
+                    if (applyAiSettingsBtn) applyAiSettingsBtn.addEventListener("click", applyPromptSettings);
+                    if (generateBtn) generateBtn.addEventListener("click", requestData);
+                    if (clearGridBtn) clearGridBtn.addEventListener("click", clearGrid);
+                    if (applyScriptBtn) applyScriptBtn.addEventListener("click", applyScriptToGrid);
+                    if (gridTitleInput) {
+                        gridTitleInput.addEventListener("input", () => {
+                            const page = getActivePage();
+                            page.title = gridTitleInput.value;
+                            renderTabs();
+                            persistState();
+                        });
+                    }
+                    if (promptInput) {
+                        promptInput.addEventListener("input", () => {
+                            const page = getActivePage();
+                            page.scenario = promptInput.value;
+                            persistState();
+                        });
+                    }
+                    if (gridScript) {
+                        gridScript.addEventListener("input", () => {
+                            const page = getActivePage();
+                            page.script = gridScript.value;
+                            persistState();
+                        });
+                    }
+                    if (drawerBtn && sidebar && drawerOverlay) {
+                        const toggleDrawer = force => {
+                            const shouldOpen = typeof force === "boolean" ? force : !sidebar.classList.contains("open");
+                            sidebar.classList.toggle("open", shouldOpen);
+                            drawerOverlay.classList.toggle("visible", shouldOpen);
+                            drawerOverlay.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
+                        };
+                        drawerBtn.addEventListener("click", () => toggleDrawer());
+                        drawerOverlay.addEventListener("click", () => toggleDrawer(false));
+                    }
+                }
+
+                wireEvents();
+                (async () => {
+                    const sharedLoaded = await tryLoadSharedStateFromUrl().catch(err => {
+                        console.error("Impossible de charger la capsule partagée", err);
+                        return false;
+                    });
+                    if (!sharedLoaded) {
+                        await tryLoadLocalDraftFromUrl().catch(err => {
+                            console.warn("Impossible de charger la capsule locale", err);
+                            return false;
+                        });
+                    }
+                })().finally(() => {
+                    updateShareMenuUI();
+                });
+            })();
+    </script>
+</body>
+
+</html>

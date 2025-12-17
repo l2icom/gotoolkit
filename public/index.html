@@ -179,10 +179,9 @@
         }
 
         .launcher-grid {
-            display: flex;
+            display: grid;
             gap: 8px;
-            flex-wrap: wrap;
-            justify-content: space-between;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             min-height: 30px;
         }
 
@@ -221,7 +220,7 @@
 
         @media (max-width: 640px) {
             .launcher-grid {
-                justify-content: stretch;
+                grid-template-columns: 1fr;
             }
 
             .launcher {
@@ -720,7 +719,7 @@
             }
 
             .launcher-grid {
-                flex-direction: column;
+                grid-template-columns: 1fr;
             }
 
             .launcher {
@@ -742,7 +741,7 @@
             </div>
             <h1>Go-Toolkit</h1>
             <p>Le vaisseau spatial des super-POs</p>
-            <span class="hero-version">v2025.12.16</span>
+            <span class="hero-version">v2025.12.17</span>
 
             <div class="hero-meta">
                 <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Feedback</button>
@@ -774,6 +773,13 @@
                     <span class="launcher-name">
                         Draw (Le Cardinal)
                         <div class="launcher-desc">Modélise tes idées</div>
+                    </span>
+                </a>
+                <a class="launcher" href="grid.html">
+                    <span class="launcher-emoji">▦</span>
+                    <span class="launcher-name">
+                        Grid (Le Cardinal)
+                        <div class="launcher-desc">Clarifie tes données</div>
                     </span>
                 </a>
                 <a class="launcher" href="#" id="indelebileLauncher" rel="noopener noreferrer">
@@ -1304,7 +1310,8 @@
             const APP_DEFINITIONS = {
                 nuances: { emoji: "◍", name: "50 Nuances", page: "canvas.html", collection: "slides" },
                 plan: { emoji: "⇥", name: "Goal Digger", page: "timeline.html", collection: "timelines" },
-                draw: { emoji: "◇", name: "Le Cardinal", page: "draw.html", collection: "diagrams" }
+                draw: { emoji: "◇", name: "Le Cardinal", page: "draw.html", collection: "diagrams" },
+                grid: { emoji: "▦", name: "Module Grid", page: "grid.html", collection: "grids" }
             };
 
             function setState({ loading = false, hasData = false, hasPinned = false, hasRegular = false, error = "" }) {
@@ -1418,6 +1425,12 @@
                     const drawType = firstPage?.drawType || payload?.drawType || "";
                     const drawTypeLabel = DRAW_TYPE_LABELS[drawType] || drawType || "";
                     return { tabName, lines: normalizeLines(context), templateLabel, drawTypeLabel };
+                }
+                if (app === "grid") {
+                    const tabName = payload?.title || "Tableau";
+                    const context = payload?.scenario || "";
+                    const templateLabel = payload?.title || "";
+                    return { tabName, lines: normalizeLines(context), templateLabel };
                 }
                 return { tabName: "Sans titre", lines: [], templateLabel: "" };
             }

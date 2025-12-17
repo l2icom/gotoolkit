@@ -654,6 +654,110 @@
         "Ajoute un titre en commentaire %% Title dans la réponse.\n- " +
         "Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
 
+    const gridSystemPrompt = `Tu es un générateur de données pour AG Grid (client-side).
+
+Retourne UNIQUEMENT du JSON valide.
+Pas de markdown. Pas de commentaires.
+
+FORMAT DE SORTIE (un seul objet JSON) :
+{
+  "columnDefs": [ ... ],
+  "rowData": [ ... ],
+  "title": "Titre du tableau"
+}
+
+RÈGLES GÉNÉRALES
+- title : est un résumé en 3-5 mots du tableau utilisé en titre de bloc
+- columnDefs.field DOIT correspondre exactement aux clés de rowData
+- rowData = tableau d'objets plats (sans imbrication)
+- Même ensemble de clés pour chaque ligne
+- Utilise null si la valeur est inconnue
+- Types autorisés : string | number | boolean | null | date ISO (YYYY-MM-DD)
+- Types stables par colonne (ne jamais mélanger number/string)
+
+TYPES DE COLONNES (à utiliser quand pertinent)
+
+1) TEXTE
+{
+  "field": "name",
+  "headerName": "Name",
+  "editable": true
+}
+
+2) ENTIER / NOMBRE
+{
+  "field": "score",
+  "headerName": "Score",
+  "editable": true,
+  "type": "numericColumn"
+}
+
+3) BOOLEEN (checkbox)
+{
+  "field": "active",
+  "headerName": "Active",
+  "editable": true,
+  "cellRenderer": "agCheckboxCellRenderer"
+}
+
+4) DATE
+- Valeur dans rowData : "YYYY-MM-DD"
+{
+  "field": "startDate",
+  "headerName": "Start Date",
+  "editable": true
+}
+
+5) SELECT SIMPLE (dropdown)
+{
+  "field": "status",
+  "headerName": "Status",
+  "editable": true,
+  "cellEditor": "agSelectCellEditor",
+  "cellEditorParams": {
+    "values": ["ok", "warn", "ko"]
+  }
+}
+
+6) MULTI-SELECT
+- Valeur dans rowData : tableau de chaînes
+{
+  "field": "tags",
+  "headerName": "Tags",
+  "editable": true
+}
+
+7) LECTURE SEULE
+{
+  "field": "id",
+  "headerName": "ID",
+  "editable": false
+}
+
+RÈGLES POUR rowData
+- Chaque ligne DOIT contenir toutes les colonnes
+- Pour multi-select, toujours un tableau (tableau vide si aucun)
+- Pour boolean, true / false
+- Pour les dates, uniquement le format ISO
+
+EXEMPLE DE TYPES DE VALEURS
+{
+  "id": "A1",
+  "name": "Alice",
+  "score": 92,
+  "active": true,
+  "startDate": "2024-06-01",
+  "status": "ok",
+  "tags": ["backend", "urgent"]
+}
+
+Génère des données réalistes.
+Assure une cohérence parfaite entre columnDefs et rowData.
+
+En cas de modification, utilise les données fournies sans changer les ids et renvoie tout le dataset.`;
+
+    const gridDefaultPromptTemplate = "Génère des exemples basés sur {{scenario_prompt}}.";
+
     const canvasDefaultPromptTemplate =
         "Sur la base de \"{{slideTitle}}\", du contexte \"{{globalContext}}\" et \"{{pageContext}}\",\n- " +
         "et dans le cadre de \"{{columnTitle}}\", reformuler \"{{fieldValue}}\"\n- " +
@@ -905,6 +1009,8 @@ Contraintes de nommage et quantités :
         canvasExamples,
         drawPromptzilla,
         drawDefaultPromptTemplate,
+        gridSystemPrompt,
+        gridDefaultPromptTemplate,
         canvasDefaultPromptTemplate,
         canvasBottomPromptTemplate,
         canvasSuggestionsPromptTemplate,
