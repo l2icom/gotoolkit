@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+
+<body>
+    <textarea id="in" rows="4" cols="60">Donne-moi 5 idées de titres pour une app de planning.</textarea>
+    <button id="go">Generate</button>
+    <pre id="out"></pre>
+
+    <script type="module">
+        import * as webllm from "https://esm.sh/@mlc-ai/web-llm";
+
+        const out = document.querySelector("#out");
+        const btn = document.querySelector("#go");
+        const inp = document.querySelector("#in");
+
+        // ✅ modèle Qwen2.5 en format MLC (exemple)
+        const MODEL = "HF://mlc-ai/Qwen2.5-7B-Instruct-q4f32_1-MLC";
+
+        const engine = await webllm.CreateMLCEngine(MODEL, {
+            initProgressCallback: (p) => out.textContent = `Loading: ${Math.round(p.progress * 100)}%`,
+        });
+
+        btn.onclick = async () => {
+            out.textContent = "";
+            const messages = [
+                { role: "system", content: "Tu es un assistant concis." },
+                { role: "user", content: inp.value }
+            ];
+
+            const stream = await engine.chat.completions.create({
+                messages,
+                stream: true,
+                temperature: 0.7,
+            });
+
+            for await (const chunk of stream) {
+                out.textContent += chunk.choices?.[0]?.delta?.content ?? "";
+            }
+        };
+    </script>
+</body>
+
+</html>
