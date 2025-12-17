@@ -767,8 +767,8 @@
                         <div class="menu-panel">
                             <button id="capsuleNewBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
                             <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
-                            <button id="capsuleDownloadBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
-                            <button id="infoButton" type="button" class="menu-panel-btn">⎉ Vaisseau</button>
+                            <button id="capsuleDownloadBtn" type="button" class="menu-panel-btn">⭳ Export CSV</button>
+                            <button id="infoButton" type="button" class="menu-panel-btn">⎉ À propos</button>
                         </div>
                     </div>
                 </div>
@@ -916,6 +916,7 @@
                 const drawerOverlay = document.getElementById("drawerOverlay");
                 const drawerBtn = document.getElementById("toggleDrawerBtn");
                 const sidebar = document.querySelector(".connect-left");
+                const connectRight = document.querySelector(".connect-right");
                 const promptSpeechSuggestion = document.querySelector('[data-speech-suggestion="promptInput"]');
                 const affichageBtn = document.getElementById("affichageBtn");
                 const affichageMenu = document.getElementById("affichageMenu");
@@ -968,6 +969,8 @@
                     rowHeight: 32
                 };
                 const DEFAULT_PINNED_FIELDS = new Set(["id", "name"]);
+                const DESKTOP_DRAWER_BREAKPOINT = 1200;
+                let sidebarOpenDesktop = true;
                 let autoSizeTimer = null;
                 const gridElement = document.getElementById("gridContainer");
                 const gridOptions = {
@@ -1120,6 +1123,19 @@
                         btn.addEventListener("click", () => setActivePage(index));
                         pageTabs.appendChild(btn);
                     });
+                }
+
+                function buildCsvFileName() {
+                    const page = getActivePage();
+                    const title = (gridTitleInput?.value || page?.title || "Grid").trim() || "Grid";
+                    const normalizedTitle = title
+                        .replace(/\s+/g, "-")
+                        .replace(/[^A-Za-z0-9-_]/g, "")
+                        .replace(/-+/g, "-")
+                        .replace(/^-|-$/g, "");
+                    const safeTitle = normalizedTitle || "Grid";
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+                    return `${safeTitle}-${timestamp}.csv`;
                 }
 
                 function applyGridData(data) {
@@ -1897,6 +1913,59 @@
                     }
                 }
 
+                function isDesktopDrawerMode() {
+                    return typeof window !== "undefined" && window.innerWidth > DESKTOP_DRAWER_BREAKPOINT;
+                }
+
+                function setDesktopSidebarState(open) {
+                    if (!sidebar) return;
+                    sidebarOpenDesktop = Boolean(open);
+                    sidebar.classList.remove("open");
+                    if (drawerOverlay) {
+                        drawerOverlay.classList.remove("visible");
+                        drawerOverlay.setAttribute("aria-hidden", "true");
+                    }
+                    sidebar.classList.toggle("collapsed", !sidebarOpenDesktop);
+                    if (connectRight) {
+                        connectRight.classList.toggle("full-width", !sidebarOpenDesktop);
+                    }
+                }
+
+                function setMobileSidebarState(open) {
+                    if (!sidebar) return;
+                    const shouldOpen = Boolean(open);
+                    sidebar.classList.toggle("open", shouldOpen);
+                    if (!drawerOverlay) return;
+                    drawerOverlay.classList.toggle("visible", shouldOpen);
+                    drawerOverlay.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
+                }
+
+                function syncSidebarLayout() {
+                    if (!sidebar) return;
+                    if (isDesktopDrawerMode()) {
+                        setDesktopSidebarState(sidebarOpenDesktop);
+                    } else {
+                        sidebar.classList.remove("collapsed");
+                        if (connectRight) {
+                            connectRight.classList.remove("full-width");
+                        }
+                        setMobileSidebarState(false);
+                    }
+                }
+
+                function toggleSidebar(force) {
+                    if (!sidebar) return;
+                    if (isDesktopDrawerMode()) {
+                        const shouldOpen =
+                            typeof force === "boolean" ? force : !sidebarOpenDesktop;
+                        setDesktopSidebarState(shouldOpen);
+                    } else {
+                        const shouldOpen =
+                            typeof force === "boolean" ? force : !sidebar.classList.contains("open");
+                        setMobileSidebarState(shouldOpen);
+                    }
+                }
+
 
                 function setActivePage(index) {
                     const targetIndex = Math.max(0, Math.min(index, state.pages.length - 1));
@@ -2203,7 +2272,7 @@
                         event.preventDefault();
                         event.stopPropagation();
                         if (gridApi && typeof gridApi.exportDataAsCsv === "function") {
-                            gridApi.exportDataAsCsv({ fileName: "grid.csv" });
+                            gridApi.exportDataAsCsv({ fileName: buildCsvFileName() });
                             showStatus("Export CSV généré.");
                         } else {
                             showStatus("Export CSV indisponible.", true);
@@ -2420,16 +2489,14 @@
                             applyScriptToGrid({ silentOnError: true, silentOnSuccess: true });
                         });
                     }
-                    if (drawerBtn && sidebar && drawerOverlay) {
-                        const toggleDrawer = force => {
-                            const shouldOpen = typeof force === "boolean" ? force : !sidebar.classList.contains("open");
-                            sidebar.classList.toggle("open", shouldOpen);
-                            drawerOverlay.classList.toggle("visible", shouldOpen);
-                            drawerOverlay.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
-                        };
-                        drawerBtn.addEventListener("click", () => toggleDrawer());
-                        drawerOverlay.addEventListener("click", () => toggleDrawer(false));
+                    if (drawerBtn) {
+                        drawerBtn.addEventListener("click", () => toggleSidebar());
                     }
+                    if (drawerOverlay) {
+                        drawerOverlay.addEventListener("click", () => toggleSidebar(false));
+                    }
+                    window.addEventListener("resize", syncSidebarLayout);
+                    syncSidebarLayout();
                 }
 
                 wireEvents();
