@@ -1853,7 +1853,8 @@
                         <div class="gutenberg-recette-header">
                             <label for="promptModify"
                                 style="margin-top:0;display:block;font-size:13px;color:var(--muted)">Script</label>
-                            <button class="btn" type="button" id="restoreScriptBtn" title="Restaurer la dernière réponse IA">↺ Restaurer</button>
+                            <button class="btn" type="button" id="restoreScriptBtn"
+                                title="Restaurer la dernière réponse IA">↺ Restaurer</button>
                             <!-- `openModifyPromptBtn` removed: button hidden per user request -->
                         </div>
                         <div class="ia-prompt-fields">
@@ -7397,21 +7398,21 @@
                     lastTimelineGenerationAt = Date.now();
                     startWaitingTimer(triggerButton);
                     closeIaModal();
-                        try {
-                            var aiResponse = await callOpenAI(messages, controller);
-                            if (!aiResponse) return;
-                            var normalized = aiResponse.trim();
-                            if (txtPromptModify) {
-                                txtPromptModify.value = normalized;
-                                persistActiveContext(function (ctx) {
-                                    ctx.prompts.modify = normalized;
-                                });
-                            }
+                    try {
+                        var aiResponse = await callOpenAI(messages, controller);
+                        if (!aiResponse) return;
+                        var normalized = aiResponse.trim();
+                        if (txtPromptModify) {
+                            txtPromptModify.value = normalized;
+                            persistActiveContext(function (ctx) {
+                                ctx.prompts.modify = normalized;
+                            });
+                        }
 
-                            var planning = null;
-                            // Try parse as JSON first
-                            try {
-                                planning = JSON.parse(normalized);
+                        var planning = null;
+                        // Try parse as JSON first
+                        try {
+                            planning = JSON.parse(normalized);
                         } catch (err) {
                             // If modify mode, try to parse a human-readable script into planning
                             if (mode === "modify") {

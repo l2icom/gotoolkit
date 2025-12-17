@@ -2711,7 +2711,6 @@
             });
             recognition.addEventListener("error", event => {
                 console.warn("Speech recognition error", event);
-                showErrorToast("Reconnaissance vocale terminée");
                 clearSpeechSuggestion(field);
                 stopActiveSpeechSession();
             });
@@ -3961,10 +3960,39 @@
             return button.dataset.baseLabel;
         }
 
+        const buttonSpinnerTimers = new WeakMap();
+        const spinnerFrames = ["◴", "◷", "◶", "◵"];
+
         function setButtonBusyState(button, busy) {
             if (!button) return;
             const baseLabel = ensureButtonBaseLabel(button);
-            button.textContent = busy ? `${baseLabel}...` : baseLabel;
+            const existing = buttonSpinnerTimers.get(button);
+            if (existing) {
+                clearInterval(existing.timerId);
+                buttonSpinnerTimers.delete(button);
+            }
+            if (!busy) {
+                button.textContent = baseLabel;
+                return;
+            }
+            const isCompact = button.classList.contains("inside");
+            const state = { frameIndex: 0, remaining: 30 };
+            const updateLabel = () => {
+                const frame = spinnerFrames[state.frameIndex];
+                if (isCompact) {
+                    button.textContent = frame;
+                } else {
+                    button.textContent = `${frame} ${state.remaining}s`;
+                }
+                state.frameIndex = (state.frameIndex + 1) % spinnerFrames.length;
+                state.remaining--;
+                if (state.remaining < 0) {
+                    state.remaining = 30;
+                }
+            };
+            updateLabel();
+            const timerId = setInterval(updateLabel, 1000);
+            buttonSpinnerTimers.set(button, { timerId, state });
         }
 
         async function evaluateSectionCriteria(textarea) {
@@ -4314,10 +4342,7 @@
                 try { activeIaAbortController.abort(); } catch (e) { }
                 activeIaAbortController = null;
                 isGeneratingAdvice = false;
-                if (adviceBtn) {
-                    adviceBtn.disabled = false;
-                    adviceBtn.textContent = "✧ Suggérer";
-                }
+                setButtonBusyState(adviceBtn, false);
                 showCopyToast("Requête IA annulée.");
                 return;
             }
@@ -4332,8 +4357,7 @@
                 showCopyToast("Aucune section à conseiller.");
                 return;
             }
-            const previousText = adviceBtn.textContent;
-            adviceBtn.textContent = "✧ Conseiller...";
+            setButtonBusyState(adviceBtn, true);
             isGeneratingAdvice = true;
             const controller = new AbortController();
             activeIaAbortController = controller;
@@ -4349,7 +4373,7 @@
             } finally {
                 isGeneratingAdvice = false;
                 activeIaAbortController = null;
-                adviceBtn.textContent = previousText;
+                setButtonBusyState(adviceBtn, false);
             }
         }
 
@@ -4358,9 +4382,8 @@
             if (!sectionEl) return;
             const task = buildSectionTask(sectionEl);
             if (!task) return;
-            const prevText = button.textContent;
             button.disabled = true;
-            button.textContent = "✧...";
+            setButtonBusyState(button, true);
             try {
                 const success = await requestSectionAdvice(task);
                 if (success) {
@@ -4371,7 +4394,7 @@
                 }
             } finally {
                 button.disabled = false;
-                button.textContent = prevText;
+                setButtonBusyState(button, false);
             }
         }
 
