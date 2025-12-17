@@ -7130,6 +7130,7 @@
                 }
                 var waitingTimerId = null;
                 var waitingCounter = 60;
+                var activeIaAbortController = null;
                 var iaModalButtonDefaultLabel = iaModalButton
                     ? iaModalButton.textContent.trim()
                     : "⌘";
@@ -7260,6 +7261,14 @@
 
                 // Centralized generator used by both buttons
                 async function generateFromMode(triggerButton, mode) {
+                    if (activeIaAbortController) {
+                        try { activeIaAbortController.abort(); } catch (e) { }
+                        activeIaAbortController = null;
+                        stopWaitingTimer();
+                        if (triggerButton) triggerButton.disabled = false;
+                        try { showCopyToast("Requête IA annulée."); } catch (e) { }
+                        return;
+                    }
                     stopActiveSpeechSession({ flushInterim: true });
                     if (!triggerButton) triggerButton = null;
                     if (mode === "modify") {
@@ -7302,12 +7311,13 @@
                     var payloadMessages = buildChunkedPayloadMessages(payloadText);
                     var messages = [{ role: "system", content: systemContent }].concat(payloadMessages);
 
+                    var controller = new AbortController();
+                    activeIaAbortController = controller;
                     lastTimelineGenerationAt = Date.now();
                     startWaitingTimer(triggerButton);
-                    if (triggerButton) triggerButton.disabled = true;
                     closeIaModal();
                     try {
-                        var aiResponse = await callOpenAI(messages);
+                        var aiResponse = await callOpenAI(messages, controller);
                         if (!aiResponse) return;
                         var normalized = aiResponse.trim();
 
@@ -7375,8 +7385,8 @@
 
                         applyPlanningFromJson(planning);
                     } finally {
-                        if (triggerButton) triggerButton.disabled = false;
                         stopWaitingTimer();
+                        activeIaAbortController = null;
                     }
                 }
 
@@ -7655,7 +7665,7 @@
                     return planning;
                 }
 
-                async function callOpenAI(messages) {
+                async function callOpenAI(messages, controller) {
                     try {
                         if (!window.GoToolkitIA || typeof window.GoToolkitIA.chatCompletion !== "function") {
                             throw new Error("Client IA indisponible");
@@ -7677,11 +7687,16 @@
                             stream: true
                         };
                         var messageText = await window.GoToolkitIA.chatCompletion({
-                            payload: payload
+                            payload: payload,
+                            signal: controller && controller.signal
                         });
                         return messageText;
                     } catch (err) {
                         console.error("Erreur OpenAI", err);
+                        if (err && err.name === "AbortError") {
+                            try { showCopyToast("Requête annulée."); } catch (e) { }
+                            return null;
+                        }
                         if (err && (err.message === "OllamaUnavailable" || (err.backendInfo && err.backendInfo.type === "ollama-unavailable"))) {
                             try { showCopyToast("Ollama indisponible — vérifie l'URL ou la connexion."); } catch (e) { alert("Ollama indisponible — vérifie l'URL ou la connexion."); }
                         } else {

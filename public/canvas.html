@@ -3435,6 +3435,7 @@
         let suggestionCooldownTimer = null;
         let isGeneratingSuggestions = false;
         let isGeneratingAdvice = false;
+        let activeIaAbortController = null;
 
         setPromptFieldsForTemplate(activePromptTemplateId);
         setActiveIaMode(activeIaMode);
@@ -4087,10 +4088,10 @@
 
         function updateGeneratePlaceholdersButton(remaining = 0) {
             const onCooldown = remaining > 0;
-            const disableButtons = onCooldown || isGeneratingSuggestions;
+            const disableButtons = onCooldown && !isGeneratingSuggestions;
             if (generateFullSlideBtn) {
                 generateFullSlideBtn.disabled = disableButtons;
-                setButtonBusyState(generateFullSlideBtn, disableButtons);
+                setButtonBusyState(generateFullSlideBtn, onCooldown || isGeneratingSuggestions);
             }
         }
 
@@ -4131,8 +4132,16 @@
         }
 
         async function generateFullSlideContent() {
+            if (activeIaAbortController) {
+                try { activeIaAbortController.abort(); } catch (e) { }
+                activeIaAbortController = null;
+                isGeneratingSuggestions = false;
+                stopGeneratePlaceholdersCooldown();
+                showCopyToast("Requête IA annulée.");
+                return;
+            }
             stopActiveSpeechSession({ flushInterim: true });
-            if (!generateFullSlideBtn || isGeneratingSuggestions || suggestionCooldownTimer) {
+            if (!generateFullSlideBtn || suggestionCooldownTimer) {
                 return;
             }
             const slide = getActiveSlideElement();
@@ -4160,7 +4169,7 @@
             }
 
             const generateForTextarea = async (textarea, messages) => {
-                const aiText = await callOpenAI(messages);
+                const aiText = await callOpenAI(messages, activeIaAbortController);
                 if (!aiText) {
                     return false;
                 }
@@ -4173,6 +4182,8 @@
                 return true;
             };
 
+            const controller = new AbortController();
+            activeIaAbortController = controller;
             isGeneratingSuggestions = true;
             startGeneratePlaceholdersCooldown(PLACEHOLDER_COOLDOWN_DURATION);
 
@@ -4202,6 +4213,7 @@
                 }
             } finally {
                 isGeneratingSuggestions = false;
+                activeIaAbortController = null;
                 stopGeneratePlaceholdersCooldown();
             }
         }
@@ -4223,7 +4235,7 @@
             );
         }
 
-        async function requestSectionAdvice({ slide, sectionKey, sectionLabel, columnKey, columnSection, textarea, fieldValue }) {
+        async function requestSectionAdvice({ slide, sectionKey, sectionLabel, columnKey, columnSection, textarea, fieldValue }, controller) {
             try {
                 const promptText = buildAdvicePrompt({
                     globalContext: (getSlideHistory(slide) || "").trim(),
@@ -4232,7 +4244,7 @@
                     fieldValue
                 });
                 const messages = buildAssistantMessages(promptText);
-                const aiText = await callOpenAI(messages);
+                const aiText = await callOpenAI(messages, controller);
                 if (!aiText) {
                     return false;
                 }
@@ -4282,7 +4294,18 @@
         }
 
         async function generateSectionAdvice() {
-            if (!adviceBtn || isGeneratingAdvice) return;
+            if (activeIaAbortController) {
+                try { activeIaAbortController.abort(); } catch (e) { }
+                activeIaAbortController = null;
+                isGeneratingAdvice = false;
+                if (adviceBtn) {
+                    adviceBtn.disabled = false;
+                    adviceBtn.textContent = "✧ Suggérer";
+                }
+                showCopyToast("Requête IA annulée.");
+                return;
+            }
+            if (!adviceBtn) return;
             const slide = getActiveSlideElement();
             if (!slide) return;
             const templateId = slide.dataset.templateId || templates[0].id;
@@ -4294,11 +4317,12 @@
                 return;
             }
             const previousText = adviceBtn.textContent;
-            adviceBtn.disabled = true;
             adviceBtn.textContent = "✧ Conseiller...";
             isGeneratingAdvice = true;
+            const controller = new AbortController();
+            activeIaAbortController = controller;
             try {
-                const results = await Promise.allSettled(tasks.map(task => requestSectionAdvice(task)));
+                const results = await Promise.allSettled(tasks.map(task => requestSectionAdvice(task, controller)));
                 const hasSuccess = results.some(result => result.status === "fulfilled" && result.value);
                 if (hasSuccess) {
                     schedulePersist();
@@ -4308,7 +4332,7 @@
                 }
             } finally {
                 isGeneratingAdvice = false;
-                adviceBtn.disabled = false;
+                activeIaAbortController = null;
                 adviceBtn.textContent = previousText;
             }
         }
@@ -6274,7 +6298,7 @@
             return reasoningEfforts.includes(value) ? value : "low";
         }
 
-        async function callOpenAI(messages) {
+        async function callOpenAI(messages, controller) {
             try {
                 if (!window.GoToolkitIA || typeof window.GoToolkitIA.chatCompletion !== "function") {
                     throw new Error("Client IA indisponible");
@@ -6311,10 +6335,15 @@
                     stream: true
                 };
                 return await GoToolkitIA.chatCompletion({
-                    payload
+                    payload,
+                    signal: controller && controller.signal
                 });
             } catch (err) {
                 console.error("Erreur OpenAI", err);
+                if (err && err.name === "AbortError") {
+                    showErrorToast("Requête IA annulée.");
+                    return null;
+                }
                 if (err && (err.message === "OllamaUnavailable" || (err.backendInfo && err.backendInfo.type === "ollama-unavailable"))) {
                     showErrorToast("Ollama indisponible — vérifie l'URL ou la connexion au serveur Ollama.");
                 } else {

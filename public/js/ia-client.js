@@ -660,14 +660,30 @@
         }
     }
 
-    async function collectWebllmStream(stream, stopCondition) {
+    function makeAbortError() {
+        try {
+            return new DOMException("Aborted", "AbortError");
+        } catch (err) {
+            const e = new Error("Aborted");
+            e.name = "AbortError";
+            return e;
+        }
+    }
+
+    async function collectWebllmStream(stream, stopCondition, signal) {
         if (!stream || typeof stream[Symbol.asyncIterator] !== "function") {
             const normalized = normalizeChunk(stream);
             return typeof normalized === "string" ? normalized.trim() : "";
         }
         let aggregated = "";
+        if (signal?.aborted) {
+            throw makeAbortError();
+        }
         try {
             for await (const chunk of stream) {
+                if (signal?.aborted) {
+                    throw makeAbortError();
+                }
                 const normalized = normalizeChunk(chunk);
                 if (normalized) {
                     aggregated += normalized;
@@ -683,21 +699,45 @@
         return aggregated.trim();
     }
 
-    async function executeWebllm(backend, payload, stopCondition) {
+    async function executeWebllm(backend, payload, stopCondition, signal) {
         if (!window.GoToolkitWebLLM || typeof window.GoToolkitWebLLM.ensureEngine !== "function") {
             throw new Error("WebLLM indisponible");
         }
+        if (signal?.aborted) {
+            throw makeAbortError();
+        }
         try {
             const engine = await window.GoToolkitWebLLM.ensureEngine(backend.model);
+            const onAbort = () => {
+                try {
+                    if (engine && typeof engine.interruptGenerate === "function") {
+                        engine.interruptGenerate();
+                    }
+                } catch (e) { /* ignore */ }
+            };
+            if (signal) {
+                if (signal.aborted) {
+                    onAbort();
+                    throw makeAbortError();
+                }
+                signal.addEventListener("abort", onAbort, { once: true });
+            }
             const nextPayload = { ...(payload || {}) };
             // Always use the loaded WebLLM model to avoid SpecifiedModelNotFound errors.
             nextPayload.model = backend.model;
             const wantsStream = Boolean(payload && payload.stream);
             const response = await engine.chat.completions.create(nextPayload);
             if (wantsStream) {
-                return collectWebllmStream(response, stopCondition);
+                const result = await collectWebllmStream(response, stopCondition, signal);
+                if (signal && !signal.aborted && typeof signal.removeEventListener === "function") {
+                    signal.removeEventListener("abort", onAbort);
+                }
+                return result;
             }
             const normalized = normalizeChunk(response);
+            if (signal && !signal.aborted && typeof signal.removeEventListener === "function") {
+                signal.removeEventListener("abort", onAbort);
+            }
             return typeof normalized === "string" ? normalized.trim() : "";
         } catch (err) {
             const friendly = mapWebllmError(err);
@@ -712,7 +752,7 @@
             initial.model = backend.model;
         }
         if (backend?.type === "webllm") {
-            return executeWebllm(backend, initial, stopCondition);
+            return executeWebllm(backend, initial, stopCondition, signal);
         }
         if (backend?.type === "ollama") {
             return callOllama(backend, initial, signal, endpointType);

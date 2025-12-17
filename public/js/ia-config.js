@@ -15,30 +15,36 @@
         OLLAMA_MODEL: "gemma3",
         OLLAMA_URL: "http://localhost:11434",
         OLLAMA_API_KEY: "",
-        WEBLLM_MODEL: "Llama-3.2-3B-Instruct-q4f32_1-MLC",
-        CONTEXT_WINDOW: "4000"
+        WEBLLM_MODEL: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
+        CONTEXT_WINDOW: "0"
     };
 
     var OPENAI_MODELS = ["gpt-5-nano", "gpt-5-mini"];
     var OLLAMA_MODELS = ["gpt-oss:latest", "gemma3", "ministral-3:latest", "deepseek-r1"];
-    var WEBLLM_MODELS = [
+    function isAllowedWebllmModelId(id) {
+        return typeof id === "string" && /q4f16/i.test(id);
+    }
+
+    function filterAllowedWebllmModels(list, idSelector) {
+        return (list || []).filter(function (entry) {
+            var id = idSelector ? idSelector(entry) : entry && entry.id;
+            return isAllowedWebllmModelId(id);
+        });
+    }
+
+    var WEBLLM_MODELS = filterAllowedWebllmModels([
         { id: "Qwen2.5-Coder-0.5B-Instruct-q4f16_1-MLC", label: "Qwen2.5-Coder-0.5B-q4f16" },
-        { id: "Llama-3.2-1B-Instruct-q4f32_1-MLC", label: "Llama-3.2-1B-q4f32" },
         { id: "Llama-3.2-1B-Instruct-q4f16_1-MLC", label: "Llama-3.2-1B-q4f16" },
-        { id: "Llama-3.2-3B-Instruct-q4f32_1-MLC", label: "Llama-3.2-3B-q4f32" },
         { id: "Llama-3.2-3B-Instruct-q4f16_1-MLC", label: "Llama-3.2-3B-q4f16" },
         { id: "DeepSeek-R1-Distill-Qwen-7B-q4f16_1-MLC", label: "DeepSeek-R1-Qwen-7B-q4f16" },
-        { id: "DeepSeek-R1-Distill-Qwen-7B-q4f32_1-MLC", label: "DeepSeek-R1-Qwen-7B-q4f32" },
         { id: "Qwen2-7B-Instruct-q4f16_1-MLC", label: "Qwen2-7B-q4f16" },
-        { id: "Qwen2-7B-Instruct-q4f32_1-MLC", label: "Qwen2-7B-q4f32" },
         { id: "Qwen2-1.5B-Instruct-q4f16_1-MLC", label: "Qwen2-1.5B-q4f16" },
-        { id: "Qwen2-1.5B-Instruct-q4f32_1-MLC", label: "Qwen2-1.5B-q4f32" },
         { id: "Qwen2-0.5B-Instruct-q4f16_1-MLC", label: "Qwen2-0.5B-q4f16" },
         { id: "Phi-3-mini-4k-instruct-q4f16_1-MLC", label: "Phi-3-mini-4k-q4f16" },
         { id: "Gemma-2b-it-q4f16_1-MLC", label: "Gemma-2B-q4f16" },
-        { id: "TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC", label: "TinyLlama-1.1B-q4f16" },
+        { id: "TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC", label: "TinyLlama-1.1B-q4f16" }
         // Keep list to supported/prebuilt <=7B engines
-    ];
+    ]);
 
     var OPENAI_ENDPOINTS = {
         responses: "https://api.openai.com/v1/responses",
@@ -371,6 +377,9 @@
         var lastEngineKind = "";
 
         function isSupportedModel(modelId) {
+            if (!isAllowedWebllmModelId(modelId)) {
+                return false;
+            }
             return !!(cachedAppConfig?.model_list?.find(function (entry) { return entry.model_id === modelId; }) || WEBLLM_MODELS.find(function (entry) { return entry.id === modelId; }));
         }
 
@@ -468,7 +477,13 @@
         async function getAppConfig() {
             if (cachedAppConfig) return cachedAppConfig;
             var mod = await loadModule();
-            cachedAppConfig = mod.prebuiltAppConfig || (mod.default && mod.default.prebuiltAppConfig) || null;
+            var prebuilt = mod.prebuiltAppConfig || (mod.default && mod.default.prebuiltAppConfig) || null;
+            if (prebuilt && prebuilt.model_list) {
+                prebuilt = Object.assign({}, prebuilt, {
+                    model_list: filterAllowedWebllmModels(prebuilt.model_list, function (entry) { return entry.model_id; })
+                });
+            }
+            cachedAppConfig = prebuilt;
             return cachedAppConfig;
         }
 

@@ -1991,6 +1991,7 @@
             const drawerDefaultLabel = toggleDrawerBtn?.textContent || "⸙ Contexte";
             let generateCooldownTimer = null;
             let generateCooldownEndTime = 0;
+            let activeIaAbortController = null;
             let currentTourIndex = 0;
             // Start open on desktop by default; auto logic can rehydrate stored state
             let isDrawerOpen = true;
@@ -3568,10 +3569,6 @@
                 clearGenerateCooldown();
                 const duration = Math.max(1, seconds);
                 generateCooldownEndTime = Date.now() + duration * 1000;
-                generateBtn.disabled = true;
-                if (toggleDrawerBtn) {
-                    toggleDrawerBtn.disabled = true;
-                }
 
                 const updateLabel = () => {
                     if (!generateBtn) {
@@ -3580,6 +3577,13 @@
                     }
                     const remainingMs = generateCooldownEndTime - Date.now();
                     const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+                    if (remainingSeconds === 0 && activeIaAbortController) {
+                        generateBtn.textContent = "⌛ en cours";
+                        if (toggleDrawerBtn) {
+                            toggleDrawerBtn.textContent = "⌛ en cours";
+                        }
+                        return;
+                    }
                     const frames = ["◴", "◷", "◶", "◵"];
                     const frame = frames[remainingSeconds % frames.length];
                     const label = `${frame} ${remainingSeconds}s`;
@@ -3603,13 +3607,27 @@
             }
 
             async function handleGenerate() {
+                if (activeIaAbortController) {
+                    try {
+                        activeIaAbortController.abort();
+                    } catch (e) { }
+                    clearGenerateCooldown();
+                    setStatus("Requête annulée.");
+                    return;
+                }
+                const controller = new AbortController();
+                activeIaAbortController = controller;
                 stopActiveSpeechSession({ flushInterim: true });
                 const page = getActivePage();
-                if (!page) return;
+                if (!page) {
+                    activeIaAbortController = null;
+                    return;
+                }
                 const inputText = promptInput.value.trim();
                 if (!inputText) {
                     setStatus("Ajoute du contexte pour générer ✍️");
                     promptInput.focus();
+                    activeIaAbortController = null;
                     return;
                 }
                 startGenerateCooldown(30);
@@ -3635,7 +3653,7 @@
                 ];
                 setStatus("Génération en cours...");
                 try {
-                    const aiText = await callOpenAI(messages);
+                    const aiText = await callOpenAI(messages, controller);
                     if (!aiText) {
                         setStatus("Réponse vide de l'IA — réessaie ou vérifie le backend.");
                         return;
@@ -3663,6 +3681,7 @@
                     console.error(err);
                     setStatus(`Erreur: ${err.message || "imprévue"}`);
                 } finally {
+                    activeIaAbortController = null;
                     clearGenerateCooldown();
                 }
             }
@@ -3720,7 +3739,7 @@
                 }
             }
 
-            async function callOpenAI(messages) {
+            async function callOpenAI(messages, controller) {
                 try {
                     if (!window.GoToolkitIA || typeof window.GoToolkitIA.chatCompletion !== "function") {
                         throw new Error("Client IA indisponible");
@@ -3738,10 +3757,15 @@
                     };
                     return await window.GoToolkitIA.chatCompletion({
                         payload: payload,
-                        stopCondition: hasCompleteMermaidBlock
+                        stopCondition: hasCompleteMermaidBlock,
+                        signal: controller?.signal
                     });
                 } catch (err) {
                     console.error("Erreur OpenAI", err);
+                    if (err && err.name === "AbortError") {
+                        setStatus("Requête annulée.");
+                        return null;
+                    }
                     if (err && (err.message === "OllamaUnavailable" || (err.backendInfo && err.backendInfo.type === "ollama-unavailable"))) {
                         setStatus("Ollama indisponible — vérifie l'URL ou la connexion au serveur Ollama.");
                     } else {
