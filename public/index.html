@@ -1313,6 +1313,8 @@
                 draw: { emoji: "◇", name: "Le Cardinal", page: "draw.html", collection: "diagrams" },
                 grid: { emoji: "▦", name: "Module Grid", page: "grid.html", collection: "grids" }
             };
+            let refreshGalleryPromise = null;
+            let refreshSavedPromise = null;
 
             function setState({ loading = false, hasData = false, hasPinned = false, hasRegular = false, error = "" }) {
                 if (loadingLabel) {
@@ -1585,6 +1587,10 @@
             }
 
             async function refreshSavedGallery() {
+                if (refreshSavedPromise) {
+                    return refreshSavedPromise;
+                }
+                refreshSavedPromise = (async () => {
                 if (!savedGallery) {
                     return;
                 }
@@ -1661,9 +1667,17 @@
                 pinned.forEach(item => savedGallery.appendChild(item.card));
                 regular.forEach(item => savedGallery.appendChild(item.card));
                 if (savedEmpty) savedEmpty.hidden = pinned.length + regular.length > 0;
+                })().finally(() => {
+                    refreshSavedPromise = null;
+                });
+                return refreshSavedPromise;
             }
 
             async function refreshGallery() {
+                if (refreshGalleryPromise) {
+                    return refreshGalleryPromise;
+                }
+                refreshGalleryPromise = (async () => {
                 if (!shareHistory) {
                     setState({ loading: false, hasData: false, error: "Historique des capsules indisponible." });
                     return;
@@ -1717,6 +1731,10 @@
                 const hasPinned = pinned.length > 0;
                 const hasRegular = regular.length > 0;
                 setState({ loading: false, hasData: hasPinned || hasRegular, hasPinned, hasRegular, error: "" });
+                })().finally(() => {
+                    refreshGalleryPromise = null;
+                });
+                return refreshGalleryPromise;
             }
 
             refreshBtn?.addEventListener("click", () => {

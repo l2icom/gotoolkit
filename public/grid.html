@@ -1815,6 +1815,13 @@
                     }
                     if (shareCreateBtn) {
                         shareCreateBtn.disabled = shareRequestInProgress || !shareWorkerAvailable;
+                        if (hasToken) {
+                            shareCreateBtn.classList.remove("btn-primary");
+                            shareCreateBtn.classList.add("btn");
+                        } else {
+                            shareCreateBtn.classList.add("btn-primary");
+                            shareCreateBtn.classList.remove("btn");
+                        }
                     }
                     if (shareMenuStatus) {
                         const text = shareStatusMessage || buildShareStatusText();
