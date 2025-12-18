@@ -544,6 +544,9 @@
 
         .diagram-title-row {
             margin: 0 10px 0px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .diagram-title-input {
@@ -555,6 +558,105 @@
             border-radius: 8px;
             background: #ffffff;
             color: #0f172a;
+            flex: 1 1 auto;
+        }
+
+        .grid-filter-wrapper {
+            position: relative;
+            flex: 0 0 420px;
+            max-width: min(520px, 48vw);
+            display: flex;
+            align-items: center;
+        }
+
+        .grid-filter-input {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid #dfe3f5;
+            padding: 8px 10px;
+            font-size: 12px;
+            background: #fbfbff;
+            color: #101428;
+            outline: none;
+        }
+
+        .grid-filter-input:focus {
+            border-color: #2a7a57;
+            box-shadow: 0 0 0 3px rgba(42, 122, 87, 0.14);
+        }
+
+        .grid-filter-wrapper[data-status="ok"] .grid-filter-input {
+            border-color: rgba(42, 122, 87, 0.65);
+            box-shadow: 0 0 0 3px rgba(42, 122, 87, 0.12);
+        }
+
+        .grid-filter-ghost {
+            position: absolute;
+            pointer-events: none;
+            font-size: 12px;
+            line-height: 1.5;
+            color: rgba(101, 116, 138, 0.85);
+            white-space: pre;
+            z-index: 121;
+            display: none;
+            user-select: none;
+        }
+
+        .grid-filter-suggestions {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: calc(100% + 6px);
+            background: #ffffff;
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            border-radius: 14px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+            padding: 6px;
+            z-index: 120;
+            display: none;
+            max-height: 450px;
+            overflow: auto;
+        }
+
+        .grid-filter-suggestions.open {
+            display: block;
+        }
+
+        .grid-filter-suggestion {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 8px;
+            width: 100%;
+            padding: 8px 10px;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .grid-filter-suggestion:hover,
+        .grid-filter-suggestion.active {
+            background: rgba(42, 122, 87, 0.08);
+        }
+
+        .grid-filter-suggestion-title {
+            font-size: 12px;
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        .grid-filter-suggestion-meta {
+            font-size: 11px;
+            color: #65748a;
+            white-space: nowrap;
+        }
+
+        /* Native ag-Grid column filtering disabled (external filter only). */
+        .ag-icon-filter,
+        .ag-header-cell-filter-button {
+            display: none !important;
         }
 
         .grid-toolbar {
@@ -874,6 +976,12 @@
                 <div class="diagram-title-row">
                     <input id="gridTitleInput" class="diagram-title-input" type="text"
                         placeholder="Titre du jeu de données">
+                    <div id="gridNaturalFilter" class="grid-filter-wrapper" data-status="partial">
+                        <input id="gridNaturalFilterInput" class="grid-filter-input" type="text" placeholder="⌕">
+                        <div id="gridNaturalFilterGhost" class="grid-filter-ghost" aria-hidden="true"></div>
+                        <div id="gridNaturalFilterSuggestions" class="grid-filter-suggestions" role="listbox"
+                            aria-label="Suggestions de filtre" aria-hidden="true"></div>
+                    </div>
                 </div>
                 <div class="grid-card">
                     <div id="gridContainer" class="ag-theme-quartz"></div>
@@ -988,6 +1096,11 @@
                 const applyScriptBtn = document.getElementById("applyScriptBtn");
                 const gridScript = document.getElementById("gridScript");
                 const gridTitleInput = document.getElementById("gridTitleInput");
+                const gridNaturalFilter = document.getElementById("gridNaturalFilter");
+                const gridNaturalFilterInput = document.getElementById("gridNaturalFilterInput");
+                const gridNaturalFilterGhost = document.getElementById("gridNaturalFilterGhost");
+                const gridNaturalFilterSuggestions = document.getElementById("gridNaturalFilterSuggestions");
+                let gridNaturalFilterInputOriginalPlaceholder = gridNaturalFilterInput?.placeholder || "";
                 const statusToast = document.getElementById("statusToast");
                 const statusLabel = document.querySelector(".status-label");
                 const pageTabs = document.getElementById("pageTabs");
@@ -1059,11 +1172,23 @@
                 let fileUploads = [];
                 let autoSizeTimer = null;
                 const gridElement = document.getElementById("gridContainer");
+
+                const naturalFilterState = {
+                    active: false,
+                    status: "partial",
+                    input: "",
+                    ast: null,
+                    lastGoodAst: null,
+                    error: "",
+                    lastDisplayedRowCount: null,
+                    lastAcceptedInput: ""
+                };
+
                 const gridOptions = {
                     defaultColDef: {
                         editable: true,
                         sortable: true,
-                        filter: true,
+                        filter: false,
                         resizable: true
                     },
                     localeText: typeof AG_GRID_LOCALE_FR !== "undefined" ? AG_GRID_LOCALE_FR : undefined,
@@ -1074,6 +1199,14 @@
                     rowHeight: DISPLAY_PREFERENCE_DEFAULTS.rowHeight,
                     rowData: [],
                     columnDefs: [],
+                    isExternalFilterPresent: () => Boolean(naturalFilterState.active),
+                    doesExternalFilterPass: (node) => {
+                        try {
+                            return evaluateAST(naturalFilterState.ast, node?.data || {});
+                        } catch (err) {
+                            return true;
+                        }
+                    },
                     onCellValueChanged: syncScriptFromGrid,
                     onColumnMoved: syncScriptFromGrid,
                     onColumnPinned: syncScriptFromGrid,
@@ -1081,6 +1214,10 @@
                 };
                 const gridApi = agGrid.createGrid(gridElement, gridOptions);
                 const gridColumnApi = gridOptions.columnApi;
+                if (typeof window !== "undefined") {
+                    window.goToolkitGridApi = gridApi;
+                    window.goToolkitGridOptions = gridOptions;
+                }
 
                 const DEFAULT_PRIMARY_KEY = "id";
 
@@ -1195,9 +1332,21 @@
                     return { schema: { tables: schemaTables }, data };
                 }
 
+                function hasDatasetContent(dataset) {
+                    if (!dataset || typeof dataset !== "object") return false;
+                    const data = dataset.data;
+                    if (!data || typeof data !== "object") return false;
+                    return Object.values(data).some(pageData => {
+                        const cols = Array.isArray(pageData?.columnDefs) ? pageData.columnDefs : [];
+                        const rows = Array.isArray(pageData?.rowData) ? pageData.rowData : [];
+                        return cols.length > 0 || rows.length > 0;
+                    });
+                }
+
                 function syncDatasetScriptFromState(options = {}) {
                     const dataset = buildDatasetFromState();
-                    const next = JSON.stringify(dataset, null, 2);
+                    const hasContent = hasDatasetContent(dataset);
+                    const next = hasContent ? JSON.stringify(dataset, null, 2) : "";
                     state.datasetScript = next;
                     if (gridScript) {
                         gridScript.value = next;
@@ -1380,19 +1529,11 @@
                 }
 
                 function applyFilterToCurrentGrid(field, value) {
-                    if (!gridApi || !field) return;
-                    const filterValue = value === "" ? null : value;
-                    const isNumeric = typeof filterValue === "number" && Number.isFinite(filterValue);
-                    const model = filterValue == null
-                        ? null
-                        : {
-                            filterType: isNumeric ? "number" : "text",
-                            type: "equals",
-                            filter: isNumeric ? filterValue : String(filterValue)
-                        };
                     try {
+                        if (!gridApi) return;
                         if (typeof gridApi.setFilterModel === "function") {
-                            gridApi.setFilterModel(model ? { [field]: model } : null);
+                            // Native ag-Grid column filtering is disabled: always clear any filter model.
+                            gridApi.setFilterModel(null);
                             gridApi.onFilterChanged?.();
                         }
                     } catch (err) {
@@ -1509,8 +1650,19 @@
                         normalizedValue = Number(normalizedValue);
                     }
                     setActivePage(targetIndex);
-                    applyFilterToCurrentGrid(relation.toColumn, normalizedValue);
-                    showStatus(`Filtré: ${relation.toTable}.${relation.toColumn} = ${normalizedValue}`);
+                    const knownFieldMap = getKnownFieldMap();
+                    const fieldInfo = knownFieldMap.get(relation.toColumn);
+                    const fieldLabel = fieldInfo?.headerName || relation.toColumn;
+                    const condition = `${fieldLabel} est ${normalizedValue}`;
+                    if (gridNaturalFilterInput) {
+                        gridNaturalFilterInput.value = condition;
+                        naturalFilterState.lastAcceptedInput = condition;
+                        scheduleNaturalFilterApply({ delayMs: 0 });
+                        updateNaturalSuggestions({ forced: true });
+                    }
+                    // Ensure native filter model is cleared.
+                    applyFilterToCurrentGrid();
+                    showStatus(`Filtré: ${condition}`);
                 }
 
                 function createForeignKeyCellRenderer(relation) {
@@ -1556,8 +1708,19 @@
                             normalizedId = Number(normalizedId.trim());
                         }
                         setActivePage(idx);
-                        applyFilterToCurrentGrid(manyFk, normalizedId);
-                        showStatus(`Filtré: ${manyTable}.${manyFk} = ${normalizedId}`);
+                        const knownFieldMap = getKnownFieldMap();
+                        const fieldInfo = knownFieldMap.get(manyFk);
+                        const fieldLabel = fieldInfo?.headerName || manyFk;
+                        const condition = `${fieldLabel} est ${normalizedId}`;
+                        if (gridNaturalFilterInput) {
+                            gridNaturalFilterInput.value = condition;
+                            naturalFilterState.lastAcceptedInput = condition;
+                            scheduleNaturalFilterApply({ delayMs: 0 });
+                            updateNaturalSuggestions({ forced: true });
+                        }
+                        // Ensure native filter model is cleared.
+                        applyFilterToCurrentGrid();
+                        showStatus(`Filtré: ${condition}`);
                     });
                     return link;
                 }
@@ -1586,7 +1749,7 @@
                             editable: false,
                             cellDataType: "number",
                             sortable: true,
-                            filter: true,
+                            filter: false,
                             valueGetter: params => {
                                 const oneId = params?.data?.[sides.onePk];
                                 if (oneId == null || oneId === "") return 0;
@@ -1630,7 +1793,9 @@
                     const tableId = options.tableId || getActivePage()?.tableId || "";
                     const columnDefs = Array.isArray(data.columnDefs) ? data.columnDefs : [];
                     const rowData = Array.isArray(data.rowData) ? data.rowData : [];
-                    const normalizedColumnDefs = ensureDefaultPinned(columnDefs);
+                    const normalizedColumnDefs = disableNativeFilterColumns(
+                        ensureDefaultPinned(normalizeColumnComponentNames(columnDefs))
+                    );
                     data.columnDefs = normalizedColumnDefs;
                     const withFkLinks = addForeignKeyRenderers(normalizedColumnDefs, tableId);
                     const gridColumnDefs = addRelationCountColumns(withFkLinks, tableId);
@@ -1642,6 +1807,7 @@
                         gridApi.setRowData(rowData);
                     }
                     scheduleAutoSizeAndPinMenu();
+                    scheduleNaturalFilterRecalc();
                 }
 
                 function syncScriptFromGrid() {
@@ -1695,6 +1861,42 @@
                             return { ...def, pinned: "left" };
                         }
                         return def;
+                    });
+                }
+
+                // Map legacy AG Grid component names to their current built-in equivalents.
+                const COMPONENT_NAME_ALIASES = {
+                    agNumericCellEditor: "agNumberCellEditor"
+                };
+
+                function normalizeColumnComponentNames(columnDefs = []) {
+                    const componentProps = [
+                        "cellRenderer",
+                        "cellEditor",
+                        "floatingCellRenderer",
+                        "pinnedRowCellRenderer"
+                    ];
+                    return columnDefs.map(def => {
+                        if (!def || typeof def !== "object") return def;
+                        const normalized = { ...def };
+                        componentProps.forEach(prop => {
+                            const value = normalized[prop];
+                            if (typeof value === "string") {
+                                normalized[prop] = COMPONENT_NAME_ALIASES[value] || value;
+                            }
+                        });
+                        return normalized;
+                    });
+                }
+
+                function disableNativeFilterColumns(columnDefs = []) {
+                    return columnDefs.map(def => {
+                        if (!def || typeof def !== "object") return def;
+                        const cleaned = { ...def, filter: false };
+                        if ("floatingFilter" in cleaned) cleaned.floatingFilter = false;
+                        if ("filterParams" in cleaned) delete cleaned.filterParams;
+                        if ("filterValueGetter" in cleaned) delete cleaned.filterValueGetter;
+                        return cleaned;
                     });
                 }
 
@@ -2659,6 +2861,7 @@
                     applyGridData(page.data, { tableId: page.tableId });
                     renderTabs();
                     persistState();
+                    scheduleNaturalFilterRecalc();
                 }
 
                 function addPage() {
@@ -2923,6 +3126,1837 @@
                     }
                 }
 
+                // -----------------------------
+                // Natural controlled French filter bar (external filtering)
+                // -----------------------------
+                //
+                // Parser states:
+                // - status="ok": full expression parsed successfully -> apply AST
+                // - status="partial": input ends mid-clause but can be valid continuation -> apply last fully-formed AST if any
+                // - status="error": hard syntax error -> DO NOT change last good AST (keeps previous filtering)
+                //
+                // This behavior avoids surprising "filter cleared" when the user makes a temporary typo.
+
+                function normalizeAccents(text) {
+                    if (text == null) return "";
+                    return String(text)
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "");
+                }
+
+                function normalizeForCompare(text) {
+                    return normalizeAccents(text)
+                        .replace(/[’]/g, "'")
+                        .toLowerCase()
+                        .trim();
+                }
+
+                function isEmptyValue(value) {
+                    return value == null || value === "";
+                }
+
+                function isIsoDate(value) {
+                    return typeof value === "string" && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value);
+                }
+
+                function isIsoDateTime(value) {
+                    return typeof value === "string" && /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$/.test(value);
+                }
+
+                function isIsoTime(value) {
+                    return typeof value === "string" && /^[0-9]{2}:[0-9]{2}(?::[0-9]{2})?$/.test(value);
+                }
+
+                function pad2(value) {
+                    return String(value).padStart(2, "0");
+                }
+
+                function formatIsoDateUtc(date) {
+                    return `${date.getUTCFullYear()}-${pad2(date.getUTCMonth() + 1)}-${pad2(date.getUTCDate())}`;
+                }
+
+                function formatIsoDateTimeUtc(date, boundary = "start") {
+                    const day = formatIsoDateUtc(date);
+                    if (boundary === "end") return `${day}T23:59:59`;
+                    return `${day}T00:00:00`;
+                }
+
+                function getTodayUtc() {
+                    const now = new Date();
+                    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+                }
+
+                function addDaysUtc(date, days) {
+                    return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+                }
+
+                function addMonthsUtc(date, months) {
+                    const year = date.getUTCFullYear();
+                    const month = date.getUTCMonth();
+                    const day = date.getUTCDate();
+                    const targetMonth = month + months;
+                    const targetYear = year + Math.floor(targetMonth / 12);
+                    const normalizedMonth = ((targetMonth % 12) + 12) % 12;
+                    const lastDay = new Date(Date.UTC(targetYear, normalizedMonth + 1, 0)).getUTCDate();
+                    const clampedDay = Math.min(day, lastDay);
+                    return new Date(Date.UTC(targetYear, normalizedMonth, clampedDay));
+                }
+
+                function startOfWeekUtc(date) {
+                    // Monday as start of week (ISO-8601).
+                    const dow = date.getUTCDay(); // 0=Sun..6=Sat
+                    const offset = (dow + 6) % 7;
+                    return addDaysUtc(new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())), -offset);
+                }
+
+                function startOfMonthUtc(date) {
+                    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+                }
+
+                function getKnownFieldMap() {
+                    const page = getActivePage();
+                    const defs = Array.isArray(page?.data?.columnDefs) ? page.data.columnDefs : [];
+                    const rows = Array.isArray(page?.data?.rowData) ? page.data.rowData : [];
+                    const keySet = new Set();
+                    rows.forEach(row => {
+                        if (!row || typeof row !== "object") return;
+                        Object.keys(row).forEach(key => keySet.add(key));
+                    });
+                    const map = new Map();
+                    defs.forEach(def => {
+                        const field = def && typeof def === "object" ? def.field : null;
+                        if (typeof field !== "string" || !field) return;
+                        if (field.startsWith("__relCount__")) return;
+                        if (!keySet.has(field) && keySet.size) return;
+                        const headerName =
+                            def && typeof def.headerName === "string" && def.headerName.trim()
+                                ? def.headerName.trim()
+                                : field;
+                        map.set(field, {
+                            field,
+                            headerName,
+                            dataType: typeof def.cellDataType === "string" && def.cellDataType.trim()
+                                ? def.cellDataType.trim()
+                                : null
+                        });
+                    });
+                    // Ensure fields present in data but missing in columnDefs are still usable.
+                    keySet.forEach(field => {
+                        if (!field || typeof field !== "string") return;
+                        if (field.startsWith("__relCount__")) return;
+                        if (!map.has(field)) {
+                            map.set(field, { field, headerName: field, dataType: null });
+                        }
+                    });
+
+                    // Infer missing data types from data values when possible.
+                    for (const [field, info] of map.entries()) {
+                        if (info && typeof info === "object" && info.dataType) continue;
+                        let inferred = null;
+                        for (const row of rows) {
+                            if (!row || typeof row !== "object") continue;
+                            const v = row[field];
+                            if (v == null) continue;
+                            if (typeof v === "number") { inferred = "number"; break; }
+                            if (typeof v === "boolean") { inferred = "boolean"; break; }
+                            if (typeof v === "string") {
+                                const raw = v.trim();
+                                if (raw === "") continue;
+                                if (isIsoDateTime(raw)) { inferred = "dateTime"; break; }
+                                if (isIsoDate(raw)) { inferred = "date"; break; }
+                                if (isIsoTime(raw)) { inferred = "time"; break; }
+                                inferred = "text";
+                                break;
+                            }
+                            inferred = "text";
+                            break;
+                        }
+                        if (!inferred) inferred = "text";
+                        map.set(field, { ...info, dataType: inferred });
+                    }
+                    return map;
+                }
+
+                function resolveFieldToken(fieldToken, knownFieldMap) {
+                    const map = knownFieldMap || new Map();
+                    const tokenRaw = (fieldToken || "").trim();
+                    if (!tokenRaw) return null;
+                    if (map.has(tokenRaw)) return tokenRaw;
+                    const wanted = normalizeForCompare(tokenRaw);
+                    for (const info of map.values()) {
+                        const header = info?.headerName || "";
+                        if (normalizeForCompare(header) === wanted) {
+                            return info.field;
+                        }
+                    }
+                    return null;
+                }
+
+                function tokenizeFrenchFilter(input) {
+                    const src = String(input || "");
+                    const tokens = [];
+                    let i = 0;
+                    const push = (type, value, start, end) => tokens.push({ type, value, start, end });
+
+                    const isSpace = ch => /\s/.test(ch);
+                    const isWordChar = ch => /[A-Za-z0-9_\-À-ÿ'’]/.test(ch);
+
+                    while (i < src.length) {
+                        const ch = src[i];
+                        if (isSpace(ch)) {
+                            i += 1;
+                            continue;
+                        }
+                        const start = i;
+                        if (ch === ",") {
+                            push("comma", ch, start, start + 1);
+                            i += 1;
+                            continue;
+                        }
+                        // No bracket syntax for columns (v2).
+                        if (ch === "!" && src[i + 1] === "=") {
+                            push("op", "!=", start, start + 2);
+                            i += 2;
+                            continue;
+                        }
+                        if (ch === ">" || ch === "<" || ch === "=") {
+                            if ((ch === ">" || ch === "<") && src[i + 1] === "=") {
+                                push("op", ch + "=", start, start + 2);
+                                i += 2;
+                            } else {
+                                push("op", ch, start, start + 1);
+                                i += 1;
+                            }
+                            continue;
+                        }
+                        if (ch === "\"" || ch === "'") {
+                            const quote = ch;
+                            i += 1;
+                            let value = "";
+                            while (i < src.length) {
+                                const c = src[i];
+                                if (c === "\\" && i + 1 < src.length) {
+                                    value += src[i + 1];
+                                    i += 2;
+                                    continue;
+                                }
+                                if (c === quote) {
+                                    i += 1;
+                                    break;
+                                }
+                                value += c;
+                                i += 1;
+                            }
+                            push("string", value, start, i);
+                            continue;
+                        }
+                        if (isWordChar(ch)) {
+                            let word = "";
+                            while (i < src.length && isWordChar(src[i])) {
+                                word += src[i];
+                                i += 1;
+                            }
+                            push("word", word, start, i);
+                            continue;
+                        }
+
+                        // Unknown single char -> keep for error reporting
+                        push("unknown", ch, start, start + 1);
+                        i += 1;
+                    }
+                    return tokens;
+                }
+
+                function parseNaturalFilter(input, knownFieldMap) {
+                    const fieldMap = knownFieldMap || new Map();
+                    const tokens = tokenizeFrenchFilter(input);
+                    const words = tokens.map(tok => ({
+                        ...tok,
+                        norm: tok.type === "word" ? normalizeForCompare(tok.value) : tok.value
+                    }));
+
+                    const parser = {
+                        tokens: words,
+                        pos: 0,
+                        lastGoodAst: null,
+                        lastGoodPos: 0,
+                        peek(offset = 0) { return this.tokens[this.pos + offset] || null; },
+                        eof() { return this.pos >= this.tokens.length; },
+                        consume() { const t = this.peek(); if (t) this.pos += 1; return t; },
+                        matchComma() {
+                            const t = this.peek();
+                            if (t && t.type === "comma") {
+                                this.pos += 1;
+                                return true;
+                            }
+                            return false;
+                        },
+                        matchWord(valueNorm) {
+                            const t = this.peek();
+                            if (t && t.type === "word" && t.norm === valueNorm) {
+                                this.pos += 1;
+                                return true;
+                            }
+                            return false;
+                        },
+                        matchOp(value) {
+                            const t = this.peek();
+                            if (t && t.type === "op" && t.value === value) {
+                                this.pos += 1;
+                                return true;
+                            }
+                            return false;
+                        },
+                        error(kind, message) {
+                            const err = new Error(message);
+                            err.kind = kind;
+                            err.pos = this.pos;
+                            throw err;
+                        },
+                        markGood(ast) {
+                            this.lastGoodAst = ast;
+                            this.lastGoodPos = this.pos;
+                        }
+                    };
+
+                    const normalizeDataType = (rawType) => {
+                        const t = typeof rawType === "string" ? rawType.trim().toLowerCase() : "";
+                        if (!t) return "text";
+                        if (t === "string" || t === "text") return "text";
+                        if (t === "number" || t === "numeric" || t === "int" || t === "float") return "number";
+                        if (t === "boolean" || t === "bool") return "boolean";
+                        if (t === "date") return "date";
+                        if (t === "datetime" || t === "datetime") return "dateTime";
+                        if (t === "time") return "time";
+                        return "text";
+                    };
+
+                    const getFieldDataType = (field) => {
+                        const info = fieldMap.get(field);
+                        return normalizeDataType(info?.dataType);
+                    };
+
+                    const isValueBoundary = (t) => {
+                        if (!t) return true;
+                        if (t.type === "comma") return true;
+                        if (t.type === "word" && (t.norm === "ou" || t.norm === "et")) return true;
+                        return false;
+                    };
+
+                    const parseRelativeDateValueNode = () => {
+                        const t = parser.peek();
+                        if (!t || t.type !== "word") return null;
+
+                        const today = getTodayUtc();
+                        const token = t.norm;
+
+                        const dateNode = (date) => ({ type: "value", valueType: "date", raw: formatIsoDateUtc(date) });
+                        const matchSeq = (normWords) => {
+                            for (let i = 0; i < normWords.length; i += 1) {
+                                const w = parser.peek(i);
+                                if (!w || w.type !== "word" || w.norm !== normalizeForCompare(normWords[i])) return false;
+                            }
+                            parser.pos += normWords.length;
+                            return true;
+                        };
+
+                        if (token === "aujourd'hui") {
+                            parser.consume();
+                            return dateNode(today);
+                        }
+                        if (token === "hier") {
+                            parser.consume();
+                            return dateNode(addDaysUtc(today, -1));
+                        }
+                        if (token === "demain") {
+                            parser.consume();
+                            return dateNode(addDaysUtc(today, 1));
+                        }
+
+                        const matchUnit = (unitNorm) => {
+                            if (!unitNorm) return null;
+                            if (unitNorm.startsWith("jour")) return "days";
+                            if (unitNorm.startsWith("semaine")) return "weeks";
+                            if (unitNorm === "mois") return "months";
+                            return null;
+                        };
+
+                        const parseNumberWord = () => {
+                            const nTok = parser.peek();
+                            if (!nTok) parser.error("partial", "Nombre attendu.");
+                            if (nTok.type !== "word") parser.error("error", "Nombre attendu.");
+                            const raw = nTok.value;
+                            if (!/^[0-9]+$/.test(raw)) parser.error("error", "Nombre attendu.");
+                            parser.consume();
+                            return parseInt(raw, 10);
+                        };
+
+                        if (token === "dans") {
+                            parser.consume();
+                            if (parser.eof()) parser.error("partial", "Nombre attendu après 'dans'.");
+                            const n = parseNumberWord();
+                            const unitTok = parser.peek();
+                            if (!unitTok) parser.error("partial", "Unité attendue après le nombre.");
+                            if (unitTok.type !== "word") parser.error("error", "Unité attendue.");
+                            const unit = matchUnit(unitTok.norm);
+                            if (!unit) parser.error("error", "Unité attendue: jours, semaines, mois.");
+                            parser.consume();
+                            if (unit === "days") return dateNode(addDaysUtc(today, n));
+                            if (unit === "weeks") return dateNode(addDaysUtc(today, n * 7));
+                            return dateNode(addMonthsUtc(today, n));
+                        }
+
+                        if (matchSeq(["il", "y", "a"])) {
+                            if (parser.eof()) parser.error("partial", "Nombre attendu après 'il y a'.");
+                            const n = parseNumberWord();
+                            const unitTok = parser.peek();
+                            if (!unitTok) parser.error("partial", "Unité attendue après le nombre.");
+                            if (unitTok.type !== "word") parser.error("error", "Unité attendue.");
+                            const unit = matchUnit(unitTok.norm);
+                            if (!unit) parser.error("error", "Unité attendue: jours, semaines, mois.");
+                            parser.consume();
+                            if (unit === "days") return dateNode(addDaysUtc(today, -n));
+                            if (unit === "weeks") return dateNode(addDaysUtc(today, -n * 7));
+                            return dateNode(addMonthsUtc(today, -n));
+                        }
+
+                        if (matchSeq(["cette", "semaine"])) {
+                            return dateNode(startOfWeekUtc(today));
+                        }
+                        if (matchSeq(["la", "semaine", "derniere"]) || matchSeq(["la", "semaine", "dernière"])) {
+                            return dateNode(startOfWeekUtc(addDaysUtc(today, -7)));
+                        }
+                        if (matchSeq(["la", "semaine", "prochaine"])) {
+                            return dateNode(startOfWeekUtc(addDaysUtc(today, 7)));
+                        }
+
+                        if (matchSeq(["ce", "mois"])) {
+                            return dateNode(startOfMonthUtc(today));
+                        }
+                        if (matchSeq(["le", "mois", "dernier"])) {
+                            return dateNode(startOfMonthUtc(addMonthsUtc(today, -1)));
+                        }
+                        if (matchSeq(["le", "mois", "prochain"])) {
+                            return dateNode(startOfMonthUtc(addMonthsUtc(today, 1)));
+                        }
+
+                        return null;
+                    };
+
+                    const dateFromIsoDate = (raw) => {
+                        const parts = String(raw || "").split("-");
+                        if (parts.length !== 3) return null;
+                        const y = parseInt(parts[0], 10);
+                        const m = parseInt(parts[1], 10);
+                        const d = parseInt(parts[2], 10);
+                        if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
+                        return new Date(Date.UTC(y, m - 1, d));
+                    };
+
+                    const coerceToExpectedTemporalValue = (valueNode, expectedType, boundary = "start") => {
+                        if (!valueNode) return valueNode;
+                        if (expectedType === "date") {
+                            if (valueNode.valueType === "date") return valueNode;
+                            if (valueNode.valueType === "dateTime") {
+                                return { type: "value", valueType: "date", raw: String(valueNode.raw).slice(0, 10) };
+                            }
+                            return valueNode;
+                        }
+                        if (expectedType === "dateTime") {
+                            if (valueNode.valueType === "dateTime") return valueNode;
+                            if (valueNode.valueType === "date") {
+                                const d = dateFromIsoDate(valueNode.raw);
+                                if (!d) return valueNode;
+                                return { type: "value", valueType: "dateTime", raw: formatIsoDateTimeUtc(d, boundary) };
+                            }
+                            return valueNode;
+                        }
+                        return valueNode;
+                    };
+
+                    const parsePrimitiveSingleTokenValue = () => {
+                        const t = parser.peek();
+                        if (!t) parser.error("partial", "Valeur attendue.");
+                        if (t.type === "string") {
+                            parser.consume();
+                            return { type: "value", valueType: "string", raw: t.value };
+                        }
+                        if (t.type === "word") {
+                            const raw = t.value;
+                            parser.consume();
+                            if (/^[0-9]+(?:\.[0-9]+)?$/.test(raw)) {
+                                return { type: "value", valueType: "number", raw };
+                            }
+                            if (isIsoDate(raw)) {
+                                return { type: "value", valueType: "date", raw };
+                            }
+                            if (isIsoDateTime(raw)) {
+                                return { type: "value", valueType: "dateTime", raw };
+                            }
+                            if (isIsoTime(raw)) {
+                                return { type: "value", valueType: "time", raw };
+                            }
+                            return { type: "value", valueType: "identifier", raw };
+                        }
+                        parser.error("error", "Valeur attendue.");
+                    };
+
+                    const parseSingleTokenValue = () => {
+                        const t = parser.peek();
+                        if (!t) parser.error("partial", "Valeur attendue.");
+                        if (t.type === "word") {
+                            const rel = parseRelativeDateValueNode();
+                            if (rel) return rel;
+                        }
+                        return parsePrimitiveSingleTokenValue();
+                    };
+
+                    const parseDateLikeValue = (expectedType, options = {}) => {
+                        const boundary = options.boundary || "start";
+                        const rel = parseRelativeDateValueNode();
+                        if (rel) return coerceToExpectedTemporalValue(rel, expectedType, boundary);
+                        const v = parsePrimitiveSingleTokenValue();
+                        return coerceToExpectedTemporalValue(v, expectedType, boundary);
+                    };
+
+                    const parseEqualsValue = (field) => {
+                        const t = parser.peek();
+                        if (!t) parser.error("partial", "Valeur attendue.");
+                        if (t.type === "string") return parseSingleTokenValue();
+                        if (t.type !== "word") parser.error("error", "Valeur attendue.");
+
+                        const fieldType = getFieldDataType(field);
+                        if (fieldType !== "text") {
+                            const v =
+                                fieldType === "date" || fieldType === "dateTime"
+                                    ? parseDateLikeValue(fieldType, { boundary: "start" })
+                                    : parseSingleTokenValue();
+                            if (fieldType === "number" && v.valueType !== "number") parser.error("error", "Nombre attendu.");
+                            if (fieldType === "date" && v.valueType !== "date") parser.error("error", "Date attendue (YYYY-MM-DD).");
+                            if (fieldType === "dateTime" && v.valueType !== "dateTime") parser.error("error", "Date/heure attendue (YYYY-MM-DDTHH:MM:SS).");
+                            if (fieldType === "time" && v.valueType !== "time") parser.error("error", "Heure attendue (HH:MM[:SS]).");
+                            return v;
+                        }
+
+                        const parts = [];
+                        while (!parser.eof()) {
+                            const next = parser.peek();
+                            if (isValueBoundary(next)) break;
+                            if (next.type === "word") {
+                                parts.push(next.value);
+                                parser.consume();
+                                continue;
+                            }
+                            break;
+                        }
+                        if (!parts.length) parser.error("partial", "Valeur attendue.");
+                        return { type: "value", valueType: "string", raw: parts.join(" ") };
+                    };
+
+                    const parseTextOpValue = () => {
+                        const t = parser.peek();
+                        if (!t) parser.error("partial", "Valeur attendue.");
+                        // contient/commence par/finit par:
+                        // - 1 mot sans guillemets accepté
+                        // - plusieurs mots => guillemets via token "string"
+                        if (t.type === "string" || t.type === "word") return parseSingleTokenValue();
+                        parser.error("error", "Valeur attendue.");
+                    };
+
+                    const isOperatorCompatibleWithField = (field, op) => {
+                        const fieldType = getFieldDataType(field);
+                        if (op === "between") return fieldType === "number" || fieldType === "date" || fieldType === "dateTime" || fieldType === "time";
+                        if (op === "before" || op === "after") return fieldType === "date" || fieldType === "dateTime" || fieldType === "time";
+                        if (op === "contains" || op === "starts" || op === "ends") return fieldType === "text";
+                        if (op === "=" || op === "!=") return true;
+                        if (op === ">" || op === ">=" || op === "<" || op === "<=") return fieldType === "number";
+                        return true;
+                    };
+
+                    const looksLikeNewConditionFromPos = (pos) => {
+                        const t = parser.tokens[pos];
+                        if (!t) return false;
+                        if (t.type !== "word") return false;
+
+                        const operatorStarts = [
+                            ["n'est", "pas"],
+                            ["nest", "pas"],
+                            ["commence", "par"],
+                            ["finit", "par"],
+                            ["superieur", "a"],
+                            ["supérieur", "à"],
+                            ["inferieur", "a"],
+                            ["inférieur", "à"],
+                            ["est"],
+                            ["contient"],
+                            ["avant"],
+                            ["apres"],
+                            ["après"],
+                            ["entre"]
+                        ];
+
+                        const startsWithOperator = (p) => {
+                            const tok = parser.tokens[p];
+                            if (!tok) return false;
+                            if (tok.type === "op") return true;
+                            for (const seq of operatorStarts) {
+                                let ok = true;
+                                for (let i = 0; i < seq.length; i += 1) {
+                                    const w = parser.tokens[p + i];
+                                    if (!w || w.type !== "word" || w.norm !== normalizeForCompare(seq[i])) {
+                                        ok = false;
+                                        break;
+                                    }
+                                }
+                                if (ok) return true;
+                            }
+                            return false;
+                        };
+
+                        const parts = [];
+                        let p = pos;
+                        while (p < parser.tokens.length) {
+                            const tok = parser.tokens[p];
+                            if (!tok || tok.type !== "word") break;
+                            if (startsWithOperator(p)) break;
+                            parts.push(tok.value);
+                            p += 1;
+                        }
+                        const rawLabel = parts.join(" ").trim();
+                        if (!rawLabel) return false;
+                        const resolved = resolveFieldToken(rawLabel, fieldMap);
+                        if (!resolved) return false;
+                        return startsWithOperator(p);
+                    };
+
+                    const parseField = () => {
+                        const t = parser.peek();
+                        if (!t) parser.error("partial", "Champ attendu.");
+
+                        // Column token is the display label (headerName) OR the system field.
+                        // It can be multi-word: we consume words until we detect an operator start.
+                        if (t.type === "string") {
+                            parser.consume();
+                            const resolved = resolveFieldToken(t.value, fieldMap);
+                            if (!resolved) {
+                                if (parser.eof()) parser.error("partial", "Champ incomplet.");
+                                parser.error("error", `Champ inconnu: ${t.value}`);
+                            }
+                            return resolved;
+                        }
+                        if (t.type !== "word") parser.error("error", "Champ attendu.");
+
+                        const operatorStarts = [
+                            ["n'est", "pas"],
+                            ["nest", "pas"],
+                            ["commence", "par"],
+                            ["finit", "par"],
+                            ["superieur", "a"],
+                            ["supérieur", "à"],
+                            ["inferieur", "a"],
+                            ["inférieur", "à"],
+                            ["est"],
+                            ["contient"],
+                            ["avant"],
+                            ["apres"],
+                            ["après"],
+                            ["entre"]
+                        ];
+
+                        const startsWithOperator = (pos) => {
+                            const tok = parser.tokens[pos];
+                            if (!tok) return false;
+                            if (tok.type === "op") return true;
+                            for (const seq of operatorStarts) {
+                                let ok = true;
+                                for (let i = 0; i < seq.length; i += 1) {
+                                    const w = parser.tokens[pos + i];
+                                    if (!w || w.type !== "word" || w.norm !== normalizeForCompare(seq[i])) {
+                                        ok = false;
+                                        break;
+                                    }
+                                }
+                                if (ok) return true;
+                            }
+                            return false;
+                        };
+
+                        const parts = [];
+                        while (!parser.eof() && parser.peek()?.type === "word") {
+                            if (startsWithOperator(parser.pos)) break;
+                            const w = parser.consume();
+                            parts.push(w.value);
+                        }
+                        const rawLabel = parts.join(" ").trim();
+                        if (!rawLabel) parser.error("partial", "Champ attendu.");
+                        const resolved = resolveFieldToken(rawLabel, fieldMap);
+                        if (!resolved) {
+                            const wanted = normalizeForCompare(rawLabel);
+                            const hasPrefix = Array.from(fieldMap.values()).some(info => {
+                                const label = normalizeForCompare(info?.headerName || "");
+                                const field = normalizeForCompare(info?.field || "");
+                                return label.startsWith(wanted) || field.startsWith(wanted);
+                            });
+                            if (parser.eof() && hasPrefix) {
+                                parser.error("partial", "Champ incomplet.");
+                            }
+                            parser.error("error", `Champ inconnu: ${rawLabel}`);
+                        }
+                        return resolved;
+                    };
+
+                    const matchMultiWord = (normWords) => {
+                        for (let i = 0; i < normWords.length; i += 1) {
+                            const t = parser.peek(i);
+                            if (!t || t.type !== "word" || t.norm !== normWords[i]) return false;
+                        }
+                        parser.pos += normWords.length;
+                        return true;
+                    };
+
+                    function isoDateFromDate(d) {
+                        const y = d.getFullYear();
+                        const m = String(d.getMonth() + 1).padStart(2, "0");
+                        const day = String(d.getDate()).padStart(2, "0");
+                        return `${y}-${m}-${day}`;
+                    }
+
+                    function startOfWeekDate(d) {
+                        const copy = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                        const day = copy.getDay(); // 0=Sun,1=Mon
+                        const offset = (day + 6) % 7; // days since Monday
+                        copy.setDate(copy.getDate() - offset);
+                        copy.setHours(0, 0, 0, 0);
+                        return copy;
+                    }
+
+                    function startOfMonthDate(d) {
+                        return new Date(d.getFullYear(), d.getMonth(), 1);
+                    }
+
+                    function parseRelativeDate() {
+                        // Attempt to parse French relative date expressions starting at current parser.pos
+                        const today = new Date();
+                        const norm = s => normalizeForCompare(s);
+
+                        const tryMatch = (words) => matchMultiWord(words.map(w => norm(w)));
+
+                        const peekWord = (offset = 0) => {
+                            const t = parser.peek(offset);
+                            return t && t.type === "word" ? t : null;
+                        };
+
+                        // aujourd'hui / hier / demain
+                        const t0 = peekWord(0);
+                        if (t0) {
+                            const n = t0.norm;
+                            if (n === norm("aujourd'hui") || n === "aujourdhui") {
+                                parser.consume();
+                                return { type: "value", valueType: "date", raw: isoDateFromDate(today) };
+                            }
+                            if (n === norm("hier")) {
+                                parser.consume();
+                                const d = new Date(today);
+                                d.setDate(d.getDate() - 1);
+                                return { type: "value", valueType: "date", raw: isoDateFromDate(d) };
+                            }
+                            if (n === norm("demain")) {
+                                parser.consume();
+                                const d = new Date(today);
+                                d.setDate(d.getDate() + 1);
+                                return { type: "value", valueType: "date", raw: isoDateFromDate(d) };
+                            }
+                        }
+
+                        // il y a N jours/semaines/mois  -> past
+                        if (tryMatch(["il", "y", "a"])) {
+                            // expect number
+                            const numTok = peekWord(0);
+                            if (!numTok) {
+                                parser.error("partial", "Nombre attendu après 'il y a'.");
+                            }
+                            if (!/^[0-9]+$/.test(numTok.value)) {
+                                parser.error("error", "Nombre attendu après 'il y a'.");
+                            }
+                            const n = Number(numTok.value);
+                            parser.consume();
+                            const unitTok = peekWord(0);
+                            if (!unitTok) parser.error("partial", "Unité temporelle attendue (jours, semaines, mois).");
+                            const unit = unitTok.norm;
+                            parser.consume();
+                            const d = new Date(today);
+                            if (/^jours?$/.test(unit) || unit === norm("jours") || unit === "jour") {
+                                d.setDate(d.getDate() - n);
+                            } else if (/^semaines?$/.test(unit) || unit === "semaine") {
+                                d.setDate(d.getDate() - n * 7);
+                            } else if (/^mois$/.test(unit) || unit === "mois") {
+                                d.setMonth(d.getMonth() - n);
+                            } else {
+                                parser.error("error", "Unité temporelle inconnue.");
+                            }
+                            return { type: "value", valueType: "date", raw: isoDateFromDate(d) };
+                        }
+
+                        // dans N jours/semaines/mois -> future
+                        if (tryMatch(["dans"])) {
+                            const numTok = peekWord(0);
+                            if (!numTok) parser.error("partial", "Nombre attendu après 'dans'.");
+                            if (!/^[0-9]+$/.test(numTok.value)) parser.error("error", "Nombre attendu après 'dans'.");
+                            const n = Number(numTok.value);
+                            parser.consume();
+                            const unitTok = peekWord(0);
+                            if (!unitTok) parser.error("partial", "Unité temporelle attendue (jours, semaines, mois).");
+                            const unit = unitTok.norm;
+                            parser.consume();
+                            const d = new Date(today);
+                            if (/^jours?$/.test(unit) || unit === "jour") {
+                                d.setDate(d.getDate() + n);
+                            } else if (/^semaines?$/.test(unit) || unit === "semaine") {
+                                d.setDate(d.getDate() + n * 7);
+                            } else if (/^mois$/.test(unit) || unit === "mois") {
+                                d.setMonth(d.getMonth() + n);
+                            } else {
+                                parser.error("error", "Unité temporelle inconnue.");
+                            }
+                            return { type: "value", valueType: "date", raw: isoDateFromDate(d) };
+                        }
+
+                        // week/month expressions: 'cette semaine', 'la semaine dernière', 'la semaine prochaine', 'le mois dernier', 'ce mois', 'le mois prochain'
+                        if (tryMatch(["cette", "semaine"]) || tryMatch(["la", "semaine", "derniere"]) || tryMatch(["la", "semaine", "prochaine"])) {
+                            const consumed = parser.tokens.slice(Math.max(0, parser.pos - 3), parser.pos).map(t => t.norm).join(" ");
+                            const start = startOfWeekDate(new Date());
+                            let d = new Date(start);
+                            if (consumed.includes(norm("derniere")) || consumed.includes("derniere")) {
+                                d.setDate(d.getDate() - 7);
+                            } else if (consumed.includes(norm("prochaine")) || consumed.includes("prochaine")) {
+                                d.setDate(d.getDate() + 7);
+                            }
+                            return { type: "value", valueType: "date", raw: isoDateFromDate(d) };
+                        }
+
+                        if (tryMatch(["le", "mois", "dernier"]) || tryMatch(["le", "mois", "prochain"]) || tryMatch(["ce", "mois"]) || tryMatch(["le", "mois", "dernier"])) {
+                            const consumed = parser.tokens.slice(Math.max(0, parser.pos - 3), parser.pos).map(t => t.norm).join(" ");
+                            const start = startOfMonthDate(new Date());
+                            let d = new Date(start);
+                            if (consumed.includes(norm("dernier")) || consumed.includes("dernier")) {
+                                d.setMonth(d.getMonth() - 1);
+                            } else if (consumed.includes(norm("prochain")) || consumed.includes("prochain")) {
+                                d.setMonth(d.getMonth() + 1);
+                            }
+                            return { type: "value", valueType: "date", raw: isoDateFromDate(d) };
+                        }
+
+                        return null;
+                    }
+
+                    const parseCondition = () => {
+                        const field = parseField();
+
+                        // Unary empty checks
+                        if (matchMultiWord(["est", "vide"])) {
+                            const ast = { type: "empty", field, negated: false };
+                            parser.markGood(ast);
+                            return ast;
+                        }
+                        if (matchMultiWord(["n'est", "pas", "vide"]) || matchMultiWord(["nest", "pas", "vide"])) {
+                            const ast = { type: "empty", field, negated: true };
+                            parser.markGood(ast);
+                            return ast;
+                        }
+
+                        // Between: champ entre v1 et v2
+                        if (parser.matchWord("entre")) {
+                            if (!isOperatorCompatibleWithField(field, "between")) {
+                                parser.error("error", "Opérateur incompatible avec le type de la colonne.");
+                            }
+                            const fieldType = getFieldDataType(field);
+                            const min =
+                                fieldType === "date"
+                                    ? parseDateLikeValue("date", { boundary: "start" })
+                                    : fieldType === "dateTime"
+                                        ? parseDateLikeValue("dateTime", { boundary: "start" })
+                                        : parseSingleTokenValue();
+                            if (!parser.matchWord("et")) {
+                                if (parser.eof()) parser.error("partial", "Mot-clé 'et' attendu.");
+                                parser.error("error", "Mot-clé 'et' attendu.");
+                            }
+                            const max =
+                                fieldType === "date"
+                                    ? parseDateLikeValue("date", { boundary: "start" })
+                                    : fieldType === "dateTime"
+                                        ? parseDateLikeValue("dateTime", { boundary: "end" })
+                                        : parseSingleTokenValue();
+                            if (fieldType === "number" && (min.valueType !== "number" || max.valueType !== "number")) {
+                                parser.error("error", "Nombre attendu.");
+                            }
+                            if (fieldType === "date" && (min.valueType !== "date" || max.valueType !== "date")) {
+                                parser.error("error", "Date attendue (YYYY-MM-DD).");
+                            }
+                            if (fieldType === "dateTime" && (min.valueType !== "dateTime" || max.valueType !== "dateTime")) {
+                                parser.error("error", "Date/heure attendue (YYYY-MM-DDTHH:MM:SS).");
+                            }
+                            if (fieldType === "time" && (min.valueType !== "time" || max.valueType !== "time")) {
+                                parser.error("error", "Heure attendue (HH:MM[:SS]).");
+                            }
+                            const ast = { type: "between", field, min, max };
+                            parser.markGood(ast);
+                            return ast;
+                        }
+
+                        // Operators (multi-word + symbols)
+                        let op = null;
+                        if (matchMultiWord(["n'est", "pas"]) || matchMultiWord(["nest", "pas"])) op = "!=";
+                        else if (parser.matchWord("est")) op = "=";
+                        else if (parser.matchWord("contient")) op = "contains";
+                        else if (matchMultiWord(["commence", "par"])) op = "starts";
+                        else if (matchMultiWord(["finit", "par"])) op = "ends";
+                        else if (matchMultiWord(["superieur", "a"]) || matchMultiWord(["supérieur", "à"])) op = ">";
+                        else if (matchMultiWord(["inferieur", "a"]) || matchMultiWord(["inférieur", "à"])) op = "<";
+                        else if (parser.matchWord("avant")) op = "before";
+                        else if (parser.matchWord("apres") || parser.matchWord("après")) op = "after";
+                        
+                        else if (parser.matchOp(">=")) op = ">=";
+                        else if (parser.matchOp(">")) op = ">";
+                        else if (parser.matchOp("<=")) op = "<=";
+                        else if (parser.matchOp("<")) op = "<";
+
+                        if (!op) {
+                            if (parser.eof()) parser.error("partial", "Opérateur attendu.");
+                            parser.error("error", "Opérateur attendu.");
+                        }
+
+                        if (!isOperatorCompatibleWithField(field, op)) {
+                            parser.error("error", "Opérateur incompatible avec le type de la colonne.");
+                        }
+
+                        const parseValueForOp = () => {
+                            if (op === "=" || op === "!=") return parseEqualsValue(field);
+                            if (op === "contains" || op === "starts" || op === "ends") return parseTextOpValue();
+                            const fieldType = getFieldDataType(field);
+                            const v =
+                                (op === "before" || op === "after") && (fieldType === "date" || fieldType === "dateTime")
+                                    ? parseDateLikeValue(fieldType, { boundary: "start" })
+                                    : parseSingleTokenValue();
+                            if ((op === "before" || op === "after") && !["date", "dateTime", "time"].includes(fieldType)) {
+                                parser.error("error", "Opérateur incompatible avec le type de la colonne.");
+                            }
+                            if ((op === "before" || op === "after") && fieldType === "date" && v.valueType !== "date") {
+                                parser.error("error", "Date attendue (YYYY-MM-DD).");
+                            }
+                            if ((op === "before" || op === "after") && fieldType === "dateTime" && v.valueType !== "dateTime") {
+                                parser.error("error", "Date/heure attendue (YYYY-MM-DDTHH:MM:SS).");
+                            }
+                            if ((op === "before" || op === "after") && fieldType === "time" && v.valueType !== "time") {
+                                parser.error("error", "Heure attendue (HH:MM[:SS]).");
+                            }
+                            if (["<", "<=", ">", ">="].includes(op) && fieldType === "number" && v.valueType !== "number") {
+                                parser.error("error", "Nombre attendu.");
+                            }
+                            return v;
+                        };
+
+                        const firstValue = parseValueForOp();
+                        const baseAst = { type: "cond", field, op, value: firstValue };
+
+                        // Allow "ou" ONLY as additional values for the current condition.
+                        // If the user typed "ou" but hasn't provided the next value yet, the condition is considered incomplete
+                        // (so we deliberately do NOT mark baseAst as "good" in that case).
+                        if (parser.peek()?.type === "word" && parser.peek()?.norm === "ou") {
+                            let ast = baseAst;
+                            while (parser.peek()?.type === "word" && parser.peek()?.norm === "ou") {
+                                parser.consume(); // consume "ou"
+                                if (parser.eof()) {
+                                    parser.error("partial", "Valeur attendue après 'ou'.");
+                                }
+                                if (looksLikeNewConditionFromPos(parser.pos)) {
+                                    parser.error("error", "Utilisez ', ou' pour faire un OU entre deux conditions.");
+                                }
+                                const nextValue = parseValueForOp();
+                                ast = { type: "or", left: ast, right: { type: "cond", field, op, value: nextValue } };
+                                parser.markGood(ast);
+                            }
+                            return ast;
+                        }
+
+                        parser.markGood(baseAst);
+                        return baseAst;
+                    };
+
+                    const parseAtom = () => {
+                        const t = parser.peek();
+                        if (t && t.type === "unknown" && (t.value === "(" || t.value === ")")) {
+                            parser.error("error", "Parenthèses non supportées.");
+                        }
+                        return parseCondition();
+                    };
+
+                    const parseNot = () => {
+                        if (parser.matchWord("non") || parser.matchWord("sauf")) {
+                            if (parser.eof()) parser.error("partial", "Expression attendue après négation.");
+                            const expr = parseNot();
+                            const ast = { type: "not", expr };
+                            parser.markGood(ast);
+                            return ast;
+                        }
+                        return parseAtom();
+                    };
+
+                    const parseSequence = () => {
+                        let left = parseNot();
+                        while (true) {
+                            let connector = null;
+                            if (parser.matchWord("et")) {
+                                connector = "and";
+                            } else if (parser.matchComma()) {
+                                // ", ou" means OR between conditions; plain "," is AND.
+                                if (parser.matchWord("ou")) connector = "or";
+                                else connector = "and";
+                            } else if (parser.peek()?.type === "word" && parser.peek()?.norm === "ou") {
+                                // "ou" cannot start a new condition; it is reserved for additional values in a condition.
+                                parser.error("error", "Utilisez ', ou' pour faire un OU entre deux conditions.");
+                            } else {
+                                break;
+                            }
+
+                            if (parser.eof()) {
+                                parser.markGood(left);
+                                parser.error("partial", "Condition attendue après le connecteur.");
+                            }
+                            const right = parseNot();
+                            left = { type: connector, left, right };
+                            parser.markGood(left);
+                        }
+                        return left;
+                    };
+
+                    try {
+                        if (!tokens.length) {
+                            return { status: "partial", ast: null, error: "" };
+                        }
+                        const ast = parseSequence();
+                        parser.markGood(ast);
+                        if (!parser.eof()) {
+                            // Remaining tokens => error (e.g., garbage at end)
+                            parser.error("error", "Syntaxe invalide.");
+                        }
+                        return { status: "ok", ast, error: "" };
+                    } catch (err) {
+                        const kind = err?.kind || "error";
+                        if (kind === "partial") {
+                            return {
+                                status: "partial",
+                                ast: parser.lastGoodAst,
+                                error: err?.message || ""
+                            };
+                        }
+                        // On hard error: still return the last valid AST so the grid can ignore the invalid tail.
+                        return {
+                            status: "error",
+                            ast: parser.lastGoodAst,
+                            error: err?.message || "Erreur de syntaxe."
+                        };
+                    }
+                }
+
+                function coerceComparable(value, valueNode) {
+                    const raw = valueNode?.raw;
+                    if (valueNode?.valueType === "number") {
+                        const n = parseFloat(String(raw));
+                        return Number.isFinite(n) ? n : null;
+                    }
+                    if (valueNode?.valueType === "date" || valueNode?.valueType === "dateTime" || valueNode?.valueType === "time") {
+                        return typeof raw === "string" ? raw : null;
+                    }
+                    // identifier / string -> string
+                    return raw == null ? "" : String(raw);
+                }
+
+                function evaluateAST(ast, row) {
+                    if (!ast) return true;
+                    const node = ast;
+                    switch (node.type) {
+                        case "and":
+                            return evaluateAST(node.left, row) && evaluateAST(node.right, row);
+                        case "or":
+                            return evaluateAST(node.left, row) || evaluateAST(node.right, row);
+                        case "not":
+                            return !evaluateAST(node.expr, row);
+                        case "empty": {
+                            const v = row ? row[node.field] : undefined;
+                            const empty = isEmptyValue(v);
+                            return node.negated ? !empty : empty;
+                        }
+                        case "between": {
+                            const v = row ? row[node.field] : undefined;
+                            if (isEmptyValue(v)) return false;
+                            const min = coerceComparable(v, node.min);
+                            const max = coerceComparable(v, node.max);
+                            if (typeof min === "number" && typeof max === "number") {
+                                const n = parseFloat(String(v));
+                                if (!Number.isFinite(n)) return false;
+                                return n >= min && n <= max;
+                            }
+                            const raw = String(v);
+                            if (isIsoDate(raw) || isIsoDateTime(raw) || isIsoTime(raw)) {
+                                return raw >= String(min) && raw <= String(max);
+                            }
+                            const s = normalizeForCompare(raw);
+                            return s >= normalizeForCompare(String(min)) && s <= normalizeForCompare(String(max));
+                        }
+                        case "cond": {
+                            const v = row ? row[node.field] : undefined;
+                            if (node.op === "contains" || node.op === "starts" || node.op === "ends") {
+                                const left = normalizeForCompare(v == null ? "" : String(v));
+                                const right = normalizeForCompare(String(coerceComparable(v, node.value)));
+                                if (!right) return true;
+                                if (node.op === "contains") return left.includes(right);
+                                if (node.op === "starts") return left.startsWith(right);
+                                if (node.op === "ends") return left.endsWith(right);
+                                return true;
+                            }
+
+                            const op = node.op === "before" ? "<" : node.op === "after" ? ">" : node.op;
+
+                            // Equality/inequality and comparisons: try number/date first, fallback to string.
+                            const cmpRight = coerceComparable(v, node.value);
+                            const rawLeft = v == null ? null : v;
+                            const leftString = rawLeft == null ? "" : String(rawLeft);
+
+                            const bothNumeric =
+                                (typeof cmpRight === "number") ||
+                                (typeof rawLeft === "number") ||
+                                (/^[0-9]+(?:\.[0-9]+)?$/.test(leftString) && typeof cmpRight === "string" && /^[0-9]+(?:\.[0-9]+)?$/.test(cmpRight));
+                            if (bothNumeric && ["=", "!=", ">", ">=", "<", "<="].includes(op)) {
+                                const ln = parseFloat(leftString);
+                                const rn = typeof cmpRight === "number" ? cmpRight : parseFloat(String(cmpRight));
+                                if (!Number.isFinite(ln) || !Number.isFinite(rn)) return false;
+                                if (op === "=") return ln === rn;
+                                if (op === "!=") return ln !== rn;
+                                if (op === ">") return ln > rn;
+                                if (op === ">=") return ln >= rn;
+                                if (op === "<") return ln < rn;
+                                if (op === "<=") return ln <= rn;
+                            }
+
+                            const isDateLike = isIsoDate(leftString) || isIsoDateTime(leftString) || isIsoTime(leftString);
+                            if (isDateLike && ["=", "!=", ">", ">=", "<", "<="].includes(op)) {
+                                const r = String(cmpRight || "");
+                                if (!(isIsoDate(r) || isIsoDateTime(r) || isIsoTime(r))) return false;
+                                if (op === "=") return leftString === r;
+                                if (op === "!=") return leftString !== r;
+                                if (op === ">") return leftString > r;
+                                if (op === ">=") return leftString >= r;
+                                if (op === "<") return leftString < r;
+                                if (op === "<=") return leftString <= r;
+                            }
+
+                            // Boolean-ish identifiers
+                            const leftNorm = normalizeForCompare(leftString);
+                            const rightNorm = normalizeForCompare(String(cmpRight || ""));
+                            const boolMap = new Map([
+                                ["true", true],
+                                ["vrai", true],
+                                ["1", true],
+                                ["false", false],
+                                ["faux", false],
+                                ["0", false]
+                            ]);
+                            if (boolMap.has(leftNorm) || boolMap.has(rightNorm)) {
+                                const lb = boolMap.get(leftNorm);
+                                const rb = boolMap.get(rightNorm);
+                                if (lb == null || rb == null) return false;
+                                if (op === "=") return lb === rb;
+                                if (op === "!=") return lb !== rb;
+                            }
+
+                            if (op === "=") return leftNorm === rightNorm;
+                            if (op === "!=") return leftNorm !== rightNorm;
+                            if (op === ">") return leftNorm > rightNorm;
+                            if (op === ">=") return leftNorm >= rightNorm;
+                            if (op === "<") return leftNorm < rightNorm;
+                            if (op === "<=") return leftNorm <= rightNorm;
+                            return true;
+                        }
+                        default:
+                            return true;
+                    }
+                }
+
+                function setNaturalFilterUiStatus(status, displayedRowCount, hint) {
+                    if (!gridNaturalFilter) return;
+                    gridNaturalFilter.dataset.status = status || "partial";
+                }
+
+                let naturalFilterDebounceTimer = null;
+                function scheduleNaturalFilterApply(options = {}) {
+                    const delayMs = typeof options.delayMs === "number" ? options.delayMs : 200;
+                    if (naturalFilterDebounceTimer) clearTimeout(naturalFilterDebounceTimer);
+                    naturalFilterDebounceTimer = setTimeout(() => {
+                        naturalFilterDebounceTimer = null;
+                        applyNaturalFilterNow();
+                    }, Math.max(150, Math.min(250, delayMs)));
+                }
+
+                function applyNaturalFilterNow() {
+                    if (!gridApi) return;
+                    if (!gridNaturalFilterInput) return;
+                    const knownFieldMap = getKnownFieldMap();
+                    const raw = gridNaturalFilterInput.value || "";
+                    const result = parseNaturalFilter(raw, knownFieldMap);
+
+                    naturalFilterState.input = raw;
+                    naturalFilterState.status = result.status;
+                    naturalFilterState.error = result.error || "";
+
+                    if (result.status === "error") {
+                        // Apply only the last valid part of the expression (ignore the invalid / incomplete tail).
+                        naturalFilterState.ast = result.ast || null;
+                        naturalFilterState.lastGoodAst = naturalFilterState.ast;
+                        naturalFilterState.active = Boolean(naturalFilterState.ast);
+                        try { gridApi.onFilterChanged?.(); } catch (err) { /* ignore */ }
+                        const displayed = typeof gridApi.getDisplayedRowCount === "function" ? gridApi.getDisplayedRowCount() : null;
+                        naturalFilterState.lastDisplayedRowCount = displayed;
+                        setNaturalFilterUiStatus("error", displayed);
+                        return;
+                    }
+
+                    // For ok/partial: apply the last complete expression available from this input.
+                    naturalFilterState.ast = result.ast || null;
+                    naturalFilterState.lastGoodAst = naturalFilterState.ast;
+
+                    naturalFilterState.active = Boolean(naturalFilterState.ast);
+                    try { gridApi.onFilterChanged?.(); } catch (err) { /* ignore */ }
+                    setTimeout(() => {
+                        const displayed = typeof gridApi.getDisplayedRowCount === "function" ? gridApi.getDisplayedRowCount() : null;
+                        naturalFilterState.lastDisplayedRowCount = displayed;
+                        if (result.status === "ok" && displayed != null && displayed > 0) {
+                            setNaturalFilterUiStatus("ok", displayed);
+                        } else {
+                            setNaturalFilterUiStatus("partial", displayed);
+                        }
+                    }, 120);
+                }
+
+                function scheduleNaturalFilterRecalc() {
+                    // Called when data/columns switch tabs or update; re-apply current input.
+                    if (!gridNaturalFilterInput) return;
+                    scheduleNaturalFilterApply({ delayMs: 180 });
+                }
+
+                function getTokenBounds(text, cursorPos) {
+                    const src = String(text || "");
+                    const pos = Math.max(0, Math.min(cursorPos || 0, src.length));
+                    const isBoundary = ch => /\s/.test(ch) || ch === "(" || ch === ")";
+                    let start = pos;
+                    while (start > 0 && !isBoundary(src[start - 1])) start -= 1;
+                    let end = pos;
+                    while (end < src.length && !isBoundary(src[end])) end += 1;
+                    return { start, end };
+                }
+
+                function insertAtCaret(inputEl, insertText, bounds) {
+                    if (!inputEl) return;
+                    const value = inputEl.value || "";
+                    const start = bounds?.start ?? inputEl.selectionStart ?? value.length;
+                    const end = bounds?.end ?? inputEl.selectionEnd ?? value.length;
+                    let before = value.slice(0, start);
+                    const after = value.slice(end);
+                    let insert = String(insertText || "");
+                    if (!insert) return;
+
+                    const isCommaLike = insert.startsWith(",");
+                    if (isCommaLike) {
+                        before = before.replace(/\s+$/, "");
+                    }
+
+                    const beforeChar = before.slice(-1);
+                    const afterChar = after.slice(0, 1);
+                    const needsLeadingSpace =
+                        !isCommaLike &&
+                        before.length > 0 &&
+                        !/\s|\(/.test(beforeChar) &&
+                        insert !== ")" &&
+                        !insert.startsWith(")");
+                    const needsTrailingSpace =
+                        isCommaLike ||
+                        after.length > 0 &&
+                        !/^\s|\)/.test(afterChar) &&
+                        insert !== "(" &&
+                        !insert.endsWith("(");
+
+                    if (needsLeadingSpace) insert = " " + insert;
+                    if (needsTrailingSpace) {
+                        if (isCommaLike) {
+                            if (!/^\s/.test(afterChar)) insert = insert + " ";
+                        } else {
+                            insert = insert + " ";
+                        }
+                    }
+
+                    const nextValue = before + insert + after;
+                    inputEl.value = nextValue;
+                    const nextPos = (before + insert).length;
+                    inputEl.setSelectionRange(nextPos, nextPos);
+                    inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+                }
+
+                function escapeRegex(str) {
+                    return String(str || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                }
+
+                function buildCaretMirrorElement(inputEl) {
+                    const style = window.getComputedStyle(inputEl);
+                    const div = document.createElement("div");
+                    div.style.position = "fixed";
+                    div.style.left = "-9999px";
+                    div.style.top = "0";
+                    div.style.visibility = "hidden";
+                    div.style.whiteSpace = "pre";
+                    div.style.fontFamily = style.fontFamily;
+                    div.style.fontSize = style.fontSize;
+                    div.style.fontWeight = style.fontWeight;
+                    div.style.letterSpacing = style.letterSpacing;
+                    div.style.padding = style.padding;
+                    div.style.border = style.border;
+                    div.style.boxSizing = style.boxSizing;
+                    div.style.width = style.width;
+                    div.style.lineHeight = style.lineHeight;
+                    return div;
+                }
+
+                function getCaretClientPosition(inputEl, caretPos) {
+                    if (!inputEl) return null;
+                    const value = inputEl.value || "";
+                    const pos = Math.max(0, Math.min(caretPos ?? inputEl.selectionStart ?? value.length, value.length));
+                    const mirror = buildCaretMirrorElement(inputEl);
+                    const before = value.slice(0, pos);
+                    const after = value.slice(pos);
+                    const marker = document.createElement("span");
+                    marker.textContent = "\u200b";
+                    mirror.textContent = "";
+                    mirror.append(document.createTextNode(before), marker, document.createTextNode(after));
+                    document.body.appendChild(mirror);
+                    const rect = marker.getBoundingClientRect();
+                    const mirrorRect = mirror.getBoundingClientRect();
+                    mirror.remove();
+                    const inputRect = inputEl.getBoundingClientRect();
+                    return {
+                        left: inputRect.left + (rect.left - mirrorRect.left),
+                        top: inputRect.top + (rect.top - mirrorRect.top),
+                        height: rect.height || parseFloat(window.getComputedStyle(inputEl).lineHeight) || 16
+                    };
+                }
+
+                function showGhostCompletion(text) {
+                    if (!gridNaturalFilterGhost) return;
+                    const content = String(text || "");
+                    if (!content) {
+                        gridNaturalFilterGhost.style.display = "none";
+                        gridNaturalFilterGhost.textContent = "";
+                        return;
+                    }
+                    if (!gridNaturalFilterInput) return;
+                    const caretPos = gridNaturalFilterInput.selectionStart ?? (gridNaturalFilterInput.value || "").length;
+                    const caret = getCaretClientPosition(gridNaturalFilterInput, caretPos);
+                    if (!caret) return;
+                    const wrapperRect = gridNaturalFilter.getBoundingClientRect();
+                    gridNaturalFilterGhost.textContent = content;
+                    gridNaturalFilterGhost.style.display = "block";
+                    gridNaturalFilterGhost.style.left = `${Math.max(8, caret.left - wrapperRect.left)}px`;
+                    gridNaturalFilterGhost.style.top = `${Math.max(2, caret.top - wrapperRect.top)}px`;
+                }
+
+                function getDistinctValuesForField(field, limit = 20) {
+                    const page = getActivePage();
+                    const rows = Array.isArray(page?.data?.rowData) ? page.data.rowData : [];
+                    const freq = new Map();
+                    const order = [];
+                    for (const row of rows) {
+                        if (!row || typeof row !== "object") continue;
+                        const v = row[field];
+                        if (v == null) continue;
+                        const key = typeof v === "string" ? v.trim() : v;
+                        if (key === "") continue;
+                        const str = typeof key === "string" ? key : String(key);
+                        if (!freq.has(str)) order.push(str);
+                        freq.set(str, (freq.get(str) || 0) + 1);
+                    }
+                    order.sort((a, b) => (freq.get(b) || 0) - (freq.get(a) || 0));
+                    return order.slice(0, Math.max(0, limit));
+                }
+
+                function buildNaturalSuggestions(text, cursorPos, options = {}) {
+                    const forced = Boolean(options.forced);
+                    const knownFieldMap = getKnownFieldMap();
+                    const knownFields = Array.from(knownFieldMap.values());
+                    const bounds = getTokenBounds(text, cursorPos);
+                    const currentToken = (text || "").slice(bounds.start, cursorPos).trim();
+                    let currentNorm = normalizeForCompare(currentToken);
+
+                    const beforeText = (text || "").slice(0, cursorPos);
+                    const tokens = tokenizeFrenchFilter(beforeText);
+                    const words = tokens.map(t => ({
+                        ...t,
+                        norm: t.type === "word" ? normalizeForCompare(t.value) : t.value
+                    }));
+
+                    const operatorTailWords = new Set([
+                        "est",
+                        "contient",
+                        "commence",
+                        "finit",
+                        "par",
+                        "n'est",
+                        "nest",
+                        "pas",
+                        "superieur",
+                        "supérieur",
+                        "inferieur",
+                        "inférieur",
+                        "a",
+                        "à",
+                        "avant",
+                        "apres",
+                        "après",
+                        "entre",
+                        "vide"
+                    ]);
+
+                    // Connectors between conditions:
+                    // - "," (AND) or ", ou" (OR)
+                    // - "et" (AND)
+                    // Note: "ou" alone is reserved for additional values inside a condition.
+                    const isConnector = t =>
+                        (t?.type === "comma") ||
+                        (t?.type === "word" && t.norm === "et");
+
+                    // Consider the current segment since last connector/paren boundary.
+                    let segStart = 0;
+                    for (let i = words.length - 1; i >= 0; i -= 1) {
+                        const t = words[i];
+                        if (isConnector(t)) { segStart = i + 1; break; }
+                    }
+                    let segment = words.slice(segStart);
+                    // Special connector: ", ou" means OR between conditions.
+                    // When we are right after the comma, the segment can start with "ou" - ignore it for field/operator detection.
+                    if (
+                        segment.length &&
+                        segment[0]?.type === "word" &&
+                        segment[0]?.norm === "ou" &&
+                        segStart > 0 &&
+                        words[segStart - 1]?.type === "comma"
+                    ) {
+                        segment = segment.slice(1);
+                    }
+
+                    const prevChar = cursorPos > 0 ? String(text || "")[cursorPos - 1] : "";
+                    const prevCharIsSpace = /\s/.test(prevChar);
+
+                    // Detect whether an operator is present in this segment.
+                    let operatorIndex = -1;
+                    for (let i = 0; i < segment.length; i += 1) {
+                        const t = segment[i];
+                        if (!t) continue;
+                        if (t.type === "op") { operatorIndex = i; break; }
+                        if (t.type === "word" && operatorTailWords.has(t.norm)) { operatorIndex = i; break; }
+                    }
+
+                    const fieldTokenWords = operatorIndex === -1
+                        ? segment.filter(t => t.type === "word").map(t => t.value)
+                        : segment.slice(0, operatorIndex).filter(t => t.type === "word").map(t => t.value);
+                    const fieldToken = fieldTokenWords.join(" ").trim();
+                    let lastField = fieldToken ? resolveFieldToken(fieldToken, knownFieldMap) : null;
+
+                    // If the segment is words-only and we can't resolve the whole thing as a field,
+                    // try resolving the longest prefix as a field. This lets us keep suggesting verbs
+                    // while the user is typing the verb right after a valid field name.
+                    if (!lastField && operatorIndex === -1 && segment.length && segment.every(t => t.type === "word")) {
+                        let best = null;
+                        let bestLen = 0;
+                        for (let len = segment.length; len >= 1; len -= 1) {
+                            const candidate = segment.slice(0, len).map(t => t.value).join(" ").trim();
+                            const resolved = resolveFieldToken(candidate, knownFieldMap);
+                            if (resolved) {
+                                best = resolved;
+                                bestLen = len;
+                                break;
+                            }
+                        }
+                        if (best && bestLen < segment.length) {
+                            lastField = best;
+                            operatorIndex = bestLen;
+                        }
+                    }
+
+                    const inferOperatorText = () => {
+                        if (operatorIndex === -1) return null;
+                        const t = segment[operatorIndex];
+                        if (!t) return null;
+                        if (t.type === "op") return t.value;
+                        const w0 = t.type === "word" ? t.norm : "";
+                        const w1 = segment[operatorIndex + 1]?.type === "word" ? segment[operatorIndex + 1].norm : "";
+                        const w2 = segment[operatorIndex + 2]?.type === "word" ? segment[operatorIndex + 2].norm : "";
+
+                        if (w0 === "n'est" && w1 === "pas") return "n'est pas";
+                        if (w0 === "nest" && w1 === "pas") return "n'est pas";
+                        if (w0 === "commence" && w1 === "par") return "commence par";
+                        if (w0 === "finit" && w1 === "par") return "finit par";
+                        if (w0 === "supérieur" && w1 === "à") return "supérieur à";
+                        if (w0 === "superieur" && w1 === "a") return "supérieur à";
+                        if (w0 === "inférieur" && w1 === "à") return "inférieur à";
+                        if (w0 === "inferieur" && w1 === "a") return "inférieur à";
+                        if (w0 === "est" && w1 === "vide") return "est vide";
+                        if (w0 === "n'est" && w1 === "pas" && w2 === "vide") return "n'est pas vide";
+                        if (w0 === "nest" && w1 === "pas" && w2 === "vide") return "n'est pas vide";
+                        if (w0 === "est") return "est";
+                        if (w0 === "contient") return "contient";
+                        if (w0 === "avant") return "avant";
+                        if (w0 === "apres" || w0 === "après") return "après";
+                        if (w0 === "entre") return "entre";
+                        return null;
+                    };
+
+                    const inferredOperator = inferOperatorText();
+                    const valueQuoteMode =
+                        inferredOperator === "contient" ||
+                            inferredOperator === "commence par" ||
+                            inferredOperator === "finit par"
+                            ? "quoteIfSpace"
+                            : "none";
+
+                    const last = words[words.length - 1] || null;
+                    const prev = words.length > 1 ? words[words.length - 2] : null;
+
+                    const isStartOfAtom =
+                        !words.length ||
+                        (last?.type === "comma") ||
+                        (last?.type === "word" && (last.norm === "et" || last.norm === "non" || last.norm === "sauf")) ||
+                        (last?.type === "word" && last.norm === "ou" && prev?.type === "comma");
+
+                    const verbTypingMode =
+                        Boolean(lastField) &&
+                        operatorIndex !== -1 &&
+                        !inferredOperator;
+
+                    // Field exists, and user ended it with a space => propose verbs without typing.
+                    // Also: if the user is actively typing a verb, keep suggesting verbs (do not jump to values).
+                    const EXPECT_VERB =
+                        verbTypingMode ||
+                        (!isStartOfAtom && operatorIndex === -1 && fieldTokenWords.length > 0 && prevCharIsSpace);
+                    const EXPECT_FIELD = (isStartOfAtom || operatorIndex === -1) && !EXPECT_VERB;
+
+                    const afterOp = operatorIndex === -1 ? [] : segment.slice(operatorIndex + 1);
+                    const valuePresent = afterOp.some(t => {
+                        if (!t) return false;
+                        if (t.type === "string") return true;
+                        if (t.type !== "word") return false;
+                        if (operatorTailWords.has(t.norm)) return false;
+                        if (t.norm === "et" || t.norm === "ou" || t.norm === "non" || t.norm === "sauf") return false;
+                        return true;
+                    });
+                    const unaryEmptyComplete =
+                        afterOp.some(t => t?.type === "word" && t.norm === "vide") &&
+                        prevCharIsSpace;
+
+                    const endsWithValueOu =
+                        last?.type === "word" &&
+                        last.norm === "ou" &&
+                        prev?.type !== "comma";
+
+                    const inValueOuMode =
+                        endsWithValueOu &&
+                        operatorIndex !== -1 &&
+                        Boolean(lastField) &&
+                        prevCharIsSpace &&
+                        inferredOperator !== "entre" &&
+                        inferredOperator !== "est vide" &&
+                        inferredOperator !== "n'est pas vide";
+
+                    // Operator present but user hasn't typed a value yet (or ended operator with space).
+                    const EXPECT_VALUE =
+                        !verbTypingMode &&
+                        (
+                            (
+                                inferredOperator &&
+                                operatorIndex !== -1 &&
+                                Boolean(lastField) &&
+                                !valuePresent &&
+                                !unaryEmptyComplete &&
+                                (prevCharIsSpace || currentToken.length > 0 || forced)
+                            ) ||
+                            inValueOuMode
+                        );
+
+                    // After a value/expression: connectors/parentheses only.
+                    const EXPECT_CONNECTOR =
+                        !inValueOuMode &&
+                        operatorIndex !== -1 &&
+                        Boolean(lastField) &&
+                        prevCharIsSpace &&
+                        (valuePresent || unaryEmptyComplete);
+
+                    const normalizeDataType = (rawType) => {
+                        const t = typeof rawType === "string" ? rawType.trim().toLowerCase() : "";
+                        if (!t) return "text";
+                        if (t === "string" || t === "text") return "text";
+                        if (t === "number" || t === "numeric" || t === "int" || t === "float") return "number";
+                        if (t === "boolean" || t === "bool") return "boolean";
+                        if (t === "date") return "date";
+                        if (t === "datetime") return "dateTime";
+                        if (t === "time") return "time";
+                        return "text";
+                    };
+
+                    const lastFieldType = lastField ? normalizeDataType(knownFieldMap.get(lastField)?.dataType) : null;
+                    const operatorSuggestions = [
+                        { insertText: "est", label: "est", meta: "=", kind: "op" },
+                        { insertText: "n'est pas", label: "n'est pas", meta: "!=", kind: "op" },
+                        { insertText: "contient", label: "contient", meta: "texte", kind: "op" },
+                        { insertText: "commence par", label: "commence par", meta: "texte", kind: "op" },
+                        { insertText: "finit par", label: "finit par", meta: "texte", kind: "op" },
+                        { insertText: "supérieur à", label: "supérieur à", meta: ">", kind: "op" },
+                        { insertText: "inférieur à", label: "inférieur à", meta: "<", kind: "op" },
+                        { insertText: "avant", label: "avant", meta: "< date/time", kind: "op" },
+                        { insertText: "après", label: "après", meta: "> date/time", kind: "op" },
+                        { insertText: "entre", label: "entre", meta: "intervalle", kind: "op" },
+                        { insertText: "est vide", label: "est vide", meta: "unary", kind: "op" },
+                        { insertText: "n'est pas vide", label: "n'est pas vide", meta: "unary", kind: "op" },
+                        { insertText: ">=", label: ">=", meta: "symbole", kind: "op" },
+                        { insertText: "<=", label: "<=", meta: "symbole", kind: "op" },
+                        { insertText: ">", label: ">", meta: "symbole", kind: "op" },
+                        { insertText: "<", label: "<", meta: "symbole", kind: "op" }
+                    ];
+                    const keywordSuggestions = [
+                        { insertText: ",", label: ",", meta: "ET", kind: "kw" },
+                        { insertText: "et", label: "et", meta: "ET", kind: "kw" },
+                        { insertText: ", ou", label: ", ou", meta: "OU", kind: "kw" }
+                    ];
+                    const valueOrSuggestion = { insertText: "ou", label: "ou", meta: "valeur", kind: "kw" };
+
+                    const filterOperatorSuggestionsByType = (items, fieldType) => {
+                        if (!fieldType) return items;
+                        const allow = new Set(["est", "n'est pas", "est vide", "n'est pas vide"]);
+                        if (fieldType === "text") {
+                            ["contient", "commence par", "finit par"].forEach(v => allow.add(v));
+                        } else if (fieldType === "number") {
+                            ["supérieur à", "inférieur à", ">", ">=", "<", "<=", "entre"].forEach(v => allow.add(v));
+                        } else if (fieldType === "date" || fieldType === "dateTime" || fieldType === "time") {
+                            ["avant", "après", "entre"].forEach(v => allow.add(v));
+                        } else if (fieldType === "boolean") {
+                            // Keep equality only.
+                        }
+                        return items.filter(it => allow.has(it.insertText));
+                    };
+
+                    const suggestions = [];
+                    if (EXPECT_FIELD) {
+                        // Only columns.
+                        knownFields.forEach(fieldInfo => {
+                            suggestions.push({
+                                insertText: fieldInfo.headerName || fieldInfo.field,
+                                label: fieldInfo.headerName || fieldInfo.field,
+                                meta: fieldInfo.field,
+                                kind: "field"
+                            });
+                        });
+                    } else if (EXPECT_VERB) {
+                        // Only logical verbs/operators.
+                        filterOperatorSuggestionsByType(operatorSuggestions, lastFieldType)
+                            .forEach(s => suggestions.push({ ...s, meta: "verbe" }));
+                    } else if (EXPECT_VALUE && lastField) {
+                        // Only values for that field.
+                        if (currentToken === "\"" || currentToken === "'" || currentToken === "“") {
+                            currentNorm = "";
+                        } else if (/^["'“]/.test(currentToken)) {
+                            currentNorm = normalizeForCompare(currentToken.replace(/^["'“]+/, ""));
+                        }
+                        if (lastFieldType === "date" || lastFieldType === "dateTime") {
+                            [
+                                { insertText: "aujourd'hui", label: "aujourd'hui", meta: "date" },
+                                { insertText: "hier", label: "hier", meta: "date" },
+                                { insertText: "demain", label: "demain", meta: "date" },
+                                { insertText: "cette semaine", label: "cette semaine", meta: "date" },
+                                { insertText: "la semaine dernière", label: "la semaine dernière", meta: "date" },
+                                { insertText: "la semaine prochaine", label: "la semaine prochaine", meta: "date" },
+                                { insertText: "ce mois", label: "ce mois", meta: "date" },
+                                { insertText: "le mois dernier", label: "le mois dernier", meta: "date" },
+                                { insertText: "le mois prochain", label: "le mois prochain", meta: "date" },
+                                { insertText: "dans 7 jours", label: "dans 7 jours", meta: "relatif" },
+                                { insertText: "il y a 7 jours", label: "il y a 7 jours", meta: "relatif" },
+                                { insertText: "dans 2 semaines", label: "dans 2 semaines", meta: "relatif" },
+                                { insertText: "il y a 2 semaines", label: "il y a 2 semaines", meta: "relatif" },
+                                { insertText: "dans 1 mois", label: "dans 1 mois", meta: "relatif" },
+                                { insertText: "il y a 1 mois", label: "il y a 1 mois", meta: "relatif" }
+                            ].forEach(s => suggestions.push({ ...s, kind: "value" }));
+                        }
+                        getDistinctValuesForField(lastField, 20).forEach(v => {
+                            const isNumber = /^[0-9]+(?:\.[0-9]+)?$/.test(v);
+                            const isDate = isIsoDate(v) || isIsoDateTime(v);
+                            const insertText = isNumber || isDate ? v : v;
+                            suggestions.push({ insertText, label: v, meta: "valeur", kind: "value" });
+                        });
+                    } else if (EXPECT_CONNECTOR) {
+                        // After a complete condition: allow AND ("," / "et"), OR between conditions (", ou"),
+                        // and value-OR ("ou") only to add another possible value for the same field.
+                        keywordSuggestions.forEach(s => suggestions.push({ ...s, meta: "logique" }));
+                        if (inferredOperator && inferredOperator !== "entre" && inferredOperator !== "est vide" && inferredOperator !== "n'est pas vide") {
+                            suggestions.push({ ...valueOrSuggestion, meta: "valeur" });
+                        }
+                    } else {
+                        // Default: if we can't infer, propose connectors (safe) when forced, otherwise nothing.
+                        if (forced) {
+                            keywordSuggestions.forEach(s => suggestions.push({ ...s, meta: "logique" }));
+                        }
+                    }
+
+                    const filtered = suggestions.filter(s => {
+                        if (forced) return true;
+                        if (!currentNorm && !prevCharIsSpace) return false;
+                        return normalizeForCompare(s.label).includes(currentNorm) || normalizeForCompare(s.meta).includes(currentNorm);
+                    });
+
+                    return { items: filtered.slice(0, 24), bounds, context: { valueQuoteMode, inferredOperator, lastField, lastFieldType } };
+                }
+
+                const naturalSuggestionState = {
+                    open: false,
+                    forced: false,
+                    activeIndex: 0,
+                    items: [],
+                    bounds: { start: 0, end: 0 },
+                    context: { valueQuoteMode: "none", inferredOperator: null, lastField: null, lastFieldType: null }
+                };
+
+                function closeNaturalSuggestions() {
+                    naturalSuggestionState.open = false;
+                    naturalSuggestionState.forced = false;
+                    naturalSuggestionState.activeIndex = 0;
+                    naturalSuggestionState.items = [];
+                    naturalSuggestionState.context = { valueQuoteMode: "none", inferredOperator: null, lastField: null, lastFieldType: null };
+                    if (gridNaturalFilterSuggestions) {
+                        gridNaturalFilterSuggestions.classList.remove("open");
+                        gridNaturalFilterSuggestions.setAttribute("aria-hidden", "true");
+                        gridNaturalFilterSuggestions.innerHTML = "";
+                    }
+                    showGhostCompletion("");
+                }
+
+                function renderNaturalSuggestions() {
+                    if (!gridNaturalFilterSuggestions) return;
+                    gridNaturalFilterSuggestions.innerHTML = "";
+                    if (!naturalSuggestionState.items.length) {
+                        closeNaturalSuggestions();
+                        return;
+                    }
+                    naturalSuggestionState.open = true;
+                    gridNaturalFilterSuggestions.classList.add("open");
+                    gridNaturalFilterSuggestions.setAttribute("aria-hidden", "false");
+                    naturalSuggestionState.items.forEach((s, idx) => {
+                        const btn = document.createElement("button");
+                        btn.type = "button";
+                        btn.className = "grid-filter-suggestion" + (idx === naturalSuggestionState.activeIndex ? " active" : "");
+                        btn.setAttribute("role", "option");
+                        btn.dataset.index = String(idx);
+                        const left = document.createElement("span");
+                        left.className = "grid-filter-suggestion-title";
+                        left.textContent = s.label;
+                        const right = document.createElement("span");
+                        right.className = "grid-filter-suggestion-meta";
+                        right.textContent = s.meta || s.kind || "";
+                        btn.append(left, right);
+                        btn.addEventListener("mousedown", e => e.preventDefault());
+                        btn.addEventListener("click", () => {
+                            if (!gridNaturalFilterInput) return;
+                            naturalSuggestionState.activeIndex = idx;
+                            acceptActiveNaturalSuggestion({ appendSpace: true });
+                            // Keep suggestions open to immediately propose the next token.
+                            gridNaturalFilterInput.focus();
+                        });
+                        gridNaturalFilterSuggestions.appendChild(btn);
+                    });
+
+                    const active = naturalSuggestionState.items[naturalSuggestionState.activeIndex] || naturalSuggestionState.items[0];
+                    const inputValue = gridNaturalFilterInput?.value || "";
+                    const caretPos = gridNaturalFilterInput?.selectionStart ?? inputValue.length;
+                    const token = inputValue.slice(naturalSuggestionState.bounds.start, caretPos);
+                    let suggestionText = active?.insertText || "";
+                    if (active?.kind === "value") {
+                        const raw = String(active.label || "").trim();
+                        const isNumericOrTemporal =
+                            /^[0-9]+(?:\.[0-9]+)?$/.test(raw) ||
+                            isIsoDate(raw) ||
+                            isIsoDateTime(raw) ||
+                            isIsoTime(raw);
+                        const mode = naturalSuggestionState.context?.valueQuoteMode || "none";
+                        const needsQuotes = !isNumericOrTemporal && mode === "quoteIfSpace" && /\s/.test(raw);
+                        suggestionText = needsQuotes ? `"${raw.replace(/\"/g, "\\\"")}"` : raw;
+                    }
+                    let tail = suggestionText;
+                    if (token) {
+                        const normalizedToken = token.replace(/^["'“]+/, "");
+                        if (suggestionText.toLowerCase().startsWith(token.toLowerCase())) {
+                            tail = suggestionText.slice(token.length);
+                        } else if (normalizedToken && suggestionText.toLowerCase().startsWith(("\"" + normalizedToken).toLowerCase())) {
+                            tail = suggestionText.slice(normalizedToken.length);
+                        } else if (normalizedToken && suggestionText.toLowerCase().startsWith(normalizedToken.toLowerCase())) {
+                            tail = suggestionText.slice(normalizedToken.length);
+                        }
+                    }
+                    showGhostCompletion(tail);
+                }
+
+                function updateNaturalSuggestions(options = {}) {
+                    if (!gridNaturalFilterInput) return;
+                    if (!document.activeElement || document.activeElement !== gridNaturalFilterInput) {
+                        closeNaturalSuggestions();
+                        return;
+                    }
+                    const value = gridNaturalFilterInput.value || "";
+                    const cursorPos = gridNaturalFilterInput.selectionStart ?? value.length;
+                    const forced = Boolean(options.forced);
+                    const { items, bounds, context } = buildNaturalSuggestions(value, cursorPos, { forced });
+                    const prevActive = naturalSuggestionState.items[naturalSuggestionState.activeIndex];
+                    naturalSuggestionState.items = items;
+                    naturalSuggestionState.bounds = bounds;
+                    naturalSuggestionState.context = context || { valueQuoteMode: "none", inferredOperator: null, lastField: null, lastFieldType: null };
+                    if (prevActive) {
+                        const nextIndex = items.findIndex(it => it.insertText === prevActive.insertText);
+                        naturalSuggestionState.activeIndex = nextIndex === -1 ? 0 : nextIndex;
+                    } else {
+                        naturalSuggestionState.activeIndex = 0;
+                    }
+                    naturalSuggestionState.forced = forced;
+                    renderNaturalSuggestions();
+                }
+
+                function acceptActiveNaturalSuggestion(options = {}) {
+                    if (!gridNaturalFilterInput) return;
+                    const active = naturalSuggestionState.items[naturalSuggestionState.activeIndex];
+                    if (!active) return;
+                    const appendSpace = options.appendSpace === true;
+                    let insertText = active.insertText;
+                    if (active.kind === "value") {
+                        const raw = String(active.label || "").trim();
+                        const alreadyQuoted = /^".*"$/.test(insertText);
+                        const isNumericOrTemporal =
+                            /^[0-9]+(?:\.[0-9]+)?$/.test(raw) ||
+                            isIsoDate(raw) ||
+                            isIsoDateTime(raw) ||
+                            isIsoTime(raw);
+                        const mode = naturalSuggestionState.context?.valueQuoteMode || "none";
+                        const needsQuotes = !isNumericOrTemporal && mode === "quoteIfSpace" && /\s/.test(raw);
+                        if (needsQuotes && !alreadyQuoted) {
+                            insertText = `"${raw.replace(/\"/g, "\\\"")}"`;
+                        } else if (!alreadyQuoted) {
+                            insertText = raw;
+                        }
+                    }
+                    if (appendSpace) insertText = `${insertText} `;
+                    insertAtCaret(gridNaturalFilterInput, insertText, naturalSuggestionState.bounds);
+                    // Keep dropdown open and refresh suggestions for the next token (based on trailing space).
+                    updateNaturalSuggestions({ forced: false });
+                }
+
                 function buildDatasetFromSingleTablePayload(payload, fallbackTableId, fallbackTitle) {
                     const tableId = (fallbackTableId || "").trim() || createTableId(1);
                     const title = (fallbackTitle || "").trim() || (payload?.title || "").trim() || tableId;
@@ -3057,6 +5091,7 @@
                                 : buildDatasetFromSingleTablePayload(parsed, page?.tableId, page?.title);
                         applyDatasetToState(dataset, { markAsAi: true, activeTableId: page?.tableId });
                         showStatus("Jeu de données mis à jour.");
+                        scheduleNaturalFilterRecalc();
                     } catch (err) {
                         if (err && err.name === "AbortError") {
                             if (!pendingAbortStatus) {
@@ -3243,6 +5278,9 @@
                     if (infoPopup && !infoPopup.contains(event.target) && event.target !== infoButton) {
                         infoPopup.classList.remove("open");
                     }
+                    if (gridNaturalFilter && naturalSuggestionState.open && !gridNaturalFilter.contains(event.target)) {
+                        closeNaturalSuggestions();
+                    }
                 });
                 if (fontSizeInput) {
                     fontSizeInput.addEventListener("change", function () {
@@ -3421,6 +5459,146 @@
                             }
                         });
                     }
+                    if (gridNaturalFilterInput) {
+                        gridNaturalFilterInput.addEventListener("input", () => {
+                            const inputEl = gridNaturalFilterInput;
+                            const prevCursor = inputEl.selectionStart ?? (inputEl.value || "").length;
+
+                            let nextValue = inputEl.value || "";
+                            if (/[()]/.test(nextValue)) {
+                                const before = nextValue;
+                                nextValue = nextValue.replace(/[()]/g, "");
+                                inputEl.value = nextValue;
+                                const removed = before.length - nextValue.length;
+                                const nextCursor = Math.max(0, prevCursor - Math.max(0, removed));
+                                try { inputEl.setSelectionRange(nextCursor, nextCursor); } catch (err) { /* ignore */ }
+                            }
+                            scheduleNaturalFilterApply({ delayMs: 200 });
+                            updateNaturalSuggestions({ forced: false });
+                        });
+                        gridNaturalFilterInput.addEventListener("focus", () => {
+                            // Hide placeholder while user is focused in the input
+                            try {
+                                gridNaturalFilterInputOriginalPlaceholder = gridNaturalFilterInputOriginalPlaceholder || (gridNaturalFilterInput.placeholder || "");
+                                gridNaturalFilterInput.placeholder = "";
+                            } catch (e) { /* ignore */ }
+                            updateNaturalSuggestions({ forced: true });
+                        });
+                        gridNaturalFilterInput.addEventListener("click", () => {
+                            updateNaturalSuggestions({ forced: true });
+                        });
+                        gridNaturalFilterInput.addEventListener("keydown", event => {
+                            const isCtrlSpace = (event.ctrlKey || event.metaKey) && (event.code === "Space" || event.key === " ");
+                            if (isCtrlSpace) {
+                                event.preventDefault();
+                                updateNaturalSuggestions({ forced: true });
+                                return;
+                            }
+                            if (event.key === "Backspace") {
+                                // Default: let Backspace behave normally (single-char delete) so users
+                                // can edit words/verbs character-by-character.
+                                // If the user holds Ctrl/Meta + Backspace, perform word/operator deletion.
+                                if (!(event.ctrlKey || event.metaKey)) {
+                                    return;
+                                }
+                                try {
+                                    const inputEl = gridNaturalFilterInput;
+                                    const value = inputEl.value || "";
+                                    const selStart = inputEl.selectionStart ?? value.length;
+                                    const selEnd = inputEl.selectionEnd ?? selStart;
+                                    // If there's a selection, allow default behavior
+                                    if (selStart !== selEnd) return;
+                                    const before = value.slice(0, selStart);
+                                    const after = value.slice(selEnd);
+
+                                    // If suggestions are not open, only act when caret follows an operator word
+                                    // (English: AND/OR/NOT, French: ET/OU/PAS). Otherwise allow normal Ctrl+Backspace.
+                                    if (!naturalSuggestionState.open) {
+                                        const opMatch = before.match(/(?:\b(?:AND|OR|NOT|ET|OU|PAS)\b)\s*$/i);
+                                        if (!opMatch) return;
+                                    }
+
+                                    // If the character before caret is whitespace, remove a single space
+                                    let newBefore;
+                                    if (/\s$/.test(before)) {
+                                        newBefore = before.replace(/\s$/u, "");
+                                    } else {
+                                        // Otherwise remove the last contiguous non-space chunk plus any preceding spaces
+                                        newBefore = before.replace(/\s*\S+$/u, "");
+                                    }
+                                    const newCaret = newBefore.length;
+                                    inputEl.value = newBefore + after;
+                                    try { inputEl.setSelectionRange(newCaret, newCaret); } catch (e) { /* ignore */ }
+                                    // Refresh suggestions for the modified input; preserve open state
+                                    updateNaturalSuggestions({ forced: Boolean(naturalSuggestionState.open) });
+                                    event.preventDefault();
+                                } catch (e) {
+                                    // If anything goes wrong, don't block default Backspace
+                                }
+                                return;
+                            }
+                            if (!naturalSuggestionState.open) return;
+                            if (event.key === "Tab") {
+                                // Tab: accept current suggestion like Enter. Shift+Tab navigates suggestions backward.
+                                event.preventDefault();
+                                if (event.shiftKey) {
+                                    const dir = -1;
+                                    const next = naturalSuggestionState.activeIndex + dir;
+                                    const max = naturalSuggestionState.items.length;
+                                    naturalSuggestionState.activeIndex = ((next % max) + max) % max;
+                                    renderNaturalSuggestions();
+                                    return;
+                                }
+                                // Accept active suggestion and append a space to continue typing
+                                acceptActiveNaturalSuggestion({ appendSpace: true });
+                                return;
+                            }
+                            // Spacebar: allow normal behavior (do not accept suggestion on Space)
+                            if (event.key === "ArrowDown") {
+                                event.preventDefault();
+                                const max = naturalSuggestionState.items.length;
+                                naturalSuggestionState.activeIndex = (naturalSuggestionState.activeIndex + 1) % max;
+                                renderNaturalSuggestions();
+                                gridNaturalFilterSuggestions?.querySelector(".grid-filter-suggestion.active")?.scrollIntoView?.({
+                                    block: "nearest"
+                                });
+                                return;
+                            }
+                            if (event.key === "ArrowUp") {
+                                event.preventDefault();
+                                const max = naturalSuggestionState.items.length;
+                                naturalSuggestionState.activeIndex = (naturalSuggestionState.activeIndex - 1 + max) % max;
+                                renderNaturalSuggestions();
+                                gridNaturalFilterSuggestions?.querySelector(".grid-filter-suggestion.active")?.scrollIntoView?.({
+                                    block: "nearest"
+                                });
+                                return;
+                            }
+                            if (event.key === "Escape") {
+                                event.preventDefault();
+                                closeNaturalSuggestions();
+                                return;
+                            }
+                            if (event.key === "Enter") {
+                                event.preventDefault();
+                                acceptActiveNaturalSuggestion({ appendSpace: true });
+                            }
+                        });
+                        gridNaturalFilterInput.addEventListener("blur", () => {
+                            // Delay so click on suggestion can be handled.
+                            setTimeout(() => {
+                                if (document.activeElement !== gridNaturalFilterInput) {
+                                    closeNaturalSuggestions();
+                                }
+                                // Restore placeholder if input is empty
+                                try {
+                                    if ((gridNaturalFilterInput.value || "").trim() === "") {
+                                        gridNaturalFilterInput.placeholder = gridNaturalFilterInputOriginalPlaceholder || "";
+                                    }
+                                } catch (e) { /* ignore */ }
+                            }, 120);
+                        });
+                    }
                     if (drawerBtn) {
                         drawerBtn.addEventListener("click", () => toggleSidebar());
                     }
@@ -3431,6 +5609,8 @@
                     syncSidebarLayout();
                     updateFileRowVisibility();
                     renderFileList();
+                    // Initialize external filtering state/UI once the grid is ready.
+                    applyNaturalFilterNow();
                 }
 
                 wireEvents();

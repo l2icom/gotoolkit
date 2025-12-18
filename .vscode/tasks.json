@@ -4,7 +4,7 @@
     {
       "label": "Serve public",
       "type": "shell",
-      "command": "npx serve public -l 8080",
+      "command": "npx serve public -l 5000",
       "isBackground": true,
       "problemMatcher": [],
       "presentation": {
