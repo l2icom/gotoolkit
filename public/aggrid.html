@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>AG Grid - Relational Link + Tabs</title>
+
+    <!-- AG Grid Community (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.1.0/dist/ag-grid-community.min.noStyle.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.1.0/styles/ag-grid.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.1.0/styles/ag-theme-quartz.css" />
+
+    <style>
+        :root {
+            color-scheme: light;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            margin: 0;
+            background: #fafafa;
+        }
+
+        header {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e6e6e6;
+            background: #fff;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .pill {
+            font-size: 12px;
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 999px;
+            background: #fff;
+        }
+
+        /* Tabs */
+        .tabsBar {
+            padding: 10px 12px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            border-bottom: 1px solid #e6e6e6;
+            background: #fff;
+        }
+
+        .tabBtn {
+            border: 1px solid #ddd;
+            background: #fff;
+            padding: 8px 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .tabBtn[aria-selected="true"] {
+            background: #f3f3f3;
+            border-color: #cfcfcf;
+        }
+
+        .tabHint {
+            margin-left: auto;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .wrap {
+            padding: 12px;
+        }
+
+        .card {
+            border: 1px solid #e6e6e6;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .cardHead {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .cardHead strong {
+            font-size: 13px;
+        }
+
+        .tools {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        input[type="search"] {
+            padding: 7px 10px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            min-width: 240px;
+        }
+
+        button {
+            padding: 7px 10px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            background: #fafafa;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #f3f3f3;
+        }
+
+        .grid {
+            height: 560px;
+        }
+
+        .hint {
+            padding: 10px 12px;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+
+        .panel {
+            display: none;
+        }
+
+        .panel.isActive {
+            display: block;
+        }
+
+        /* Link look inside grid */
+        a.keyLink {
+            color: inherit;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        a.keyLink:hover {
+            opacity: .8;
+        }
+
+        @media (max-width: 720px) {
+            input[type="search"] {
+                min-width: 160px;
+            }
+
+            .grid {
+                height: 520px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>🔗 Relational link via key column + tab navigation</h1>
+        <span class="pill">Key: <b>customerId</b></span>
+        <span class="pill">Click the <b>customerId</b> link to jump tabs</span>
+    </header>
+
+    <div class="tabsBar">
+        <button class="tabBtn" id="tabCustomers" aria-selected="true" aria-controls="panelCustomers" type="button">👤
+            Customers</button>
+        <button class="tabBtn" id="tabOrders" aria-selected="false" aria-controls="panelOrders" type="button">🧾
+            Orders</button>
+        <div class="tabHint" id="tabHint">Tip: click a customerId to open the other table.</div>
+    </div>
+
+    <div class="wrap">
+        <section class="card panel isActive" id="panelCustomers">
+            <div class="cardHead">
+                <strong>👤 Customers</strong>
+                <div class="tools">
+                    <button id="customersClearBtn" type="button">Clear selection</button>
+                    <button id="customersFitBtn" type="button">Fit columns</button>
+                </div>
+            </div>
+            <div id="customersGrid" class="ag-theme-quartz grid"></div>
+            <div class="hint">Click <b>customerId</b> (as a link) to open Orders filtered to that customer.</div>
+        </section>
+
+        <section class="card panel" id="panelOrders">
+            <div class="cardHead">
+                <strong>🧾 Orders</strong>
+                <div class="tools">
+                    <input id="ordersQuickFilter" type="search" placeholder="Quick filter orders…" />
+                    <button id="ordersShowAllBtn" type="button">Show all</button>
+                    <button id="ordersFitBtn" type="button">Fit columns</button>
+                </div>
+            </div>
+            <div id="ordersGrid" class="ag-theme-quartz grid"></div>
+            <div class="hint" id="ordersHint">Showing <b>all orders</b>.</div>
+        </section>
+    </div>
+
+    <script>
+        // -------------------- Sample data --------------------
+        const customersRowData = [
+            { customerId: "C001", name: "Acme Corp", segment: "Enterprise", city: "Paris", active: true },
+            { customerId: "C002", name: "Blue Sky", segment: "SMB", city: "Lyon", active: true },
+            { customerId: "C003", name: "Kite & Co", segment: "Mid-market", city: "Toulouse", active: false },
+            { customerId: "C004", name: "Nimbus Labs", segment: "Enterprise", city: "Nantes", active: true },
+            { customerId: "C005", name: "Orange Pine", segment: "SMB", city: "Grenoble", active: true },
+        ];
+
+        const ordersRowDataAll = [
+            { orderId: "O-1001", customerId: "C001", date: "2025-11-02", amount: 4200, status: "Paid", product: "Engine Kit A" },
+            { orderId: "O-1002", customerId: "C001", date: "2025-12-01", amount: 1800, status: "Pending", product: "Inspection" },
+            { orderId: "O-1003", customerId: "C002", date: "2025-10-18", amount: 650, status: "Paid", product: "Parts Pack" },
+            { orderId: "O-1004", customerId: "C002", date: "2025-12-12", amount: 980, status: "Refunded", product: "Training" },
+            { orderId: "O-1005", customerId: "C003", date: "2025-09-09", amount: 2500, status: "Paid", product: "Service Plan" },
+            { orderId: "O-1006", customerId: "C004", date: "2025-11-20", amount: 7900, status: "Pending", product: "Engine Kit B" },
+            { orderId: "O-1007", customerId: "C004", date: "2025-12-05", amount: 300, status: "Paid", product: "Consumables" },
+            { orderId: "O-1008", customerId: "C005", date: "2025-08-27", amount: 1200, status: "Paid", product: "Repair" },
+        ];
+
+        // -------------------- Helpers --------------------
+        function formatEUR(v) {
+            if (v == null) return "";
+            return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(v);
+        }
+
+        // Render the key as a link that "opens" the other table (switch tab)
+        function keyLinkRenderer(params) {
+            const val = params.value ?? "";
+            // We encode where we want to jump using data-jump
+            // - in Customers grid: jump to orders
+            // - in Orders grid: jump to customers
+            const jump = params.colDef && params.colDef._jumpTarget ? params.colDef._jumpTarget : "";
+            return `<a class="keyLink" href="#" data-key="${String(val)}" data-jump="${jump}">${String(val)}</a>`;
+        }
+
+        // -------------------- Tabs --------------------
+        const tabCustomersBtn = document.getElementById("tabCustomers");
+        const tabOrdersBtn = document.getElementById("tabOrders");
+        const panelCustomers = document.getElementById("panelCustomers");
+        const panelOrders = document.getElementById("panelOrders");
+
+        function showTab(tab) {
+            const isCustomers = tab === "customers";
+            panelCustomers.classList.toggle("isActive", isCustomers);
+            panelOrders.classList.toggle("isActive", !isCustomers);
+
+            tabCustomersBtn.setAttribute("aria-selected", String(isCustomers));
+            tabOrdersBtn.setAttribute("aria-selected", String(!isCustomers));
+
+            // Re-fit when tab becomes visible (otherwise width can be 0 on hidden panel)
+            requestAnimationFrame(() => {
+                try { if (isCustomers) customersApi.sizeColumnsToFit(); else ordersApi.sizeColumnsToFit(); } catch { }
+            });
+        }
+
+        tabCustomersBtn.addEventListener("click", () => showTab("customers"));
+        tabOrdersBtn.addEventListener("click", () => showTab("orders"));
+
+        // -------------------- Column defs --------------------
+        const customersColumnDefs = [
+            { field: "customerId", headerName: "Customer ID", width: 130, cellRenderer: keyLinkRenderer, _jumpTarget: "orders" },
+            { field: "name", headerName: "Name", flex: 1 },
+            { field: "segment", headerName: "Segment", width: 130 },
+            { field: "city", headerName: "City", width: 120 },
+            { field: "active", headerName: "Active", width: 95 }
+        ];
+
+        const ordersColumnDefs = [
+            { field: "orderId", headerName: "Order ID", width: 120 },
+            { field: "customerId", headerName: "Customer ID", width: 130, cellRenderer: keyLinkRenderer, _jumpTarget: "customers" },
+            { field: "date", headerName: "Date", width: 120, filter: "agDateColumnFilter" },
+            { field: "product", headerName: "Product", flex: 1 },
+            { field: "status", headerName: "Status", width: 120 },
+            {
+                field: "amount",
+                headerName: "Amount",
+                width: 140,
+                filter: "agNumberColumnFilter",
+                valueFormatter: (p) => formatEUR(p.value),
+                cellClass: "ag-right-aligned-cell"
+            }
+        ];
+
+        // -------------------- Grid options (v32+ compatible) --------------------
+        const customersGridOptions = {
+            columnDefs: customersColumnDefs,
+            rowData: customersRowData,
+            rowSelection: { mode: "singleRow", enableClickSelection: true },
+            defaultColDef: { sortable: true, resizable: true, filter: true },
+            animateRows: true,
+            getRowId: (p) => p.data.customerId
+        };
+
+        const ordersGridOptions = {
+            columnDefs: ordersColumnDefs,
+            rowData: ordersRowDataAll.slice(),
+            defaultColDef: { sortable: true, resizable: true, filter: true },
+            animateRows: true,
+            getRowId: (p) => p.data.orderId
+        };
+
+        // -------------------- Mount grids (createGrid returns the API) --------------------
+        const ordersHintEl = document.getElementById("ordersHint");
+
+        const customersApi = agGrid.createGrid(document.getElementById("customersGrid"), customersGridOptions);
+        const ordersApi = agGrid.createGrid(document.getElementById("ordersGrid"), ordersGridOptions);
+
+        // -------------------- Relational actions --------------------
+        function openOrdersForCustomer(customerId) {
+            const filtered = ordersRowDataAll.filter(o => o.customerId === customerId);
+            ordersApi.setGridOption("rowData", filtered);
+            ordersHintEl.innerHTML = `Filtered by <b>${customerId}</b> • <b>${filtered.length}</b> order(s)`;
+            showTab("orders");
+        }
+
+        function openCustomer(customerId) {
+            // Ensure we show all customers (we always do), then select & scroll
+            customersApi.deselectAll();
+            customersApi.ensureNodeVisible(customerId, "middle");
+            customersApi.setNodesSelected({ nodes: [customersApi.getRowNode(customerId)].filter(Boolean), newValue: true });
+            showTab("customers");
+        }
+
+        // -------------------- Link click handling (event delegation) --------------------
+        // Customers panel: clicking customerId link jumps to Orders
+        panelCustomers.addEventListener("click", (e) => {
+            const a = e.target.closest("a.keyLink");
+            if (!a) return;
+            e.preventDefault();
+            const key = a.getAttribute("data-key");
+            const jump = a.getAttribute("data-jump");
+            if (!key) return;
+
+            if (jump === "orders") {
+                // Select that customer row too (nice UX)
+                const node = customersApi.getRowNode(key);
+                if (node) {
+                    customersApi.deselectAll();
+                    node.setSelected(true, true);
+                }
+                openOrdersForCustomer(key);
+            }
+        });
+
+        // Orders panel: clicking customerId link jumps to Customers
+        panelOrders.addEventListener("click", (e) => {
+            const a = e.target.closest("a.keyLink");
+            if (!a) return;
+            e.preventDefault();
+            const key = a.getAttribute("data-key");
+            const jump = a.getAttribute("data-jump");
+            if (!key) return;
+
+            if (jump === "customers") {
+                openCustomer(key);
+            }
+        });
+
+        // -------------------- UI controls --------------------
+        document.getElementById("ordersQuickFilter").addEventListener("input", (e) => {
+            ordersApi.setGridOption("quickFilterText", e.target.value || "");
+        });
+
+        document.getElementById("ordersShowAllBtn").addEventListener("click", () => {
+            ordersApi.setGridOption("rowData", ordersRowDataAll.slice());
+            ordersHintEl.innerHTML = 'Showing <b>all orders</b>.';
+        });
+
+        document.getElementById("customersClearBtn").addEventListener("click", () => {
+            customersApi.deselectAll();
+        });
+
+        document.getElementById("customersFitBtn").addEventListener("click", () => customersApi.sizeColumnsToFit());
+        document.getElementById("ordersFitBtn").addEventListener("click", () => ordersApi.sizeColumnsToFit());
+
+        // -------------------- First paint sizing --------------------
+        requestAnimationFrame(() => {
+            customersApi.sizeColumnsToFit();
+            // Orders is hidden initially; will fit when tab opened
+        });
+
+        window.addEventListener("resize", () => {
+            // Fit whichever tab is visible
+            if (panelCustomers.classList.contains("isActive")) customersApi.sizeColumnsToFit();
+            if (panelOrders.classList.contains("isActive")) ordersApi.sizeColumnsToFit();
+        });
+    </script>
+</body>
+
+</html>

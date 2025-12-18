@@ -296,24 +296,12 @@
                 };
             }
 
+            // Ollama is intentionally disabled in the launcher UI.
+            // If a stale selection remains in localStorage, fall back to OpenAI/proxy.
             if (selected === "ollama") {
-                var ollamaUrl = GoToolkitIAConfig.getOllamaUrl();
-                var available = await probeOllama(ollamaUrl);
-                if (available) {
-                    return {
-                        type: "ollama",
-                        endpoint: ollamaUrl + resolveOllamaPath(type),
-                        apiKey: GoToolkitIAConfig.getOllamaApiKey(),
-                        model: GoToolkitIAConfig.getOllamaModel()
-                    };
-                }
-                // If user explicitly chose Ollama but it's not reachable, return a sentinel so callers can show an error
-                return {
-                    type: "ollama-unavailable",
-                    endpoint: ollamaUrl,
-                    apiKey: GoToolkitIAConfig.getOllamaApiKey(),
-                    model: GoToolkitIAConfig.getOllamaModel()
-                };
+                selected = "openai";
+                safeStorageWrite(STORAGE_KEYS_BACKEND, selected);
+                try { global.GoToolkitSelectedAIBackend = selected; } catch (err) { /* ignore */ }
             }
 
             if (selected === "webllm") {
@@ -325,7 +313,7 @@
                 };
             }
 
-            // default behavior (legacy): prefer API key, then Ollama probe, then proxy
+            // default behavior: prefer API key, then proxy
             var apiKey = GoToolkitIAConfig.getApiKey();
             if (apiKey) {
                 return {
@@ -333,16 +321,6 @@
                     endpoint: OPENAI_ENDPOINTS[type],
                     apiKey: apiKey,
                     model: GoToolkitIAConfig.getOpenAiModel()
-                };
-            }
-            var ollamaUrl = GoToolkitIAConfig.getOllamaUrl();
-            var available = await probeOllama(ollamaUrl);
-            if (available) {
-                return {
-                    type: "ollama",
-                    endpoint: ollamaUrl + resolveOllamaPath(type),
-                    apiKey: GoToolkitIAConfig.getOllamaApiKey(),
-                    model: GoToolkitIAConfig.getOllamaModel()
                 };
             }
             return {

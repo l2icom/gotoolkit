@@ -654,37 +654,89 @@
         "Ajoute un titre en commentaire %% Title dans la réponse.\n- " +
         "Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
 
-    const gridSystemPrompt = `Tu es un générateur de données pour AG Grid (client-side).
+    const gridSystemPrompt = `Tu es un **générateur de données JSON pour AG Grid (client-side)** capable de produire **plusieurs tables (onglets)** avec **relations entre objets via colonnes clés**.
 
-Retourne UNIQUEMENT du JSON valide.
-Pas de markdown. Pas de commentaires.
+⚠️ SORTIE STRICTE
+- Retourne **UNIQUEMENT du JSON valide**
+- **Un seul objet JSON racine**
+- **Aucun markdown, aucun commentaire, aucun texte hors JSON**
 
-FORMAT DE SORTIE (un seul objet JSON) :
+---
+
+## FORMAT DE SORTIE (objet JSON unique)
+
 {
-  "columnDefs": [ ... ],
-  "rowData": [ ... ],
-  "title": "Titre du tableau"
+  "schema": {
+    "tables": [
+      {
+        "id": "string",
+        "title": "string",
+        "primaryKey": "id",
+        "columns": [ ... ],
+        "relations": [ ... ]
+      }
+    ]
+  },
+  "data": {
+    "<tableId>": {
+      "columnDefs": [ ... ],
+      "rowData": [ ... ]
+    }
+  }
 }
 
-RÈGLES GÉNÉRALES
-- title : est un résumé en 3-5 mots du tableau utilisé en titre de bloc
-- columnDefs.field DOIT correspondre exactement aux clés de rowData
-- rowData = tableau d'objets plats (sans imbrication)
-- Même ensemble de clés pour chaque ligne
-- Utilise null si la valeur est inconnue
-- Types autorisés : string | number | boolean | null | date ISO (YYYY-MM-DD)
-- Types stables par colonne (ne jamais mélanger number/string)
+---
 
-TYPES DE COLONNES (à utiliser quand pertinent)
+## RÈGLES GÉNÉRALES
+
+### Clés primaires
+- Par défaut, **la clé primaire est toujours \`id\`**
+- Type : \`number\`
+- Colonne **lecture seule**
+- Toute exception DOIT être explicitement déclarée dans \`primaryKey\`
+
+### Tables / Onglets
+- Chaque table correspond à **un onglet AG Grid**
+- \`table.id\` : identifiant technique unique (anglais)
+- \`table.title\` : titre lisible (3–5 mots, français)
+- Chaque table DOIT contenir \`columnDefs\` et \`rowData\`
+
+### Relations entre tables
+- Les relations sont déclarées dans le \`schema\`
+- Aucune donnée imbriquée
+- Les liens sont faits via des **foreign keys de type \`xxxId\`**
+
+Format relation :
+{
+  "type": "one-to-many | many-to-one | one-to-one",
+  "fromTable": "orders",
+  "fromColumn": "customerId",
+  "toTable": "customers",
+  "toColumn": "id",
+  "label": "Client"
+}
+
+- Toute valeur de clé étrangère DOIT exister dans la table cible
+- Les \`id\` ne sont jamais modifiés
+
+---
+
+## FORMAT columnDefs (AG Grid)
+
+- \`columnDefs.field\` DOIT correspondre EXACTEMENT aux clés de \`rowData\`
+- Clés en **anglais**
+- \`headerName\` en **français**
+
+### Types de colonnes autorisés
 
 1) TEXTE
 {
-  "field": "nom",
-  "headerName": "Name",
+  "field": "name",
+  "headerName": "Nom",
   "editable": true
 }
 
-2) ENTIER / NOMBRE
+2) NOMBRE
 {
   "field": "score",
   "headerName": "Score",
@@ -692,7 +744,7 @@ TYPES DE COLONNES (à utiliser quand pertinent)
   "type": "numericColumn"
 }
 
-3) BOOLEEN (checkbox)
+3) BOOLÉEN
 {
   "field": "active",
   "headerName": "Actif",
@@ -700,15 +752,14 @@ TYPES DE COLONNES (à utiliser quand pertinent)
   "cellRenderer": "agCheckboxCellRenderer"
 }
 
-4) DATE
-- Valeur dans rowData : "YYYY-MM-DD"
+4) DATE (ISO)
 {
   "field": "startDate",
-  "headerName": "Date",
+  "headerName": "Date de début",
   "editable": true
 }
 
-5) SELECT SIMPLE (dropdown)
+5) SELECT SIMPLE
 {
   "field": "status",
   "headerName": "Statut",
@@ -720,33 +771,64 @@ TYPES DE COLONNES (à utiliser quand pertinent)
 }
 
 6) MULTI-SELECT
-- Valeur dans rowData : tableau de chaînes
 {
   "field": "tags",
   "headerName": "Mots-clés",
   "editable": true
 }
 
-7) LECTURE SEULE
+7) CLÉ / LECTURE SEULE
 {
   "field": "id",
   "headerName": "Id",
   "editable": false
 }
 
-RÈGLES POUR rowData
-- Chaque ligne DOIT contenir toutes les colonnes
-- Pour multi-select, toujours un tableau (tableau vide si aucun)
-- Pour boolean, true / false
-- Pour les dates, uniquement le format ISO
-- Les champs "id" et "name" sont obligatoires
-- Toutes les valeurs des cellules et les titres des colonnes (headerName) ont en français
-- Les clés restent en anglais
+---
 
-Génère des données réalistes.
-Assure une cohérence parfaite entre columnDefs et rowData.
-En cas de fichier(s) fourni(s), prendre en compte comme si c'était des données à modifier. 
-En cas de modification, utilise les données fournies sans changer les ids et renvoie tout le dataset.`;
+## RÈGLES POUR rowData
+
+- Tableau d’objets **plats uniquement**
+- Même ensemble de clés pour chaque ligne
+- Champs obligatoires : \`id\` et \`name\`
+- \`id\` unique par table
+- Les clés étrangères (\`xxxId\`) référencent toujours \`id\`
+- Valeur inconnue → \`null\`
+- Types autorisés :
+  - string
+  - number
+  - boolean
+  - null
+  - date ISO ("YYYY-MM-DD")
+- Types stables par colonne (jamais de mélange)
+
+---
+
+## EXEMPLE DE VALEURS
+
+{
+  "id": 42,
+  "name": "Commande Alpha",
+  "customerId": 3,
+  "amount": 520,
+  "active": true,
+  "orderDate": "2024-06-01",
+  "status": "ok",
+  "tags": ["urgent", "export"]
+}
+
+---
+
+## CONTRAINTES FINALES
+
+- Génère des données réalistes
+- Assure une cohérence parfaite :
+  - \`schema\` ↔ \`data\`
+  - clés primaires ↔ clés étrangères
+- En cas de modification :
+  - ne jamais changer les \`id\`
+  - renvoyer **tout le dataset**
+- Le JSON retourné doit être directement exploitable par AG Grid (Community)`;
 
     const gridDefaultPromptTemplate = "Génère des exemples basés sur {{scenario_prompt}}.";
 

@@ -108,9 +108,9 @@
 
         .connect-layout {
             flex: 1;
-            padding: 5px 10px;
+            padding: 0px 0px;
             display: flex;
-            gap: 10px;
+            gap: 4px;
         }
 
         .connect-left {
@@ -537,18 +537,18 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            padding: 10px;
+            gap: 4px;
+            padding: 2px 6px;
             min-height: 0;
         }
 
         .diagram-title-row {
-            margin: 0 10px 2px 0;
+            margin: 0 10px 0px 0;
         }
 
         .diagram-title-input {
             width: 100%;
-            padding: 6px 6px;
+            padding: 6px 6px 0px 6px;
             font-size: 14px;
             font-weight: 700;
             border: 1px solid transparent;
@@ -1082,10 +1082,21 @@
                 const gridApi = agGrid.createGrid(gridElement, gridOptions);
                 const gridColumnApi = gridOptions.columnApi;
 
+                const DEFAULT_PRIMARY_KEY = "id";
+
+                function createTableId(index) {
+                    const safeIndex = Math.max(1, Number.isFinite(index) ? index : 1);
+                    return `table${safeIndex}`;
+                }
+
                 function createPage(index) {
+                    const tableId = createTableId(index);
                     return {
                         id: `page-${Date.now()}-${index}-${Math.floor(Math.random() * 10000)}`,
-                        title: `Page ${index}`,
+                        tableId,
+                        title: `Table ${index}`,
+                        primaryKey: DEFAULT_PRIMARY_KEY,
+                        relations: [],
                         scenario: "",
                         script: "",
                         lastAiScript: "",
@@ -1097,9 +1108,19 @@
                     if (!page || typeof page !== "object") {
                         return createPage(index + 1);
                     }
+                    const tableId =
+                        typeof page.tableId === "string" && page.tableId.trim()
+                            ? page.tableId.trim()
+                            : createTableId(index + 1);
                     return {
                         id: page.id || `page-${Date.now()}-${index}`,
-                        title: page.title || `Page ${index + 1}`,
+                        tableId,
+                        title: page.title || `Table ${index + 1}`,
+                        primaryKey:
+                            typeof page.primaryKey === "string" && page.primaryKey.trim()
+                                ? page.primaryKey.trim()
+                                : DEFAULT_PRIMARY_KEY,
+                        relations: Array.isArray(page.relations) ? page.relations : [],
                         scenario: page.scenario || "",
                         script: page.script || "",
                         lastAiScript: page.lastAiScript || "",
@@ -1112,6 +1133,81 @@
                     };
                 }
 
+                function normalizeRelation(rel) {
+                    if (!rel || typeof rel !== "object") return null;
+                    const type = typeof rel.type === "string" ? rel.type.trim() : "";
+                    const fromTable = typeof rel.fromTable === "string" ? rel.fromTable.trim() : "";
+                    const fromColumn = typeof rel.fromColumn === "string" ? rel.fromColumn.trim() : "";
+                    const toTable = typeof rel.toTable === "string" ? rel.toTable.trim() : "";
+                    const toColumn = typeof rel.toColumn === "string" ? rel.toColumn.trim() : "";
+                    const label = typeof rel.label === "string" ? rel.label.trim() : "";
+                    if (!fromTable || !fromColumn || !toTable || !toColumn) return null;
+                    return { type, fromTable, fromColumn, toTable, toColumn, label };
+                }
+
+                function normalizeDatasetSchema(dataset) {
+                    const tables = Array.isArray(dataset?.schema?.tables) ? dataset.schema.tables : [];
+                    return {
+                        tables: tables
+                            .map(table => {
+                                if (!table || typeof table !== "object") return null;
+                                const id = typeof table.id === "string" ? table.id.trim() : "";
+                                if (!id) return null;
+                                const title = typeof table.title === "string" && table.title.trim() ? table.title.trim() : id;
+                                const primaryKey =
+                                    typeof table.primaryKey === "string" && table.primaryKey.trim()
+                                        ? table.primaryKey.trim()
+                                        : DEFAULT_PRIMARY_KEY;
+                                const columns = Array.isArray(table.columns) ? table.columns : [];
+                                const relations = (Array.isArray(table.relations) ? table.relations : [])
+                                    .map(normalizeRelation)
+                                    .filter(Boolean);
+                                return { id, title, primaryKey, columns, relations };
+                            })
+                            .filter(Boolean)
+                    };
+                }
+
+                function buildDatasetFromState() {
+                    const schemaTablesFromState = Array.isArray(state?.schema?.tables) ? state.schema.tables : [];
+                    const schemaTables = schemaTablesFromState.length
+                        ? schemaTablesFromState.map(table => ({
+                            id: table.id,
+                            title: table.title,
+                            primaryKey: table.primaryKey || DEFAULT_PRIMARY_KEY,
+                            columns: Array.isArray(table.columns) ? table.columns : [],
+                            relations: Array.isArray(table.relations) ? table.relations : []
+                        }))
+                        : state.pages.map(page => ({
+                            id: page.tableId,
+                            title: page.title,
+                            primaryKey: page.primaryKey || DEFAULT_PRIMARY_KEY,
+                            columns: [],
+                            relations: Array.isArray(page.relations) ? page.relations : []
+                        }));
+                    const data = {};
+                    state.pages.forEach(page => {
+                        data[page.tableId] = {
+                            columnDefs: Array.isArray(page.data?.columnDefs) ? page.data.columnDefs : [],
+                            rowData: Array.isArray(page.data?.rowData) ? page.data.rowData : []
+                        };
+                    });
+                    return { schema: { tables: schemaTables }, data };
+                }
+
+                function syncDatasetScriptFromState(options = {}) {
+                    const dataset = buildDatasetFromState();
+                    const next = JSON.stringify(dataset, null, 2);
+                    state.datasetScript = next;
+                    if (gridScript) {
+                        gridScript.value = next;
+                    }
+                    if (options.persist !== false) {
+                        persistState();
+                    }
+                    return dataset;
+                }
+
                 function loadState() {
                     try {
                         const raw = localStorage.getItem(STORAGE_KEY);
@@ -1122,7 +1218,10 @@
                                 promptTemplate: DEFAULT_PROMPT_TEMPLATE,
                                 systemPrompt: DEFAULT_SYSTEM_PROMPT,
                                 reasoningEffort: "low",
-                                displayPreferences: { ...DISPLAY_PREFERENCE_DEFAULTS }
+                                displayPreferences: { ...DISPLAY_PREFERENCE_DEFAULTS },
+                                schema: { tables: [] },
+                                datasetScript: "",
+                                lastAiDatasetScript: ""
                             };
                         }
                         const parsed = JSON.parse(raw);
@@ -1130,13 +1229,35 @@
                             ? parsed.pages.map(normalizePage)
                             : [createPage(1)];
                         const activeIndex = Math.max(0, Math.min((parsed.activeIndex || 0), pages.length - 1));
+                        const schemaTables = Array.isArray(parsed?.schema?.tables)
+                            ? parsed.schema.tables
+                                .map(table => {
+                                    if (!table || typeof table !== "object") return null;
+                                    const id = typeof table.id === "string" ? table.id.trim() : "";
+                                    if (!id) return null;
+                                    const title = typeof table.title === "string" && table.title.trim() ? table.title.trim() : id;
+                                    const primaryKey =
+                                        typeof table.primaryKey === "string" && table.primaryKey.trim()
+                                            ? table.primaryKey.trim()
+                                            : DEFAULT_PRIMARY_KEY;
+                                    const columns = Array.isArray(table.columns) ? table.columns : [];
+                                    const relations = (Array.isArray(table.relations) ? table.relations : [])
+                                        .map(normalizeRelation)
+                                        .filter(Boolean);
+                                    return { id, title, primaryKey, columns, relations };
+                                })
+                                .filter(Boolean)
+                            : [];
                         return {
                             pages,
                             activeIndex,
                             promptTemplate: parsed.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
                             systemPrompt: parsed.systemPrompt || DEFAULT_SYSTEM_PROMPT,
                             reasoningEffort: parsed.reasoningEffort || "low",
-                            displayPreferences: Object.assign({}, DISPLAY_PREFERENCE_DEFAULTS, parsed.displayPreferences || {})
+                            displayPreferences: Object.assign({}, DISPLAY_PREFERENCE_DEFAULTS, parsed.displayPreferences || {}),
+                            schema: { tables: schemaTables },
+                            datasetScript: typeof parsed.datasetScript === "string" ? parsed.datasetScript : "",
+                            lastAiDatasetScript: typeof parsed.lastAiDatasetScript === "string" ? parsed.lastAiDatasetScript : ""
                         };
                     } catch (err) {
                         console.warn("Impossible de charger l'état Grid", err);
@@ -1146,12 +1267,29 @@
                             promptTemplate: DEFAULT_PROMPT_TEMPLATE,
                             systemPrompt: DEFAULT_SYSTEM_PROMPT,
                             reasoningEffort: "low",
-                            displayPreferences: { ...DISPLAY_PREFERENCE_DEFAULTS }
+                            displayPreferences: { ...DISPLAY_PREFERENCE_DEFAULTS },
+                            schema: { tables: [] },
+                            datasetScript: "",
+                            lastAiDatasetScript: ""
                         };
                     }
                 }
 
                 let state = loadState();
+                if (!state.schema || !Array.isArray(state.schema.tables) || state.schema.tables.length === 0) {
+                    state.schema = {
+                        tables: state.pages.map(page => ({
+                            id: page.tableId,
+                            title: page.title,
+                            primaryKey: page.primaryKey || DEFAULT_PRIMARY_KEY,
+                            columns: [],
+                            relations: Array.isArray(page.relations) ? page.relations : []
+                        }))
+                    };
+                }
+                if (!state.datasetScript || !state.datasetScript.trim()) {
+                    state.datasetScript = JSON.stringify(buildDatasetFromState(), null, 2);
+                }
                 renderFontSizeOptions();
                 applyGridDisplayPreferences({ persist: false });
                 buildColumnPinMenu();
@@ -1164,7 +1302,10 @@
                             promptTemplate: state.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
                             systemPrompt: state.systemPrompt || DEFAULT_SYSTEM_PROMPT,
                             reasoningEffort: state.reasoningEffort || "low",
-                            displayPreferences: state.displayPreferences || { ...DISPLAY_PREFERENCE_DEFAULTS }
+                            displayPreferences: state.displayPreferences || { ...DISPLAY_PREFERENCE_DEFAULTS },
+                            schema: state.schema || { tables: [] },
+                            datasetScript: state.datasetScript || "",
+                            lastAiDatasetScript: state.lastAiDatasetScript || ""
                         };
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
                     } catch (err) {
@@ -1204,8 +1345,9 @@
                         const btn = document.createElement("button");
                         btn.className = `tab${index === state.activeIndex ? " active" : ""}`;
                         btn.type = "button";
-                        btn.textContent = `Page ${index + 1}`;
-                        btn.title = btn.textContent;
+                        const label = (page?.title || "").trim() || `Table ${index + 1}`;
+                        btn.textContent = label;
+                        btn.title = label;
                         btn.addEventListener("click", () => setActivePage(index));
                         pageTabs.appendChild(btn);
                     });
@@ -1224,19 +1366,108 @@
                     return `${safeTitle}-${timestamp}.csv`;
                 }
 
-                function applyGridData(data) {
+                function getAllRelationsFromSchema() {
+                    const tables = Array.isArray(state?.schema?.tables) ? state.schema.tables : [];
+                    return tables
+                        .flatMap(table => (Array.isArray(table?.relations) ? table.relations : []))
+                        .map(normalizeRelation)
+                        .filter(Boolean);
+                }
+
+                function findPageIndexByTableId(tableId) {
+                    if (!tableId) return -1;
+                    return state.pages.findIndex(page => page?.tableId === tableId);
+                }
+
+                function applyFilterToCurrentGrid(field, value) {
+                    if (!gridApi || !field) return;
+                    const filterValue = value === "" ? null : value;
+                    const isNumeric = typeof filterValue === "number" && Number.isFinite(filterValue);
+                    const model = filterValue == null
+                        ? null
+                        : {
+                            filterType: isNumeric ? "number" : "text",
+                            type: "equals",
+                            filter: isNumeric ? filterValue : String(filterValue)
+                        };
+                    try {
+                        if (typeof gridApi.setFilterModel === "function") {
+                            gridApi.setFilterModel(model ? { [field]: model } : null);
+                            gridApi.onFilterChanged?.();
+                        }
+                    } catch (err) {
+                        console.warn("Impossible d'appliquer le filtre", err);
+                    }
+                }
+
+                function navigateToRelation(relation, value) {
+                    if (!relation) return;
+                    const targetIndex = findPageIndexByTableId(relation.toTable);
+                    if (targetIndex === -1) {
+                        showStatus(`Table cible introuvable: ${relation.toTable}`, true);
+                        return;
+                    }
+                    let normalizedValue = typeof value === "string" ? value.trim() : value;
+                    if (typeof normalizedValue === "string" && /^[0-9]+$/.test(normalizedValue)) {
+                        normalizedValue = Number(normalizedValue);
+                    }
+                    setActivePage(targetIndex);
+                    applyFilterToCurrentGrid(relation.toColumn, normalizedValue);
+                    showStatus(`Filtré: ${relation.toTable}.${relation.toColumn} = ${normalizedValue}`);
+                }
+
+                function createForeignKeyCellRenderer(relation) {
+                    return params => {
+                        const rawValue = params?.value;
+                        if (rawValue == null || rawValue === "") return "";
+                        const link = document.createElement("a");
+                        link.href = "#";
+                        link.textContent = String(rawValue);
+                        link.style.color = "#2a7a57";
+                        link.style.textDecoration = "underline";
+                        link.style.cursor = "pointer";
+                        link.title = relation?.label
+                            ? `Aller vers ${relation.label} (${relation.toTable})`
+                            : `Aller vers ${relation.toTable}`;
+                        link.addEventListener("click", event => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            navigateToRelation(relation, rawValue);
+                        });
+                        return link;
+                    };
+                }
+
+                function addForeignKeyRenderers(columnDefs = [], tableId) {
+                    const relations = getAllRelationsFromSchema().filter(rel => rel.fromTable === tableId);
+                    if (!relations.length) return columnDefs;
+                    const relByField = new Map(relations.map(rel => [rel.fromColumn, rel]));
+                    return columnDefs.map(def => {
+                        if (!def || typeof def !== "object") return def;
+                        const field = typeof def.field === "string" ? def.field : "";
+                        if (!field) return def;
+                        const relation = relByField.get(field);
+                        if (!relation) return def;
+                        if (def.cellRenderer) return def;
+                        return { ...def, cellRenderer: createForeignKeyCellRenderer(relation) };
+                    });
+                }
+
+                function applyGridData(data, options = {}) {
                     if (!data) return;
+                    const tableId = options.tableId || getActivePage()?.tableId || "";
                     const columnDefs = Array.isArray(data.columnDefs) ? data.columnDefs : [];
                     const rowData = Array.isArray(data.rowData) ? data.rowData : [];
                     const normalizedColumnDefs = ensureDefaultPinned(columnDefs);
+                    data.columnDefs = normalizedColumnDefs;
+                    const gridColumnDefs = addForeignKeyRenderers(normalizedColumnDefs, tableId);
                     if (typeof gridApi.setGridOption === "function") {
-                        gridApi.setGridOption("columnDefs", normalizedColumnDefs);
+                        gridApi.setGridOption("columnDefs", gridColumnDefs);
                         gridApi.setGridOption("rowData", rowData);
                     } else {
-                        gridApi.setColumnDefs(normalizedColumnDefs);
+                        gridApi.setColumnDefs(gridColumnDefs);
                         gridApi.setRowData(rowData);
                     }
-                    data.columnDefs = normalizedColumnDefs;
                     scheduleAutoSizeAndPinMenu();
                 }
 
@@ -1245,9 +1476,7 @@
                     if (!page) return;
                     const gridData = collectGridData();
                     page.data = gridData;
-                    page.script = JSON.stringify(gridData, null, 2);
-                    gridScript.value = page.script;
-                    persistState();
+                    syncDatasetScriptFromState();
                 }
 
                 function collectGridData() {
@@ -1257,13 +1486,23 @@
                             : (typeof gridApi.getGridOption === "function"
                                 ? gridApi.getGridOption("columnDefs") || []
                                 : []);
+                    const sanitizedColumnDefs = (Array.isArray(columnDefs) ? columnDefs : []).map(def => {
+                        if (!def || typeof def !== "object") return def;
+                        const cleaned = {};
+                        Object.keys(def).forEach(key => {
+                            const value = def[key];
+                            if (typeof value === "function") return;
+                            cleaned[key] = value;
+                        });
+                        return cleaned;
+                    });
                     const rowData = [];
                     gridApi.forEachNode(node => {
                         if (node && node.data) {
                             rowData.push({ ...node.data });
                         }
                     });
-                    return { columnDefs, rowData };
+                    return { columnDefs: sanitizedColumnDefs, rowData };
                 }
 
                 function ensureDefaultPinned(columnDefs = []) {
@@ -1284,7 +1523,7 @@
 
                 function buildChunkedDatasetMessages(rawText) {
                     const instruction =
-                        "Voici le dataset actuel, conserve les ids si fournis et renvoie tout le contenu :\n";
+                        "Voici le dataset complet actuel (schema + data). Conserve les ids si fournis et renvoie tout le contenu :\n";
                     if (!rawText) {
                         return [];
                     }
@@ -1575,11 +1814,13 @@
                     const rowData = Array.isArray(payload.rowData) ? payload.rowData : [];
                     const page = getActivePage();
                     page.data = { columnDefs, rowData };
-                    page.script = JSON.stringify(page.data, null, 2);
-                    if (gridScript) gridScript.value = page.script;
                     if (gridTitleInput && payload.title) {
                         gridTitleInput.value = payload.title;
                         page.title = payload.title;
+                        if (Array.isArray(state?.schema?.tables)) {
+                            const table = state.schema.tables.find(item => item?.id === page.tableId);
+                            if (table) table.title = page.title;
+                        }
                     }
                     if (promptInput && typeof payload.scenario === "string") {
                         promptInput.value = payload.scenario;
@@ -1588,7 +1829,8 @@
                     if (typeof payload.lastAiScript === "string") {
                         page.lastAiScript = payload.lastAiScript;
                     }
-                    applyGridData(page.data);
+                    applyGridData(page.data, { tableId: page.tableId });
+                    syncDatasetScriptFromState();
                     renderTabs();
                     persistState();
                 }
@@ -2231,8 +2473,12 @@
                     const page = getActivePage();
                     if (gridTitleInput) gridTitleInput.value = page.title || "";
                     if (promptInput) promptInput.value = page.scenario || "";
-                    if (gridScript) gridScript.value = page.script || "";
-                    applyGridData(page.data);
+                    if (gridScript) gridScript.value = (state.datasetScript || "").trim() || JSON.stringify(buildDatasetFromState(), null, 2);
+                    try {
+                        gridApi?.setFilterModel?.(null);
+                        gridApi?.onFilterChanged?.();
+                    } catch (err) { /* ignore */ }
+                    applyGridData(page.data, { tableId: page.tableId });
                     renderTabs();
                     persistState();
                 }
@@ -2240,16 +2486,30 @@
                 function addPage() {
                     const newPage = createPage(state.pages.length + 1);
                     state.pages.push(newPage);
+                    state.schema = state.schema || { tables: [] };
+                    if (!Array.isArray(state.schema.tables)) state.schema.tables = [];
+                    state.schema.tables.push({
+                        id: newPage.tableId,
+                        title: newPage.title,
+                        primaryKey: newPage.primaryKey || DEFAULT_PRIMARY_KEY,
+                        columns: [],
+                        relations: []
+                    });
+                    syncDatasetScriptFromState({ persist: false });
                     setActivePage(state.pages.length - 1);
                 }
 
                 function deleteActivePage() {
                     if (state.pages.length <= 1) return;
+                    const pageToDelete = getActivePage();
                     state.pages.splice(state.activeIndex, 1);
+                    if (pageToDelete?.tableId && Array.isArray(state?.schema?.tables)) {
+                        state.schema.tables = state.schema.tables.filter(table => table?.id !== pageToDelete.tableId);
+                    }
                     state.activeIndex = Math.max(0, state.activeIndex - 1);
                     setActivePage(state.activeIndex);
                     renderTabs();
-                    persistState();
+                    syncDatasetScriptFromState();
                 }
 
                 function toggleNavMenu(force) {
@@ -2483,6 +2743,83 @@
                     }
                 }
 
+                function buildDatasetFromSingleTablePayload(payload, fallbackTableId, fallbackTitle) {
+                    const tableId = (fallbackTableId || "").trim() || createTableId(1);
+                    const title = (fallbackTitle || "").trim() || (payload?.title || "").trim() || tableId;
+                    const primaryKey = DEFAULT_PRIMARY_KEY;
+                    const columnDefs = Array.isArray(payload?.columnDefs) ? payload.columnDefs : [];
+                    const rowData = Array.isArray(payload?.rowData) ? payload.rowData : [];
+                    return {
+                        schema: {
+                            tables: [
+                                {
+                                    id: tableId,
+                                    title,
+                                    primaryKey,
+                                    columns: [],
+                                    relations: []
+                                }
+                            ]
+                        },
+                        data: {
+                            [tableId]: { columnDefs, rowData }
+                        }
+                    };
+                }
+
+                function applyDatasetToState(dataset, options = {}) {
+                    const normalizedSchema = normalizeDatasetSchema(dataset);
+                    if (!normalizedSchema.tables.length) {
+                        throw new Error("Dataset sans schema.tables");
+                    }
+                    const dataByTable = dataset?.data && typeof dataset.data === "object" ? dataset.data : {};
+                    const previousActiveTableId = getActivePage()?.tableId || "";
+
+                    const pages = normalizedSchema.tables.map((table, index) => {
+                        const existing = state.pages.find(page => page?.tableId === table.id);
+                        const tableData = dataByTable?.[table.id] || {};
+                        return normalizePage(
+                            {
+                                id: existing?.id || `table-${table.id}`,
+                                tableId: table.id,
+                                title: table.title,
+                                primaryKey: table.primaryKey || DEFAULT_PRIMARY_KEY,
+                                relations: table.relations || [],
+                                scenario: existing?.scenario || getActivePage()?.scenario || "",
+                                data: {
+                                    columnDefs: Array.isArray(tableData.columnDefs) ? tableData.columnDefs : [],
+                                    rowData: Array.isArray(tableData.rowData) ? tableData.rowData : []
+                                }
+                            },
+                            index
+                        );
+                    });
+
+                    state.pages = pages;
+                    state.schema = {
+                        tables: normalizedSchema.tables.map(table => ({
+                            id: table.id,
+                            title: table.title,
+                            primaryKey: table.primaryKey || DEFAULT_PRIMARY_KEY,
+                            columns: Array.isArray(table.columns) ? table.columns : [],
+                            relations: Array.isArray(table.relations) ? table.relations : []
+                        }))
+                    };
+
+                    const requestedActiveTableId = options.activeTableId || previousActiveTableId;
+                    const nextActiveIndex = Math.max(0, findPageIndexByTableId(requestedActiveTableId));
+                    state.activeIndex = nextActiveIndex === -1 ? 0 : nextActiveIndex;
+
+                    syncDatasetScriptFromState({ persist: false });
+                    if (options.markAsAi) {
+                        state.lastAiDatasetScript = state.datasetScript || "";
+                    }
+
+                    renderTabs();
+                    setActivePage(state.activeIndex);
+                    persistState();
+                }
+
                 async function requestData() {
                     const controller = new AbortController();
                     activeRequestController = controller;
@@ -2490,7 +2827,7 @@
                     showStatus("Génération en cours…");
                     const page = getActivePage();
                     const scenarioText = (promptInput?.value || "").trim();
-                    const scriptText = (gridScript?.value || "").trim();
+                    const scriptText = (gridScript?.value || state.datasetScript || "").trim();
                     const userPrompt = (state.promptTemplate || DEFAULT_PROMPT_TEMPLATE).replace("{{scenario_prompt}}", scenarioText || "ton sujet");
                     const fileAttachments = isOpenAIBackendSelected() ? getUploadedFileAttachments() : [];
 
@@ -2533,19 +2870,12 @@
                         if (!parsed || typeof parsed !== "object") {
                             throw new Error("Réponse IA invalide");
                         }
-                        const columnDefs = Array.isArray(parsed.columnDefs) ? parsed.columnDefs : [];
-                        const rowData = Array.isArray(parsed.rowData) ? parsed.rowData : [];
-                        page.data = { columnDefs, rowData };
-                        page.script = JSON.stringify(page.data, null, 2);
-                        applyGridData(page.data);
-                        gridScript.value = page.script;
-                        if (parsed && typeof parsed.title === "string" && parsed.title.trim()) {
-                            page.title = parsed.title.trim();
-                            if (gridTitleInput) gridTitleInput.value = page.title;
-                        }
+                        const dataset =
+                            parsed?.schema && parsed?.data
+                                ? parsed
+                                : buildDatasetFromSingleTablePayload(parsed, page?.tableId, page?.title);
+                        applyDatasetToState(dataset, { markAsAi: true, activeTableId: page?.tableId });
                         showStatus("Jeu de données mis à jour.");
-                        persistState();
-                        renderTabs();
                     } catch (err) {
                         if (err && err.name === "AbortError") {
                             if (!pendingAbortStatus) {
@@ -2565,10 +2895,8 @@
                 function clearGrid() {
                     const page = getActivePage();
                     page.data = { columnDefs: [], rowData: [] };
-                    page.script = "";
-                    applyGridData(page.data);
-                    gridScript.value = "";
-                    persistState();
+                    applyGridData(page.data, { tableId: page.tableId });
+                    syncDatasetScriptFromState();
                     showStatus("Grille et script vidés.");
                 }
 
@@ -2580,14 +2908,21 @@
                     }
                     try {
                         const parsed = parseJsonTolerant(cleanJson(raw));
-                        const columnDefs = Array.isArray(parsed.columnDefs) ? parsed.columnDefs : [];
-                        const rowData = Array.isArray(parsed.rowData) ? parsed.rowData : [];
+                        if (!parsed || typeof parsed !== "object") {
+                            throw new Error("JSON invalide");
+                        }
                         const page = getActivePage();
-                        page.data = { columnDefs, rowData };
-                        page.script = JSON.stringify(page.data, null, 2);
-                        page.lastAiScript = page.script;
-                        applyGridData(page.data);
-                        gridScript.value = page.script;
+                        if (parsed?.schema && parsed?.data) {
+                            applyDatasetToState(parsed, { activeTableId: page?.tableId });
+                        } else {
+                            const columnDefs = Array.isArray(parsed.columnDefs) ? parsed.columnDefs : [];
+                            const rowData = Array.isArray(parsed.rowData) ? parsed.rowData : [];
+                            page.data = { columnDefs, rowData };
+                            applyGridData(page.data, { tableId: page.tableId });
+                            syncDatasetScriptFromState();
+                            persistState();
+                        }
+                        state.lastAiDatasetScript = state.datasetScript || gridScript.value || "";
                         persistState();
                         if (!options.silentOnSuccess) {
                             showStatus("Script appliqué sur la grille.");
@@ -2601,8 +2936,7 @@
                 }
 
                 function restoreLastAiResponse() {
-                    const page = getActivePage();
-                    const script = page?.lastAiScript || page?.script || "";
+                    const script = state?.lastAiDatasetScript || state?.datasetScript || "";
                     if (!script.trim()) {
                         showStatus("Aucune réponse IA à restaurer.", true);
                         return;
@@ -2865,8 +3199,14 @@
                             const page = getActivePage();
                             if (!page) return;
                             page.title = gridTitleInput.value;
+                            if (Array.isArray(state?.schema?.tables)) {
+                                const table = state.schema.tables.find(item => item?.id === page.tableId);
+                                if (table) {
+                                    table.title = page.title;
+                                }
+                            }
                             renderTabs();
-                            persistState();
+                            syncDatasetScriptFromState();
                         });
                     }
                     if (promptInput) {
@@ -2878,8 +3218,7 @@
                     }
                     if (gridScript) {
                         gridScript.addEventListener("input", () => {
-                            const page = getActivePage();
-                            page.script = gridScript.value;
+                            state.datasetScript = gridScript.value;
                             persistState();
                         });
                         gridScript.addEventListener("blur", () => {

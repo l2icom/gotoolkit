@@ -1003,14 +1003,13 @@
                 <form class="feedback-form" onsubmit="return false;">
                     <div class="field-row">
                         <label>
-                            <span class="label-title">Moteur IA</span>
-                            <select id="aiBackendSelect">
-                                <option value="openai">OpenAI</option>
-                                <option value="ollama">Ollama (dev)</option>
-                                <option value="webllm">WebLLM (dev)</option>
-                            </select>
-                        </label>
-                    </div>
+	                            <span class="label-title">Moteur IA</span>
+	                            <select id="aiBackendSelect">
+	                                <option value="openai">OpenAI (recommandé)</option>
+	                                <option value="webllm">WebLLM </option>
+	                            </select>
+	                        </label>
+	                    </div>
 
                     <div id="openaiSettings">
                         <div class="field-row">
@@ -1061,70 +1060,10 @@
                         </div>
                     </div>
 
-                    <div id="ollamaSettings" style="display:none;">
-                        <div class="field-row">
-                            <label style="width:100%">
-                                <div
-                                    style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
-                                    <div>
-                                        <a href="https://docs.ollama.com/quickstart" class="label-title dashed-link"
-                                            target="_blank" rel="noopener noreferrer">Connexion Ollama</a>
-                                        <span class="ia-status" id="ollamaStatus" aria-hidden="true"></span>
-                                        </span>
-                                    </div>
-                                    <div style="display:flex; gap:0.35rem;">
-                                        <button id="ollamaVerifyBtn" type="button"
-                                            class="btn-secondary">Vérifier</button>
-                                    </div>
-                                </div>
-
-                            </label>
-                        </div>
-
-                        <div class="field-row">
-                            <label style="width:100%">
-                                <span class="label-title">Serveur Ollama</span>
-                                <select id="ollamaAddressSelect">
-                                    <option value="local">Local : http://localhost:11434</option>
-                                    <option value="cloud">Cloud : https://ollama.com</option>
-                                    <option value="custom">Personnalisé</option>
-                                </select>
-                            </label>
-
-                        </div>
-
-                        <div class="field-row" id="ollamaUrlRow" style="margin-top:6px;">
-                            <label style="width:100%">
-                                <input id="ollamaUrlInput" type="text" placeholder="http://localhost:11434" />
-                            </label>
-                        </div>
-                        <div class="field-row">
-                            <div id="ollamaApiKeyRow">
-                                <label style="width:100%">
-                                    <a href="https://ollama.com/settings/keys" class="label-title dashed-link"
-                                        target="_blank" rel="noopener noreferrer">Clé API Ollama (en ligne)</a>
-                                    <input id="ollamaApiKeyInput" type="password"
-                                        placeholder="Clé secrète (optionnelle)" style="width:100%" />
-                                </label>
-                            </div>
-                        </div>
-                        <div class="field-row">
-                            <label>
-                                <span class="label-title">Moteur Ollama</span>
-                                <select id="ollamaModelSelect">
-                                    <option value="gpt-oss:latest">gpt-oss:latest</option>
-                                    <option value="genma3">genma3</option>
-                                    <option value="ministral-3:latest">ministral-3:latest</option>
-                                    <option value="deepseek-r1">deepseek-r1</option>
-                                </select>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div id="webllmSettings" style="display:none;">
-                        <div class="field-row">
-                            <label style="width:100%">
-                                <div
+	                    <div id="webllmSettings" style="display:none;">
+	                        <div class="field-row">
+	                            <label style="width:100%">
+	                                <div
                                     style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
                                     <div>
                                         <span class="label-title">WebLLM</span>
@@ -1591,82 +1530,82 @@
                     return refreshSavedPromise;
                 }
                 refreshSavedPromise = (async () => {
-                if (!savedGallery) {
-                    return;
-                }
-                savedGallery.innerHTML = "";
-                if (!capsuleDrafts || typeof capsuleDrafts.getAllRecords !== "function") {
-                    if (savedEmpty) savedEmpty.hidden = false;
-                    return;
-                }
-                const records = await capsuleDrafts.getAllRecords();
-                const seenIds = new Set();
-                const entries = records.filter(record => {
-                    const definition = APP_DEFINITIONS[record.app];
-                    if (!definition) return false;
-                    const key = `${record.app}::${record.id}`;
-                    if (seenIds.has(key)) return false;
-                    seenIds.add(key);
-                    return true;
-                });
-                const staleIds = [];
-                const filtered = entries.filter(record => {
-                    const hasPayload = record && record.payload && typeof record.payload === "object";
-                    if (!hasPayload && record?.id) {
-                        staleIds.push(record.id);
+                    if (!savedGallery) {
+                        return;
                     }
-                    return hasPayload;
-                });
-                if (staleIds.length) {
-                    await Promise.all(staleIds.map(id => capsuleDrafts.removeRecord?.(id)));
-                }
-                if (!filtered.length) {
-                    if (savedEmpty) savedEmpty.hidden = false;
-                    return;
-                }
-                if (savedEmpty) savedEmpty.hidden = true;
-                // Deduplicate saved drafts that are already present in shared gallery
-                const sharedKeys = window.__goToolkitSharedPreviewKeys || new Set();
-                // Deduplicate both against shared and within saved
-                const seenSavedKeys = new Set();
-                const cards = filtered
-                    .map(buildSavedCard)
-                    .filter(Boolean)
-                    .filter(item => {
-                        try {
-                            const definition = APP_DEFINITIONS[item.card.getAttribute("data-app")];
-                            const key = `${definition.collection}::${item.preview.tabName}::${(item.preview.lines || []).join("|")}`;
-                            if (sharedKeys.has(key)) return false;
-                            if (seenSavedKeys.has(key)) return false;
-                            seenSavedKeys.add(key);
-                            return true;
-                        } catch (e) {
-                            return true;
+                    savedGallery.innerHTML = "";
+                    if (!capsuleDrafts || typeof capsuleDrafts.getAllRecords !== "function") {
+                        if (savedEmpty) savedEmpty.hidden = false;
+                        return;
+                    }
+                    const records = await capsuleDrafts.getAllRecords();
+                    const seenIds = new Set();
+                    const entries = records.filter(record => {
+                        const definition = APP_DEFINITIONS[record.app];
+                        if (!definition) return false;
+                        const key = `${record.app}::${record.id}`;
+                        if (seenIds.has(key)) return false;
+                        seenIds.add(key);
+                        return true;
+                    });
+                    const staleIds = [];
+                    const filtered = entries.filter(record => {
+                        const hasPayload = record && record.payload && typeof record.payload === "object";
+                        if (!hasPayload && record?.id) {
+                            staleIds.push(record.id);
                         }
+                        return hasPayload;
                     });
-                // Front dedupe: avoid duplicate hrefs
-                const hrefSeen = new Set();
-                const uniqueCards = cards.filter(item => {
-                    const href = item.card?.getAttribute("href");
-                    if (!href) return true;
-                    if (hrefSeen.has(href)) return false;
-                    hrefSeen.add(href);
-                    return true;
-                });
-                const pinned = uniqueCards
-                    .filter(card => card.isPinned)
-                    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-                const regular = uniqueCards
-                    .filter(card => !card.isPinned)
-                    .sort((a, b) => {
-                        const nameA = (a.preview?.tabName || "").toLowerCase();
-                        const nameB = (b.preview?.tabName || "").toLowerCase();
-                        if (nameA && nameB) return nameA.localeCompare(nameB, "fr");
-                        return 0;
+                    if (staleIds.length) {
+                        await Promise.all(staleIds.map(id => capsuleDrafts.removeRecord?.(id)));
+                    }
+                    if (!filtered.length) {
+                        if (savedEmpty) savedEmpty.hidden = false;
+                        return;
+                    }
+                    if (savedEmpty) savedEmpty.hidden = true;
+                    // Deduplicate saved drafts that are already present in shared gallery
+                    const sharedKeys = window.__goToolkitSharedPreviewKeys || new Set();
+                    // Deduplicate both against shared and within saved
+                    const seenSavedKeys = new Set();
+                    const cards = filtered
+                        .map(buildSavedCard)
+                        .filter(Boolean)
+                        .filter(item => {
+                            try {
+                                const definition = APP_DEFINITIONS[item.card.getAttribute("data-app")];
+                                const key = `${definition.collection}::${item.preview.tabName}::${(item.preview.lines || []).join("|")}`;
+                                if (sharedKeys.has(key)) return false;
+                                if (seenSavedKeys.has(key)) return false;
+                                seenSavedKeys.add(key);
+                                return true;
+                            } catch (e) {
+                                return true;
+                            }
+                        });
+                    // Front dedupe: avoid duplicate hrefs
+                    const hrefSeen = new Set();
+                    const uniqueCards = cards.filter(item => {
+                        const href = item.card?.getAttribute("href");
+                        if (!href) return true;
+                        if (hrefSeen.has(href)) return false;
+                        hrefSeen.add(href);
+                        return true;
                     });
-                pinned.forEach(item => savedGallery.appendChild(item.card));
-                regular.forEach(item => savedGallery.appendChild(item.card));
-                if (savedEmpty) savedEmpty.hidden = pinned.length + regular.length > 0;
+                    const pinned = uniqueCards
+                        .filter(card => card.isPinned)
+                        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+                    const regular = uniqueCards
+                        .filter(card => !card.isPinned)
+                        .sort((a, b) => {
+                            const nameA = (a.preview?.tabName || "").toLowerCase();
+                            const nameB = (b.preview?.tabName || "").toLowerCase();
+                            if (nameA && nameB) return nameA.localeCompare(nameB, "fr");
+                            return 0;
+                        });
+                    pinned.forEach(item => savedGallery.appendChild(item.card));
+                    regular.forEach(item => savedGallery.appendChild(item.card));
+                    if (savedEmpty) savedEmpty.hidden = pinned.length + regular.length > 0;
                 })().finally(() => {
                     refreshSavedPromise = null;
                 });
@@ -1678,59 +1617,59 @@
                     return refreshGalleryPromise;
                 }
                 refreshGalleryPromise = (async () => {
-                if (!shareHistory) {
-                    setState({ loading: false, hasData: false, error: "Historique des capsules indisponible." });
-                    return;
-                }
-                if (!shareService?.isReady) {
-                    setState({ loading: false, hasData: false, error: "Service de capsules indisponible." });
-                    return;
-                }
-                setState({ loading: true, hasData: false, error: "", hasPinned: false, hasRegular: false });
-                gallery.innerHTML = "";
-                if (pinnedGallery) pinnedGallery.innerHTML = "";
-                const entries = await getStoredRecords();
-                if (!entries.length) {
-                    setState({ loading: false, hasData: false, error: "", hasPinned: false, hasRegular: false });
-                    return;
-                }
-                const cards = await Promise.all(entries.map(({ app, record }) => buildShareCard(app, record)));
-                const validCards = cards.filter(Boolean);
-                // Build a quick set of preview keys to help deduplicate saved drafts that refer to the same content
-                try {
-                    const previewKeys = new Set(validCards.map(item => {
-                        const coll = item.definition.collection || String(item.definition.name || item.app);
-                        const tab = item.preview?.tabName || "";
-                        const lines = (item.preview?.lines || []).join("|");
-                        return `${coll}::${tab}::${lines}`;
-                    }));
-                    window.__goToolkitSharedPreviewKeys = previewKeys;
-                } catch (e) {
-                    window.__goToolkitSharedPreviewKeys = new Set();
-                }
-                if (!validCards.length) {
-                    setState({ loading: false, hasData: false, error: "", hasPinned: false, hasRegular: false });
-                    return;
-                }
-                const pinned = validCards
-                    .filter(item => item.isPinned)
-                    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-                const regular = validCards
-                    .filter(card => !card.isPinned)
-                    .sort((a, b) => {
-                        const nameA = (a.preview?.tabName || "").toLowerCase();
-                        const nameB = (b.preview?.tabName || "").toLowerCase();
-                        if (nameA && nameB) return nameA.localeCompare(nameB, "fr");
-                        return 0;
-                    });
+                    if (!shareHistory) {
+                        setState({ loading: false, hasData: false, error: "Historique des capsules indisponible." });
+                        return;
+                    }
+                    if (!shareService?.isReady) {
+                        setState({ loading: false, hasData: false, error: "Service de capsules indisponible." });
+                        return;
+                    }
+                    setState({ loading: true, hasData: false, error: "", hasPinned: false, hasRegular: false });
+                    gallery.innerHTML = "";
+                    if (pinnedGallery) pinnedGallery.innerHTML = "";
+                    const entries = await getStoredRecords();
+                    if (!entries.length) {
+                        setState({ loading: false, hasData: false, error: "", hasPinned: false, hasRegular: false });
+                        return;
+                    }
+                    const cards = await Promise.all(entries.map(({ app, record }) => buildShareCard(app, record)));
+                    const validCards = cards.filter(Boolean);
+                    // Build a quick set of preview keys to help deduplicate saved drafts that refer to the same content
+                    try {
+                        const previewKeys = new Set(validCards.map(item => {
+                            const coll = item.definition.collection || String(item.definition.name || item.app);
+                            const tab = item.preview?.tabName || "";
+                            const lines = (item.preview?.lines || []).join("|");
+                            return `${coll}::${tab}::${lines}`;
+                        }));
+                        window.__goToolkitSharedPreviewKeys = previewKeys;
+                    } catch (e) {
+                        window.__goToolkitSharedPreviewKeys = new Set();
+                    }
+                    if (!validCards.length) {
+                        setState({ loading: false, hasData: false, error: "", hasPinned: false, hasRegular: false });
+                        return;
+                    }
+                    const pinned = validCards
+                        .filter(item => item.isPinned)
+                        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+                    const regular = validCards
+                        .filter(card => !card.isPinned)
+                        .sort((a, b) => {
+                            const nameA = (a.preview?.tabName || "").toLowerCase();
+                            const nameB = (b.preview?.tabName || "").toLowerCase();
+                            if (nameA && nameB) return nameA.localeCompare(nameB, "fr");
+                            return 0;
+                        });
 
-                if (pinnedGallery) {
-                    pinned.forEach(item => pinnedGallery.appendChild(item.card));
-                }
-                regular.forEach(item => gallery.appendChild(item.card));
-                const hasPinned = pinned.length > 0;
-                const hasRegular = regular.length > 0;
-                setState({ loading: false, hasData: hasPinned || hasRegular, hasPinned, hasRegular, error: "" });
+                    if (pinnedGallery) {
+                        pinned.forEach(item => pinnedGallery.appendChild(item.card));
+                    }
+                    regular.forEach(item => gallery.appendChild(item.card));
+                    const hasPinned = pinned.length > 0;
+                    const hasRegular = regular.length > 0;
+                    setState({ loading: false, hasData: hasPinned || hasRegular, hasPinned, hasRegular, error: "" });
                 })().finally(() => {
                     refreshGalleryPromise = null;
                 });
@@ -2517,17 +2456,22 @@
                 if (webllmModelSelect && storedWebllmModel) {
                     webllmModelSelect.value = storedWebllmModel;
                 }
-                var storedBackend = (config && typeof config.getBackend === "function" ? config.getBackend() : null) || localStorage.getItem("go-toolkit-ai-backend") || "openai";
-                if (aiBackendSelect) aiBackendSelect.value = storedBackend;
-                updateBackendVisibility();
-                const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("nuances-reasoning-effort") || "low";
-                if (settingsReasoningSelect) settingsReasoningSelect.value = storedReasoning;
+	                var storedBackend = (config && typeof config.getBackend === "function" ? config.getBackend() : null) || localStorage.getItem("go-toolkit-ai-backend") || "openai";
+	                // Ollama access is disabled on the launcher; if it was previously selected, migrate to OpenAI.
+	                if (storedBackend === "ollama") {
+	                    storedBackend = "openai";
+	                    try { localStorage.setItem("go-toolkit-ai-backend", storedBackend); } catch (e) { }
+	                    try { config && typeof config.setBackend === "function" && config.setBackend(storedBackend); } catch (e) { }
+	                }
+	                if (aiBackendSelect) aiBackendSelect.value = storedBackend;
+	                updateBackendVisibility();
+	                const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("nuances-reasoning-effort") || "low";
+	                if (settingsReasoningSelect) settingsReasoningSelect.value = storedReasoning;
             } catch (e) { /* noop */ }
             settingsModal.classList.add("open");
             settingsModal.setAttribute("aria-hidden", "false");
             settingsReasoningSelect?.focus();
-            refreshOllamaModels().catch(() => { });
-        }
+	        }
 
         function closeSettings() {
             if (!settingsModal) return;
