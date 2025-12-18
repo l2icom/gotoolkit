@@ -458,6 +458,16 @@
             scrollbar-width: thin;
         }
 
+        #gridScript:not(:focus) {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        #gridScript:not(:focus)::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+        }
+
         .prompt-input-card {
             display: flex;
             flex-direction: column;
@@ -846,7 +856,7 @@
 
         .ag-theme-quartz ::-webkit-scrollbar {
             width: 4px;
-            height: 4px;
+            height: 3px;
         }
 
         .ag-theme-quartz ::-webkit-scrollbar-track {
@@ -1202,7 +1212,9 @@
                     isExternalFilterPresent: () => Boolean(naturalFilterState.active),
                     doesExternalFilterPass: (node) => {
                         try {
-                            return evaluateAST(naturalFilterState.ast, node?.data || {});
+                            const tableId = getActivePage()?.tableId || "";
+                            const evalRow = buildExternalFilterRow(node?.data || {}, tableId);
+                            return evaluateAST(naturalFilterState.ast, evalRow);
                         } catch (err) {
                             return true;
                         }
@@ -1437,7 +1449,8 @@
                     };
                 }
                 if (!state.datasetScript || !state.datasetScript.trim()) {
-                    state.datasetScript = JSON.stringify(buildDatasetFromState(), null, 2);
+                    const dataset = buildDatasetFromState();
+                    state.datasetScript = hasDatasetContent(dataset) ? JSON.stringify(dataset, null, 2) : "";
                 }
                 renderFontSizeOptions();
                 applyGridDisplayPreferences({ persist: false });
@@ -1523,9 +1536,193 @@
                         .filter(Boolean);
                 }
 
+                function getForeignKeyRelationForField(field, page = getActivePage()) {
+                    if (!field) return null;
+                    const tableId = page?.tableId || "";
+                    if (!tableId) return null;
+                    const relations = getAllRelationsFromSchema();
+                    for (const rel of relations) {
+                        if (rel && rel.fromTable === tableId && rel.fromColumn === field) {
+                            return rel;
+                        }
+                    }
+                    return null;
+                }
+
+                const FOREIGN_KEY_DISPLAY_FIELD_PREFERENCES = [
+                    "name",
+                    "nom",
+                    "title",
+                    "titre",
+                    "label",
+                    "displayname",
+                    "fullname",
+                    "prenom",
+                    "firstname"
+                ];
+
+                function findFrequentStringField(rows, skipFields = new Set()) {
+                    if (!rows || !rows.length) return null;
+                    const freq = new Map();
+                    rows.forEach(row => {
+                        if (!row || typeof row !== "object") return;
+                        Object.keys(row).forEach(key => {
+                            if (!key || skipFields.has(key) || key.startsWith("__")) return;
+                            const value = row[key];
+                            if (typeof value !== "string") return;
+                            const normalized = value.trim();
+                            if (!normalized) return;
+                            freq.set(key, (freq.get(key) || 0) + 1);
+                        });
+                    });
+                    if (!freq.size) return null;
+                    let bestKey = null;
+                    let bestCount = -1;
+                    for (const [key, count] of freq.entries()) {
+                        if (count > bestCount) {
+                            bestCount = count;
+                            bestKey = key;
+                        }
+                    }
+                    return bestKey;
+                }
+
+                function getForeignKeyDisplayField(tableId, keyColumn, label) {
+                    if (!tableId) return null;
+                    state._fkDisplayField = state._fkDisplayField && typeof state._fkDisplayField === "object"
+                        ? state._fkDisplayField
+                        : {};
+                    const cacheKey = `${tableId}:${keyColumn || ""}:${label || ""}`;
+                    if (state._fkDisplayField[cacheKey]) {
+                        return state._fkDisplayField[cacheKey];
+                    }
+                    const pageIndex = findPageIndexByTableId(tableId);
+                    const page = pageIndex === -1 ? null : state.pages[pageIndex];
+                    const columnDefs = Array.isArray(page?.data?.columnDefs) ? page.data.columnDefs : [];
+                    const rows = Array.isArray(page?.data?.rowData) ? page.data.rowData : [];
+                    const skipFields = new Set([keyColumn, DEFAULT_PRIMARY_KEY]);
+                    const candidates = columnDefs
+                        .filter(def => def && typeof def === "object")
+                        .map(def => ({
+                            field: typeof def.field === "string" ? def.field.trim() : "",
+                            header: typeof def.headerName === "string" ? def.headerName.trim() : ""
+                        }))
+                        .filter(def => def.field && !def.field.startsWith("__relCount__") && !skipFields.has(def.field));
+                    const matchTargets = [];
+                    if (label) matchTargets.push(normalizeForCompare(label));
+                    FOREIGN_KEY_DISPLAY_FIELD_PREFERENCES.forEach(pref => {
+                        matchTargets.push(normalizeForCompare(pref));
+                    });
+                    for (const target of matchTargets) {
+                        if (!target) continue;
+                        const candidate = candidates.find(def => {
+                            const headerNorm = normalizeForCompare(def.header);
+                            const fieldNorm = normalizeForCompare(def.field);
+                            return (
+                                fieldNorm === target ||
+                                headerNorm === target ||
+                                headerNorm.includes(target) ||
+                                fieldNorm.includes(target)
+                            );
+                        });
+                        if (candidate) {
+                            state._fkDisplayField[cacheKey] = candidate.field;
+                            return candidate.field;
+                        }
+                    }
+                    if (candidates.length) {
+                        state._fkDisplayField[cacheKey] = candidates[0].field;
+                        return candidates[0].field;
+                    }
+                    const fallback = findFrequentStringField(rows, skipFields);
+                    state._fkDisplayField[cacheKey] = fallback || null;
+                    return fallback || null;
+                }
+
+                function findFirstStringValue(row, skipFields = new Set()) {
+                    if (!row || typeof row !== "object") return null;
+                    for (const key of Object.keys(row)) {
+                        if (!key || skipFields.has(key) || key.startsWith("__")) continue;
+                        const value = row[key];
+                        if (typeof value !== "string") continue;
+                        const trimmed = value.trim();
+                        if (!trimmed) continue;
+                        return trimmed;
+                    }
+                    return null;
+                }
+
+                function formatNaturalFilterLiteral(value) {
+                    if (value == null) return "";
+                    const raw = String(value).trim();
+                    if (!raw) return "";
+                    if (/^".*"$/.test(raw)) return raw;
+                    if (/^[0-9]+(?:\.[0-9]+)?$/.test(raw)) return raw;
+                    if (isIsoDate(raw) || isIsoDateTime(raw) || isIsoTime(raw)) return raw;
+                    if (/\s/.test(raw)) {
+                        return `"${raw.replace(/"/g, '\\"')}"`;
+                    }
+                    return raw;
+                }
+
+                function getForeignKeyFilterValues(field, rawValue) {
+                    const fallback = { raw: rawValue, display: rawValue };
+                    const relation = getForeignKeyRelationForField(field);
+                    if (!relation) return fallback;
+                    if (rawValue == null || rawValue === "") return fallback;
+                    const lookup = ensureForeignKeyLookup(relation.toTable, relation.toColumn, { label: relation.label });
+                    const display = lookup?.[String(rawValue)];
+                    if (display == null || display === "") return fallback;
+                    return { raw: rawValue, display };
+                }
+
                 function findPageIndexByTableId(tableId) {
                     if (!tableId) return -1;
                     return state.pages.findIndex(page => page?.tableId === tableId);
+                }
+
+                function getRelationCountFieldId(sides) {
+                    if (!sides) return "";
+                    return `__relCount__${sides.manyTable}__${sides.manyFk}__${sides.onePk}`;
+                }
+
+                function getRelationCountFieldDefsForTable(tableId) {
+                    if (!tableId) return [];
+                    const relations = getAllRelationsFromSchema()
+                        .map(getRelationSides)
+                        .filter(Boolean)
+                        .filter(sides => sides.oneTable === tableId);
+                    if (!relations.length) return [];
+                    return relations.map(sides => {
+                        const manyTitle = getTableTitle(sides.manyTable) || sides.manyTable;
+                        return {
+                            field: getRelationCountFieldId(sides),
+                            headerName: `Nb ${manyTitle}`,
+                            dataType: "number"
+                        };
+                    });
+                }
+
+                function buildExternalFilterRow(rawRow, tableId) {
+                    const base = rawRow && typeof rawRow === "object" ? { ...rawRow } : {};
+                    if (!tableId) return base;
+                    const relations = getAllRelationsFromSchema()
+                        .map(getRelationSides)
+                        .filter(Boolean)
+                        .filter(sides => sides.oneTable === tableId);
+                    if (!relations.length) return base;
+                    relations.forEach(sides => {
+                        const field = getRelationCountFieldId(sides);
+                        if (!field) return;
+                        const oneId = base?.[sides.onePk];
+                        if (oneId == null || oneId === "") {
+                            base[field] = 0;
+                            return;
+                        }
+                        const map = ensureRelationCountLookup(sides.manyTable, sides.manyFk);
+                        base[field] = map?.[String(oneId)] || 0;
+                    });
+                    return base;
                 }
 
                 function applyFilterToCurrentGrid(field, value) {
@@ -1543,6 +1740,7 @@
 
                 function resetForeignKeyLookups() {
                     state._fkLookup = {};
+                    state._fkDisplayField = {};
                 }
 
                 function resetRelationCountLookups() {
@@ -1554,7 +1752,7 @@
                     resetRelationCountLookups();
                 }
 
-                function ensureForeignKeyLookup(tableId, keyColumn) {
+                function ensureForeignKeyLookup(tableId, keyColumn, options = {}) {
                     if (!tableId || !keyColumn) return {};
                     state._fkLookup = state._fkLookup && typeof state._fkLookup === "object" ? state._fkLookup : {};
                     state._fkLookup[tableId] = state._fkLookup[tableId] && typeof state._fkLookup[tableId] === "object"
@@ -1566,14 +1764,29 @@
                     const pageIndex = findPageIndexByTableId(tableId);
                     const page = pageIndex === -1 ? null : state.pages[pageIndex];
                     const rows = Array.isArray(page?.data?.rowData) ? page.data.rowData : [];
+                    const displayField = getForeignKeyDisplayField(tableId, keyColumn, options.label);
+                    const skipFields = new Set([keyColumn, DEFAULT_PRIMARY_KEY, displayField]);
                     const map = {};
                     rows.forEach(row => {
                         if (!row || typeof row !== "object") return;
                         const key = row[keyColumn];
-                        const name = row.name;
                         if (key == null || key === "") return;
-                        if (name == null || name === "") return;
-                        map[String(key)] = String(name);
+                        const candidateValues = [];
+                        const tryStringValue = value => {
+                            if (typeof value === "string") {
+                                const trimmed = value.trim();
+                                return trimmed ? trimmed : null;
+                            }
+                            return null;
+                        };
+                        if (displayField) {
+                            candidateValues.push(tryStringValue(row[displayField]));
+                        }
+                        candidateValues.push(tryStringValue(row.name));
+                        candidateValues.push(findFirstStringValue(row, skipFields));
+                        const display = candidateValues.find(val => !!val);
+                        if (!display) return;
+                        map[String(key)] = display;
                     });
                     state._fkLookup[tableId][keyColumn] = map;
                     return map;
@@ -1645,7 +1858,8 @@
                         showStatus(`Table cible introuvable: ${relation.toTable}`, true);
                         return;
                     }
-                    let normalizedValue = typeof value === "string" ? value.trim() : value;
+                    const rawLookupValue = typeof value === "string" ? value.trim() : value;
+                    let normalizedValue = rawLookupValue;
                     if (typeof normalizedValue === "string" && /^[0-9]+$/.test(normalizedValue)) {
                         normalizedValue = Number(normalizedValue);
                     }
@@ -1653,7 +1867,9 @@
                     const knownFieldMap = getKnownFieldMap();
                     const fieldInfo = knownFieldMap.get(relation.toColumn);
                     const fieldLabel = fieldInfo?.headerName || relation.toColumn;
-                    const condition = `${fieldLabel} est ${normalizedValue}`;
+                    const lookup = ensureForeignKeyLookup(relation.toTable, relation.toColumn, { label: relation.label });
+                    const displayValue = lookup?.[String(rawLookupValue)] || normalizedValue;
+                    const condition = `${fieldLabel} est ${formatNaturalFilterLiteral(displayValue)}`;
                     if (gridNaturalFilterInput) {
                         gridNaturalFilterInput.value = condition;
                         naturalFilterState.lastAcceptedInput = condition;
@@ -1669,7 +1885,7 @@
                     return params => {
                         const rawValue = params?.value;
                         if (rawValue == null || rawValue === "") return "";
-                        const lookup = ensureForeignKeyLookup(relation?.toTable, relation?.toColumn);
+                        const lookup = ensureForeignKeyLookup(relation?.toTable, relation?.toColumn, { label: relation?.label });
                         const displayValue = lookup?.[String(rawValue)] || "";
                         const link = document.createElement("a");
                         link.href = "#";
@@ -1711,7 +1927,9 @@
                         const knownFieldMap = getKnownFieldMap();
                         const fieldInfo = knownFieldMap.get(manyFk);
                         const fieldLabel = fieldInfo?.headerName || manyFk;
-                        const condition = `${fieldLabel} est ${normalizedId}`;
+                        const lookup = ensureForeignKeyLookup(manyTable, manyFk);
+                        const displayValue = lookup?.[String(normalizedId)] || normalizedId;
+                        const condition = `${fieldLabel} est ${formatNaturalFilterLiteral(displayValue)}`;
                         if (gridNaturalFilterInput) {
                             gridNaturalFilterInput.value = condition;
                             naturalFilterState.lastAcceptedInput = condition;
@@ -2797,6 +3015,14 @@
                     return typeof window !== "undefined" && window.innerWidth > DESKTOP_DRAWER_BREAKPOINT;
                 }
 
+                function getGridScriptValue() {
+                    const trimmedStateScript = (state.datasetScript || "").trim();
+                    if (trimmedStateScript) return trimmedStateScript;
+                    const dataset = buildDatasetFromState();
+                    if (!hasDatasetContent(dataset)) return "";
+                    return JSON.stringify(dataset, null, 2);
+                }
+
                 function setDesktopSidebarState(open) {
                     if (!sidebar) return;
                     sidebarOpenDesktop = Boolean(open);
@@ -2853,7 +3079,7 @@
                     const page = getActivePage();
                     if (gridTitleInput) gridTitleInput.value = page.title || "";
                     if (promptInput) promptInput.value = page.scenario || "";
-                    if (gridScript) gridScript.value = (state.datasetScript || "").trim() || JSON.stringify(buildDatasetFromState(), null, 2);
+                    if (gridScript) gridScript.value = getGridScriptValue();
                     try {
                         gridApi?.setFilterModel?.(null);
                         gridApi?.onFilterChanged?.();
@@ -3126,6 +3352,135 @@
                     }
                 }
 
+                function parseJsonQuiet(raw) {
+                    try {
+                        return JSON.parse(raw);
+                    } catch (e) {
+                        return null;
+                    }
+                }
+
+                function parseNdjsonDataset(raw) {
+                    if (!raw || typeof raw !== "string") return null;
+                    const lines = raw
+                        .split(/\r?\n/)
+                        .map(line => line.trim())
+                        .filter(Boolean);
+                    if (!lines.length) return null;
+                    let headerSchema = null;
+                    const data = {};
+                    lines.forEach(line => {
+                        const parsedLine = parseJsonQuiet(line);
+                        if (!parsedLine || typeof parsedLine !== "object") return;
+                        if (parsedLine.type === "header" && parsedLine.schema) {
+                            headerSchema = parsedLine.schema;
+                            const tables = Array.isArray(headerSchema.tables) ? headerSchema.tables : [];
+                            tables.forEach(table => {
+                                const tableId = typeof table.id === "string" ? table.id : "";
+                                if (!tableId) return;
+                                const columnDefs = Array.isArray(table.columns) ? table.columns : [];
+                                data[tableId] = {
+                                    columnDefs,
+                                    rowData: []
+                                };
+                            });
+                        } else if (parsedLine.type === "row" && parsedLine.table && parsedLine.data) {
+                            const tableId = parsedLine.table;
+                            if (!data[tableId]) {
+                                data[tableId] = { columnDefs: [], rowData: [] };
+                            }
+                            data[tableId].rowData.push(parsedLine.data);
+                        }
+                    });
+                    if (!headerSchema) return null;
+                    return { schema: headerSchema, data };
+                }
+
+                function createStreamingDatasetState() {
+                    return {
+                        buffer: "",
+                        header: null,
+                        data: {},
+                        rowCounts: {},
+                        finished: false
+                    };
+                }
+
+                function applyStreamingHeader(state, schema, options = {}) {
+                    if (!schema || typeof schema !== "object") return;
+                    state.header = schema;
+                    state.data = {};
+                    state.rowCounts = {};
+                    const tables = Array.isArray(schema.tables) ? schema.tables : [];
+                    tables.forEach(table => {
+                        const tableId = typeof table?.id === "string" ? table.id : "";
+                        if (!tableId) return;
+                        const columnDefs = Array.isArray(table.columns) ? table.columns : [];
+                        state.data[tableId] = { columnDefs, rowData: [] };
+                        state.rowCounts[tableId] = 0;
+                    });
+                    applyDatasetToState(
+                        { schema, data: state.data },
+                        { markAsAi: true, activeTableId: options.activeTableId }
+                    );
+                }
+
+                function handleStreamingRow(state, rowPayload) {
+                    if (!state.header || !rowPayload || typeof rowPayload !== "object") return;
+                    const tableId = typeof rowPayload.table === "string" ? rowPayload.table : "";
+                    if (!tableId) return;
+                    const rowData = rowPayload.data && typeof rowPayload.data === "object" ? rowPayload.data : {};
+                    if (!state.data[tableId]) {
+                        state.data[tableId] = { columnDefs: [], rowData: [] };
+                    }
+                    state.data[tableId].rowData.push(rowData);
+                    state.rowCounts[tableId] = (state.rowCounts[tableId] || 0) + 1;
+
+                    const pageIndex = findPageIndexByTableId(tableId);
+                    if (pageIndex === -1) return;
+                    const page = state.pages[pageIndex];
+                    page.data = {
+                        columnDefs: state.data[tableId].columnDefs || [],
+                        rowData: state.data[tableId].rowData
+                    };
+                    if (pageIndex === state.activeIndex && gridApi) {
+                        if (typeof gridApi.applyTransaction === "function") {
+                            try { gridApi.applyTransaction({ add: [rowData] }); } catch (err) { /* ignore */ }
+                        } else if (typeof gridApi.setRowData === "function") {
+                            try { gridApi.setRowData(state.data[tableId].rowData); } catch (err) { /* ignore */ }
+                        }
+                    }
+                }
+
+                function finalizeStreamingDataset(state, options = {}) {
+                    if (!state.header) return;
+                    const dataset = { schema: state.header, data: state.data };
+                    applyDatasetToState(dataset, { markAsAi: true, activeTableId: options.activeTableId });
+                    syncDatasetScriptFromState();
+                    scheduleNaturalFilterRecalc();
+                    state.finished = true;
+                }
+
+                function handleStreamingChunk(state, chunk, options = {}) {
+                    if (!chunk) return;
+                    state.buffer += chunk;
+                    const parts = state.buffer.split(/\r?\n/);
+                    state.buffer = parts.pop() || "";
+                    parts.forEach(line => {
+                        const trimmed = line.trim();
+                        if (!trimmed) return;
+                        const parsed = parseJsonQuiet(trimmed);
+                        if (!parsed || typeof parsed !== "object") return;
+                        if (parsed.type === "header" && parsed.schema) {
+                            applyStreamingHeader(state, parsed.schema, { activeTableId: options.activeTableId });
+                        } else if (parsed.type === "row") {
+                            handleStreamingRow(state, parsed);
+                        } else if (parsed.type === "done") {
+                            finalizeStreamingDataset(state, { activeTableId: options.activeTableId });
+                        }
+                    });
+                }
+
                 // -----------------------------
                 // Natural controlled French filter bar (external filtering)
                 // -----------------------------
@@ -3228,10 +3583,13 @@
                         if (typeof field !== "string" || !field) return;
                         if (field.startsWith("__relCount__")) return;
                         if (!keySet.has(field) && keySet.size) return;
+                        const fkRelation = getForeignKeyRelationForField(field, page);
                         const headerName =
-                            def && typeof def.headerName === "string" && def.headerName.trim()
-                                ? def.headerName.trim()
-                                : field;
+                            fkRelation?.label && fkRelation.label.trim()
+                                ? fkRelation.label.trim()
+                                : (def && typeof def.headerName === "string" && def.headerName.trim()
+                                    ? def.headerName.trim()
+                                    : field);
                         map.set(field, {
                             field,
                             headerName,
@@ -3272,8 +3630,17 @@
                             break;
                         }
                         if (!inferred) inferred = "text";
+                        const fkRelation = getForeignKeyRelationForField(field, page);
+                        if (fkRelation) inferred = "text";
                         map.set(field, { ...info, dataType: inferred });
                     }
+
+                    // Add synthetic relation-count fields (one-to-many), which are numeric.
+                    const relCountDefs = getRelationCountFieldDefsForTable(page?.tableId || "");
+                    relCountDefs.forEach(def => {
+                        if (!def?.field) return;
+                        map.set(def.field, { field: def.field, headerName: def.headerName, dataType: "number" });
+                    });
                     return map;
                 }
 
@@ -3669,7 +4036,7 @@
                         if (op === "before" || op === "after") return fieldType === "date" || fieldType === "dateTime" || fieldType === "time";
                         if (op === "contains" || op === "starts" || op === "ends") return fieldType === "text";
                         if (op === "=" || op === "!=") return true;
-                        if (op === ">" || op === ">=" || op === "<" || op === "<=") return fieldType === "number";
+                        if (op === ">=" || op === "<=") return fieldType === "number";
                         return true;
                     };
 
@@ -3998,7 +4365,8 @@
                             if (fieldType === "time" && (min.valueType !== "time" || max.valueType !== "time")) {
                                 parser.error("error", "Heure attendue (HH:MM[:SS]).");
                             }
-                            const ast = { type: "between", field, min, max };
+                            const exclusive = parser.matchWord("exclu");
+                            const ast = { type: "between", field, min, max, exclusive };
                             parser.markGood(ast);
                             return ast;
                         }
@@ -4010,15 +4378,10 @@
                         else if (parser.matchWord("contient")) op = "contains";
                         else if (matchMultiWord(["commence", "par"])) op = "starts";
                         else if (matchMultiWord(["finit", "par"])) op = "ends";
-                        else if (matchMultiWord(["superieur", "a"]) || matchMultiWord(["supérieur", "à"])) op = ">";
-                        else if (matchMultiWord(["inferieur", "a"]) || matchMultiWord(["inférieur", "à"])) op = "<";
+                        else if (matchMultiWord(["superieur", "a"]) || matchMultiWord(["supérieur", "à"])) op = ">=";
+                        else if (matchMultiWord(["inferieur", "a"]) || matchMultiWord(["inférieur", "à"])) op = "<=";
                         else if (parser.matchWord("avant")) op = "before";
                         else if (parser.matchWord("apres") || parser.matchWord("après")) op = "after";
-                        
-                        else if (parser.matchOp(">=")) op = ">=";
-                        else if (parser.matchOp(">")) op = ">";
-                        else if (parser.matchOp("<=")) op = "<=";
-                        else if (parser.matchOp("<")) op = "<";
 
                         if (!op) {
                             if (parser.eof()) parser.error("partial", "Opérateur attendu.");
@@ -4049,14 +4412,15 @@
                             if ((op === "before" || op === "after") && fieldType === "time" && v.valueType !== "time") {
                                 parser.error("error", "Heure attendue (HH:MM[:SS]).");
                             }
-                            if (["<", "<=", ">", ">="].includes(op) && fieldType === "number" && v.valueType !== "number") {
+                            if (["<=", ">="].includes(op) && fieldType === "number" && v.valueType !== "number") {
                                 parser.error("error", "Nombre attendu.");
                             }
                             return v;
                         };
 
                         const firstValue = parseValueForOp();
-                        const baseAst = { type: "cond", field, op, value: firstValue };
+                        const exclusive = (op === ">=" || op === "<=") ? parser.matchWord("exclu") : false;
+                        const baseAst = { type: "cond", field, op, value: firstValue, exclusive };
 
                         // Allow "ou" ONLY as additional values for the current condition.
                         // If the user typed "ou" but hasn't provided the next value yet, the condition is considered incomplete
@@ -4105,9 +4469,7 @@
                         let left = parseNot();
                         while (true) {
                             let connector = null;
-                            if (parser.matchWord("et")) {
-                                connector = "and";
-                            } else if (parser.matchComma()) {
+                            if (parser.matchComma()) {
                                 // ", ou" means OR between conditions; plain "," is AND.
                                 if (parser.matchWord("ou")) connector = "or";
                                 else connector = "and";
@@ -4182,29 +4544,38 @@
                         case "not":
                             return !evaluateAST(node.expr, row);
                         case "empty": {
-                            const v = row ? row[node.field] : undefined;
-                            const empty = isEmptyValue(v);
+                            const rawValue = row ? row[node.field] : undefined;
+                            const empty = isEmptyValue(rawValue);
                             return node.negated ? !empty : empty;
                         }
                         case "between": {
-                            const v = row ? row[node.field] : undefined;
-                            if (isEmptyValue(v)) return false;
+                            const rawValue = row ? row[node.field] : undefined;
+                            if (isEmptyValue(rawValue)) return false;
+                            const { display } = getForeignKeyFilterValues(node.field, rawValue);
+                            const v = display;
                             const min = coerceComparable(v, node.min);
                             const max = coerceComparable(v, node.max);
+                            const exclusive = node.exclusive === true;
                             if (typeof min === "number" && typeof max === "number") {
                                 const n = parseFloat(String(v));
                                 if (!Number.isFinite(n)) return false;
-                                return n >= min && n <= max;
+                                return exclusive ? (n > min && n < max) : (n >= min && n <= max);
                             }
-                            const raw = String(v);
+                            const raw = String(v == null ? "" : v);
                             if (isIsoDate(raw) || isIsoDateTime(raw) || isIsoTime(raw)) {
-                                return raw >= String(min) && raw <= String(max);
+                                return exclusive
+                                    ? (raw > String(min) && raw < String(max))
+                                    : (raw >= String(min) && raw <= String(max));
                             }
                             const s = normalizeForCompare(raw);
-                            return s >= normalizeForCompare(String(min)) && s <= normalizeForCompare(String(max));
+                            return exclusive
+                                ? (s > normalizeForCompare(String(min)) && s < normalizeForCompare(String(max)))
+                                : (s >= normalizeForCompare(String(min)) && s <= normalizeForCompare(String(max)));
                         }
                         case "cond": {
-                            const v = row ? row[node.field] : undefined;
+                            const rawValue = row ? row[node.field] : undefined;
+                            const { display } = getForeignKeyFilterValues(node.field, rawValue);
+                            const v = display;
                             if (node.op === "contains" || node.op === "starts" || node.op === "ends") {
                                 const left = normalizeForCompare(v == null ? "" : String(v));
                                 const right = normalizeForCompare(String(coerceComparable(v, node.value)));
@@ -4215,7 +4586,10 @@
                                 return true;
                             }
 
-                            const op = node.op === "before" ? "<" : node.op === "after" ? ">" : node.op;
+                            const exclusive = node.exclusive === true;
+                            let op = node.op === "before" ? "<" : node.op === "after" ? ">" : node.op;
+                            if (exclusive && op === ">=") op = ">";
+                            if (exclusive && op === "<=") op = "<";
 
                             // Equality/inequality and comparisons: try number/date first, fallback to string.
                             const cmpRight = coerceComparable(v, node.value);
@@ -4473,9 +4847,14 @@
                     const order = [];
                     for (const row of rows) {
                         if (!row || typeof row !== "object") continue;
-                        const v = row[field];
-                        if (v == null) continue;
-                        const key = typeof v === "string" ? v.trim() : v;
+                        const tableId = page?.tableId || "";
+                        const rawValue = field && field.startsWith("__relCount__")
+                            ? buildExternalFilterRow(row, tableId)?.[field]
+                            : row[field];
+                        if (rawValue == null) continue;
+                        const { display } = getForeignKeyFilterValues(field, rawValue);
+                        const valueToUse = display == null ? rawValue : display;
+                        const key = typeof valueToUse === "string" ? valueToUse.trim() : valueToUse;
                         if (key === "") continue;
                         const str = typeof key === "string" ? key : String(key);
                         if (!freq.has(str)) order.push(str);
@@ -4519,6 +4898,7 @@
                         "apres",
                         "après",
                         "entre",
+                        "exclu",
                         "vide"
                     ]);
 
@@ -4527,8 +4907,7 @@
                     // - "et" (AND)
                     // Note: "ou" alone is reserved for additional values inside a condition.
                     const isConnector = t =>
-                        (t?.type === "comma") ||
-                        (t?.type === "word" && t.norm === "et");
+                        (t?.type === "comma");
 
                     // Consider the current segment since last connector/paren boundary.
                     let segStart = 0;
@@ -4630,7 +5009,7 @@
                     const isStartOfAtom =
                         !words.length ||
                         (last?.type === "comma") ||
-                        (last?.type === "word" && (last.norm === "et" || last.norm === "non" || last.norm === "sauf")) ||
+                        (last?.type === "word" && (last.norm === "non" || last.norm === "sauf")) ||
                         (last?.type === "word" && last.norm === "ou" && prev?.type === "comma");
 
                     const verbTypingMode =
@@ -4654,6 +5033,50 @@
                         if (t.norm === "et" || t.norm === "ou" || t.norm === "non" || t.norm === "sauf") return false;
                         return true;
                     });
+                    const valueComplete = valuePresent && prevCharIsSpace;
+                    const hasExclu =
+                        afterOp.some(t => t?.type === "word" && t.norm === "exclu") ||
+                        (last?.type === "word" && last.norm === "exclu");
+
+                    const betweenState = (() => {
+                        if (inferredOperator !== "entre" || operatorIndex === -1 || !lastField) {
+                            return { hasMin: false, hasEt: false, hasMax: false, complete: false };
+                        }
+                        let hasMin = false;
+                        let hasEt = false;
+                        let hasMax = false;
+                        for (const t of afterOp) {
+                            if (!t) continue;
+                            if (t.type === "word" && t.norm === "exclu") continue;
+                            if (!hasMin) {
+                                if (t.type === "string") {
+                                    hasMin = true;
+                                    continue;
+                                }
+                                if (t.type === "word" && !operatorTailWords.has(t.norm) && !["ou", "et", "non", "sauf"].includes(t.norm)) {
+                                    hasMin = true;
+                                }
+                                continue;
+                            }
+                            if (!hasEt) {
+                                if (t.type === "word" && t.norm === "et") {
+                                    hasEt = true;
+                                }
+                                continue;
+                            }
+                            if (!hasMax) {
+                                if (t.type === "string") {
+                                    hasMax = true;
+                                    continue;
+                                }
+                                if (t.type === "word" && !operatorTailWords.has(t.norm) && !["ou", "et", "non", "sauf"].includes(t.norm)) {
+                                    hasMax = true;
+                                }
+                                continue;
+                            }
+                        }
+                        return { hasMin, hasEt, hasMax, complete: hasMin && hasEt && hasMax };
+                    })();
                     const unaryEmptyComplete =
                         afterOp.some(t => t?.type === "word" && t.norm === "vide") &&
                         prevCharIsSpace;
@@ -4672,6 +5095,13 @@
                         inferredOperator !== "est vide" &&
                         inferredOperator !== "n'est pas vide";
 
+                    const needsBetweenEt =
+                        inferredOperator === "entre" &&
+                        Boolean(lastField) &&
+                        betweenState.hasMin &&
+                        !betweenState.hasEt &&
+                        prevCharIsSpace;
+
                     // Operator present but user hasn't typed a value yet (or ended operator with space).
                     const EXPECT_VALUE =
                         !verbTypingMode &&
@@ -4680,7 +5110,11 @@
                                 inferredOperator &&
                                 operatorIndex !== -1 &&
                                 Boolean(lastField) &&
-                                !valuePresent &&
+                                (
+                                    inferredOperator === "entre"
+                                        ? (!betweenState.complete && !needsBetweenEt)
+                                        : !valueComplete
+                                ) &&
                                 !unaryEmptyComplete &&
                                 (prevCharIsSpace || currentToken.length > 0 || forced)
                             ) ||
@@ -4693,7 +5127,11 @@
                         operatorIndex !== -1 &&
                         Boolean(lastField) &&
                         prevCharIsSpace &&
-                        (valuePresent || unaryEmptyComplete);
+                        (
+                            inferredOperator === "entre"
+                                ? betweenState.complete
+                                : (valuePresent || unaryEmptyComplete)
+                        );
 
                     const normalizeDataType = (rawType) => {
                         const t = typeof rawType === "string" ? rawType.trim().toLowerCase() : "";
@@ -4714,24 +5152,21 @@
                         { insertText: "contient", label: "contient", meta: "texte", kind: "op" },
                         { insertText: "commence par", label: "commence par", meta: "texte", kind: "op" },
                         { insertText: "finit par", label: "finit par", meta: "texte", kind: "op" },
-                        { insertText: "supérieur à", label: "supérieur à", meta: ">", kind: "op" },
-                        { insertText: "inférieur à", label: "inférieur à", meta: "<", kind: "op" },
+                        { insertText: "supérieur à", label: "supérieur à", meta: "≥", kind: "op" },
+                        { insertText: "inférieur à", label: "inférieur à", meta: "≤", kind: "op" },
                         { insertText: "avant", label: "avant", meta: "< date/time", kind: "op" },
                         { insertText: "après", label: "après", meta: "> date/time", kind: "op" },
                         { insertText: "entre", label: "entre", meta: "intervalle", kind: "op" },
                         { insertText: "est vide", label: "est vide", meta: "unary", kind: "op" },
-                        { insertText: "n'est pas vide", label: "n'est pas vide", meta: "unary", kind: "op" },
-                        { insertText: ">=", label: ">=", meta: "symbole", kind: "op" },
-                        { insertText: "<=", label: "<=", meta: "symbole", kind: "op" },
-                        { insertText: ">", label: ">", meta: "symbole", kind: "op" },
-                        { insertText: "<", label: "<", meta: "symbole", kind: "op" }
+                        { insertText: "n'est pas vide", label: "n'est pas vide", meta: "unary", kind: "op" }
                     ];
                     const keywordSuggestions = [
                         { insertText: ",", label: ",", meta: "ET", kind: "kw" },
-                        { insertText: "et", label: "et", meta: "ET", kind: "kw" },
                         { insertText: ", ou", label: ", ou", meta: "OU", kind: "kw" }
                     ];
                     const valueOrSuggestion = { insertText: "ou", label: "ou", meta: "valeur", kind: "kw" };
+                    const betweenEtSuggestion = { insertText: "et", label: "et", meta: "entre", kind: "kw" };
+                    const excluSuggestion = { insertText: "exclu", label: "exclu", meta: "bornes", kind: "kw" };
 
                     const filterOperatorSuggestionsByType = (items, fieldType) => {
                         if (!fieldType) return items;
@@ -4739,7 +5174,7 @@
                         if (fieldType === "text") {
                             ["contient", "commence par", "finit par"].forEach(v => allow.add(v));
                         } else if (fieldType === "number") {
-                            ["supérieur à", "inférieur à", ">", ">=", "<", "<=", "entre"].forEach(v => allow.add(v));
+                            ["supérieur à", "inférieur à", "entre"].forEach(v => allow.add(v));
                         } else if (fieldType === "date" || fieldType === "dateTime" || fieldType === "time") {
                             ["avant", "après", "entre"].forEach(v => allow.add(v));
                         } else if (fieldType === "boolean") {
@@ -4763,6 +5198,8 @@
                         // Only logical verbs/operators.
                         filterOperatorSuggestionsByType(operatorSuggestions, lastFieldType)
                             .forEach(s => suggestions.push({ ...s, meta: "verbe" }));
+                    } else if (needsBetweenEt) {
+                        suggestions.push({ ...betweenEtSuggestion, meta: "entre" });
                     } else if (EXPECT_VALUE && lastField) {
                         // Only values for that field.
                         if (currentToken === "\"" || currentToken === "'" || currentToken === "“") {
@@ -4798,6 +5235,15 @@
                     } else if (EXPECT_CONNECTOR) {
                         // After a complete condition: allow AND ("," / "et"), OR between conditions (", ou"),
                         // and value-OR ("ou") only to add another possible value for the same field.
+                        if (
+                            prevCharIsSpace &&
+                            !hasExclu &&
+                            (inferredOperator === "entre" || inferredOperator === "supérieur à" || inferredOperator === "inférieur à") &&
+                            inferredOperator !== "est vide" &&
+                            inferredOperator !== "n'est pas vide"
+                        ) {
+                            suggestions.push({ ...excluSuggestion, meta: "option" });
+                        }
                         keywordSuggestions.forEach(s => suggestions.push({ ...s, meta: "logique" }));
                         if (inferredOperator && inferredOperator !== "entre" && inferredOperator !== "est vide" && inferredOperator !== "n'est pas vide") {
                             suggestions.push({ ...valueOrSuggestion, meta: "valeur" });
@@ -5064,6 +5510,8 @@
                     }
                     messages.push({ role: "user", content: userPrompt });
 
+                    const streamingState = createStreamingDatasetState();
+
                     try {
                         const payload = {
                             model:
@@ -5078,11 +5526,20 @@
                         const response = await window.GoToolkitIA.chatCompletion({
                             payload,
                             stopCondition: () => false,
-                            signal: controller.signal
+                            signal: controller.signal,
+                            onChunk: chunk => {
+                                handleStreamingChunk(streamingState, chunk, { activeTableId: page?.tableId });
+                            }
                         });
                         const cleaned = cleanJson(response);
-                        const parsed = parseJsonTolerant(cleaned);
+                        const ndjsonDataset = parseNdjsonDataset(cleaned);
+                        const parsed = streamingState.finished ? null : (ndjsonDataset || parseJsonTolerant(cleaned));
                         if (!parsed || typeof parsed !== "object") {
+                            if (streamingState.header) {
+                                finalizeStreamingDataset(streamingState, { activeTableId: page?.tableId });
+                                showStatus("Jeu de données mis à jour.");
+                                return;
+                            }
                             throw new Error("Réponse IA invalide");
                         }
                         const dataset =
@@ -5090,6 +5547,7 @@
                                 ? parsed
                                 : buildDatasetFromSingleTablePayload(parsed, page?.tableId, page?.title);
                         applyDatasetToState(dataset, { markAsAi: true, activeTableId: page?.tableId });
+                        syncDatasetScriptFromState();
                         showStatus("Jeu de données mis à jour.");
                         scheduleNaturalFilterRecalc();
                     } catch (err) {
@@ -5109,11 +5567,18 @@
                 }
 
                 function clearGrid() {
-                    const page = getActivePage();
-                    page.data = { columnDefs: [], rowData: [] };
-                    applyGridData(page.data, { tableId: page.tableId });
+                    state.pages.forEach(page => {
+                        const columnDefs = Array.isArray(page?.data?.columnDefs) ? page.data.columnDefs : [];
+                        page.data = { columnDefs, rowData: [] };
+                    });
+                    resetRelationLookups();
+                    const activePage = getActivePage();
+                    if (activePage) {
+                        applyGridData(activePage.data, { tableId: activePage.tableId });
+                    }
                     resetRelationLookups();
                     syncDatasetScriptFromState();
+                    scheduleNaturalFilterRecalc();
                     showStatus("Grille et script vidés.");
                 }
 

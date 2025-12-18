@@ -172,7 +172,7 @@
         return nextHeaders;
     }
 
-    async function consumeStream(response, stopCondition) {
+    async function consumeStream(response, stopCondition, onChunk) {
         const reader = response.body?.getReader?.();
         if (!reader) {
             return parseJsonResponse(response);
@@ -226,6 +226,13 @@
                     const chunk = normalizeChunk(payload);
                     if (chunk) {
                         aggregated += chunk;
+                        if (typeof onChunk === "function") {
+                            try {
+                                onChunk(chunk);
+                            } catch (err) {
+                                console.warn("onChunk handler failed", err);
+                            }
+                        }
                         if (typeof stopCondition === "function" && stopCondition(aggregated)) {
                             await cancelStream();
                             releaseReader();
@@ -255,7 +262,7 @@
         }
     }
 
-    async function consumeNdjsonStream(response, stopCondition) {
+    async function consumeNdjsonStream(response, stopCondition, onChunk) {
         const reader = response.body?.getReader?.();
         if (!reader) {
             return parseJsonResponse(response);
@@ -285,6 +292,13 @@
                 const chunk = normalizeChunk(payload);
                 if (chunk) {
                     aggregated += chunk;
+                    if (typeof onChunk === "function") {
+                        try {
+                            onChunk(chunk);
+                        } catch (err) {
+                            console.warn("onChunk handler failed", err);
+                        }
+                    }
                     if (typeof stopCondition === "function" && stopCondition(aggregated)) {
                         await cancelStream();
                         releaseReader();
@@ -376,14 +390,15 @@
         return next;
     }
 
-    async function chatCompletion({ endpoint, apiKey, payload, headers = {}, stopCondition, signal }) {
+    async function chatCompletion({ endpoint, apiKey, payload, headers = {}, stopCondition, signal, onChunk }) {
         if (!endpoint) {
             throw new Error("Endpoint manquant");
         }
         if (!payload || typeof payload !== "object") {
             throw new Error("Payload OpenAI invalide");
         }
-        const requestPayload = toResponsesPayload(payload);
+        const { onChunk: _omitOnChunk, ...restPayload } = payload || {};
+        const requestPayload = toResponsesPayload(restPayload);
         const wantsStream = hasStreamingSupport && requestPayload.stream === true;
         if (!wantsStream) {
             delete requestPayload.stream;
@@ -404,7 +419,7 @@
         const isStream = wantsStream && !!response.body && contentType.includes("text/event-stream");
 
         if (isStream) {
-            return consumeStream(response, stopCondition);
+            return consumeStream(response, stopCondition, onChunk);
         }
 
         return parseJsonResponse(response);
@@ -465,7 +480,7 @@
         return headers;
     }
 
-    async function callOllama(backend, payload, signal, endpointType = "responses") {
+    async function callOllama(backend, payload, signal, endpointType = "responses", onChunk) {
         const modelName = (backend?.model || "").toString().toLowerCase();
         // If this is a gpt-oss model, use Ollama's OpenAI-compatible endpoints (/v1/...)
         if (modelName.startsWith("gpt-oss")) {
@@ -550,7 +565,7 @@
                 const wantsStream = openaiBody.stream === true;
                 const isNdjsonStream = contentType.includes("application/x-ndjson") || contentType.includes("text/event-stream");
                 if (wantsStream && !!response.body && isNdjsonStream) {
-                    const aggregated = contentType.includes("application/x-ndjson") ? await consumeNdjsonStream(response, undefined) : await consumeStream(response, undefined);
+                    const aggregated = contentType.includes("application/x-ndjson") ? await consumeNdjsonStream(response, undefined, onChunk) : await consumeStream(response, undefined, onChunk);
                     if (globalThis?.console) console.info("[Ollama][OpenAI-compat] stream response", aggregated);
                     return aggregated?.trim ? aggregated.trim() : aggregated;
                 }
@@ -600,8 +615,8 @@
                 (contentType.includes("text/event-stream") || isNdjsonStream);
             if (isStream) {
                 const aggregated = isNdjsonStream
-                    ? await consumeNdjsonStream(response, undefined)
-                    : await consumeStream(response, undefined);
+                    ? await consumeNdjsonStream(response, undefined, onChunk)
+                    : await consumeStream(response, undefined, onChunk);
                 if (globalThis?.console) {
                     console.info("[Ollama] response", aggregated);
                 }
@@ -670,7 +685,7 @@
         }
     }
 
-    async function collectWebllmStream(stream, stopCondition, signal) {
+    async function collectWebllmStream(stream, stopCondition, signal, onChunk) {
         if (!stream || typeof stream[Symbol.asyncIterator] !== "function") {
             const normalized = normalizeChunk(stream);
             return typeof normalized === "string" ? normalized.trim() : "";
@@ -687,6 +702,13 @@
                 const normalized = normalizeChunk(chunk);
                 if (normalized) {
                     aggregated += normalized;
+                    if (typeof onChunk === "function") {
+                        try {
+                            onChunk(normalized);
+                        } catch (err) {
+                            console.warn("onChunk handler failed", err);
+                        }
+                    }
                 }
                 if (typeof stopCondition === "function" && stopCondition(aggregated)) {
                     break;
@@ -699,7 +721,7 @@
         return aggregated.trim();
     }
 
-    async function executeWebllm(backend, payload, stopCondition, signal) {
+    async function executeWebllm(backend, payload, stopCondition, signal, onChunk) {
         if (!window.GoToolkitWebLLM || typeof window.GoToolkitWebLLM.ensureEngine !== "function") {
             throw new Error("WebLLM indisponible");
         }
@@ -728,7 +750,7 @@
             const wantsStream = Boolean(payload && payload.stream);
             const response = await engine.chat.completions.create(nextPayload);
             if (wantsStream) {
-                const result = await collectWebllmStream(response, stopCondition, signal);
+                const result = await collectWebllmStream(response, stopCondition, signal, onChunk);
                 if (signal && !signal.aborted && typeof signal.removeEventListener === "function") {
                     signal.removeEventListener("abort", onAbort);
                 }
@@ -746,16 +768,16 @@
         }
     }
 
-    async function executeWithBackend(backend, payload, stopCondition, signal, endpointType) {
+    async function executeWithBackend(backend, payload, stopCondition, signal, endpointType, onChunk) {
         const initial = { ...(payload || {}) };
         if (!initial.model && backend?.model) {
             initial.model = backend.model;
         }
         if (backend?.type === "webllm") {
-            return executeWebllm(backend, initial, stopCondition, signal);
+            return executeWebllm(backend, initial, stopCondition, signal, onChunk);
         }
         if (backend?.type === "ollama") {
-            return callOllama(backend, initial, signal, endpointType);
+            return callOllama(backend, initial, signal, endpointType, onChunk);
         }
         try {
             return await chatCompletion({
@@ -763,7 +785,8 @@
                 apiKey: backend.apiKey,
                 payload: initial,
                 stopCondition,
-                signal
+                signal,
+                onChunk
             });
         } catch (err) {
             if (err?.name === "AbortError") {
@@ -780,14 +803,15 @@
                     apiKey: fallback.apiKey,
                     payload: fallbackPayload,
                     stopCondition,
-                    signal
+                    signal,
+                    onChunk
                 });
             }
             throw err;
         }
     }
 
-    async function autoChatCompletion({ payload, stopCondition, signal, endpointType = "responses" } = {}) {
+    async function autoChatCompletion({ payload, stopCondition, signal, endpointType = "responses", onChunk } = {}) {
         const backendProvider = global.GoToolkitAIBackend;
         if (!backendProvider || typeof backendProvider.getBackend !== "function") {
             const fallbackEndpoint =
@@ -797,7 +821,8 @@
                 apiKey: "",
                 payload: payload || {},
                 stopCondition,
-                signal
+                signal,
+                onChunk
             });
         }
         const backend = await backendProvider.getBackend(endpointType);
@@ -807,7 +832,7 @@
             err.backendInfo = backend;
             throw err;
         }
-        return executeWithBackend(backend, payload, stopCondition, signal, endpointType);
+        return executeWithBackend(backend, payload, stopCondition, signal, endpointType, onChunk);
     }
 
     global.GoToolkitIAClient = {

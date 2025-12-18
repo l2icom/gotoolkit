@@ -1003,13 +1003,13 @@
                 <form class="feedback-form" onsubmit="return false;">
                     <div class="field-row">
                         <label>
-	                            <span class="label-title">Moteur IA</span>
-	                            <select id="aiBackendSelect">
-	                                <option value="openai">OpenAI (recommandé)</option>
-	                                <option value="webllm">WebLLM </option>
-	                            </select>
-	                        </label>
-	                    </div>
+                            <span class="label-title">Moteur IA</span>
+                            <select id="aiBackendSelect">
+                                <option value="openai">OpenAI (recommandé)</option>
+                                <option value="webllm">WebLLM </option>
+                            </select>
+                        </label>
+                    </div>
 
                     <div id="openaiSettings">
                         <div class="field-row">
@@ -1060,10 +1060,10 @@
                         </div>
                     </div>
 
-	                    <div id="webllmSettings" style="display:none;">
-	                        <div class="field-row">
-	                            <label style="width:100%">
-	                                <div
+                    <div id="webllmSettings" style="display:none;">
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <div
                                     style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
                                     <div>
                                         <span class="label-title">WebLLM</span>
@@ -1080,9 +1080,8 @@
                             </label>
                         </div>
 
-                        <div class="field-row">
+                        <div class="field-row" style="margin-top:8px;">
                             <label>
-                                <span class="label-title">Moteur WebLLM</span>
                                 <select id="webllmModelSelect"></select>
                             </label>
                         </div>
@@ -2456,22 +2455,22 @@
                 if (webllmModelSelect && storedWebllmModel) {
                     webllmModelSelect.value = storedWebllmModel;
                 }
-	                var storedBackend = (config && typeof config.getBackend === "function" ? config.getBackend() : null) || localStorage.getItem("go-toolkit-ai-backend") || "openai";
-	                // Ollama access is disabled on the launcher; if it was previously selected, migrate to OpenAI.
-	                if (storedBackend === "ollama") {
-	                    storedBackend = "openai";
-	                    try { localStorage.setItem("go-toolkit-ai-backend", storedBackend); } catch (e) { }
-	                    try { config && typeof config.setBackend === "function" && config.setBackend(storedBackend); } catch (e) { }
-	                }
-	                if (aiBackendSelect) aiBackendSelect.value = storedBackend;
-	                updateBackendVisibility();
-	                const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("nuances-reasoning-effort") || "low";
-	                if (settingsReasoningSelect) settingsReasoningSelect.value = storedReasoning;
+                var storedBackend = (config && typeof config.getBackend === "function" ? config.getBackend() : null) || localStorage.getItem("go-toolkit-ai-backend") || "openai";
+                // Ollama access is disabled on the launcher; if it was previously selected, migrate to OpenAI.
+                if (storedBackend === "ollama") {
+                    storedBackend = "openai";
+                    try { localStorage.setItem("go-toolkit-ai-backend", storedBackend); } catch (e) { }
+                    try { config && typeof config.setBackend === "function" && config.setBackend(storedBackend); } catch (e) { }
+                }
+                if (aiBackendSelect) aiBackendSelect.value = storedBackend;
+                updateBackendVisibility();
+                const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("nuances-reasoning-effort") || "low";
+                if (settingsReasoningSelect) settingsReasoningSelect.value = storedReasoning;
             } catch (e) { /* noop */ }
             settingsModal.classList.add("open");
             settingsModal.setAttribute("aria-hidden", "false");
             settingsReasoningSelect?.focus();
-	        }
+        }
 
         function closeSettings() {
             if (!settingsModal) return;

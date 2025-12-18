@@ -654,18 +654,21 @@
         "Ajoute un titre en commentaire %% Title dans la réponse.\n- " +
         "Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
 
-    const gridSystemPrompt = `Tu es un **générateur de données JSON pour AG Grid (client-side)** capable de produire **plusieurs tables (onglets)** avec **relations entre objets via colonnes clés**.
+    const gridSystemPrompt = `Tu es un générateur de données JSON pour AG Grid (client-side) qui produit un **flux JSONL (NDJSON)** en streaming pour initialiser puis alimenter la grille progressivement.
 
-⚠️ SORTIE STRICTE  
-- Retourne **UNIQUEMENT du JSON valide**  
-- **Un seul objet JSON racine**  
-- **Aucun markdown, aucun commentaire, aucun texte hors JSON**
+⚠️ SORTIE STRICTE (STREAMING)
+- Retourne UNIQUEMENT des objets JSON valides
+- 1 objet JSON par ligne
+- Aucun markdown, aucun commentaire, aucun texte hors JSON
+- L'ordre des lignes est obligatoire
 
 ---
 
-## FORMAT DE SORTIE (objet JSON unique)
+## ORDRE DU FLUX
 
+1) PREMIÈRE LIGNE — HEADER (STRUCTURE)
 {
+  "type": "header",
   "schema": {
     "tables": [
       {
@@ -676,11 +679,22 @@
         "relations": [ ... ]
       }
     ]
-  },
-  "data": {
-    "<tableId>": {
-      "columnDefs": [ ... ],
-      "rowData": [ ... ]
+  }
+}
+
+2) LIGNES SUIVANTES — DONNÉES (STREAM)
+{
+  "type": "row",
+  "table": "<tableId>",
+  "data": { ... }
+}
+
+3) DERNIÈRE LIGNE — FIN
+{
+  "type": "done",
+  "summary": {
+    "tables": {
+      "<tableId>": <rowCount>
     }
   }
 }
@@ -690,23 +704,20 @@
 ## RÈGLES GÉNÉRALES
 
 ### Clés primaires
-- Par défaut, **la clé primaire est toujours \`id\`**
+- Par défaut, la clé primaire est toujours \`id\`
 - Type : \`number\`
-- Colonne **lecture seule**
-- Toute exception DOIT être explicitement déclarée dans \`primaryKey\`
+- Colonne lecture seule
+- Toute exception doit être explicitement déclarée dans \`primaryKey\`
 
 ### Tables / Onglets
-- Chaque table correspond à **un onglet AG Grid**
+- Chaque table correspond à un onglet AG Grid
 - \`table.id\` : identifiant technique unique (anglais)
 - \`table.title\` : titre lisible (3–5 mots, français)
-- Chaque table DOIT contenir \`columnDefs\` et \`rowData\`
+- Schéma et relations uniquement dans la ligne \`header\`
 
 ### Relations entre tables
-- Relations déclarées uniquement dans le \`schema\`
-- Aucune donnée imbriquée
-- Les liens se font via des **foreign keys \`xxxId\`** pointant vers \`id\`
-
-Format relation :
+- Liens via des foreign keys \`xxxId\` pointant vers \`id\`
+- Format relation :
 {
   "type": "one-to-many | many-to-one | one-to-one",
   "fromTable": "orders",
@@ -715,139 +726,66 @@ Format relation :
   "toColumn": "id",
   "label": "Client"
 }
-
-- Toute valeur de clé étrangère DOIT exister dans la table cible
+- Toute valeur de clé étrangère doit exister ou apparaître plus tard dans le flux
 - Les \`id\` ne sont jamais modifiés
 
 ---
 
-## FORMAT columnDefs (AG Grid)
+## FORMAT DES COLONNES (AG Grid)
 
-- \`columnDefs.field\` DOIT correspondre EXACTEMENT aux clés de \`rowData\`
-- Clés en **anglais**
-- \`headerName\` en **français** et en 1 seul mot si possible
-- Chaque colonne DOIT définir \`cellDataType\`
-- \`cellDataType\` autorisés :
+- \`column.field\` = clé exacte de \`rowData\`
+- Clés en anglais
+- \`headerName\` en français (1 mot si possible)
+- \`cellDataType\` obligatoire, parmi :
   - "text"
   - "number"
   - "boolean"
   - "date"
   - "dateTime"
 
----
-
-## TYPES DE COLONNES AUTORISÉS
-
+### Types de colonnes autorisés
 1) TEXTE
-{
-  "field": "name",
-  "headerName": "Nom",
-  "editable": true,
-  "cellDataType": "text"
-}
+{ "field": "name", "headerName": "Nom", "editable": true, "cellDataType": "text" }
 
 2) NOMBRE
-{
-  "field": "score",
-  "headerName": "Score",
-  "editable": true,
-  "cellDataType": "number"
-}
+{ "field": "score", "headerName": "Score", "editable": true, "cellDataType": "number" }
 
 3) BOOLÉEN
-{
-  "field": "active",
-  "headerName": "Actif",
-  "editable": true,
-  "cellDataType": "boolean",
-  "cellRenderer": "agCheckboxCellRenderer"
-}
+{ "field": "active", "headerName": "Actif", "editable": true, "cellDataType": "boolean", "cellRenderer": "agCheckboxCellRenderer" }
 
 4) DATE
-- Valeur rowData : "YYYY-MM-DD"
-{
-  "field": "startDate",
-  "headerName": "Date de début",
-  "editable": true,
-  "cellDataType": "date"
-}
+- \`rowData\` : ISO 8601 complet avec fuseau (ex: "2025-12-18T23:00:00.000Z")
 
-5) SELECT SIMPLE (texte contrôlé)
-{
-  "field": "status",
-  "headerName": "Statut",
-  "editable": true,
-  "cellDataType": "text",
-  "cellEditor": "agSelectCellEditor",
-  "cellEditorParams": {
-    "values": ["ok", "warn", "ko"]
-  }
-}
+5) SELECT SIMPLE
+{ "field": "status", "headerName": "Statut", "editable": true, "cellDataType": "text", "cellEditor": "agSelectCellEditor", "cellEditorParams": { "values": ["ok", "warn", "ko"] } }
 
-6) TIMESTAMP (date + heure)
-- Valeur rowData : ISO 8601 ("YYYY-MM-DDTHH:mm:ss")
-{
-  "field": "updatedAt",
-  "headerName": "Dernière mise à jour",
-  "editable": false,
-  "cellDataType": "dateTime"
-}
+6) TIMESTAMP
+- \`rowData\` : ISO 8601 complet avec fuseau (ex: "2025-12-18T23:00:00.000Z")
+{ "field": "updatedAt", "headerName": "Dernière mise à jour", "editable": false, "cellDataType": "dateTime" }
 
 7) CLÉ / LECTURE SEULE
-{
-  "field": "id",
-  "headerName": "Id",
-  "editable": false,
-  "cellDataType": "number"
-}
+{ "field": "id", "headerName": "Id", "editable": false, "cellDataType": "number" }
 
 ---
 
-## RÈGLES POUR rowData
+## RÈGLES POUR LES LIGNES (type=row)
 
-- Tableau d’objets **plats uniquement**
-- Même ensemble de clés pour chaque ligne
-- Champs obligatoires : \`id\` et \`name\`
+- Objets plats
+- Champs obligatoires pour chaque ligne de chaque colonne : \`id\`, \`name\`
 - \`id\` unique par table
-- Les clés étrangères (\`xxxId\`) référencent toujours \`id\`
 - Valeur inconnue → \`null\`
-- Types autorisés :
-  - string
-  - number
-  - boolean
-  - null
-  - date ISO ("YYYY-MM-DD")
-  - dateTime ISO ("YYYY-MM-DDTHH:mm:ss")
 - Types strictement cohérents avec \`cellDataType\`
+- Les \`id\` sont conversés en cas de modification
+- Les lignes peuvent arriver dans n'importe quel ordre
 
 ---
 
-## EXEMPLE DE VALEURS
+## CONTRAINTES
 
-{
-  "id": 42,
-  "name": "Commande Alpha",
-  "customerId": 3,
-  "amount": 520,
-  "active": true,
-  "startDate": "2024-06-01",
-  "updatedAt": "2024-06-01T14:32:00",
-  "status": "ok"
-}
-
----
-
-## CONTRAINTES FINALES
-
-- Génère des données réalistes
-- Assure une cohérence parfaite :
-  - \`schema\` ↔ \`data\`
-  - \`columnDefs\` ↔ \`rowData\`
-  - clés primaires ↔ clés étrangères
-- En cas de modification :
-  - ne jamais changer les \`id\`
-  - renvoyer **l’intégralité du dataset**
-- Le JSON retourné doit être directement exploitable par AG Grid (Community)`;
+- Données réalistes
+- Cohérence stricte : schema ↔ colonnes ↔ données ↔ clés
+- Si le schema change, renvoyer un nouveau flux complet (header + rows + done)
+- Le flux doit être consommable ligne par ligne en streaming`;
 
     const gridDefaultPromptTemplate = "Génère des exemples basés sur {{scenario_prompt}}.";
 

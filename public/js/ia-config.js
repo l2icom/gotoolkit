@@ -41,7 +41,6 @@
         { id: "Qwen2-1.5B-Instruct-q4f16_1-MLC", label: "Qwen2-1.5B-q4f16" },
         { id: "Qwen2-0.5B-Instruct-q4f16_1-MLC", label: "Qwen2-0.5B-q4f16" },
         { id: "Phi-3-mini-4k-instruct-q4f16_1-MLC", label: "Phi-3-mini-4k-q4f16" },
-        { id: "Gemma-2b-it-q4f16_1-MLC", label: "Gemma-2B-q4f16" },
         { id: "TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC", label: "TinyLlama-1.1B-q4f16" }
         // Keep list to supported/prebuilt <=7B engines
     ]);

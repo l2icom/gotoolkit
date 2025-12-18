@@ -1,32 +1,11 @@
 import { test, expect } from "@playwright/test";
 
-async function freezeTime(page: any, isoString: string) {
-  await page.addInitScript(({ iso }) => {
-    const fixed = new Date(iso).getTime();
-    const OriginalDate = Date;
-    class MockDate extends OriginalDate {
-      constructor(...args: any[]) {
-        if (args.length === 0) {
-          super(fixed);
-        } else {
-          // @ts-ignore
-          super(...args);
-        }
-      }
-      static now() {
-        return fixed;
-      }
-    }
-    // @ts-ignore
-    MockDate.UTC = OriginalDate.UTC;
-    // @ts-ignore
-    MockDate.parse = OriginalDate.parse;
-    // @ts-ignore
-    MockDate.prototype = OriginalDate.prototype;
-    // @ts-ignore
-    window.Date = MockDate;
-  }, { iso: isoString });
-}
+const STREAMING_LINES = [
+  `{"type":"header","schema":{"tables":[{"id":"products","title":"Produits test","primaryKey":"id","columns":[{"field":"id","headerName":"Id","editable":false,"cellDataType":"number"},{"field":"name","headerName":"Nom","editable":true,"cellDataType":"text"}],"relations":[]}]}}\n`,
+  `{"type":"row","table":"products","data":{"id":1,"name":"Alpha"}}\n`,
+  `{"type":"row","table":"products","data":{"id":2,"name":"Beta"}}\n`,
+  `{"type":"done","summary":{"tables":{"products":2}}}\n`
+];
 
 const SAMPLE_MULTI_TABLE_DATASET = `{
   "schema": {
@@ -529,6 +508,70 @@ test("natural French filter supports OR between values and comma AND between con
   await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Benoît Martin");
 });
 
+test("foreign key natural filter matches by related name", async ({ page }) => {
+  await page.goto("http://127.0.0.1:8080/grid.html");
+
+  await page.locator("#gridScript").fill(SAMPLE_MULTI_TABLE_DATASET);
+  await page.locator("#gridTitleInput").click();
+
+  const ordersTab = page.getByRole("button", { name: "Commandes" });
+  await ordersTab.waitFor({ state: "visible", timeout: 10000 });
+  await ordersTab.click();
+
+  const filterInput = page.locator("#gridNaturalFilterInput");
+  await filterInput.fill("Client est Alice Dupont");
+  await page.waitForTimeout(1200);
+
+  // Orders for customerId=1 should be 2 rows (Commande A, Commande D)
+  const rows = page.locator(".ag-center-cols-container .ag-row");
+  await expect(rows).toHaveCount(2, { timeout: 10000 });
+  await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Commande A");
+  await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Commande D");
+});
+
+test("relation count columns are filterable as numbers", async ({ page }) => {
+  await page.goto("http://127.0.0.1:8080/grid.html");
+
+  await page.locator("#gridScript").fill(SAMPLE_MULTI_TABLE_DATASET);
+  await page.locator("#gridTitleInput").click();
+
+  const clientsTab = page.getByRole("button", { name: "Clients" });
+  await clientsTab.waitFor({ state: "visible", timeout: 10000 });
+  await clientsTab.click();
+
+  const filterInput = page.locator("#gridNaturalFilterInput");
+  // Alice has 2 orders in the sample dataset.
+  await filterInput.fill("Nb Commandes supérieur à 2");
+  await page.waitForTimeout(1200);
+
+  const rows = page.locator(".ag-center-cols-container .ag-row");
+  await expect(rows).toHaveCount(1, { timeout: 10000 });
+  await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Alice Dupont");
+});
+
+test("'entre' is inclusive by default and supports 'exclu' for strict bounds", async ({ page }) => {
+  await page.goto("http://127.0.0.1:8080/grid.html");
+
+  await page.locator("#gridScript").fill(SAMPLE_MULTI_TABLE_DATASET);
+  await page.locator("#gridTitleInput").click();
+
+  const ordersTab = page.getByRole("button", { name: "Commandes" });
+  await ordersTab.waitFor({ state: "visible", timeout: 10000 });
+  await ordersTab.click();
+
+  const filterInput = page.locator("#gridNaturalFilterInput");
+  // Inclusive between: should match 60, 85, 150 => 3 rows.
+  await filterInput.fill("Montant entre 60 et 150");
+  await page.waitForTimeout(1200);
+  await expect(page.locator(".ag-center-cols-container .ag-row")).toHaveCount(3, { timeout: 10000 });
+
+  // Strict between: excludes 60 and 150 => only 85 => Commande B.
+  await filterInput.fill("Montant entre 60 et 150 exclu");
+  await page.waitForTimeout(1200);
+  await expect(page.locator(".ag-center-cols-container .ag-row")).toHaveCount(1, { timeout: 10000 });
+  await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Commande B");
+});
+
 test("natural French filter supports ', ou' between conditions", async ({ page }) => {
   await page.goto("http://127.0.0.1:8080/grid.html");
 
@@ -547,6 +590,63 @@ test("natural French filter supports ', ou' between conditions", async ({ page }
   await expect(rows).toHaveCount(2, { timeout: 10000 });
   await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Alice Dupont");
   await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Benoît Martin");
+});
+
+test("streams update ag-Grid incrementally", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.clear();
+  });
+
+  await page.goto("http://127.0.0.1:8080/grid.html");
+  await page.evaluate(({ lines }) => {
+    // @ts-ignore
+    // @ts-ignore
+    window.__streamChunks = [];
+    const mockCompletion = async ({ onChunk }: any) =>
+      await new Promise(resolve => {
+        let aggregated = "";
+        const delay = 400;
+        lines.forEach((line, idx) => {
+          setTimeout(() => {
+            aggregated += line;
+            // @ts-ignore
+            window.__streamChunks.push({ line, ts: Date.now() });
+            if (typeof onChunk === "function") {
+              try {
+                onChunk(line);
+              } catch (err) {
+                console.warn("onChunk mock failed", err);
+              }
+            }
+            if (idx === lines.length - 1) {
+              resolve(aggregated);
+            }
+          }, idx * delay);
+        });
+      });
+    // @ts-ignore
+    window.GoToolkitIA = { chatCompletion: mockCompletion };
+    // @ts-ignore
+    window.GoToolkitIAClient = { chatCompletion: mockCompletion, supportsStreaming: () => true };
+  }, { lines: STREAMING_LINES });
+  await page.locator("#generateBtn").click();
+
+  const produitsTab = page.getByRole("button", { name: "Produits test" });
+  await produitsTab.waitFor({ state: "visible", timeout: 8000 });
+  await produitsTab.click();
+
+  const rows = page.locator(".ag-center-cols-container .ag-row");
+  await expect(rows).toHaveCount(2, { timeout: 10000 });
+
+  const chunkTimes = await page.evaluate(() => {
+    // @ts-ignore
+    const chunks = Array.isArray(window.__streamChunks) ? window.__streamChunks : [];
+    return chunks
+      .filter(item => typeof item?.line === "string" && item.line.includes('"type":"row"'))
+      .map(item => item.ts);
+  });
+  expect(chunkTimes.length).toBe(2);
+  expect(chunkTimes[1] - chunkTimes[0]).toBeGreaterThanOrEqual(250);
 });
 
 test("natural French filter ignores incomplete 'ou' value list", async ({ page }) => {
