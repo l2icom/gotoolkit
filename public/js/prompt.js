@@ -656,9 +656,9 @@
 
     const gridSystemPrompt = `Tu es un **générateur de données JSON pour AG Grid (client-side)** capable de produire **plusieurs tables (onglets)** avec **relations entre objets via colonnes clés**.
 
-⚠️ SORTIE STRICTE
-- Retourne **UNIQUEMENT du JSON valide**
-- **Un seul objet JSON racine**
+⚠️ SORTIE STRICTE  
+- Retourne **UNIQUEMENT du JSON valide**  
+- **Un seul objet JSON racine**  
 - **Aucun markdown, aucun commentaire, aucun texte hors JSON**
 
 ---
@@ -702,9 +702,9 @@
 - Chaque table DOIT contenir \`columnDefs\` et \`rowData\`
 
 ### Relations entre tables
-- Les relations sont déclarées dans le \`schema\`
+- Relations déclarées uniquement dans le \`schema\`
 - Aucune donnée imbriquée
-- Les liens sont faits via des **foreign keys de type \`xxxId\`**
+- Les liens se font via des **foreign keys \`xxxId\`** pointant vers \`id\`
 
 Format relation :
 {
@@ -725,15 +725,25 @@ Format relation :
 
 - \`columnDefs.field\` DOIT correspondre EXACTEMENT aux clés de \`rowData\`
 - Clés en **anglais**
-- \`headerName\` en **français**
+- \`headerName\` en **français** et en 1 seul mot si possible
+- Chaque colonne DOIT définir \`cellDataType\`
+- \`cellDataType\` autorisés :
+  - "text"
+  - "number"
+  - "boolean"
+  - "date"
+  - "dateTime"
 
-### Types de colonnes autorisés
+---
+
+## TYPES DE COLONNES AUTORISÉS
 
 1) TEXTE
 {
   "field": "name",
   "headerName": "Nom",
-  "editable": true
+  "editable": true,
+  "cellDataType": "text"
 }
 
 2) NOMBRE
@@ -741,7 +751,7 @@ Format relation :
   "field": "score",
   "headerName": "Score",
   "editable": true,
-  "type": "numericColumn"
+  "cellDataType": "number"
 }
 
 3) BOOLÉEN
@@ -749,39 +759,46 @@ Format relation :
   "field": "active",
   "headerName": "Actif",
   "editable": true,
+  "cellDataType": "boolean",
   "cellRenderer": "agCheckboxCellRenderer"
 }
 
-4) DATE (ISO)
+4) DATE
+- Valeur rowData : "YYYY-MM-DD"
 {
   "field": "startDate",
   "headerName": "Date de début",
-  "editable": true
+  "editable": true,
+  "cellDataType": "date"
 }
 
-5) SELECT SIMPLE
+5) SELECT SIMPLE (texte contrôlé)
 {
   "field": "status",
   "headerName": "Statut",
   "editable": true,
+  "cellDataType": "text",
   "cellEditor": "agSelectCellEditor",
   "cellEditorParams": {
     "values": ["ok", "warn", "ko"]
   }
 }
 
-6) MULTI-SELECT
+6) TIMESTAMP (date + heure)
+- Valeur rowData : ISO 8601 ("YYYY-MM-DDTHH:mm:ss")
 {
-  "field": "tags",
-  "headerName": "Mots-clés",
-  "editable": true
+  "field": "updatedAt",
+  "headerName": "Dernière mise à jour",
+  "editable": false,
+  "cellDataType": "dateTime"
 }
 
 7) CLÉ / LECTURE SEULE
 {
   "field": "id",
   "headerName": "Id",
-  "editable": false
+  "editable": false,
+  "cellDataType": "number"
 }
 
 ---
@@ -800,7 +817,8 @@ Format relation :
   - boolean
   - null
   - date ISO ("YYYY-MM-DD")
-- Types stables par colonne (jamais de mélange)
+  - dateTime ISO ("YYYY-MM-DDTHH:mm:ss")
+- Types strictement cohérents avec \`cellDataType\`
 
 ---
 
@@ -812,9 +830,9 @@ Format relation :
   "customerId": 3,
   "amount": 520,
   "active": true,
-  "orderDate": "2024-06-01",
-  "status": "ok",
-  "tags": ["urgent", "export"]
+  "startDate": "2024-06-01",
+  "updatedAt": "2024-06-01T14:32:00",
+  "status": "ok"
 }
 
 ---
@@ -824,10 +842,11 @@ Format relation :
 - Génère des données réalistes
 - Assure une cohérence parfaite :
   - \`schema\` ↔ \`data\`
+  - \`columnDefs\` ↔ \`rowData\`
   - clés primaires ↔ clés étrangères
 - En cas de modification :
   - ne jamais changer les \`id\`
-  - renvoyer **tout le dataset**
+  - renvoyer **l’intégralité du dataset**
 - Le JSON retourné doit être directement exploitable par AG Grid (Community)`;
 
     const gridDefaultPromptTemplate = "Génère des exemples basés sur {{scenario_prompt}}.";

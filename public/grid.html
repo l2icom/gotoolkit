@@ -1400,6 +1400,103 @@
                     }
                 }
 
+                function resetForeignKeyLookups() {
+                    state._fkLookup = {};
+                }
+
+                function resetRelationCountLookups() {
+                    state._relCountLookup = {};
+                }
+
+                function resetRelationLookups() {
+                    resetForeignKeyLookups();
+                    resetRelationCountLookups();
+                }
+
+                function ensureForeignKeyLookup(tableId, keyColumn) {
+                    if (!tableId || !keyColumn) return {};
+                    state._fkLookup = state._fkLookup && typeof state._fkLookup === "object" ? state._fkLookup : {};
+                    state._fkLookup[tableId] = state._fkLookup[tableId] && typeof state._fkLookup[tableId] === "object"
+                        ? state._fkLookup[tableId]
+                        : {};
+                    if (state._fkLookup[tableId][keyColumn]) {
+                        return state._fkLookup[tableId][keyColumn];
+                    }
+                    const pageIndex = findPageIndexByTableId(tableId);
+                    const page = pageIndex === -1 ? null : state.pages[pageIndex];
+                    const rows = Array.isArray(page?.data?.rowData) ? page.data.rowData : [];
+                    const map = {};
+                    rows.forEach(row => {
+                        if (!row || typeof row !== "object") return;
+                        const key = row[keyColumn];
+                        const name = row.name;
+                        if (key == null || key === "") return;
+                        if (name == null || name === "") return;
+                        map[String(key)] = String(name);
+                    });
+                    state._fkLookup[tableId][keyColumn] = map;
+                    return map;
+                }
+
+                function getTableTitle(tableId) {
+                    if (!tableId) return "";
+                    const tables = Array.isArray(state?.schema?.tables) ? state.schema.tables : [];
+                    const table = tables.find(item => item?.id === tableId);
+                    return (table?.title || "").trim();
+                }
+
+                function getRelationSides(relation) {
+                    if (!relation || typeof relation !== "object") return null;
+                    const type = typeof relation.type === "string" ? relation.type.trim().toLowerCase() : "";
+                    if (type !== "one-to-many" && type !== "many-to-one") return null;
+                    const fromColumn = typeof relation.fromColumn === "string" ? relation.fromColumn.trim() : "";
+                    const toColumn = typeof relation.toColumn === "string" ? relation.toColumn.trim() : "";
+                    const fromTable = typeof relation.fromTable === "string" ? relation.fromTable.trim() : "";
+                    const toTable = typeof relation.toTable === "string" ? relation.toTable.trim() : "";
+                    if (!fromTable || !toTable || !fromColumn || !toColumn) return null;
+
+                    const fromLooksLikeFk = /id$/i.test(fromColumn);
+                    const toLooksLikeFk = /id$/i.test(toColumn);
+
+                    if (fromLooksLikeFk && toColumn === DEFAULT_PRIMARY_KEY) {
+                        return { oneTable: toTable, onePk: toColumn, manyTable: fromTable, manyFk: fromColumn };
+                    }
+                    if (toLooksLikeFk && fromColumn === DEFAULT_PRIMARY_KEY) {
+                        return { oneTable: fromTable, onePk: fromColumn, manyTable: toTable, manyFk: toColumn };
+                    }
+                    if (toColumn === DEFAULT_PRIMARY_KEY) {
+                        return { oneTable: toTable, onePk: toColumn, manyTable: fromTable, manyFk: fromColumn };
+                    }
+                    if (fromColumn === DEFAULT_PRIMARY_KEY) {
+                        return { oneTable: fromTable, onePk: fromColumn, manyTable: toTable, manyFk: toColumn };
+                    }
+                    return null;
+                }
+
+                function ensureRelationCountLookup(manyTable, manyFk) {
+                    if (!manyTable || !manyFk) return {};
+                    state._relCountLookup = state._relCountLookup && typeof state._relCountLookup === "object"
+                        ? state._relCountLookup
+                        : {};
+                    const key = `${manyTable}:${manyFk}`;
+                    if (state._relCountLookup[key]) {
+                        return state._relCountLookup[key];
+                    }
+                    const pageIndex = findPageIndexByTableId(manyTable);
+                    const page = pageIndex === -1 ? null : state.pages[pageIndex];
+                    const rows = Array.isArray(page?.data?.rowData) ? page.data.rowData : [];
+                    const map = {};
+                    rows.forEach(row => {
+                        if (!row || typeof row !== "object") return;
+                        const raw = row[manyFk];
+                        if (raw == null || raw === "") return;
+                        const id = String(raw);
+                        map[id] = (map[id] || 0) + 1;
+                    });
+                    state._relCountLookup[key] = map;
+                    return map;
+                }
+
                 function navigateToRelation(relation, value) {
                     if (!relation) return;
                     const targetIndex = findPageIndexByTableId(relation.toTable);
@@ -1420,15 +1517,17 @@
                     return params => {
                         const rawValue = params?.value;
                         if (rawValue == null || rawValue === "") return "";
+                        const lookup = ensureForeignKeyLookup(relation?.toTable, relation?.toColumn);
+                        const displayValue = lookup?.[String(rawValue)] || "";
                         const link = document.createElement("a");
                         link.href = "#";
-                        link.textContent = String(rawValue);
+                        link.textContent = displayValue || String(rawValue);
                         link.style.color = "#2a7a57";
                         link.style.textDecoration = "underline";
                         link.style.cursor = "pointer";
                         link.title = relation?.label
-                            ? `Aller vers ${relation.label} (${relation.toTable})`
-                            : `Aller vers ${relation.toTable}`;
+                            ? `Aller vers ${relation.label} (${relation.toTable}) — id=${rawValue}`
+                            : `Aller vers ${relation.toTable} — id=${rawValue}`;
                         link.addEventListener("click", event => {
                             event.preventDefault();
                             event.stopPropagation();
@@ -1436,6 +1535,79 @@
                         });
                         return link;
                     };
+                }
+
+                function createRelationCountCellRenderer(manyTable, manyFk, oneId) {
+                    const link = document.createElement("a");
+                    link.href = "#";
+                    link.style.color = "#2a7a57";
+                    link.style.textDecoration = "underline";
+                    link.style.cursor = "pointer";
+                    link.addEventListener("click", event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        const idx = findPageIndexByTableId(manyTable);
+                        if (idx === -1) {
+                            showStatus(`Table cible introuvable: ${manyTable}`, true);
+                            return;
+                        }
+                        let normalizedId = oneId;
+                        if (typeof normalizedId === "string" && /^[0-9]+$/.test(normalizedId.trim())) {
+                            normalizedId = Number(normalizedId.trim());
+                        }
+                        setActivePage(idx);
+                        applyFilterToCurrentGrid(manyFk, normalizedId);
+                        showStatus(`Filtré: ${manyTable}.${manyFk} = ${normalizedId}`);
+                    });
+                    return link;
+                }
+
+                function addRelationCountColumns(columnDefs = [], tableId) {
+                    const relations = getAllRelationsFromSchema()
+                        .map(getRelationSides)
+                        .filter(Boolean)
+                        .filter(sides => sides.oneTable === tableId);
+                    if (!relations.length) return columnDefs;
+
+                    const existingFields = new Set(
+                        columnDefs
+                            .map(def => (def && typeof def === "object" && typeof def.field === "string" ? def.field : ""))
+                            .filter(Boolean)
+                    );
+
+                    const appended = [];
+                    relations.forEach(sides => {
+                        const field = `__relCount__${sides.manyTable}__${sides.manyFk}__${sides.onePk}`;
+                        if (existingFields.has(field)) return;
+                        const manyTitle = getTableTitle(sides.manyTable) || sides.manyTable;
+                        appended.push({
+                            field,
+                            headerName: `Nb ${manyTitle}`,
+                            editable: false,
+                            cellDataType: "number",
+                            sortable: true,
+                            filter: true,
+                            valueGetter: params => {
+                                const oneId = params?.data?.[sides.onePk];
+                                if (oneId == null || oneId === "") return 0;
+                                const map = ensureRelationCountLookup(sides.manyTable, sides.manyFk);
+                                return map?.[String(oneId)] || 0;
+                            },
+                            cellRenderer: params => {
+                                const oneId = params?.data?.[sides.onePk];
+                                if (oneId == null || oneId === "") return "";
+                                const map = ensureRelationCountLookup(sides.manyTable, sides.manyFk);
+                                const count = map?.[String(oneId)] || 0;
+                                const link = createRelationCountCellRenderer(sides.manyTable, sides.manyFk, oneId);
+                                link.textContent = String(count);
+                                link.title = `Voir ${manyTitle} liés — id=${oneId}`;
+                                return link;
+                            }
+                        });
+                        existingFields.add(field);
+                    });
+                    if (!appended.length) return columnDefs;
+                    return [...columnDefs, ...appended];
                 }
 
                 function addForeignKeyRenderers(columnDefs = [], tableId) {
@@ -1460,7 +1632,8 @@
                     const rowData = Array.isArray(data.rowData) ? data.rowData : [];
                     const normalizedColumnDefs = ensureDefaultPinned(columnDefs);
                     data.columnDefs = normalizedColumnDefs;
-                    const gridColumnDefs = addForeignKeyRenderers(normalizedColumnDefs, tableId);
+                    const withFkLinks = addForeignKeyRenderers(normalizedColumnDefs, tableId);
+                    const gridColumnDefs = addRelationCountColumns(withFkLinks, tableId);
                     if (typeof gridApi.setGridOption === "function") {
                         gridApi.setGridOption("columnDefs", gridColumnDefs);
                         gridApi.setGridOption("rowData", rowData);
@@ -1476,6 +1649,7 @@
                     if (!page) return;
                     const gridData = collectGridData();
                     page.data = gridData;
+                    resetRelationLookups();
                     syncDatasetScriptFromState();
                 }
 
@@ -1495,6 +1669,9 @@
                             cleaned[key] = value;
                         });
                         return cleaned;
+                    }).filter(def => {
+                        const field = def && typeof def === "object" && typeof def.field === "string" ? def.field : "";
+                        return field ? !field.startsWith("__relCount__") : true;
                     });
                     const rowData = [];
                     gridApi.forEachNode(node => {
@@ -1814,6 +1991,7 @@
                     const rowData = Array.isArray(payload.rowData) ? payload.rowData : [];
                     const page = getActivePage();
                     page.data = { columnDefs, rowData };
+                    resetRelationLookups();
                     if (gridTitleInput && payload.title) {
                         gridTitleInput.value = payload.title;
                         page.title = payload.title;
@@ -2495,6 +2673,7 @@
                         columns: [],
                         relations: []
                     });
+                    resetRelationLookups();
                     syncDatasetScriptFromState({ persist: false });
                     setActivePage(state.pages.length - 1);
                 }
@@ -2509,6 +2688,7 @@
                     state.activeIndex = Math.max(0, state.activeIndex - 1);
                     setActivePage(state.activeIndex);
                     renderTabs();
+                    resetRelationLookups();
                     syncDatasetScriptFromState();
                 }
 
@@ -2774,6 +2954,7 @@
                     }
                     const dataByTable = dataset?.data && typeof dataset.data === "object" ? dataset.data : {};
                     const previousActiveTableId = getActivePage()?.tableId || "";
+                    resetRelationLookups();
 
                     const pages = normalizedSchema.tables.map((table, index) => {
                         const existing = state.pages.find(page => page?.tableId === table.id);
@@ -2896,6 +3077,7 @@
                     const page = getActivePage();
                     page.data = { columnDefs: [], rowData: [] };
                     applyGridData(page.data, { tableId: page.tableId });
+                    resetRelationLookups();
                     syncDatasetScriptFromState();
                     showStatus("Grille et script vidés.");
                 }
@@ -2918,6 +3100,7 @@
                             const columnDefs = Array.isArray(parsed.columnDefs) ? parsed.columnDefs : [];
                             const rowData = Array.isArray(parsed.rowData) ? parsed.rowData : [];
                             page.data = { columnDefs, rowData };
+                            resetRelationLookups();
                             applyGridData(page.data, { tableId: page.tableId });
                             syncDatasetScriptFromState();
                             persistState();
