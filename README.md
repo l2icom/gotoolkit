@@ -1,48 +1,59 @@
-# Go-Toolkit : la boîte à idées IA des Product Owners
+# Go-Toolkit — des livrables produit “prêts à partager”, en quelques minutes
 
-Go-Toolkit rassemble trois outils front-only que l'on ouvre dans le navigateur sans build, pour produire rapidement des supports produit assistés par l'IA. Chaque app gère son propre mini-flow (content, diagrammes, planning) avec des exports locaux, une mémoire navigateur et la possibilité de passer par les proxys OpenAI/partage fournis dans `workers/`.
+Go-Toolkit est une boîte à outils pensée pour les Product Owners, consultants et équipes produit qui ont besoin de **mettre en forme une idée rapidement** : cadrage, ateliers, planning, schémas, tableaux… avec un **copilote IA** et des **exports immédiats**.
 
-## Fonctionnalités par app
+L’objectif n’est pas de “faire de l’IA”, mais de **sortir des supports clairs et actionnables** (slides, roadmap, diagrammes, tables) sans passer par une installation lourde ni un outillage complexe.
 
-- **50 Nuances (`public/canvas.html`)** : grille de slides éditables, prompts IA contextualisés par section, génération guidée (effort minimal/low/medium), édition en ligne puis export PPTX/PNG/JSON ou partage si un proxy Firebase est configuré.
-- **Le Cardinal (`public/draw.html`)** : générateur visuel Mermaid/Excalidraw qui détecte automatiquement le titre, propose un assistant IA pour structurer le diagramme, offre un mode partage optionnel et exporte en PNG ou JSON.
-- **Go-Roadmap (`public/timeline.html`)** : timeline interactive (Vis.js) pour créer ou adapter un planning produit, avec IA pour générer des jalons et des durées, éditeur direct, exports texte/image/Excel/JSON et partage optionnel.
+## Ce que ça apporte (côté métier)
 
-## Expériences transversales
+- **Accélère la préparation d’ateliers** : structurer un sujet, cadrer une décision, aligner le vocabulaire.
+- **Améliore la qualité des livrables** : formats cohérents, prompts contextualisés, modèles prêts à l’emploi.
+- **Réduit le temps de mise en forme** : édition directe dans l’interface + export PowerPoint/Excel/image/CSV/JSON.
+- **Garde le contrôle** : tout fonctionne dans le navigateur ; le partage est toujours une action volontaire.
 
-- **Zero setup** : ouvrir l’un des HTML dans `public/` ou servir le dossier (`npx serve public`) suffit, tout fonctionne côté client avec LocalStorage pour garder les brouillons.
-- **Assistants IA contextualisés** : chaque outil embarque ses propres prompts, un bouton de niveau d’effort, des réponses en streaming via `/v1/responses` et des formats prêts à l’export.
-- **Exports locaux** : PPTX/PNG/JSON (50 Nuances), PNG/JSON Mermaid (Le Cardinal), texte/image/Excel/JSON (Go-Roadmap) ; rien n’est partagé sans action explicite.
-- **Partage optionnel** : si vous déployez `workers/share-proxy`, les slides, diagrammes ou timelines peuvent être publiés via Firestore avec autorisations d’origines configurables.
+## Les 4 modules
 
-## Mise en route rapide
+- **50 Nuances** (`public/canvas.html`) : des “planches” éditables pour cadrer un sujet (roadmap, arbitrage, comparaison, parcours, alignement, etc.) et produire un contenu synthétique et présentable. Exports `PPTX`, image, `JSON` (capsule) + lien de partage optionnel.
+- **Goal Digger** (`public/timeline.html`) : une timeline interactive pour construire / ajuster un planning (jalons, durées, dépendances), avec génération assistée. Exports texte, image, `XLSX`, `JSON` + lien de partage optionnel.
+- **Le Cardinal** (`public/draw.html`) : un module de diagrammes pour illustrer un raisonnement (processus, séquence, modèle métier, etc.) avec génération IA et édition visuelle/texte. Export capsule `JSON` + lien de partage optionnel.
+- **Module Grid** (`public/grid.html`) : un générateur de tableaux de données pour passer d’un sujet flou à une **table structurée** éditable. Export `CSV` + capsule `JSON` + lien de partage optionnel.
 
-1. Cloner le repo et servir `public/` : `npx serve public` (certaines exportations demandent un serveur pour fonctionner).
-2. Ouvrir `canvas.html`, `draw.html` ou `timeline.html` selon l’usage.
-3. Définir une clé OpenAI dans le modal IA ou laisser vide pour utiliser le proxy `https://openai.gotoolkit.workers.dev/v1/responses`.
-4. Régler l’effort de raisonnement, lancer la génération, affiner dans l’interface, puis exporter ou partager.
-5. (Optionnel) Activer les partages en déployant `workers/share-proxy` avec un compte de service Firebase, `GOOGLE_SERVICE_ACCOUNT_JSON` et `SHARE_ALLOWED_ORIGINS`.
+## Comment ça se passe (en 3 étapes)
 
-## Notes techniques
+1. **Choisis un module** et un modèle (quand disponible).
+2. **Décris ton contexte** en langage naturel, puis lance la génération IA.
+3. **Affines** (édition directe) puis **exportes** ou **partages** un lien.
 
-- **Front IA** : `public/js/ia-client.js` appelle l’API Responses, normalise les sorties, gère la progression et transmet `reasoning.effort`.
-- **Proxy OpenAI** : `workers/openai-proxy` relaie les requêtes vers OpenAI (`gpt-5-nano` par défaut) avec quotas KV (10 req/min, 100/jour) et limite payload (~10 Ko).
-- **Partage** : `workers/share-proxy` publie `/v1/shares/{slides|timelines|diagrams}/{id}` vers Firestore (JWT service account) ; CORS basé sur `SHARE_ALLOWED_ORIGINS`, localhost autorisé.
-- **Hébergement** : `public/` est prêt pour Firebase Hosting (`firebase.json` fourni) mais reste agnostique à l’hébergement.
+## Confidentialité & partage
 
-## Limitations actuelles
+- Par défaut, les données restent **dans ton navigateur** (brouillons sauvegardés localement).
+- Les exports sont **locaux** (fichiers téléchargés).
+- Les **capsules** (fichiers `JSON`) servent à sauvegarder un livrable et à le reprendre plus tard.
+- Le bouton **☍ Nexus** permet de générer un **lien de partage** uniquement si une API de partage est configurée.
 
-- Pas d’auth, pas de stockage serveur par défaut, pas de synchronisation multi-appareils sans le partage Firebase.
-- Chaque outil garde son état dans le navigateur (LocalStorage), il n’y a pas de mémoire partagée.
-- Le proxy IA est nécessaire si vous ne fournissez pas votre propre clé OpenAI.
-- Le partage Firestore nécessite un compte de service et une configuration explicite des origines autorisées.
+## Essayer en 2 minutes
 
-## Extensions envisagées
+- Ouvre le lanceur : `public/index.html` (ou directement un des fichiers : `canvas.html`, `timeline.html`, `draw.html`, `grid.html`).
+- Si besoin, sers le dossier `public/` (utile pour certaines fonctionnalités d’export) : `npx serve public`
+- Configure l’IA depuis l’interface (clé OpenAI, proxy, ou WebLLM “dev” selon ta configuration).
 
-- Harmoniser prompts et modèles entre apps pour éviter la duplication.
-- Ajouter des gardes-fous IA (limitation de tokens, validation JSON côté front) et des tests UI automatisés.
-- Introduire un historique et des commentaires légers sur les partages Firestore.
-- Proposer des thèmes/export communs (typographie, couleurs) pour uniformiser slides, timelines et diagrammes.
-- Imaginer de nouveaux outils complémentaires : Go-Backlog (priorisation), Go-Discovery (canevas utilisateurs), Go-Metrics (North Star), Go-Pitch (pitch express).
+## Déploiement (simple)
 
-Go-Toolkit aide les PO à aller de l’idée à un support partageable sans pipeline complexe. Bonne exploration !
+Go-Toolkit est un site statique : héberge simplement le dossier `public/` (Firebase Hosting est prêt à l’emploi via `firebase.json`, mais ce n’est pas obligatoire).
+
+## Option “équipe” (si tu veux un partage interne)
+
+Le repo contient des workers dans `workers/` pour :
+
+- **Relayer l’IA** (proxy) si tu ne veux pas gérer des clés côté navigateur.
+- **Activer le partage** via une base Firestore (liens Nexus).
+
+Ces options restent facultatives : Go-Toolkit fonctionne déjà en mode local sans serveur.
+
+## Limites actuelles (assumées)
+
+- Pas d’authentification / gestion d’utilisateurs : c’est un outil léger orienté livrables.
+- Pas de synchronisation multi-appareils sans activer le partage.
+- Chaque module est autonome (pas de “mémoire” partagée entre modules).
+
+Si tu veux que le README mette l’accent sur un cas d’usage (PO, consulting, sales enablement, delivery), dis-moi ton public cible et je l’adapte.
