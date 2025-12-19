@@ -557,10 +557,10 @@
             white-space: nowrap;
         }
 
-        .tree-template .badge.orange {
-            border-color: #ffd7ad;
-            background: #fff3e5;
-            color: #783800;
+        .tree-template .badge.yellow {
+            border-color: #fde68a;
+            background: #fffbeb;
+            color: #7a4510;
         }
 
         .tree-template .label {
@@ -604,10 +604,25 @@
             cursor: pointer;
         }
 
-        .tree-template .relation-badge.orange {
-            border-color: #ffd7ad;
-            background: #fff3e5;
-            color: #783800;
+        .tree-template .relation-badge.yellow {
+            border-color: #fde68a;
+            background: #fffbeb;
+            color: #7a4510;
+        }
+        .tree-template .relation-badge.gray {
+            border-color: #d1d5db;
+            background: #f3f4f6;
+            color: #374151;
+        }
+        .tree-template .relation-badge.red {
+            border-color: #fecaca;
+            background: #fff1f2;
+            color: #7f1d1d;
+        }
+        .tree-template .relation-badge.green {
+            border-color: #bbf7d0;
+            background: #ecfdf5;
+            color: #065f46;
         }
 
         .tree-template .ag-theme-quartz {
@@ -2258,7 +2273,12 @@
                     const relation = params.value || params.data?.relation || "1..1";
                     const btn = document.createElement("button");
                     btn.type = "button";
-                    btn.className = `relation-badge ${relation === "1..n" || relation === "1..1" ? "orange" : ""}`;
+                    const cls = (relation === "1..n" || relation === "1..1")
+                        ? "yellow"
+                        : (relation === "0..1" || relation === "0..n")
+                        ? "gray"
+                        : "";
+                    btn.className = `relation-badge ${cls}`;
                     btn.textContent = relation;
                     btn.title = "Basculer la cardinalité";
                     btn.addEventListener("click", event => {
@@ -2266,7 +2286,12 @@
                         const next = cycleRelation(params.data?.relation);
                         params.node.setDataValue("relation", next);
                         btn.textContent = next;
-                        btn.className = `relation-badge ${next === "1..n" || next === "1..1" ? "orange" : ""}`;
+                        const nextCls = (next === "1..n" || next === "1..1")
+                            ? "yellow"
+                            : (next === "0..1" || next === "0..n")
+                            ? "gray"
+                            : "";
+                        btn.className = `relation-badge ${nextCls}`;
                         syncScriptFromGrid();
                     });
                     return btn;
