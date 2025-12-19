@@ -420,6 +420,205 @@
             z-index: 60;
         }
 
+        .template-modal {
+            max-width: 620px;
+            width: 90vw;
+        }
+
+        .template-card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 10px;
+            margin: 10px 0 0;
+        }
+
+        .template-card {
+            border: 1px solid #dfe3f5;
+            border-radius: 12px;
+            padding: 10px;
+            cursor: pointer;
+            background: #fbfbff;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        }
+
+        .template-card:hover,
+        .template-card:focus-visible {
+            border-color: #2a7a57;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+            outline: none;
+        }
+
+        .template-card.selected {
+            border-color: #2a7a57;
+            background: #f1f8f4;
+        }
+
+        .template-card strong {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .template-card p {
+            margin: 0;
+            font-size: 12px;
+            color: #566188;
+            line-height: 1.4;
+        }
+
+        .modal-actions.template-actions {
+            justify-content: flex-end;
+        }
+
+        .tree-template .treeCell {
+            display: flex;
+            align-items: center;
+            gap: 0px;
+            height: 100%;
+            position: relative;
+        }
+
+        .tree-template .indent {
+            width: calc(var(--indent, 20px) * var(--depth, 0));
+            flex: 0 0 auto;
+            height: 100%;
+            position: relative;
+        }
+
+        .tree-template .indent::before {
+            content: "";
+            position: absolute;
+            right: 8px;
+            top: -999px;
+            bottom: -999px;
+            width: 1px;
+            background: #dfe3f5;
+            opacity: 0.9;
+        }
+
+        .tree-template .indent.depth-0::before {
+            display: none;
+        }
+
+        .tree-template .dragHandle {
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            border-radius: 6px;
+            cursor: grab;
+        }
+
+        .tree-template .dragHandle:active {
+            cursor: grabbing;
+        }
+
+        .tree-template .dragHandle:hover {
+            background: rgba(15, 23, 42, 0.08);
+        }
+
+        .tree-template .badge {
+            font-weight: 800;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid #bde6c9;
+            background: #eaf7ee;
+            color: #0b5133;
+            cursor: pointer;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .tree-template .badge.orange {
+            border-color: #ffd7ad;
+            background: #fff3e5;
+            color: #783800;
+        }
+
+        .tree-template .label {
+            font-weight: 700;
+            padding: 3px 6px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .tree-template .label.editing {
+            outline: 2px solid rgba(59, 130, 246, 0.55);
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        .tree-template .addBtn {
+            margin-left: auto;
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            border: 1px solid #d6dde8;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .tree-template .addBtn:hover {
+            background: rgba(15, 23, 42, 0.05);
+        }
+
+        .tree-template .relation-badge {
+            border: 1px solid #bde6c9;
+            background: #eaf7ee;
+            color: #0b5133;
+            border-radius: 8px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .tree-template .relation-badge.orange {
+            border-color: #ffd7ad;
+            background: #fff3e5;
+            color: #783800;
+        }
+
+        .tree-template .ag-theme-quartz {
+            --ag-font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+            --ag-border-color: transparent;
+            --ag-row-hover-color: rgba(0, 0, 0, 0.04);
+            --ag-row-border-color: #e6e9ef;
+            --ag-grid-size: 6px;
+            --ag-row-height: 44px;
+        }
+
+        .tree-template .ag-row {
+            border-bottom: 1px solid #e6e9ef;
+        }
+
+        .tree-template .ag-row:last-child {
+            border-bottom: none;
+        }
+
+        .tree-template .ag-cell[col-id="__actions"] .ag-drag-handle {
+            display: none !important;
+        }
+
+        .tree-template .treeCell[data-drop="above"] {
+            box-shadow: inset 0 2px 0 0 #2563eb;
+        }
+
+        .tree-template .treeCell[data-drop="below"] {
+            box-shadow: inset 0 -2px 0 0 #2563eb;
+        }
+
+        .tree-template .treeCell[data-drop="child"] {
+            box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.35);
+        }
+
+
         .card-title {
             font-size: 13px;
             font-weight: 600;
@@ -437,6 +636,12 @@
             display: flex;
             align-items: center;
             gap: 6px;
+        }
+
+        .template-meta {
+            font-size: 11px;
+            color: #566188;
+            margin: -4px 0 6px;
         }
 
         textarea {
@@ -931,6 +1136,7 @@
                 <button id="toggleDrawerBtn" class="btn drawer-toggle-btn" type="button" title="⸙ Gutenberg">⸙
                     Contexte</button>
                 <button id="aiSettingsBtn" class="btn ai-button" type="button" title="⌘ Promptzilla">⌘ Prompt</button>
+                <button id="templateModalBtn" class="btn" type="button" title="⊞ Modèle">⊞ Modèle</button>
                 <div class="menu-trigger">
                     <button id="affichageBtn" class="btn" type="button" aria-label="Affichage" title="Affichage">◯
                         Affichage</button>
@@ -1005,6 +1211,7 @@
                         <button id="clearGridBtn" class="btn" type="button">⊘ Vider</button>
                         <button id="generateBtn" class="btn-primary generate-btn" type="button">⌘ Répondre</button>
                     </div>
+                    <div id="templateMeta" class="template-meta"></div>
                     <div class="prompt-input-wrapper">
                         <div id="promptSuggestion" class="prompt-suggestion" aria-hidden="true"></div>
                         <div id="templateTooltip" class="template-tooltip" aria-hidden="true"></div>
@@ -1049,12 +1256,31 @@
         <button id="closeInfoPopup" type="button" class="btn-primary">Réinitialiser</button>
     </div>
 
+    <div class="modal-overlay" id="templateModal">
+        <div class="modal template-modal">
+            <header class="modal-header">
+                <h3 title="⊞ Modèle">⊞ Modèle</h3>
+                <button id="closeTemplateModal" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
+            </header>
+            <p style="font-size:12px;color:#566188;margin:0 0 6px;">Choisis le type de génération pour cette capsule.
+            </p>
+            <div class="template-card-grid" id="templateCardList"></div>
+            <div class="modal-actions template-actions">
+                <button id="templateApplyBtn" class="btn-primary" type="button">Appliquer</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="aiModal">
         <div class="modal">
             <header class="modal-header">
                 <h3 title="⌘ Promptzilla">⌘ Prompt</h3>
                 <button id="closeAiModal" class="btn-secondary" type="button">✕</button>
             </header>
+            <label>
+                <span>Modèle</span>
+                <select id="aiTemplateSelect"></select>
+            </label>
             <label>
                 <span>Prompt utilisateur</span>
                 <textarea id="promptTemplateField" rows="4"
@@ -1083,11 +1309,64 @@
     <script>
             (() => {
                 const DEFAULT_PROMPT_TEMPLATE =
+                    (window.GoPrompts && window.GoPrompts.gridPromptTemplates?.dataGeneration) ||
                     (window.GoPrompts && window.GoPrompts.gridDefaultPromptTemplate) ||
                     "Génère 60 exemples basés sur {{scenario_prompt}}.";
                 const DEFAULT_SYSTEM_PROMPT =
-                    (window.GoPrompts && window.GoPrompts.gridSystemPrompt) || "";
+                    (window.GoPrompts && window.GoPrompts.gridSystemPrompts?.dataGeneration) ||
+                    (window.GoPrompts && window.GoPrompts.gridSystemPrompt) ||
+                    "";
+                const TREE_SYSTEM_PROMPT =
+                    (window.GoPrompts && window.GoPrompts.gridSystemPrompts?.treeStructure) ||
+                    `Tu es un générateur de schémas arborescents pour AG Grid (community, sans treeData). La sortie doit être un **unique objet JSON** contenant un tableau aplati de lignes, et rien d'autre :
+{
+  "rows": [
+    {
+      "id": "string (identifiant unique)",
+      "name": "string (libellé affiché)",
+      "path": ["racine", "sous-ensemble", "feuille"], // tableau hiérarchique (obligatoire)
+      "type": "string (ex: object | varchar | number | boolean | date)",
+      "format": "string (ex: object, email, ISO date, currency)",
+      "definition": "string (phrase courte)",
+      "sample": "string (exemple)",
+      "source": "string (origine)",
+      "relation": "string (cardinalité: 1..1 | 0..1 | 1..n | 0..n)"
+    }
+  ]
+}
+- AUCUN markdown, AUCUN texte hors de cet objet JSON.
+- Chaque entrée du tableau rows doit avoir le champ path (hiérarchie complète) et relation.
+- Respecte les colonnes de l'interface : Structure / Relation / Type / Format / Définition / Exemple / Source.
+`;
+                const GRID_TEMPLATES = [
+                    {
+                        id: "data-example",
+                        label: "Données d'exemple",
+                        description: "Dataset tabulaire plat, idéal pour générer des exemples concrets.",
+                        defaultPromptTemplate:
+                            (window.GoPrompts && window.GoPrompts.gridPromptTemplates?.dataGeneration) ||
+                            DEFAULT_PROMPT_TEMPLATE,
+                        defaultSystemPrompt:
+                            (window.GoPrompts && window.GoPrompts.gridSystemPrompts?.dataGeneration) ||
+                            DEFAULT_SYSTEM_PROMPT,
+                        parser: "flat"
+                    },
+                    {
+                        id: "tree-structure",
+                        label: "Structure de données",
+                        description: "Schéma arborescent (Structure / Type / Format / Définition / Exemple / Source).",
+                        defaultPromptTemplate:
+                            (window.GoPrompts && window.GoPrompts.gridPromptTemplates?.treeStructure) ||
+                            "Génère une arborescence structurée répondant à {{scenario_prompt}}. Retourne { \"rows\": [] } avec pour chaque ligne : id, name, path (tableau hiérarchique), type, format, definition, sample, source et relation (1..1 | 0..1 | 1..n).",
+                        defaultSystemPrompt:
+                            (window.GoPrompts && window.GoPrompts.gridSystemPrompts?.treeStructure) ||
+                            TREE_SYSTEM_PROMPT,
+                        parser: "tree"
+                    }
+                ];
+                const DEFAULT_TEMPLATE_ID = GRID_TEMPLATES[0].id;
                 const STORAGE_KEY = "grid-ai-state";
+                const TEMPLATE_MODAL_SEEN_KEY = "grid-template-modal-seen";
                 const OPEN_AI_MESSAGE_MAX_CHARS = 3000;
                 const AI_BACKEND_STORAGE_KEY = "go-toolkit-ai-backend";
 
@@ -1099,6 +1378,12 @@
                 const aiModal = document.getElementById("aiModal");
                 const aiSettingsBtn = document.getElementById("aiSettingsBtn");
                 const closeAiModal = document.getElementById("closeAiModal");
+                const aiTemplateSelect = document.getElementById("aiTemplateSelect");
+                const templateModal = document.getElementById("templateModal");
+                const templateModalBtn = document.getElementById("templateModalBtn");
+                const templateApplyBtn = document.getElementById("templateApplyBtn");
+                const templateCardList = document.getElementById("templateCardList");
+                const closeTemplateModal = document.getElementById("closeTemplateModal");
                 const resetPromptBtn = document.getElementById("resetPromptBtn");
                 const applyAiSettingsBtn = document.getElementById("applyAiSettingsBtn");
                 const generateBtn = document.getElementById("generateBtn");
@@ -1145,11 +1430,15 @@
                 const infoButton = document.getElementById("infoButton");
                 const infoPopup = document.getElementById("infoPopup");
                 const closeInfoPopup = document.getElementById("closeInfoPopup");
+                const templateMeta = document.getElementById("templateMeta");
                 const shareHistory = window.goToolkitShareHistory;
                 const shareService = window.goToolkitShareWorker;
                 const capsuleDrafts = window.goToolkitCapsuleDrafts;
                 const generateDefaultLabel = generateBtn?.textContent || "⌘ Répondre";
                 const drawerDefaultLabel = drawerBtn?.textContent || "⸙ Contexte";
+                const hasSeenTemplateModal =
+                    typeof localStorage !== "undefined" &&
+                    localStorage.getItem(TEMPLATE_MODAL_SEEN_KEY) === "1";
                 let generateCooldownTimer = null;
                 let generateCooldownEndTime = 0;
 
@@ -1344,6 +1633,375 @@
                     return { schema: { tables: schemaTables }, data };
                 }
 
+                const TREE_SAMPLE_DATASET = {
+                    rows: [
+                        {
+                            id: "contract",
+                            name: "contract",
+                            path: ["contract"],
+                            type: "object",
+                            format: "object",
+                            definition: "Contrat principal",
+                            sample: "",
+                            source: "Src",
+                            relation: "1..1"
+                        },
+                        {
+                            id: "contract_id",
+                            name: "contract_id",
+                            path: ["contract", "contract_id"],
+                            type: "varchar",
+                            format: "varchar",
+                            definition: "Identifiant du contrat",
+                            sample: "1-XXXX",
+                            source: "SAP",
+                            relation: "1..1"
+                        },
+                        {
+                            id: "payment_terms",
+                            name: "payment_terms",
+                            path: ["contract", "payment_terms"],
+                            type: "object",
+                            format: "object",
+                            definition: "Modalités de paiement",
+                            sample: "",
+                            source: "Src",
+                            relation: "1..n"
+                        },
+                        {
+                            id: "invoice_type",
+                            name: "invoice_type",
+                            path: ["contract", "payment_terms", "invoice_type"],
+                            type: "varchar",
+                            format: "varchar",
+                            definition: "Type de facture",
+                            sample: "ex: email",
+                            source: "Src",
+                            relation: "1..1"
+                        },
+                        {
+                            id: "value",
+                            name: "value",
+                            path: ["contract", "payment_terms", "value"],
+                            type: "varchar",
+                            format: "varchar",
+                            definition: "Pourcentage à appliquer",
+                            sample: "ex: email",
+                            source: "Src",
+                            relation: "1..1"
+                        }
+                    ]
+                };
+
+                function buildTreeColumnDefs() {
+                    return [
+                        {
+                            field: "name",
+                            headerName: "Structure",
+                            editable: true,
+                            sortable: false,
+                            filter: false,
+                            resizable: true,
+                            pinned: "left",
+                            rowDrag: false,
+                            width: 320,
+                            minWidth: 220,
+                            suppressSizeToFit: true,
+                            cellRenderer: structureCellRenderer
+                        },
+                        {
+                            field: "__actions",
+                            colId: "__actions",
+                            headerName: "",
+                            width: 110,
+                            maxWidth: 130,
+                            pinned: "left",
+                            sortable: false,
+                            filter: false,
+                            resizable: false,
+                            rowDrag: false,
+                            suppressMovable: true,
+                            valueGetter: () => null,
+                            valueFormatter: () => "",
+                            suppressKeyboardEvent: () => true,
+                            cellRenderer: treeActionRenderer
+                        },
+                        {
+                            field: "relation",
+                            headerName: "Relation",
+                            editable: false,
+                            sortable: false,
+                            filter: false,
+                            resizable: false,
+                            pinned: "left",
+                            width: 110,
+                            cellRenderer: relationCellRenderer
+                        },
+                        {
+                            field: "type",
+                            headerName: "Type",
+                            editable: true,
+                            sortable: false,
+                            filter: false,
+                            resizable: true
+                        },
+                        {
+                            field: "format",
+                            headerName: "Format",
+                            editable: true,
+                            sortable: false,
+                            filter: false,
+                            resizable: true
+                        },
+                        {
+                            field: "definition",
+                            headerName: "Définition",
+                            editable: true,
+                            sortable: false,
+                            filter: false,
+                            resizable: true
+                        },
+                        {
+                            field: "sample",
+                            headerName: "Exemple",
+                            editable: true,
+                            sortable: false,
+                            filter: false,
+                            resizable: true
+                        },
+                        {
+                            field: "source",
+                            headerName: "Source",
+                            editable: true,
+                            sortable: false,
+                            filter: false,
+                            resizable: true
+                        }
+                    ];
+                }
+
+                function normalizeTreePath(rawPath, fallback = []) {
+                    if (Array.isArray(rawPath)) {
+                        return rawPath.map(item => (item == null ? "" : String(item))).filter(Boolean);
+                    }
+                    if (typeof rawPath === "string" && rawPath.trim()) {
+                        return rawPath
+                            .split(/[>\/|]+/)
+                            .map(part => part.trim())
+                            .filter(Boolean);
+                    }
+                    return Array.isArray(fallback) ? [...fallback] : [];
+                }
+
+                function normalizeTreeRowInput(row, parentPath = []) {
+                    if (!row || typeof row !== "object") return null;
+                    const fallbackName = row.name || row.id || "item";
+                    const rawPath = row.path ?? row.__path;
+                    const fallbackPath = rawPath ? [] : [...parentPath, fallbackName];
+                    const path = normalizeTreePath(rawPath, fallbackPath);
+                    const level = Math.max(0, path.length - 1);
+                    return {
+                        id: row.id || path.join("::") || fallbackName,
+                        name: fallbackName,
+                        type: row.type || "",
+                        format: row.format || "",
+                        definition: row.definition || "",
+                        sample: row.sample || "",
+                        source: row.source || "",
+                        relation: row.relation || "1..1",
+                        path,
+                        __path: path,
+                        level
+                    };
+                }
+
+                function flattenTreeNodes(nodes = [], parentPath = []) {
+                    const rows = [];
+                    nodes.forEach(node => {
+                        if (!node) return;
+                        const normalized = normalizeTreeRowInput(node, parentPath);
+                        if (normalized) {
+                            rows.push(normalized);
+                        }
+                        if (Array.isArray(node.children) && node.children.length) {
+                            const nextParent = normalized?.__path?.length ? normalized.__path : parentPath;
+                            rows.push(...flattenTreeNodes(node.children, nextParent));
+                        }
+                    });
+                    return rows;
+                }
+
+                function normalizeTreeRows(rows = []) {
+                    return rows
+                        .map(row => normalizeTreeRowInput(row))
+                        .filter(Boolean);
+                }
+
+                function pathKey(path = []) {
+                    return Array.isArray(path) ? path.join(" / ") : "";
+                }
+
+                function sortRowsByPath(rows = []) {
+                    return [...rows].sort((a, b) => {
+                        const pa = Array.isArray(a.__path) ? a.__path : [];
+                        const pb = Array.isArray(b.__path) ? b.__path : [];
+                        const len = Math.max(pa.length, pb.length);
+                        for (let i = 0; i < len; i++) {
+                            const av = pa[i];
+                            const bv = pb[i];
+                            if (av == null && bv == null) continue;
+                            if (av == null) return -1;
+                            if (bv == null) return 1;
+                            if (av === bv) continue;
+                            return av < bv ? -1 : 1;
+                        }
+                        return pa.length - pb.length;
+                    });
+                }
+
+                function decorateTreeRows(rows = [], options = {}) {
+                    const normalizedRows = normalizeTreeRows(rows);
+                    const baseRows = options?.sortPaths ? sortRowsByPath(normalizedRows) : normalizedRows;
+                    const childrenByParent = new Map();
+
+                    baseRows.forEach(row => {
+                        const parentKey = pathKey(row.__path.slice(0, -1));
+                        const list = childrenByParent.get(parentKey) || [];
+                        list.push(row);
+                        childrenByParent.set(parentKey, list);
+                    });
+
+                    const isLastMap = new Map();
+                    childrenByParent.forEach(list => {
+                        list.forEach((row, idx) => {
+                            const key = pathKey(row.__path);
+                            isLastMap.set(key, idx === list.length - 1);
+                        });
+                    });
+
+                    baseRows.forEach(row => {
+                        const segments = Array.isArray(row.__path) && row.__path.length
+                            ? row.__path
+                            : [row.name || "item"];
+                        const isRoot = segments.length <= 1;
+                        if (isRoot) {
+                            row.__prefix = "";
+                        } else {
+                            const parts = [];
+                            segments.forEach((_, idx) => {
+                                const key = pathKey(segments.slice(0, idx + 1));
+                                const isLast = isLastMap.get(key) ?? true;
+                                if (idx === segments.length - 1) {
+                                    parts.push(isLast ? "└─ " : "├─ ");
+                                } else {
+                                    parts.push(isLast ? "   " : "│  ");
+                                }
+                            });
+                            row.__prefix = parts.join("");
+                        }
+                        row.level = Math.max(0, segments.length - 1);
+                        row.path = segments;
+                        row.__path = segments;
+                    });
+
+                    return baseRows;
+                }
+
+                function buildTreeDatasetFromRows(rows) {
+                    const columnDefs = buildTreeColumnDefs();
+                    const rowData = decorateTreeRows(rows, { sortPaths: true });
+                    return {
+                        schema: {
+                            tables: [
+                                {
+                                    id: "structure",
+                                    title: "Structure de données",
+                                    primaryKey: "id",
+                                    columns: [
+                                        { field: "name" },
+                                        { field: "type" },
+                                        { field: "format" },
+                                        { field: "definition" },
+                                        { field: "sample" },
+                                        { field: "source" },
+                                        { field: "relation" }
+                                    ],
+                                    relations: []
+                                }
+                            ]
+                        },
+                        data: {
+                            structure: {
+                                columnDefs,
+                                rowData
+                            }
+                        }
+                    };
+                }
+
+                function buildTreeDatasetFromNodes(nodes) {
+                    return buildTreeDatasetFromRows(flattenTreeNodes(nodes));
+                }
+
+                function normalizeTreePayload(payload) {
+                    if (!payload || typeof payload !== "object") return null;
+                    if (Array.isArray(payload.rows)) {
+                        return buildTreeDatasetFromRows(payload.rows);
+                    }
+                    if (Array.isArray(payload.tree)) {
+                        return buildTreeDatasetFromNodes(payload.tree);
+                    }
+                    if (Array.isArray(payload.nodes)) {
+                        return buildTreeDatasetFromNodes(payload.nodes);
+                    }
+                    if (Array.isArray(payload?.data?.structure?.rowData)) {
+                        return buildTreeDatasetFromRows(payload.data.structure.rowData);
+                    }
+                    return null;
+                }
+
+                function setTreeRowData(rows = []) {
+                    const prepared = decorateTreeRows(rows);
+                    if (gridApi) {
+                        if (typeof gridApi.setGridOption === "function") {
+                            gridApi.setGridOption("rowData", prepared);
+                        } else if (typeof gridApi.setRowData === "function") {
+                            gridApi.setRowData(prepared);
+                        }
+                    }
+                    const page = getActivePage();
+                    if (page?.data) {
+                        page.data.rowData = prepared;
+                    }
+                    return prepared;
+                }
+
+                function deleteTreeRow(node) {
+                    if (!node?.data) return;
+                    const selfPath = Array.isArray(node.data.__path) ? node.data.__path : [];
+                    const rows = collectAllRows().filter(row => {
+                        const path = Array.isArray(row.__path) ? row.__path : normalizeTreePath(row.path || []);
+                        return !isPathPrefix(selfPath, path);
+                    });
+                    setTreeRowData(rows);
+                    syncScriptFromGrid();
+                }
+
+                function prepareTreeRowsForExport(rows = []) {
+                    const cloned = Array.isArray(rows) ? rows.map(row => ({ ...row })) : [];
+                    return decorateTreeRows(cloned).map(row => ({
+                        id: row.id || pathKey(row.__path),
+                        name: row.name || "",
+                        path: Array.isArray(row.__path) ? row.__path : [],
+                        type: row.type || "",
+                        format: row.format || "",
+                        definition: row.definition || "",
+                        sample: row.sample || "",
+                        source: row.source || "",
+                        relation: row.relation || "1..1"
+                    }));
+                }
+
                 function hasDatasetContent(dataset) {
                     if (!dataset || typeof dataset !== "object") return false;
                     const data = dataset.data;
@@ -1355,10 +2013,298 @@
                     });
                 }
 
+                function cycleRelation(value) {
+                    const order = ["1..1", "0..1", "1..n", "0..n"];
+                    const idx = order.indexOf(value);
+                    if (idx === -1 || idx === order.length - 1) return order[0];
+                    return order[idx + 1];
+                }
+
+                function collectAllRows() {
+                    const rows = [];
+                    try {
+                        gridApi?.forEachNode(node => {
+                            if (node && node.data) {
+                                rows.push({ ...node.data });
+                            }
+                        });
+                    } catch (err) { /* ignore */ }
+                    return rows;
+                }
+
+                function addChildRow(parentNode) {
+                    if (!parentNode) return;
+                    const parentPath = Array.isArray(parentNode?.data?.__path) ? parentNode.data.__path : [];
+                    const newPath = [...parentPath, `New_${Date.now().toString().slice(-4)}`];
+                    const rows = collectAllRows();
+                    const newRow = {
+                        id: `new_${Date.now()}`,
+                        __path: newPath,
+                        path: newPath,
+                        level: parentPath.length,
+                        name: "New",
+                        type: "",
+                        format: "",
+                        definition: "",
+                        sample: "",
+                        source: "",
+                        relation: "1..1"
+                    };
+                    try {
+                        const insertAt = (() => {
+                            const idx = rows.findIndex(row => isPathPrefix(parentPath, row.__path || row.path || []));
+                            if (idx === -1) return rows.length;
+                            let cursor = idx + 1;
+                            while (
+                                cursor < rows.length &&
+                                isPathPrefix(parentPath, rows[cursor].__path || rows[cursor].path || [])
+                            ) {
+                                cursor += 1;
+                            }
+                            return cursor;
+                        })();
+                        const nextRows = [...rows];
+                        nextRows.splice(insertAt, 0, newRow);
+                        const prepared = setTreeRowData(nextRows);
+                        requestAnimationFrame(() => {
+                            try {
+                                const node = gridApi?.getRowNode?.(newRow.id);
+                                if (node) {
+                                    gridApi.ensureNodeVisible(node, "middle");
+                                    gridApi.startEditingCell({
+                                        rowIndex: prepared.findIndex(r => r.id === newRow.id),
+                                        colKey: "name"
+                                    });
+                                }
+                            } catch (err) { /* ignore */ }
+                        });
+                        syncScriptFromGrid();
+                    } catch (err) {
+                        console.warn("Impossible d'ajouter un enfant", err);
+                    }
+                }
+
+                function isPathPrefix(prefix, path) {
+                    if (!Array.isArray(prefix) || !Array.isArray(path)) return false;
+                    if (prefix.length > path.length) return false;
+                    return prefix.every((item, idx) => item === path[idx]);
+                }
+
+                function updateSubtreePaths(rows, oldPrefix, newPrefix) {
+                    return rows.map(row => {
+                        const path = Array.isArray(row.__path) ? row.__path : normalizeTreePath(row.path || []);
+                        if (!isPathPrefix(oldPrefix, path)) return row;
+                        const suffix = path.slice(oldPrefix.length);
+                        const nextPath = [...newPrefix, ...suffix];
+                        return { ...row, __path: nextPath, path: nextPath };
+                    });
+                }
+
+                function splitSubtree(rows = [], rootPath = []) {
+                    const subtree = [];
+                    const remaining = [];
+                    rows.forEach(row => {
+                        const path = Array.isArray(row.__path) ? row.__path : normalizeTreePath(row.path || []);
+                        if (isPathPrefix(rootPath, path)) {
+                            subtree.push(row);
+                        } else {
+                            remaining.push(row);
+                        }
+                    });
+                    return { subtree, remaining };
+                }
+
+                function pathEquals(a = [], b = []) {
+                    if (!Array.isArray(a) || !Array.isArray(b)) return false;
+                    if (a.length !== b.length) return false;
+                    return a.every((val, idx) => val === b[idx]);
+                }
+
+                function findSubtreeStartIndex(rows = [], targetPath = []) {
+                    const key = pathKey(targetPath);
+                    return rows.findIndex(r => pathKey(r.__path || normalizeTreePath(r.path || [])) === key);
+                }
+
+                function findSubtreeEndIndex(rows = [], targetPath = []) {
+                    const idx = findSubtreeStartIndex(rows, targetPath);
+                    if (idx === -1) return rows.length;
+                    let end = idx;
+                    for (let i = idx + 1; i < rows.length; i++) {
+                        const path = Array.isArray(rows[i].__path) ? rows[i].__path : normalizeTreePath(rows[i].path || []);
+                        if (isPathPrefix(targetPath, path)) {
+                            end = i;
+                        } else {
+                            break;
+                        }
+                    }
+                    return end + 1;
+                }
+
+                function moveTreeSubtree(draggedPath, overPath, dropMode) {
+                    if (!Array.isArray(draggedPath) || !draggedPath.length || !Array.isArray(overPath)) return;
+                    if (isPathPrefix(draggedPath, overPath)) return;
+                    const rows = collectAllRows();
+                    const { subtree, remaining } = splitSubtree(rows, draggedPath);
+                    const overStartIdx = findSubtreeStartIndex(remaining, overPath);
+                    const overEndIdx = findSubtreeEndIndex(remaining, overPath);
+
+                    let newParentPath = overPath;
+                    let insertIndex = remaining.length;
+                    const newBase = draggedPath[draggedPath.length - 1] || "item";
+
+                    if (dropMode === "above") {
+                        newParentPath = overPath.slice(0, -1);
+                        insertIndex = overStartIdx === -1 ? remaining.length : overStartIdx;
+                    } else if (dropMode === "below") {
+                        newParentPath = overPath.slice(0, -1);
+                        insertIndex = overEndIdx === -1 ? remaining.length : overEndIdx;
+                    } else {
+                        newParentPath = overPath;
+                        insertIndex = findSubtreeEndIndex(remaining, overPath);
+                    }
+
+                    const newPath = [...newParentPath, newBase];
+                    const updatedSubtree = updateSubtreePaths(subtree, draggedPath, newPath);
+                    const nextRows = [...remaining];
+                    nextRows.splice(insertIndex, 0, ...updatedSubtree);
+                    setTreeRowData(nextRows);
+                    syncScriptFromGrid();
+                }
+
+                function handleTreeRowDragEnd(event) {
+                    // Drag-and-drop now handled by custom renderer; noop here.
+                }
+
+                function relationCellRenderer(params) {
+                    const relation = params.value || params.data?.relation || "1..1";
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = `relation-badge ${relation === "1..n" || relation === "1..1" ? "orange" : ""}`;
+                    btn.textContent = relation;
+                    btn.title = "Basculer la cardinalité";
+                    btn.addEventListener("click", event => {
+                        event.stopPropagation();
+                        const next = cycleRelation(params.data?.relation);
+                        params.node.setDataValue("relation", next);
+                        btn.textContent = next;
+                        btn.className = `relation-badge ${next === "1..n" || next === "1..1" ? "orange" : ""}`;
+                        syncScriptFromGrid();
+                    });
+                    return btn;
+                }
+
+                const treeDragState = { draggingPath: null };
+
+                function structureCellRenderer(params) {
+                    const level = Math.max(0, (params.data?.level ?? 0));
+                    const wrapper = document.createElement("div");
+                    wrapper.className = "treeCell";
+                    wrapper.setAttribute("draggable", "true");
+
+                    const dragHandle = document.createElement("span");
+                    dragHandle.className = "dragHandle";
+                    dragHandle.innerHTML = "☰";
+                    dragHandle.title = "Déplacer (glisser)";
+
+                    const indent = document.createElement("span");
+                    indent.className = "indent";
+                    indent.style.setProperty("--depth", level);
+                    indent.classList.add(`depth-${level}`);
+
+                    const label = document.createElement("span");
+                    label.className = "label";
+                    label.textContent = params.value || "";
+
+                    function clearDropState() {
+                        wrapper.removeAttribute("data-drop");
+                    }
+
+                    wrapper.addEventListener("dragstart", event => {
+                        treeDragState.draggingPath = Array.isArray(params.data?.__path)
+                            ? params.data.__path
+                            : normalizeTreePath(params.data?.path || []);
+                        event.dataTransfer.effectAllowed = "move";
+                    });
+
+                    wrapper.addEventListener("dragend", () => {
+                        treeDragState.draggingPath = null;
+                        clearDropState();
+                    });
+
+                    wrapper.addEventListener("dragover", event => {
+                        if (!treeDragState.draggingPath) return;
+                        event.preventDefault();
+                        const rect = wrapper.getBoundingClientRect();
+                        const relY = (event.clientY - rect.top) / rect.height;
+                        if (relY < 0.25) {
+                            wrapper.setAttribute("data-drop", "above");
+                        } else if (relY > 0.75) {
+                            wrapper.setAttribute("data-drop", "below");
+                        } else {
+                            wrapper.setAttribute("data-drop", "child");
+                        }
+                    });
+
+                    wrapper.addEventListener("dragleave", () => clearDropState());
+
+                    wrapper.addEventListener("drop", event => {
+                        if (!treeDragState.draggingPath) return;
+                        event.preventDefault();
+                        const dropMode = wrapper.getAttribute("data-drop") || "child";
+                        const targetPath = Array.isArray(params.data?.__path)
+                            ? params.data.__path
+                            : normalizeTreePath(params.data?.path || []);
+                        moveTreeSubtree(treeDragState.draggingPath, targetPath, dropMode);
+                        treeDragState.draggingPath = null;
+                        clearDropState();
+                    });
+
+                    wrapper.append(dragHandle, indent, label);
+                    return wrapper;
+                }
+
+                function treeActionRenderer(params) {
+                    const wrapper = document.createElement("div");
+                    wrapper.className = "treeCell";
+
+                    const addBtn = document.createElement("button");
+                    addBtn.type = "button";
+                    addBtn.className = "addBtn";
+                    addBtn.textContent = "+";
+                    addBtn.title = "Ajouter un enfant";
+                    addBtn.addEventListener("click", event => {
+                        event.stopPropagation();
+                        addChildRow(params.node);
+                    });
+
+                    const deleteBtn = document.createElement("button");
+                    deleteBtn.type = "button";
+                    deleteBtn.className = "addBtn";
+                    deleteBtn.textContent = "×";
+                    deleteBtn.title = "Supprimer la ligne";
+                    deleteBtn.addEventListener("click", event => {
+                        event.stopPropagation();
+                        deleteTreeRow(params.node);
+                    });
+
+                    wrapper.append(addBtn, deleteBtn);
+                    return wrapper;
+                }
+
                 function syncDatasetScriptFromState(options = {}) {
                     const dataset = buildDatasetFromState();
-                    const hasContent = hasDatasetContent(dataset);
-                    const next = hasContent ? JSON.stringify(dataset, null, 2) : "";
+                    const isTree = isTreeTemplateActive();
+                    let next = "";
+                    if (isTree) {
+                        const activePage = getActivePage();
+                        const rows = prepareTreeRowsForExport(activePage?.data?.rowData || []);
+                        next = rows.length ? JSON.stringify({ rows }, null, 2) : "";
+                    } else {
+                        const hasContent = hasDatasetContent(dataset);
+                        next = hasContent ? JSON.stringify(dataset, null, 2) : "";
+                    }
+                    const tplState = getActiveTemplateState();
+                    tplState.datasetScript = next;
                     state.datasetScript = next;
                     if (gridScript) {
                         gridScript.value = next;
@@ -1369,10 +2315,36 @@
                     return dataset;
                 }
 
+                function normalizeTemplateState(raw, templateConfig) {
+                    const basePrompt = templateConfig?.defaultPromptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                    const baseSystem = templateConfig?.defaultSystemPrompt || DEFAULT_SYSTEM_PROMPT;
+                    if (!raw || typeof raw !== "object") {
+                        return {
+                            promptTemplate: basePrompt,
+                            systemPrompt: baseSystem,
+                            scenario: "",
+                            datasetScript: "",
+                            lastAiDatasetScript: ""
+                        };
+                    }
+                    return {
+                        promptTemplate: raw.promptTemplate || basePrompt,
+                        systemPrompt: raw.systemPrompt || baseSystem,
+                        scenario: raw.scenario || "",
+                        datasetScript: typeof raw.datasetScript === "string" ? raw.datasetScript : "",
+                        lastAiDatasetScript:
+                            typeof raw.lastAiDatasetScript === "string" ? raw.lastAiDatasetScript : ""
+                    };
+                }
+
                 function loadState() {
                     try {
                         const raw = localStorage.getItem(STORAGE_KEY);
                         if (!raw) {
+                            const templateStates = {};
+                            GRID_TEMPLATES.forEach(tpl => {
+                                templateStates[tpl.id] = normalizeTemplateState(null, tpl);
+                            });
                             return {
                                 pages: [createPage(1)],
                                 activeIndex: 0,
@@ -1380,12 +2352,22 @@
                                 systemPrompt: DEFAULT_SYSTEM_PROMPT,
                                 reasoningEffort: "low",
                                 displayPreferences: { ...DISPLAY_PREFERENCE_DEFAULTS },
+                                activeTemplateId: DEFAULT_TEMPLATE_ID,
+                                templateStates,
                                 schema: { tables: [] },
                                 datasetScript: "",
                                 lastAiDatasetScript: ""
                             };
                         }
                         const parsed = JSON.parse(raw);
+                        const templateStates = {};
+                        GRID_TEMPLATES.forEach(tpl => {
+                            const rawTpl = parsed?.templateStates?.[tpl.id];
+                            templateStates[tpl.id] = normalizeTemplateState(rawTpl, tpl);
+                        });
+                        const activeTemplateId =
+                            (parsed && typeof parsed.activeTemplateId === "string" && parsed.activeTemplateId.trim()) ||
+                            DEFAULT_TEMPLATE_ID;
                         const pages = Array.isArray(parsed.pages)
                             ? parsed.pages.map(normalizePage)
                             : [createPage(1)];
@@ -1416,12 +2398,18 @@
                             systemPrompt: parsed.systemPrompt || DEFAULT_SYSTEM_PROMPT,
                             reasoningEffort: parsed.reasoningEffort || "low",
                             displayPreferences: Object.assign({}, DISPLAY_PREFERENCE_DEFAULTS, parsed.displayPreferences || {}),
+                            activeTemplateId,
+                            templateStates,
                             schema: { tables: schemaTables },
                             datasetScript: typeof parsed.datasetScript === "string" ? parsed.datasetScript : "",
                             lastAiDatasetScript: typeof parsed.lastAiDatasetScript === "string" ? parsed.lastAiDatasetScript : ""
                         };
                     } catch (err) {
                         console.warn("Impossible de charger l'état Grid", err);
+                        const templateStates = {};
+                        GRID_TEMPLATES.forEach(tpl => {
+                            templateStates[tpl.id] = normalizeTemplateState(null, tpl);
+                        });
                         return {
                             pages: [createPage(1)],
                             activeIndex: 0,
@@ -1429,6 +2417,8 @@
                             systemPrompt: DEFAULT_SYSTEM_PROMPT,
                             reasoningEffort: "low",
                             displayPreferences: { ...DISPLAY_PREFERENCE_DEFAULTS },
+                            activeTemplateId: DEFAULT_TEMPLATE_ID,
+                            templateStates,
                             schema: { tables: [] },
                             datasetScript: "",
                             lastAiDatasetScript: ""
@@ -1436,7 +2426,197 @@
                     }
                 }
 
+                function getTemplateConfigById(id) {
+                    if (!id) return GRID_TEMPLATES[0];
+                    return GRID_TEMPLATES.find(tpl => tpl.id === id) || GRID_TEMPLATES[0];
+                }
+
+                function getTemplateIcon(templateId) {
+                    const tpl = getTemplateConfigById(templateId);
+                    if (tpl.parser === "tree") return "🧬";
+                    return "🧪";
+                }
+
+                function ensureTemplateState(id) {
+                    const tpl = getTemplateConfigById(id);
+                    state.templateStates = state.templateStates || {};
+                    if (!state.templateStates[tpl.id]) {
+                        state.templateStates[tpl.id] = normalizeTemplateState(null, tpl);
+                    }
+                    return state.templateStates[tpl.id];
+                }
+
+                function getActiveTemplateState() {
+                    return ensureTemplateState(state.activeTemplateId || DEFAULT_TEMPLATE_ID);
+                }
+
+                function getActiveTemplateConfig() {
+                    return getTemplateConfigById(state.activeTemplateId || DEFAULT_TEMPLATE_ID);
+                }
+
+                function isTreeTemplateActive() {
+                    return getActiveTemplateConfig()?.parser === "tree";
+                }
+
+                function renderTemplateSelect() {
+                    if (!aiTemplateSelect) return;
+                    aiTemplateSelect.innerHTML = "";
+                    GRID_TEMPLATES.forEach(tpl => {
+                        const option = document.createElement("option");
+                        option.value = tpl.id;
+                        option.textContent = tpl.label;
+                        aiTemplateSelect.appendChild(option);
+                    });
+                    aiTemplateSelect.value = state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                }
+
+                function renderTemplateMeta() {
+                    if (!templateMeta) return;
+                    const tpl = getActiveTemplateConfig();
+                    const icon = getTemplateIcon(tpl.id);
+                    templateMeta.textContent = `Modèle : ${icon} ${tpl.label}`;
+                }
+
+                function renderTemplateCards(selectedId = state.activeTemplateId || DEFAULT_TEMPLATE_ID) {
+                    if (!templateCardList) return;
+                    templateCardList.innerHTML = "";
+                    GRID_TEMPLATES.forEach(tpl => {
+                        const card = document.createElement("div");
+                        card.className = "template-card";
+                        if (tpl.id === selectedId) {
+                            card.classList.add("selected");
+                        }
+                        card.tabIndex = 0;
+                        card.dataset.id = tpl.id;
+                        card.innerHTML = `<strong>${tpl.label}</strong><p>${tpl.description}</p>`;
+                        card.addEventListener("click", () => {
+                            renderTemplateCards(tpl.id);
+                            templateCardList.dataset.selectedId = tpl.id;
+                        });
+                        card.addEventListener("keypress", event => {
+                            if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                renderTemplateCards(tpl.id);
+                                templateCardList.dataset.selectedId = tpl.id;
+                            }
+                        });
+                        templateCardList.appendChild(card);
+                    });
+                    templateCardList.dataset.selectedId = selectedId;
+                }
+
+                function setActiveTemplate(templateId, options = {}) {
+                    const { skipApplyScript = true } = options;
+                    const tpl = getTemplateConfigById(templateId);
+                    const previousId = state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                    syncTemplateStateFromUI();
+                    state.activeTemplateId = tpl.id;
+                    state.activeParser = tpl.parser || "flat";
+                    const tplState = getActiveTemplateState();
+                    state.promptTemplate = tplState.promptTemplate;
+                    state.systemPrompt = tplState.systemPrompt;
+                    state.datasetScript = tplState.datasetScript || "";
+                    state.lastAiDatasetScript = tplState.lastAiDatasetScript || "";
+                    if (templateCardList) {
+                        templateCardList.dataset.selectedId = tpl.id;
+                    }
+                    const page = getActivePage();
+                    if (page) {
+                        page.scenario = tplState.scenario || page.scenario || "";
+                    }
+                    applyTemplateStateToUI();
+                    renderTemplateSelect();
+                    renderTemplateMeta();
+                    if (!skipApplyScript) {
+                        try {
+                            applyScriptToGrid({ silentOnError: true, silentOnSuccess: true });
+                        } catch (err) {
+                            console.warn("Impossible d'appliquer le script du modèle", err);
+                        }
+                    }
+                    persistState();
+                    if (options.onChange && typeof options.onChange === "function" && tpl.id !== previousId) {
+                        options.onChange(tpl);
+                    }
+                }
+
+                function openTemplateModalUi() {
+                    if (!templateModal) return;
+                    renderTemplateCards(state.activeTemplateId || DEFAULT_TEMPLATE_ID);
+                    templateModal.classList.add("open");
+                }
+
+                function closeTemplateModalUi() {
+                    if (!templateModal) return;
+                    templateModal.classList.remove("open");
+                }
+
+                function syncTemplateStateFromUI() {
+                    const tplState = getActiveTemplateState();
+                    tplState.promptTemplate = promptTemplateField?.value || tplState.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                    tplState.systemPrompt = systemPromptField?.value || tplState.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+                    tplState.scenario = promptInput?.value || tplState.scenario || "";
+                    tplState.datasetScript = gridScript?.value || tplState.datasetScript || "";
+                    tplState.lastAiDatasetScript = tplState.lastAiDatasetScript || state.lastAiDatasetScript || "";
+                    state.promptTemplate = tplState.promptTemplate;
+                    state.systemPrompt = tplState.systemPrompt;
+                    state.datasetScript = tplState.datasetScript;
+                    state.lastAiDatasetScript = tplState.lastAiDatasetScript || "";
+                    return tplState;
+                }
+
+                function applyTemplateStateToUI() {
+                    const tplState = getActiveTemplateState();
+                    if (promptTemplateField) {
+                        promptTemplateField.value = tplState.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                    }
+                    if (systemPromptField) {
+                        systemPromptField.value = tplState.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+                    }
+                    if (promptInput) {
+                        promptInput.value = tplState.scenario || "";
+                    }
+                    if (gridScript) {
+                        gridScript.value = tplState.datasetScript || "";
+                    }
+                    if (aiTemplateSelect) {
+                        aiTemplateSelect.value = state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                    }
+                    renderTemplateMeta();
+                }
+
                 let state = loadState();
+                state.templateStates = state.templateStates && typeof state.templateStates === "object"
+                    ? state.templateStates
+                    : {};
+                GRID_TEMPLATES.forEach(tpl => {
+                    if (!state.templateStates[tpl.id]) {
+                        state.templateStates[tpl.id] = normalizeTemplateState(null, tpl);
+                    }
+                });
+                state.activeTemplateId = state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                const activeTemplateState = getActiveTemplateState();
+                if (!activeTemplateState.datasetScript && state.datasetScript) {
+                    activeTemplateState.datasetScript = state.datasetScript;
+                }
+                if (!activeTemplateState.lastAiDatasetScript && state.lastAiDatasetScript) {
+                    activeTemplateState.lastAiDatasetScript = state.lastAiDatasetScript;
+                }
+                if (!activeTemplateState.promptTemplate && state.promptTemplate) {
+                    activeTemplateState.promptTemplate = state.promptTemplate;
+                }
+                if (!activeTemplateState.systemPrompt && state.systemPrompt) {
+                    activeTemplateState.systemPrompt = state.systemPrompt;
+                }
+                if (!activeTemplateState.scenario && Array.isArray(state.pages) && state.pages.length) {
+                    activeTemplateState.scenario = state.pages[state.activeIndex]?.scenario || "";
+                }
+                state.activeParser = getActiveTemplateConfig().parser || "flat";
+                state.promptTemplate = activeTemplateState.promptTemplate || state.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                state.systemPrompt = activeTemplateState.systemPrompt || state.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+                state.datasetScript = activeTemplateState.datasetScript || state.datasetScript || "";
+                state.lastAiDatasetScript =
+                    activeTemplateState.lastAiDatasetScript || state.lastAiDatasetScript || "";
                 if (!state.schema || !Array.isArray(state.schema.tables) || state.schema.tables.length === 0) {
                     state.schema = {
                         tables: state.pages.map(page => ({
@@ -1455,9 +2635,21 @@
                 renderFontSizeOptions();
                 applyGridDisplayPreferences({ persist: false });
                 buildColumnPinMenu();
+                renderTemplateSelect();
+                renderTemplateCards(state.activeTemplateId || DEFAULT_TEMPLATE_ID);
+                renderTemplateMeta();
+                if (!hasSeenTemplateModal) {
+                    setTimeout(() => {
+                        openTemplateModalUi();
+                        try {
+                            localStorage.setItem(TEMPLATE_MODAL_SEEN_KEY, "1");
+                        } catch (err) { /* ignore */ }
+                    }, 50);
+                }
 
                 function persistState() {
                     try {
+                        syncTemplateStateFromUI();
                         const payload = {
                             pages: state.pages.map((page, index) => normalizePage(page, index)),
                             activeIndex: Math.max(0, Math.min(state.activeIndex, state.pages.length - 1)),
@@ -1465,6 +2657,8 @@
                             systemPrompt: state.systemPrompt || DEFAULT_SYSTEM_PROMPT,
                             reasoningEffort: state.reasoningEffort || "low",
                             displayPreferences: state.displayPreferences || { ...DISPLAY_PREFERENCE_DEFAULTS },
+                            activeTemplateId: state.activeTemplateId || DEFAULT_TEMPLATE_ID,
+                            templateStates: state.templateStates || {},
                             schema: state.schema || { tables: [] },
                             datasetScript: state.datasetScript || "",
                             lastAiDatasetScript: state.lastAiDatasetScript || ""
@@ -2009,20 +3203,48 @@
                 function applyGridData(data, options = {}) {
                     if (!data) return;
                     const tableId = options.tableId || getActivePage()?.tableId || "";
-                    const columnDefs = Array.isArray(data.columnDefs) ? data.columnDefs : [];
                     const rowData = Array.isArray(data.rowData) ? data.rowData : [];
-                    const normalizedColumnDefs = disableNativeFilterColumns(
-                        ensureDefaultPinned(normalizeColumnComponentNames(columnDefs))
-                    );
-                    data.columnDefs = normalizedColumnDefs;
-                    const withFkLinks = addForeignKeyRenderers(normalizedColumnDefs, tableId);
-                    const gridColumnDefs = addRelationCountColumns(withFkLinks, tableId);
+                    const isTree = isTreeTemplateActive();
+                    let finalRowData = rowData;
+                    let gridColumnDefs;
+                    if (isTree) {
+                        gridColumnDefs = buildTreeColumnDefs();
+                        gridElement?.classList?.add("tree-template");
+                        finalRowData = decorateTreeRows(rowData);
+                        data.rowData = finalRowData;
+                    } else {
+                        gridElement?.classList?.remove("tree-template");
+                        const columnDefs = Array.isArray(data.columnDefs) ? data.columnDefs : [];
+                        const normalizedColumnDefs = disableNativeFilterColumns(
+                            ensureDefaultPinned(normalizeColumnComponentNames(columnDefs))
+                        );
+                        data.columnDefs = normalizedColumnDefs;
+                        const withFkLinks = addForeignKeyRenderers(normalizedColumnDefs, tableId);
+                        gridColumnDefs = addRelationCountColumns(withFkLinks, tableId);
+                    }
+                    if (gridOptions) {
+                        gridOptions.treeData = false;
+                        gridOptions.groupDefaultExpanded = undefined;
+                        gridOptions.rowDragManaged = false;
+                        gridOptions.rowDragEntireRow = isTree;
+                        gridOptions.animateRows = true;
+                        gridOptions.getRowId = params => {
+                            const path = Array.isArray(params?.data?.__path) ? params.data.__path : [];
+                            if (params?.data?.id) return params.data.id;
+                            return path.length ? path.join(" / ") : undefined;
+                        };
+                        gridOptions.onRowDragEnd = undefined;
+                        gridOptions.suppressMovableColumns = isTree;
+                    }
                     if (typeof gridApi.setGridOption === "function") {
                         gridApi.setGridOption("columnDefs", gridColumnDefs);
-                        gridApi.setGridOption("rowData", rowData);
+                        gridApi.setGridOption("rowData", isTree ? finalRowData : rowData);
                     } else {
                         gridApi.setColumnDefs(gridColumnDefs);
-                        gridApi.setRowData(rowData);
+                        gridApi.setRowData(isTree ? finalRowData : rowData);
+                    }
+                    if (isTree) {
+                        console.info("Tree applyGridData rows=", finalRowData.length, "names=", finalRowData.map(r => r.name));
                     }
                     scheduleAutoSizeAndPinMenu();
                     scheduleNaturalFilterRecalc();
@@ -2148,10 +3370,11 @@
 
                 function autoSizeColumns() {
                     if (!gridColumnApi || typeof gridColumnApi.autoSizeAllColumns !== "function") return;
+                    const isTree = isTreeTemplateActive();
                     gridColumnApi.autoSizeAllColumns({
                         scaleUpToFitGridWidth: false,
-                        defaultMinWidth: 85,
-                        defaultMaxWidth: 200
+                        defaultMinWidth: isTree ? 140 : 85,
+                        defaultMaxWidth: isTree ? 520 : 200
                     });
                 }
 
@@ -3016,7 +4239,8 @@
                 }
 
                 function getGridScriptValue() {
-                    const trimmedStateScript = (state.datasetScript || "").trim();
+                    const tplState = getActiveTemplateState();
+                    const trimmedStateScript = ((tplState?.datasetScript || state.datasetScript || "") || "").trim();
                     if (trimmedStateScript) return trimmedStateScript;
                     const dataset = buildDatasetFromState();
                     if (!hasDatasetContent(dataset)) return "";
@@ -3078,8 +4302,9 @@
                     state.activeIndex = targetIndex;
                     const page = getActivePage();
                     if (gridTitleInput) gridTitleInput.value = page.title || "";
-                    if (promptInput) promptInput.value = page.scenario || "";
-                    if (gridScript) gridScript.value = getGridScriptValue();
+                    const tplState = getActiveTemplateState();
+                    if (promptInput) promptInput.value = tplState.scenario || page.scenario || "";
+                    if (gridScript) gridScript.value = tplState.datasetScript || getGridScriptValue();
                     try {
                         gridApi?.setFilterModel?.(null);
                         gridApi?.onFilterChanged?.();
@@ -3129,8 +4354,8 @@
 
                 function openModal() {
                     aiModal?.classList.add("open");
-                    if (promptTemplateField) promptTemplateField.value = state.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
-                    if (systemPromptField) systemPromptField.value = state.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+                    renderTemplateSelect();
+                    applyTemplateStateToUI();
                 }
 
                 function closeModal() {
@@ -3138,13 +4363,19 @@
                 }
 
                 function resetPrompt() {
-                    if (promptTemplateField) promptTemplateField.value = DEFAULT_PROMPT_TEMPLATE;
-                    if (systemPromptField) systemPromptField.value = DEFAULT_SYSTEM_PROMPT;
+                    const tplConfig = getActiveTemplateConfig();
+                    if (promptTemplateField) {
+                        promptTemplateField.value = tplConfig.defaultPromptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                    }
+                    if (systemPromptField) {
+                        systemPromptField.value = tplConfig.defaultSystemPrompt || DEFAULT_SYSTEM_PROMPT;
+                    }
                 }
 
                 function applyPromptSettings() {
-                    state.promptTemplate = promptTemplateField?.value || DEFAULT_PROMPT_TEMPLATE;
-                    state.systemPrompt = systemPromptField?.value || DEFAULT_SYSTEM_PROMPT;
+                    const tplState = syncTemplateStateFromUI();
+                    state.promptTemplate = tplState.promptTemplate;
+                    state.systemPrompt = tplState.systemPrompt;
                     state.reasoningEffort = state.reasoningEffort || "low";
                     persistState();
                     closeModal();
@@ -5439,7 +6670,7 @@
                     const pages = normalizedSchema.tables.map((table, index) => {
                         const existing = state.pages.find(page => page?.tableId === table.id);
                         const tableData = dataByTable?.[table.id] || {};
-                        return normalizePage(
+                        const normalized = normalizePage(
                             {
                                 id: existing?.id || `table-${table.id}`,
                                 tableId: table.id,
@@ -5454,6 +6685,7 @@
                             },
                             index
                         );
+                        return normalized;
                     });
 
                     state.pages = pages;
@@ -5473,7 +6705,9 @@
 
                     syncDatasetScriptFromState({ persist: false });
                     if (options.markAsAi) {
-                        state.lastAiDatasetScript = state.datasetScript || "";
+                        const tplState = getActiveTemplateState();
+                        tplState.lastAiDatasetScript = state.datasetScript || tplState.datasetScript || "";
+                        state.lastAiDatasetScript = tplState.lastAiDatasetScript;
                     }
 
                     renderTabs();
@@ -5482,18 +6716,22 @@
                 }
 
                 async function requestData() {
+                    const tplState = syncTemplateStateFromUI();
+                    const tplConfig = getActiveTemplateConfig();
                     const controller = new AbortController();
                     activeRequestController = controller;
                     setLoading(true);
                     showStatus("Génération en cours…");
                     const page = getActivePage();
                     const scenarioText = (promptInput?.value || "").trim();
-                    const scriptText = (gridScript?.value || state.datasetScript || "").trim();
-                    const userPrompt = (state.promptTemplate || DEFAULT_PROMPT_TEMPLATE).replace("{{scenario_prompt}}", scenarioText || "ton sujet");
+                    const scriptText = (gridScript?.value || tplState.datasetScript || state.datasetScript || "").trim();
+                    const promptTemplate = tplState.promptTemplate || tplConfig.defaultPromptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                    const systemPrompt = tplState.systemPrompt || tplConfig.defaultSystemPrompt || DEFAULT_SYSTEM_PROMPT;
+                    const userPrompt = promptTemplate.replace("{{scenario_prompt}}", scenarioText || "ton sujet");
                     const fileAttachments = isOpenAIBackendSelected() ? getUploadedFileAttachments() : [];
 
                     const messages = [
-                        { role: "system", content: state.systemPrompt || DEFAULT_SYSTEM_PROMPT }
+                        { role: "system", content: systemPrompt }
                     ];
                     if (scriptText) {
                         const datasetMessages = buildChunkedDatasetMessages(scriptText);
@@ -5532,6 +6770,12 @@
                             }
                         });
                         const cleaned = cleanJson(response);
+                        if (gridScript) {
+                            gridScript.value = cleaned;
+                        }
+                        const activeTplState = getActiveTemplateState();
+                        activeTplState.datasetScript = cleaned;
+                        state.datasetScript = cleaned;
                         const ndjsonDataset = parseNdjsonDataset(cleaned);
                         const parsed = streamingState.finished ? null : (ndjsonDataset || parseJsonTolerant(cleaned));
                         if (!parsed || typeof parsed !== "object") {
@@ -5542,11 +6786,61 @@
                             }
                             throw new Error("Réponse IA invalide");
                         }
-                        const dataset =
-                            parsed?.schema && parsed?.data
-                                ? parsed
-                                : buildDatasetFromSingleTablePayload(parsed, page?.tableId, page?.title);
-                        applyDatasetToState(dataset, { markAsAi: true, activeTableId: page?.tableId });
+                        const isTree = isTreeTemplateActive();
+                        const treeDataset = isTree ? normalizeTreePayload(parsed) : null;
+                        if (treeDataset) {
+                            const treeRows = Array.isArray(treeDataset?.data?.structure?.rowData)
+                                ? treeDataset.data.structure.rowData.length
+                                : 0;
+                            console.info("Go-Toolkit Grid: tree dataset rows=", treeRows, treeDataset.data.structure.rowData);
+                            const structure = treeDataset.data.structure || { columnDefs: [], rowData: [] };
+                            state.pages = [
+                                {
+                                    id: "page-structure",
+                                    tableId: "structure",
+                                    title: "Structure de données",
+                                    primaryKey: "id",
+                                    relations: [],
+                                    scenario: page?.scenario || "",
+                                    data: {
+                                        columnDefs: Array.isArray(structure.columnDefs) ? structure.columnDefs : [],
+                                        rowData: Array.isArray(structure.rowData) ? structure.rowData : []
+                                    }
+                                }
+                            ];
+                            state.activeIndex = 0;
+                            state.schema = {
+                                tables: [
+                                    {
+                                        id: "structure",
+                                        title: "Structure de données",
+                                        primaryKey: "id",
+                                        columns: [],
+                                        relations: []
+                                    }
+                                ]
+                            };
+                            applyGridData(structure, { tableId: "structure" });
+                            const exportedRows = prepareTreeRowsForExport(structure.rowData || []);
+                            const treeScriptPayload = exportedRows.length ? { rows: exportedRows } : treeDataset;
+                            if (gridScript && typeof gridScript.value === "string") {
+                                gridScript.value = JSON.stringify(treeScriptPayload, null, 2);
+                            }
+                            syncDatasetScriptFromState({ persist: false });
+                            persistState();
+                        } else if (parsed?.schema && parsed?.data) {
+                            applyDatasetToState(parsed, { markAsAi: true, activeTableId: page?.tableId });
+                        } else if (!isTree) {
+                            const dataset =
+                                parsed?.schema && parsed?.data
+                                    ? parsed
+                                    : buildDatasetFromSingleTablePayload(parsed, page?.tableId, page?.title);
+                            applyDatasetToState(dataset, { markAsAi: true, activeTableId: page?.tableId });
+                        } else {
+                            console.warn("Modèle 'Structure de données' : aucun champ 'rows', 'tree' ou 'nodes' détecté.");
+                            showStatus("Réponse IA sans arbre ('rows' ou 'tree'). Ajoute \"rows\": [...] dans la sortie.", true);
+                            throw new Error("Réponse IA invalide pour le modèle 'Structure de données' (champ rows/tree manquant)");
+                        }
                         syncDatasetScriptFromState();
                         showStatus("Jeu de données mis à jour.");
                         scheduleNaturalFilterRecalc();
@@ -5594,9 +6888,17 @@
                             throw new Error("JSON invalide");
                         }
                         const page = getActivePage();
-                        if (parsed?.schema && parsed?.data) {
+                        const isTree = isTreeTemplateActive();
+                        const treeDataset = isTree ? normalizeTreePayload(parsed) : null;
+                        if (treeDataset) {
+                            const treeRows = Array.isArray(treeDataset?.data?.structure?.rowData)
+                                ? treeDataset.data.structure.rowData.length
+                                : 0;
+                            console.info("Go-Toolkit Grid: tree dataset rows=", treeRows);
+                            applyDatasetToState(treeDataset, { activeTableId: page?.tableId });
+                        } else if (parsed?.schema && parsed?.data) {
                             applyDatasetToState(parsed, { activeTableId: page?.tableId });
-                        } else {
+                        } else if (!isTree) {
                             const columnDefs = Array.isArray(parsed.columnDefs) ? parsed.columnDefs : [];
                             const rowData = Array.isArray(parsed.rowData) ? parsed.rowData : [];
                             page.data = { columnDefs, rowData };
@@ -5604,8 +6906,15 @@
                             applyGridData(page.data, { tableId: page.tableId });
                             syncDatasetScriptFromState();
                             persistState();
+                        } else {
+                            console.warn("Modèle 'Structure de données' : aucun champ 'rows', 'tree' ou 'nodes' détecté.");
+                            showStatus("Réponse IA sans arbre ('rows' ou 'tree'). Ajoute \"rows\": [...] dans la sortie.", true);
+                            throw new Error("Réponse IA invalide pour le modèle 'Structure de données' (champ rows/tree manquant)");
                         }
-                        state.lastAiDatasetScript = state.datasetScript || gridScript.value || "";
+                        const tplState = getActiveTemplateState();
+                        tplState.datasetScript = state.datasetScript || gridScript.value || "";
+                        tplState.lastAiDatasetScript = tplState.datasetScript;
+                        state.lastAiDatasetScript = tplState.lastAiDatasetScript;
                         persistState();
                         if (!options.silentOnSuccess) {
                             showStatus("Script appliqué sur la grille.");
@@ -5619,11 +6928,19 @@
                 }
 
                 function restoreLastAiResponse() {
-                    const script = state?.lastAiDatasetScript || state?.datasetScript || "";
+                    const tplState = getActiveTemplateState();
+                    const script =
+                        tplState?.lastAiDatasetScript ||
+                        tplState?.datasetScript ||
+                        state?.lastAiDatasetScript ||
+                        state?.datasetScript ||
+                        "";
                     if (!script.trim()) {
                         showStatus("Aucune réponse IA à restaurer.", true);
                         return;
                     }
+                    tplState.datasetScript = script;
+                    state.datasetScript = script;
                     gridScript.value = script;
                     applyScriptToGrid();
                 }
@@ -5702,6 +7019,38 @@
                         updateShareMenuUI();
                     });
                     shareMenu.addEventListener("click", event => event.stopPropagation());
+                }
+                if (templateModalBtn) {
+                    templateModalBtn.addEventListener("click", event => {
+                        event.preventDefault();
+                        openTemplateModalUi();
+                    });
+                }
+                if (templateApplyBtn) {
+                    templateApplyBtn.addEventListener("click", event => {
+                        event.preventDefault();
+                        const selectedId = templateCardList?.dataset?.selectedId || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                        setActiveTemplate(selectedId, { skipApplyScript: true });
+                        closeTemplateModalUi();
+                    });
+                }
+                if (closeTemplateModal) {
+                    closeTemplateModal.addEventListener("click", event => {
+                        event.preventDefault();
+                        closeTemplateModalUi();
+                    });
+                }
+                if (templateModal) {
+                    templateModal.addEventListener("click", event => {
+                        if (event.target === templateModal) {
+                            closeTemplateModalUi();
+                        }
+                    });
+                }
+                if (aiTemplateSelect) {
+                    aiTemplateSelect.addEventListener("change", event => {
+                        setActiveTemplate(event.target.value, { skipApplyScript: true });
+                    });
                 }
                 if (shareCreateBtn) {
                     shareCreateBtn.addEventListener("click", event => {
@@ -5898,13 +7247,18 @@
                     if (promptInput) {
                         promptInput.addEventListener("input", () => {
                             const page = getActivePage();
-                            page.scenario = promptInput.value;
+                            const value = promptInput.value || "";
+                            if (page) page.scenario = value;
+                            const tplState = getActiveTemplateState();
+                            tplState.scenario = value;
                             persistState();
                         });
                     }
                     if (gridScript) {
                         gridScript.addEventListener("input", () => {
-                            state.datasetScript = gridScript.value;
+                            const tplState = getActiveTemplateState();
+                            tplState.datasetScript = gridScript.value;
+                            state.datasetScript = tplState.datasetScript;
                             persistState();
                         });
                         gridScript.addEventListener("blur", () => {

@@ -654,7 +654,7 @@
         "Ajoute un titre en commentaire %% Title dans la réponse.\n- " +
         "Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
 
-    const gridSystemPrompt = `Tu es un générateur de données JSON pour AG Grid (client-side) qui produit un **flux JSONL (NDJSON)** en streaming pour initialiser puis alimenter la grille progressivement.
+    const gridSystemPromptDataGeneration = `Tu es un générateur de données JSON pour AG Grid (client-side) qui produit un **flux JSONL (NDJSON)** en streaming pour initialiser puis alimenter la grille progressivement.
 
 ⚠️ SORTIE STRICTE (STREAMING)
 - Retourne UNIQUEMENT des objets JSON valides
@@ -787,7 +787,42 @@
 - Si le schema change, renvoyer un nouveau flux complet (header + rows + done)
 - Le flux doit être consommable ligne par ligne en streaming`;
 
+    const gridSystemPromptTree = `Tu es un générateur de schémas arborescents pour AG Grid (community, sans treeData). La sortie doit être un **unique objet JSON** contenant un tableau aplati de lignes, et rien d'autre :
+{
+  "rows": [
+    {
+      "id": "string (identifiant unique)",
+      "name": "string (libellé affiché)",
+      "path": ["racine", "sous-ensemble", "feuille"], // tableau hiérarchique (obligatoire)
+      "type": "string (ex: object | varchar | number | boolean | date)",
+      "format": "string (ex: object, email, ISO date, currency)",
+      "definition": "string (phrase courte)",
+      "sample": "string (exemple)",
+      "source": "string (origine)",
+      "relation": "string (cardinalité: 1..1 | 0..1 | 1..n | 0..n)"
+    }
+  ]
+}
+- AUCUN markdown, AUCUN texte hors de cet objet JSON.
+- Chaque entrée du tableau rows doit avoir le champ path (hiérarchie complète) et relation.
+- Respecte les colonnes de l'interface : Structure / Relation / Type / Format / Définition / Exemple / Source.`;
+
+    const gridSystemPrompts = {
+        dataGeneration: gridSystemPromptDataGeneration,
+        treeStructure: gridSystemPromptTree
+    };
+
     const gridDefaultPromptTemplate = "Génère des exemples basés sur {{scenario_prompt}}.";
+    const gridTreePromptTemplate =
+        "Génère une arborescence structurée répondant à {{scenario_prompt}}. Retourne un unique JSON { \"rows\": [] } où chaque ligne contient : id, name, path (tableau hiérarchique), type, format, definition, sample, source et relation (1..1 | 0..1 | 1..n). Aucun markdown.";
+
+    const gridPromptTemplates = {
+        dataGeneration: gridDefaultPromptTemplate,
+        treeStructure: gridTreePromptTemplate
+    };
+
+    // Backward compatibility: keep previous key names
+    const gridSystemPrompt = gridSystemPromptDataGeneration;
 
     const canvasDefaultPromptTemplate =
         "Sur la base de \"{{slideTitle}}\", du contexte \"{{globalContext}}\" et \"{{pageContext}}\",\n- " +
@@ -1041,7 +1076,9 @@ Contraintes de nommage et quantités :
         drawPromptzilla,
         drawDefaultPromptTemplate,
         gridSystemPrompt,
+        gridSystemPrompts,
         gridDefaultPromptTemplate,
+        gridPromptTemplates,
         canvasDefaultPromptTemplate,
         canvasBottomPromptTemplate,
         canvasSuggestionsPromptTemplate,

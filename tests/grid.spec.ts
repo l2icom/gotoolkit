@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 
 const STREAMING_LINES = [
   `{"type":"header","schema":{"tables":[{"id":"products","title":"Produits test","primaryKey":"id","columns":[{"field":"id","headerName":"Id","editable":false,"cellDataType":"number"},{"field":"name","headerName":"Nom","editable":true,"cellDataType":"text"}],"relations":[]}]}}\n`,
@@ -6,6 +6,74 @@ const STREAMING_LINES = [
   `{"type":"row","table":"products","data":{"id":2,"name":"Beta"}}\n`,
   `{"type":"done","summary":{"tables":{"products":2}}}\n`
 ];
+
+const TREE_SAMPLE = `{
+  "rows": [
+    {
+      "id": "contract",
+      "name": "contract",
+      "path": ["contract"],
+      "type": "object",
+      "format": "object",
+      "definition": "Contrat principal",
+      "sample": "",
+      "source": "Src",
+      "relation": "1..1"
+    },
+    {
+      "id": "contract_id",
+      "name": "contract_id",
+      "path": ["contract", "contract_id"],
+      "type": "varchar",
+      "format": "varchar",
+      "definition": "Identifiant du contrat",
+      "sample": "1-XXXX",
+      "source": "SAP",
+      "relation": "1..1"
+    },
+    {
+      "id": "payment_terms",
+      "name": "payment_terms",
+      "path": ["contract", "payment_terms"],
+      "type": "object",
+      "format": "object",
+      "definition": "Modalités de paiement",
+      "sample": "",
+      "source": "Src",
+      "relation": "1..n"
+    },
+    {
+      "id": "invoice_type",
+      "name": "invoice_type",
+      "path": ["contract", "payment_terms", "invoice_type"],
+      "type": "varchar",
+      "format": "varchar",
+      "definition": "Type de facture",
+      "sample": "ex: email",
+      "source": "Src",
+      "relation": "1..1"
+    },
+    {
+      "id": "value",
+      "name": "value",
+      "path": ["contract", "payment_terms", "value"],
+      "type": "varchar",
+      "format": "varchar",
+      "definition": "Pourcentage à appliquer",
+      "sample": "ex: email",
+      "source": "Src",
+      "relation": "1..1"
+    }
+  ]
+}`;
+
+async function closeTemplateModalIfPresent(page: Page) {
+  await page.waitForTimeout(80);
+  const modal = page.locator("#templateModal");
+  if (await modal.isVisible()) {
+    await page.locator("#templateApplyBtn").click();
+  }
+}
 
 const SAMPLE_MULTI_TABLE_DATASET = `{
   "schema": {
@@ -448,6 +516,7 @@ const SAMPLE_MULTI_TABLE_DATASET = `{
 
 test("natural French filter narrows Clients to Alice Dupont", async ({ page }) => {
   await page.goto("http://127.0.0.1:8080/grid.html");
+  await closeTemplateModalIfPresent(page);
 
   await page.locator("#gridScript").fill(SAMPLE_MULTI_TABLE_DATASET);
   // gridScript applies on blur.
@@ -471,6 +540,7 @@ test("natural French filter narrows Clients to Alice Dupont", async ({ page }) =
 
 test("foreign key natural filter matches by related name", async ({ page }) => {
   await page.goto("http://127.0.0.1:8080/grid.html");
+  await closeTemplateModalIfPresent(page);
 
   await page.locator("#gridScript").fill(SAMPLE_MULTI_TABLE_DATASET);
   await page.locator("#gridTitleInput").click();
@@ -490,12 +560,88 @@ test("foreign key natural filter matches by related name", async ({ page }) => {
   await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Commande D");
 });
 
+test("tree template renders hierarchical rows", async ({ page }) => {
+  await page.goto("http://127.0.0.1:8080/grid.html");
+  await closeTemplateModalIfPresent(page);
+
+  // Open prompt modal and switch to tree template
+  await page.locator("#aiSettingsBtn").click();
+  await page.locator("#aiTemplateSelect").selectOption("tree-structure");
+  await page.locator("#applyAiSettingsBtn").click();
+
+  // Fill script with tree sample and blur to apply
+  await page.locator("#gridScript").fill(TREE_SAMPLE);
+  await page.locator("#gridTitleInput").click();
+
+  await page.waitForTimeout(300);
+  const debug = await page.evaluate(() => {
+    // @ts-ignore
+    return window.goToolkitGridApi?.getDisplayedRowCount?.() || 0;
+  });
+  console.log("DEBUG displayed rows", debug);
+
+  const rows = page.locator(".ag-center-cols-container .ag-row");
+  await expect(rows).toHaveCount(5, { timeout: 10000 });
+  await expect(page.locator(".ag-body-viewport")).toContainText("contract");
+  await expect(page.locator(".ag-body-viewport")).toContainText("payment_terms");
+  await expect(page.locator(".ag-body-viewport")).toContainText("invoice_type");
+});
+
+test("tree template applies AI response into grid", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.clear();
+  });
+
+  await page.goto("http://127.0.0.1:8080/grid.html");
+  await closeTemplateModalIfPresent(page);
+
+  // Force template to tree via UI
+  await page.locator("#aiSettingsBtn").click();
+  await page.locator("#aiTemplateSelect").selectOption("tree-structure");
+  await page.locator("#applyAiSettingsBtn").click();
+
+  await page.evaluate(sample => {
+    // @ts-ignore
+    window.GoToolkitIA = {
+      chatCompletion: async () => sample
+    };
+  }, TREE_SAMPLE);
+
+  await page.locator("#generateBtn").click();
+
+  await page.waitForTimeout(500); // allow parsing
+
+  const rowsViaApi = await page.evaluate(() => {
+    // @ts-ignore
+    const api = window.goToolkitGridApi;
+    if (!api) return 0;
+    try {
+      const model = api.getModel();
+      return typeof model.getRowCount === "function" ? model.getRowCount() : 0;
+    } catch (e) {
+      return 0;
+    }
+  });
+  const datasetScript = await page.evaluate(() => {
+    const script = document.getElementById("gridScript") as HTMLTextAreaElement | null;
+    return script ? script.value : "";
+  });
+  expect(datasetScript.trim().length).toBeGreaterThan(0);
+  expect(rowsViaApi).toBeGreaterThanOrEqual(5);
+
+  const rows = page.locator(".ag-center-cols-container .ag-row");
+  await expect(rows).toHaveCount(5, { timeout: 10000 });
+  await expect(page.locator(".ag-body-viewport")).toContainText("contract");
+  await expect(page.locator(".ag-body-viewport")).toContainText("payment_terms");
+});
+
 test("streams update ag-Grid incrementally", async ({ page }) => {
   await page.addInitScript(() => {
     window.localStorage.clear();
   });
 
   await page.goto("http://127.0.0.1:8080/grid.html");
+  await closeTemplateModalIfPresent(page);
   await page.evaluate(({ lines }) => {
     // @ts-ignore
     // @ts-ignore
