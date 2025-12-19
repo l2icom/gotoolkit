@@ -1334,8 +1334,6 @@
                 <h3 title="⊞ Modèle">⊞ Modèle</h3>
                 <button id="closeTemplateModal" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
             </header>
-            <p style="font-size:12px;color:#566188;margin:0 0 6px;">Choisis le type de génération pour cette capsule.
-            </p>
             <div class="template-card-grid" id="templateCardList"></div>
             <div class="modal-actions template-actions">
                 <button id="templateApplyBtn" class="btn-primary" type="button">Appliquer</button>
@@ -1413,32 +1411,7 @@
 - Chaque entrée du tableau rows doit avoir le champ path (hiérarchie complète) et relation.
 - Respecte les colonnes de l'interface : Structure / Relation / Type / Format / Définition / Exemple / Source.
 `;
-                const GRID_TEMPLATES = [
-                    {
-                        id: "data-example",
-                        label: "Données d'exemple",
-                        description: "Dataset tabulaire plat, idéal pour générer des exemples concrets.",
-                        defaultPromptTemplate:
-                            (window.GoPrompts && window.GoPrompts.gridPromptTemplates?.dataGeneration) ||
-                            DEFAULT_PROMPT_TEMPLATE,
-                        defaultSystemPrompt:
-                            (window.GoPrompts && window.GoPrompts.gridSystemPrompts?.dataGeneration) ||
-                            DEFAULT_SYSTEM_PROMPT,
-                        parser: "flat"
-                    },
-                    {
-                        id: "tree-structure",
-                        label: "Structure de données",
-                        description: "Schéma arborescent (Structure / Type / Format / Définition / Exemple / Source).",
-                        defaultPromptTemplate:
-                            (window.GoPrompts && window.GoPrompts.gridPromptTemplates?.treeStructure) ||
-                            "Génère une arborescence structurée répondant à {{scenario_prompt}}. Retourne { \"rows\": [] } avec pour chaque ligne : id, name, path (tableau hiérarchique), type, format, definition, sample, source et relation (1..1 | 0..1 | 1..n).",
-                        defaultSystemPrompt:
-                            (window.GoPrompts && window.GoPrompts.gridSystemPrompts?.treeStructure) ||
-                            TREE_SYSTEM_PROMPT,
-                        parser: "tree"
-                    }
-                ];
+                const GRID_TEMPLATES = (window.GoPrompts && window.GoPrompts.gridTemplates) || [];
                 const DEFAULT_TEMPLATE_ID = GRID_TEMPLATES[0].id;
                 const STORAGE_KEY = "grid-ai-state";
                 const TEMPLATE_MODAL_SEEN_KEY = "grid-template-modal-seen";
@@ -1800,7 +1773,7 @@
                             pinned: "left",
                             rowDrag: false,
                             width: 260,
-                            minWidth: 180,
+                            minWidth: 160,
                             suppressSizeToFit: true,
                             cellRenderer: structureCellRenderer,
                             tooltipField: "name"
@@ -1809,8 +1782,8 @@
                             field: "__actions",
                             colId: "__actions",
                             headerName: "",
-                            width: 110,
-                            maxWidth: 130,
+                            width: 70,
+                            maxWidth: 70,
                             pinned: "left",
                             sortable: false,
                             filter: false,
@@ -1830,7 +1803,8 @@
                             filter: false,
                             resizable: false,
                             pinned: "left",
-                            width: 110,
+                            width: 60,
+                            maxWidth: 60,
                             cellRenderer: relationCellRenderer
                         },
                         {
@@ -1842,7 +1816,8 @@
                             resizable: true,
                             cellEditor: "agSelectCellEditor",
                             cellEditorParams: { values: TREE_TYPE_OPTIONS },
-                            tooltipField: "type"
+                            tooltipField: "type",
+                            width: 60,
                         },
                         {
                             field: "format",
@@ -1851,7 +1826,8 @@
                             sortable: false,
                             filter: false,
                             resizable: true,
-                            tooltipField: "format"
+                            tooltipField: "format",
+                            width: 60,
                         },
                         {
                             field: "definition",
@@ -2586,7 +2562,8 @@
                         }
                         card.tabIndex = 0;
                         card.dataset.id = tpl.id;
-                        card.innerHTML = `<strong>${tpl.label}</strong><p>${tpl.description}</p>`;
+                        const icon = getTemplateIcon(tpl.id);
+                        card.innerHTML = `<strong>${icon} ${tpl.label}</strong><p>${tpl.description}</p>`;
                         card.addEventListener("click", () => {
                             renderTemplateCards(tpl.id);
                             templateCardList.dataset.selectedId = tpl.id;

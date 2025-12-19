@@ -825,6 +825,25 @@
         treeStructure: gridTreePromptTemplate
     };
 
+    const GRID_TEMPLATES = [
+        {
+            id: "data-example",
+            label: "Données d'exemple",
+            description: "Dataset tabulaire plat, idéal pour générer des exemples concrets.",
+            defaultPromptTemplate: gridPromptTemplates.dataGeneration || gridDefaultPromptTemplate,
+            defaultSystemPrompt: gridSystemPrompts.dataGeneration || gridSystemPrompt,
+            parser: "flat"
+        },
+        {
+            id: "tree-structure",
+            label: "Structure de données",
+            description: "Schéma arborescent (Structure / Type / Format / Définition / Exemple / Source).",
+            defaultPromptTemplate: gridPromptTemplates.treeStructure || gridTreePromptTemplate,
+            defaultSystemPrompt: gridSystemPrompts.treeStructure || gridSystemPromptTree,
+            parser: "tree"
+        }
+    ];
+
     // Backward compatibility: keep previous key names
     const gridSystemPrompt = gridSystemPromptDataGeneration;
 
@@ -1079,6 +1098,7 @@ Contraintes de nommage et quantités :
         canvasExamples,
         drawPromptzilla,
         drawDefaultPromptTemplate,
+        gridTemplates: GRID_TEMPLATES,
         gridSystemPrompt,
         gridSystemPrompts,
         gridDefaultPromptTemplate,
