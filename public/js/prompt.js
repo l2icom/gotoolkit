@@ -787,16 +787,17 @@
 - Si le schema change, renvoyer un nouveau flux complet (header + rows + done)
 - Le flux doit être consommable ligne par ligne en streaming`;
 
-const gridSystemPromptTree = `Tu es un générateur de schémas arborescents pour AG Grid (community, sans treeData). La sortie doit être un **unique objet JSON** contenant un tableau aplati de lignes, et rien d'autre :
+    const gridSystemPromptTree = `Tu es un générateur de schémas arborescents pour AG Grid (community, sans treeData). La sortie doit être un **unique objet JSON** contenant un tableau aplati de lignes, et rien d'autre :
 {
+  "title": "string (titre du tableau qui résume la requête en 1-3 mots)",
   "rows": [
     {
-      "id": "string (identifiant unique, alphanumérique, pas d'espace)",
-      "name": "string (libellé affiché)",
+      "id": "string (identifiant unique lisible, alphanumérique, court, sans espace)",
+      "name": "string (libellé affiché moins de 5 mots)",
       "path": ["racine", "sous-ensemble", "feuille"], // tableau hiérarchique (obligatoire)
-      "type": "string (object | varchar | number | boolean | date | dateTime | timestamp)",
-      "format": "string (ex: object, email, ISO date, currency)",
-      "definition": "string (phrase courte)",
+      "type": "string (object | string | number | boolean | date | dateTime | timestamp)",
+      "format": "nomenclature ou contraintes de validation à la saisie ou précision sur le format (ex: XXX-XX, email, YYYY/MM/DD, en euros)",
+      "definition": "string (phrase courte moins de 15 mots)",
       "sample": "string (exemple)",
       "source": "string (origine)",
       "relation": "string (cardinalité: 1..1 | 0..1 | 1..n | 0..n)"

@@ -25,11 +25,12 @@
             position: fixed;
             top: 0;
             left: 0;
+            /* less transparent (more opaque) black background with white text */
             background: rgba(0, 0, 0, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.06);
             padding: 8px 10px;
             border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
             z-index: 2200;
             max-width: 360px;
             font-size: 12px;
@@ -38,12 +39,35 @@
             backdrop-filter: blur(2px);
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.15s ease;
+            transition: opacity 0.06s ease;
         }
 
         .template-tooltip[aria-hidden="false"]:not(:empty) {
             display: block;
             opacity: 1;
+        }
+
+        /* ag-Grid cell tooltip (when cell text is truncated) */
+        .ag-tooltip,
+        .ag-tooltip-wrapper,
+        .ag-theme-quartz .ag-tooltip,
+        .ag-theme-quartz .ag-tooltip-wrapper {
+            /* less transparent (more opaque) */
+            background: rgba(0, 0, 0, 0.85) !important;
+            color: #ffffff !important;
+            border-radius: 6px !important;
+            padding: 6px 8px !important;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35) !important;
+            max-width: 420px !important;
+            font-size: 12px !important;
+            line-height: 1.3 !important;
+            transition: opacity 0.06s ease !important;
+        }
+
+        /* inner text selector fallback */
+        .ag-tooltip .ag-tooltip-text,
+        .ag-tooltip-wrapper .ag-tooltip-text {
+            color: #ffffff !important;
         }
 
         :root {
@@ -1546,6 +1570,9 @@
                             return typeof val === "string" ? val : String(val);
                         }
                     },
+                    // show tooltips quickly (ms)
+                    tooltipShowDelay: 50,
+                    tooltipHideDelay: 200,
                     localeText: typeof AG_GRID_LOCALE_FR !== "undefined" ? AG_GRID_LOCALE_FR : undefined,
                     autoSizeStrategy: {
                         type: "fitGridWidth",
@@ -6868,11 +6895,14 @@
                                 : 0;
                             console.info("Go-Toolkit Grid: tree dataset rows=", treeRows, treeDataset.data.structure.rowData);
                             const structure = treeDataset.data.structure || { columnDefs: [], rowData: [] };
+                            const providedTitle = (typeof parsed?.title === "string" && parsed.title.trim())
+                                ? parsed.title.trim()
+                                : (typeof treeDataset.title === "string" && treeDataset.title.trim() ? treeDataset.title.trim() : "Structure de données");
                             state.pages = [
                                 {
                                     id: "page-structure",
                                     tableId: "structure",
-                                    title: "Structure de données",
+                                    title: providedTitle,
                                     primaryKey: "id",
                                     relations: [],
                                     scenario: page?.scenario || "",
@@ -6887,14 +6917,29 @@
                                 tables: [
                                     {
                                         id: "structure",
-                                        title: "Structure de données",
+                                        title: providedTitle,
                                         primaryKey: "id",
                                         columns: [],
                                         relations: []
                                     }
                                 ]
                             };
+                            // ensure the UI title input and tabs reflect the provided title
+                            if (typeof providedTitle === "string" && providedTitle) {
+                                try {
+                                    if (gridTitleInput) gridTitleInput.value = providedTitle;
+                                } catch (e) {
+                                    /* ignore */
+                                }
+                            }
                             applyGridData(structure, { tableId: "structure" });
+                            // update tabs/UI to reflect new page title
+                            try {
+                                renderTabs();
+                                setActivePage(0);
+                            } catch (e) {
+                                /* ignore */
+                            }
                             const exportedRows = prepareTreeRowsForExport(structure.rowData || []);
                             const treeScriptPayload = exportedRows.length ? { rows: exportedRows } : treeDataset;
                             if (gridScript && typeof gridScript.value === "string") {
@@ -6969,6 +7014,17 @@
                                 ? treeDataset.data.structure.rowData.length
                                 : 0;
                             console.info("Go-Toolkit Grid: tree dataset rows=", treeRows);
+                            // if the AI provided a top-level title, ensure it's applied to the dataset
+                            if (typeof parsed?.title === "string" && parsed.title.trim()) {
+                                try {
+                                    if (!treeDataset.schema) treeDataset.schema = { tables: [] };
+                                    if (!Array.isArray(treeDataset.schema.tables)) treeDataset.schema.tables = [];
+                                    if (!treeDataset.schema.tables[0]) treeDataset.schema.tables[0] = { id: "structure", title: parsed.title.trim() };
+                                    else treeDataset.schema.tables[0].title = parsed.title.trim();
+                                } catch (e) {
+                                    /* ignore */
+                                }
+                            }
                             applyDatasetToState(treeDataset, { activeTableId: page?.tableId });
                         } else if (parsed?.schema && parsed?.data) {
                             applyDatasetToState(parsed, { activeTableId: page?.tableId });
