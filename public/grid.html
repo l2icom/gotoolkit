@@ -333,30 +333,21 @@
             position: absolute;
 
             cellEditor: "agSelectCellEditor",
-            singleClickEdit: true,
+            cellEditorParams: {
+                values: TREE_TYPE_OPTIONS
+            }
+
+            ,
+            // show editor as popup so the dropdown appears over the cell immediately
             cellEditorPopup: true,
-            onCellClicked: params=> {
-                try {
-                    params.api.startEditingCell({
-                        rowIndex: params.node.rowIndex, colKey: params.column.getId()
-                    });
-            }
-
-            catch (e) {
-                /* ignore */
-            }
-        }
-
-        ,
-        left: 10px;
-        right: 10px;
-        bottom: 10px;
-        pointer-events: none;
-        font: inherit;
-        line-height: 1.4;
-        white-space: pre-wrap;
-        word-break: break-word;
-        z-index: 3;
+            right: 10px;
+            bottom: 10px;
+            pointer-events: none;
+            font: inherit;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+            z-index: 3;
         }
 
         .speech-suggestion span {
@@ -1032,15 +1023,6 @@
             color: #0f172a;
         }
 
-        .modal select {
-            border-radius: 8px;
-            border: 1px solid #dfe3f5;
-            padding: 6px 8px;
-            font-size: 13px;
-            background: #ffffff;
-            color: #0f172a;
-        }
-
         .column-pin-row {
             display: flex;
             align-items: center;
@@ -1530,6 +1512,7 @@
                 const hasSeenTemplateModal =
                     typeof localStorage !== "undefined" &&
                     localStorage.getItem(TEMPLATE_MODAL_SEEN_KEY) === "1";
+                let pendingNewPage = false;
                 let generateCooldownTimer = null;
                 let generateCooldownEndTime = 0;
 
@@ -1589,8 +1572,6 @@
                     // show tooltips quickly (ms)
                     tooltipShowDelay: 50,
                     tooltipHideDelay: 200,
-                    // allow single-click to start editing cells
-                    singleClickEdit: true,
                     localeText: typeof AG_GRID_LOCALE_FR !== "undefined" ? AG_GRID_LOCALE_FR : undefined,
                     autoSizeStrategy: {
                         type: "fitGridWidth",
@@ -1613,6 +1594,10 @@
                     onColumnMoved: syncScriptFromGrid,
                     onColumnPinned: syncScriptFromGrid,
                     onColumnResized: syncScriptFromGrid
+                    ,
+                    // allow single-click to start editing cells
+                    singleClickEdit: true,
+                    stopEditingWhenGridLosesFocus: true
                 };
                 const gridApi = agGrid.createGrid(gridElement, gridOptions);
                 const gridColumnApi = gridOptions.columnApi;
@@ -1804,17 +1789,8 @@
                     source: "Src",
                     relation: "1..1"
                 };
-                const TREE_TYPE_OPTIONS = [
-                    "array",
-                    "object",
-                    "string",
-                    "integer",
-                    "decimal",
-                    "boolean",
-                    "date",
-                    "dateTime",
-                    "enum"
-                ];
+                const TREE_TYPE_OPTIONS = ["object", "varchar", "number", "boolean", "date", "dateTime", "timestamp"];
+                const TREE_SOURCE_OPTIONS = ["Src", "SAP", "API", "Manual"];
 
                 function buildTreeColumnDefs() {
                     return [
@@ -1909,7 +1885,9 @@
                             sortable: false,
                             filter: false,
                             resizable: true,
-                            tooltipField: "source"
+                            tooltipField: "source",
+                            cellEditor: "agSelectCellEditor",
+                            cellEditorParams: { values: TREE_SOURCE_OPTIONS }
                         }
                     ];
                 }
@@ -2646,7 +2624,7 @@
                 }
 
                 function setActiveTemplate(templateId, options = {}) {
-                    const { skipApplyScript = true } = options;
+                    const { skipApplyScript = true, resetPage = false } = options;
                     const tpl = getTemplateConfigById(templateId);
                     const previousId = state.activeTemplateId || DEFAULT_TEMPLATE_ID;
                     syncTemplateStateFromUI();
@@ -2667,6 +2645,37 @@
                     applyTemplateStateToUI();
                     renderTemplateSelect();
                     renderTemplateMeta();
+                    if (resetPage && !pendingNewPage) {
+                        resetDocumentForTemplateChange();
+                    }
+                    if (pendingNewPage) {
+                        try {
+                            const newPage = createPage(state.pages.length + 1);
+                            state.pages.push(newPage);
+                            state.schema = state.schema || { tables: [] };
+                            if (!Array.isArray(state.schema.tables)) state.schema.tables = [];
+                            state.schema.tables.push({
+                                id: newPage.tableId,
+                                title: newPage.title,
+                                primaryKey: newPage.primaryKey || DEFAULT_PRIMARY_KEY,
+                                columns: [],
+                                relations: []
+                            });
+                            state.activeIndex = state.pages.length - 1;
+                            const tplStateNew = ensureTemplateState(tpl.id);
+                            tplStateNew.datasetScript = "";
+                            tplStateNew.lastAiDatasetScript = "";
+                            state.datasetScript = "";
+                            state.lastAiDatasetScript = "";
+                            if (gridScript) gridScript.value = "";
+                            if (promptInput) promptInput.value = tplStateNew.scenario || "";
+                            setActivePage(state.activeIndex);
+                        } catch (err) {
+                            console.warn("Impossible de créer une nouvelle page", err);
+                        } finally {
+                            pendingNewPage = false;
+                        }
+                    }
                     if (!skipApplyScript) {
                         try {
                             applyScriptToGrid({ silentOnError: true, silentOnSuccess: true });
@@ -2678,6 +2687,25 @@
                     if (options.onChange && typeof options.onChange === "function" && tpl.id !== previousId) {
                         options.onChange(tpl);
                     }
+                }
+
+                function resetDocumentForTemplateChange() {
+                    const newPage = createPage(1);
+                    state.pages = [newPage];
+                    state.schema = { tables: [] };
+                    state.activeIndex = 0;
+                    newPage.data = { columnDefs: [], rowData: [] };
+                    newPage.scenario = "";
+                    newPage.script = "";
+                    newPage.lastAiScript = "";
+                    const tplState = ensureTemplateState(state.activeTemplateId || DEFAULT_TEMPLATE_ID);
+                    tplState.datasetScript = "";
+                    tplState.lastAiDatasetScript = "";
+                    state.datasetScript = "";
+                    state.lastAiDatasetScript = "";
+                    if (gridScript) gridScript.value = "";
+                    if (promptInput) promptInput.value = "";
+                    setActivePage(0);
                 }
 
                 function openTemplateModalUi() {
@@ -3343,7 +3371,7 @@
                 function applyGridData(data, options = {}) {
                     if (!data) return;
                     const tableId = options.tableId || getActivePage()?.tableId || "";
-                    const rowData = Array.isArray(data.rowData) ? data.rowData : [];
+                    let rowData = Array.isArray(data.rowData) ? data.rowData : [];
                     const isTree = isTreeTemplateActive();
                     let finalRowData = rowData;
                     let gridColumnDefs;
@@ -3379,6 +3407,31 @@
                         gridOptions.onRowDragEnd = undefined;
                         gridOptions.suppressMovableColumns = isTree;
                     }
+                    // Coerce common date formats into strict ISO forms for AG Grid
+                    if (!isTree && Array.isArray(rowData) && Array.isArray(data.columnDefs)) {
+                        try {
+                            const defs = data.columnDefs;
+                            rowData = rowData.map(r => {
+                                if (!r || typeof r !== 'object') return r;
+                                const cloned = { ...r };
+                                for (const def of defs) {
+                                    const field = def && def.field;
+                                    const expected = def && (def.cellDataType || def.dataType || null);
+                                    if (!field || !expected) continue;
+                                    if (cloned[field] == null) continue;
+                                    if (expected === 'date' || expected === 'dateTime') {
+                                        try {
+                                            cloned[field] = coerceTemporalValue(cloned[field], expected);
+                                        } catch (err) { /* ignore coercion errors */ }
+                                    }
+                                }
+                                return cloned;
+                            });
+                        } catch (err) {
+                            /* ignore */
+                        }
+                    }
+
                     if (typeof gridApi.setGridOption === "function") {
                         gridApi.setGridOption("columnDefs", gridColumnDefs);
                         gridApi.setGridOption("rowData", isTree ? finalRowData : rowData);
@@ -3945,6 +3998,11 @@
                             await handleSaveDocumentClick();
                         }
                     }
+                    try {
+                        if (typeof localStorage !== "undefined") {
+                            localStorage.removeItem(TEMPLATE_MODAL_SEEN_KEY);
+                        }
+                    } catch (err) { /* ignore */ }
                     openNewGridDocument();
                 }
 
@@ -4459,20 +4517,12 @@
                 }
 
                 function addPage() {
-                    const newPage = createPage(state.pages.length + 1);
-                    state.pages.push(newPage);
-                    state.schema = state.schema || { tables: [] };
-                    if (!Array.isArray(state.schema.tables)) state.schema.tables = [];
-                    state.schema.tables.push({
-                        id: newPage.tableId,
-                        title: newPage.title,
-                        primaryKey: newPage.primaryKey || DEFAULT_PRIMARY_KEY,
-                        columns: [],
-                        relations: []
-                    });
-                    resetRelationLookups();
-                    syncDatasetScriptFromState({ persist: false });
-                    setActivePage(state.pages.length - 1);
+                    pendingNewPage = true;
+                    try {
+                        openTemplateModalUi();
+                    } catch (err) {
+                        pendingNewPage = false;
+                    }
                 }
 
                 function deleteActivePage() {
@@ -4889,7 +4939,14 @@
                 }
 
                 function isIsoDateTime(value) {
-                    return typeof value === "string" && /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$/.test(value);
+                    // Accepts formats like:
+                    //  YYYY-MM-DDTHH:MM:SS
+                    //  YYYY-MM-DDTHH:MM:SS.sss
+                    //  YYYY-MM-DDTHH:MM:SSZ
+                    //  YYYY-MM-DDTHH:MM:SS.sssZ
+                    //  YYYY-MM-DDTHH:MM:SS+02:00
+                    //  YYYY-MM-DDTHH:MM:SS.sss-05:00
+                    return typeof value === "string" && /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?(?:Z|[+\-][0-9]{2}:[0-9]{2})?$/.test(value);
                 }
 
                 function isIsoTime(value) {
@@ -4913,6 +4970,80 @@
                 function getTodayUtc() {
                     const now = new Date();
                     return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+                }
+
+                function formatFullIsoDateTimeUtc(date) {
+                    const y = date.getUTCFullYear();
+                    const m = pad2(date.getUTCMonth() + 1);
+                    const d = pad2(date.getUTCDate());
+                    const hh = pad2(date.getUTCHours());
+                    const mm = pad2(date.getUTCMinutes());
+                    const ss = pad2(date.getUTCSeconds());
+                    return `${y}-${m}-${d}T${hh}:${mm}:${ss}`;
+                }
+
+                function tryParseEuropeanDateTime(raw) {
+                    if (typeof raw !== 'string') return null;
+                    // dd/mm/yyyy[ hh:MM[:ss]] or dd-mm-yyyy
+                    const m = raw.trim().match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+                    if (!m) return null;
+                    const day = parseInt(m[1], 10);
+                    const mon = parseInt(m[2], 10) - 1;
+                    const year = parseInt(m[3], 10);
+                    const hh = m[4] ? parseInt(m[4], 10) : 0;
+                    const mm = m[5] ? parseInt(m[5], 10) : 0;
+                    const ss = m[6] ? parseInt(m[6], 10) : 0;
+                    return new Date(Date.UTC(year, mon, day, hh, mm, ss));
+                }
+
+                function tryParseIsoLikeWithSpace(raw) {
+                    if (typeof raw !== 'string') return null;
+                    // Accept 'YYYY-MM-DD HH:MM[:SS]' or 'YYYY/MM/DD HH:MM'
+                    const m = raw.trim().match(/^(\d{4})[\-\/]?(\d{2})[\-\/]?(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+                    if (!m) return null;
+                    const year = parseInt(m[1], 10);
+                    const mon = parseInt(m[2], 10) - 1;
+                    const day = parseInt(m[3], 10);
+                    const hh = m[4] ? parseInt(m[4], 10) : 0;
+                    const mm = m[5] ? parseInt(m[5], 10) : 0;
+                    const ss = m[6] ? parseInt(m[6], 10) : 0;
+                    return new Date(Date.UTC(year, mon, day, hh, mm, ss));
+                }
+
+                function coerceTemporalValue(raw, expectedType) {
+                    if (raw == null) return raw;
+                    const s = String(raw).trim();
+                    if (!s) return raw;
+                    if (expectedType === 'date') {
+                        if (isIsoDate(s)) return s;
+                        if (isIsoDateTime(s)) return s.slice(0, 10);
+                        // Try european dd/mm/yyyy
+                        const dt1 = tryParseEuropeanDateTime(s);
+                        if (dt1) return formatIsoDateUtc(dt1);
+                        const dt2 = tryParseIsoLikeWithSpace(s);
+                        if (dt2) return formatIsoDateUtc(dt2);
+                        // Last resort: Date.parse
+                        const parsed = Date.parse(s);
+                        if (!Number.isNaN(parsed)) return formatIsoDateUtc(new Date(parsed));
+                        return raw;
+                    }
+                    if (expectedType === 'dateTime') {
+                        if (isIsoDateTime(s) || isIsoDate(s)) {
+                            if (isIsoDateTime(s)) return s;
+                            // iso date -> start of day
+                            const d = dateFromIsoDate(s);
+                            if (d) return formatFullIsoDateTimeUtc(d);
+                            return s;
+                        }
+                        const dt1 = tryParseEuropeanDateTime(s);
+                        if (dt1) return formatFullIsoDateTimeUtc(dt1);
+                        const dt2 = tryParseIsoLikeWithSpace(s);
+                        if (dt2) return formatFullIsoDateTimeUtc(dt2);
+                        const parsed = Date.parse(s);
+                        if (!Number.isNaN(parsed)) return formatFullIsoDateTimeUtc(new Date(parsed));
+                        return raw;
+                    }
+                    return raw;
                 }
 
                 function addDaysUtc(date, days) {
@@ -7202,7 +7333,9 @@
                     templateApplyBtn.addEventListener("click", event => {
                         event.preventDefault();
                         const selectedId = templateCardList?.dataset?.selectedId || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
-                        setActiveTemplate(selectedId, { skipApplyScript: true });
+                        const shouldReset = pendingNewPage || true;
+                        setActiveTemplate(selectedId, { skipApplyScript: true, resetPage: shouldReset });
+                        pendingNewPage = false;
                         closeTemplateModalUi();
                     });
                 }
@@ -7215,13 +7348,14 @@
                 if (templateModal) {
                     templateModal.addEventListener("click", event => {
                         if (event.target === templateModal) {
+                            pendingNewPage = false;
                             closeTemplateModalUi();
                         }
                     });
                 }
                 if (aiTemplateSelect) {
                     aiTemplateSelect.addEventListener("change", event => {
-                        setActiveTemplate(event.target.value, { skipApplyScript: true });
+                        setActiveTemplate(event.target.value, { skipApplyScript: true, resetPage: true });
                     });
                 }
                 if (shareCreateBtn) {

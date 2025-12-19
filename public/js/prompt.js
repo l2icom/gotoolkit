@@ -885,7 +885,7 @@ IMPORTANT
 
     const gridDefaultPromptTemplate = "Génère des exemples basés sur {{scenario_prompt}}.";
     const gridTreePromptTemplate =
-        "Génère une arborescence structurée répondant à {{scenario_prompt}}. Retourne un unique JSON { \"rows\": [] } où chaque ligne contient : id, name, path (tableau hiérarchique), type, format, definition, sample, source et relation (1..1 | 0..1 | 1..n). Aucun markdown.";
+        "Génère une arborescence structurée répondant à {{scenario_prompt}}.";
 
     const gridPromptTemplates = {
         dataGeneration: gridDefaultPromptTemplate,
