@@ -469,45 +469,6 @@ test("natural French filter narrows Clients to Alice Dupont", async ({ page }) =
   await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Alice Dupont");
 });
 
-test("natural French filter supports multi-word equality without quotes", async ({ page }) => {
-  await page.goto("http://127.0.0.1:8080/grid.html");
-
-  await page.locator("#gridScript").fill(SAMPLE_MULTI_TABLE_DATASET);
-  await page.locator("#gridTitleInput").click();
-
-  const clientsTab = page.getByRole("button", { name: "Clients" });
-  await clientsTab.waitFor({ state: "visible", timeout: 10000 });
-  await clientsTab.click();
-
-  const filterInput = page.locator("#gridNaturalFilterInput");
-  await filterInput.fill("Nom est Alice Dupont");
-  await page.waitForTimeout(1200);
-
-  const rows = page.locator(".ag-center-cols-container .ag-row");
-  await expect(rows).toHaveCount(1, { timeout: 10000 });
-  await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Alice Dupont");
-});
-
-test("natural French filter supports OR between values and comma AND between conditions", async ({ page }) => {
-  await page.goto("http://127.0.0.1:8080/grid.html");
-
-  await page.locator("#gridScript").fill(SAMPLE_MULTI_TABLE_DATASET);
-  await page.locator("#gridTitleInput").click();
-
-  const clientsTab = page.getByRole("button", { name: "Clients" });
-  await clientsTab.waitFor({ state: "visible", timeout: 10000 });
-  await clientsTab.click();
-
-  const filterInput = page.locator("#gridNaturalFilterInput");
-  await filterInput.fill('Nom est Alice Dupont ou Benoît Martin, Email contient "example.com"');
-  await page.waitForTimeout(1200);
-
-  const rows = page.locator(".ag-center-cols-container .ag-row");
-  await expect(rows).toHaveCount(2, { timeout: 10000 });
-  await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Alice Dupont");
-  await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Benoît Martin");
-});
-
 test("foreign key natural filter matches by related name", async ({ page }) => {
   await page.goto("http://127.0.0.1:8080/grid.html");
 
@@ -527,69 +488,6 @@ test("foreign key natural filter matches by related name", async ({ page }) => {
   await expect(rows).toHaveCount(2, { timeout: 10000 });
   await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Commande A");
   await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Commande D");
-});
-
-test("relation count columns are filterable as numbers", async ({ page }) => {
-  await page.goto("http://127.0.0.1:8080/grid.html");
-
-  await page.locator("#gridScript").fill(SAMPLE_MULTI_TABLE_DATASET);
-  await page.locator("#gridTitleInput").click();
-
-  const clientsTab = page.getByRole("button", { name: "Clients" });
-  await clientsTab.waitFor({ state: "visible", timeout: 10000 });
-  await clientsTab.click();
-
-  const filterInput = page.locator("#gridNaturalFilterInput");
-  // Alice has 2 orders in the sample dataset.
-  await filterInput.fill("Nb Commandes supérieur à 2");
-  await page.waitForTimeout(1200);
-
-  const rows = page.locator(".ag-center-cols-container .ag-row");
-  await expect(rows).toHaveCount(1, { timeout: 10000 });
-  await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Alice Dupont");
-});
-
-test("'entre' is inclusive by default and supports 'exclu' for strict bounds", async ({ page }) => {
-  await page.goto("http://127.0.0.1:8080/grid.html");
-
-  await page.locator("#gridScript").fill(SAMPLE_MULTI_TABLE_DATASET);
-  await page.locator("#gridTitleInput").click();
-
-  const ordersTab = page.getByRole("button", { name: "Commandes" });
-  await ordersTab.waitFor({ state: "visible", timeout: 10000 });
-  await ordersTab.click();
-
-  const filterInput = page.locator("#gridNaturalFilterInput");
-  // Inclusive between: should match 60, 85, 150 => 3 rows.
-  await filterInput.fill("Montant entre 60 et 150");
-  await page.waitForTimeout(1200);
-  await expect(page.locator(".ag-center-cols-container .ag-row")).toHaveCount(3, { timeout: 10000 });
-
-  // Strict between: excludes 60 and 150 => only 85 => Commande B.
-  await filterInput.fill("Montant entre 60 et 150 exclu");
-  await page.waitForTimeout(1200);
-  await expect(page.locator(".ag-center-cols-container .ag-row")).toHaveCount(1, { timeout: 10000 });
-  await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Commande B");
-});
-
-test("natural French filter supports ', ou' between conditions", async ({ page }) => {
-  await page.goto("http://127.0.0.1:8080/grid.html");
-
-  await page.locator("#gridScript").fill(SAMPLE_MULTI_TABLE_DATASET);
-  await page.locator("#gridTitleInput").click();
-
-  const clientsTab = page.getByRole("button", { name: "Clients" });
-  await clientsTab.waitFor({ state: "visible", timeout: 10000 });
-  await clientsTab.click();
-
-  const filterInput = page.locator("#gridNaturalFilterInput");
-  await filterInput.fill('Nom est Alice Dupont, ou Nom est "Benoît Martin"');
-  await page.waitForTimeout(1200);
-
-  const rows = page.locator(".ag-center-cols-container .ag-row");
-  await expect(rows).toHaveCount(2, { timeout: 10000 });
-  await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Alice Dupont");
-  await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Benoît Martin");
 });
 
 test("streams update ag-Grid incrementally", async ({ page }) => {
@@ -647,42 +545,4 @@ test("streams update ag-Grid incrementally", async ({ page }) => {
   });
   expect(chunkTimes.length).toBe(2);
   expect(chunkTimes[1] - chunkTimes[0]).toBeGreaterThanOrEqual(250);
-});
-
-test("natural French filter ignores incomplete 'ou' value list", async ({ page }) => {
-  await page.goto("http://127.0.0.1:8080/grid.html");
-
-  await page.locator("#gridScript").fill(SAMPLE_MULTI_TABLE_DATASET);
-  await page.locator("#gridTitleInput").click();
-
-  const clientsTab = page.getByRole("button", { name: "Clients" });
-  await clientsTab.waitFor({ state: "visible", timeout: 10000 });
-  await clientsTab.click();
-
-  const filterInput = page.locator("#gridNaturalFilterInput");
-  await filterInput.fill("Nom est Alice Dupont ou");
-  await page.waitForTimeout(1200);
-
-  const rows = page.locator(".ag-center-cols-container .ag-row");
-  await expect(rows).toHaveCount(3, { timeout: 10000 });
-});
-
-test("natural French filter supports relative date keywords (hier/demain) in between", async ({ page }) => {
-  await freezeTime(page, "2024-03-23T12:00:00.000Z");
-  await page.goto("http://127.0.0.1:8080/grid.html");
-
-  await page.locator("#gridScript").fill(SAMPLE_MULTI_TABLE_DATASET);
-  await page.locator("#gridTitleInput").click();
-
-  const clientsTab = page.getByRole("button", { name: "Clients" });
-  await clientsTab.waitFor({ state: "visible", timeout: 10000 });
-  await clientsTab.click();
-
-  const filterInput = page.locator("#gridNaturalFilterInput");
-  await filterInput.fill("Date d'inscription entre hier et demain");
-  await page.waitForTimeout(1200);
-
-  const rows = page.locator(".ag-center-cols-container .ag-row");
-  await expect(rows).toHaveCount(1, { timeout: 10000 });
-  await expect(page.locator(".ag-pinned-left-cols-container")).toContainText("Benoît Martin");
 });

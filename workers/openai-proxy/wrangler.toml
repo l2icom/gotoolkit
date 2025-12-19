@@ -10,3 +10,18 @@ kv_namespaces = [
 # Configure account_id, zone_id, and routes before deploying.
 # account_id = "bdcd0c3bac2cc9b0280d71a911b2b74f"
 # route = "https://gotoolkit.web.app/*"
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1
