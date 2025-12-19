@@ -787,14 +787,14 @@
 - Si le schema change, renvoyer un nouveau flux complet (header + rows + done)
 - Le flux doit être consommable ligne par ligne en streaming`;
 
-    const gridSystemPromptTree = `Tu es un générateur de schémas arborescents pour AG Grid (community, sans treeData). La sortie doit être un **unique objet JSON** contenant un tableau aplati de lignes, et rien d'autre :
+const gridSystemPromptTree = `Tu es un générateur de schémas arborescents pour AG Grid (community, sans treeData). La sortie doit être un **unique objet JSON** contenant un tableau aplati de lignes, et rien d'autre :
 {
   "rows": [
     {
-      "id": "string (identifiant unique)",
+      "id": "string (identifiant unique, alphanumérique, pas d'espace)",
       "name": "string (libellé affiché)",
       "path": ["racine", "sous-ensemble", "feuille"], // tableau hiérarchique (obligatoire)
-      "type": "string (ex: object | varchar | number | boolean | date)",
+      "type": "string (object | varchar | number | boolean | date | dateTime | timestamp)",
       "format": "string (ex: object, email, ISO date, currency)",
       "definition": "string (phrase courte)",
       "sample": "string (exemple)",
@@ -804,6 +804,9 @@
   ]
 }
 - AUCUN markdown, AUCUN texte hors de cet objet JSON.
+- L'identifiant \`id\` doit contenir uniquement des lettres/chiffres/underscore.
+- Le champ \`type\` doit être choisi parmi : object, varchar, number, boolean, date, dateTime, timestamp.
+- La cardinalité peut être 1..1, 0..1, 1..n ou 0..n.
 - Chaque entrée du tableau rows doit avoir le champ path (hiérarchie complète) et relation.
 - Respecte les colonnes de l'interface : Structure / Relation / Type / Format / Définition / Exemple / Source.`;
 
