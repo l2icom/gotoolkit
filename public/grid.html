@@ -331,16 +331,32 @@
 
         .speech-suggestion {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            right: 10px;
-            bottom: 10px;
-            pointer-events: none;
-            font: inherit;
-            line-height: 1.4;
-            white-space: pre-wrap;
-            word-break: break-word;
-            z-index: 3;
+
+            cellEditor: "agSelectCellEditor",
+            singleClickEdit: true,
+            cellEditorPopup: true,
+            onCellClicked: params=> {
+                try {
+                    params.api.startEditingCell({
+                        rowIndex: params.node.rowIndex, colKey: params.column.getId()
+                    });
+            }
+
+            catch (e) {
+                /* ignore */
+            }
+        }
+
+        ,
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        pointer-events: none;
+        font: inherit;
+        line-height: 1.4;
+        white-space: pre-wrap;
+        word-break: break-word;
+        z-index: 3;
         }
 
         .speech-suggestion span {
@@ -609,16 +625,19 @@
             background: #fffbeb;
             color: #7a4510;
         }
+
         .tree-template .relation-badge.gray {
             border-color: #d1d5db;
             background: #f3f4f6;
             color: #374151;
         }
+
         .tree-template .relation-badge.red {
             border-color: #fecaca;
             background: #fff1f2;
             color: #7f1d1d;
         }
+
         .tree-template .relation-badge.green {
             border-color: #bbf7d0;
             background: #ecfdf5;
@@ -1005,6 +1024,15 @@
         }
 
         .context-menu select {
+            border-radius: 8px;
+            border: 1px solid #dfe3f5;
+            padding: 6px 8px;
+            font-size: 13px;
+            background: #ffffff;
+            color: #0f172a;
+        }
+
+        .modal select {
             border-radius: 8px;
             border: 1px solid #dfe3f5;
             padding: 6px 8px;
@@ -1561,6 +1589,8 @@
                     // show tooltips quickly (ms)
                     tooltipShowDelay: 50,
                     tooltipHideDelay: 200,
+                    // allow single-click to start editing cells
+                    singleClickEdit: true,
                     localeText: typeof AG_GRID_LOCALE_FR !== "undefined" ? AG_GRID_LOCALE_FR : undefined,
                     autoSizeStrategy: {
                         type: "fitGridWidth",
@@ -1774,7 +1804,17 @@
                     source: "Src",
                     relation: "1..1"
                 };
-                const TREE_TYPE_OPTIONS = ["object", "varchar", "number", "boolean", "date", "dateTime", "timestamp"];
+                const TREE_TYPE_OPTIONS = [
+                    "array",
+                    "object",
+                    "string",
+                    "integer",
+                    "decimal",
+                    "boolean",
+                    "date",
+                    "dateTime",
+                    "enum"
+                ];
 
                 function buildTreeColumnDefs() {
                     return [
@@ -1832,7 +1872,7 @@
                             cellEditor: "agSelectCellEditor",
                             cellEditorParams: { values: TREE_TYPE_OPTIONS },
                             tooltipField: "type",
-                            width: 60,
+                            width: 80,
                         },
                         {
                             field: "format",
@@ -1842,7 +1882,7 @@
                             filter: false,
                             resizable: true,
                             tooltipField: "format",
-                            width: 60,
+                            width: 80,
                         },
                         {
                             field: "definition",
@@ -2276,8 +2316,8 @@
                     const cls = (relation === "1..n" || relation === "1..1")
                         ? "yellow"
                         : (relation === "0..1" || relation === "0..n")
-                        ? "gray"
-                        : "";
+                            ? "gray"
+                            : "";
                     btn.className = `relation-badge ${cls}`;
                     btn.textContent = relation;
                     btn.title = "Basculer la cardinalité";
@@ -2289,8 +2329,8 @@
                         const nextCls = (next === "1..n" || next === "1..1")
                             ? "yellow"
                             : (next === "0..1" || next === "0..n")
-                            ? "gray"
-                            : "";
+                                ? "gray"
+                                : "";
                         btn.className = `relation-badge ${nextCls}`;
                         syncScriptFromGrid();
                     });
