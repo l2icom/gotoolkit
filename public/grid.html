@@ -4967,6 +4967,7 @@
                     const tableId = getActivePage()?.tableId || createTableId(1);
                     const allowedTypes = new Set(["text", "number", "boolean", "date", "dateTime"]);
                     let headerColumns = null;
+                    let headerTitle = "";
                     const rows = [];
                     let summaryRows = null;
                     for (const line of lines) {
@@ -4974,6 +4975,9 @@
                         if (!parsedLine || typeof parsedLine !== "object") continue;
                         const type = typeof parsedLine.type === "string" ? parsedLine.type.toLowerCase() : "";
                         if (type === "header" && parsedLine.columns && Array.isArray(parsedLine.columns)) {
+                            if (typeof parsedLine.title === "string" && parsedLine.title.trim()) {
+                                headerTitle = parsedLine.title.trim();
+                            }
                             const filtered = parsedLine.columns
                                 .map(col => {
                                     const field = typeof col.field === "string" ? col.field.trim() : "";
@@ -5002,6 +5006,7 @@
                         console.warn("Mock data header missing or invalid");
                         return null;
                     }
+                    const tableTitle = headerTitle || getActivePage()?.title || `Page ${state.activeIndex + 1}`;
                     const columnDefs = headerColumns.map(col => ({
                         field: col.field,
                         headerName: col.headerName,
@@ -5016,7 +5021,7 @@
                             tables: [
                                 {
                                     id: tableId,
-                                    title: getActivePage()?.title || `Page ${state.activeIndex + 1}`,
+                                    title: tableTitle,
                                     primaryKey: DEFAULT_PRIMARY_KEY,
                                     columns: headerColumns,
                                     relations: []
@@ -5028,7 +5033,8 @@
                                 columnDefs,
                                 rowData: rows
                             }
-                        }
+                        },
+                        title: headerTitle
                     };
                 }
 
@@ -7092,6 +7098,7 @@
                 }
 
                 function applyDatasetToState(dataset, options = {}) {
+                    const allowTitleUpdate = options.allowTitleUpdate === true;
                     const pagesSnapshot = Array.isArray(state.pages) ? state.pages.slice() : [];
                     if (!pagesSnapshot.length) {
                         pagesSnapshot.push(createPage(1));
@@ -7108,11 +7115,14 @@
                     const firstTable = normalizedSchema.tables[0];
                     const tableData = dataByTable?.[firstTable.id] || {};
                     const activePage = pagesSnapshot[activeIndex];
+                    const nextTitle = allowTitleUpdate && firstTable.title
+                        ? firstTable.title
+                        : (activePage.title || `Page ${activeIndex + 1}`);
                     const normalizedPage = normalizePage(
                         {
                             ...activePage,
                             tableId: activePage.tableId,
-                            title: firstTable.title || activePage.title || `Page ${activeIndex + 1}`,
+                            title: nextTitle,
                             primaryKey: firstTable.primaryKey || activePage.primaryKey || DEFAULT_PRIMARY_KEY,
                             relations: Array.isArray(firstTable.relations)
                                 ? firstTable.relations
@@ -7254,7 +7264,15 @@
                             if (!mockDataset) {
                                 throw new Error("Réponse mock NDJSON invalide");
                             }
-                            applyDatasetToState(mockDataset, { markAsAi: true, activeTableId: page?.tableId });
+                            const mockTitle =
+                                typeof mockDataset.title === "string" && mockDataset.title.trim()
+                                    ? mockDataset.title.trim()
+                                    : "";
+                            applyDatasetToState(mockDataset, {
+                                markAsAi: true,
+                                activeTableId: page?.tableId,
+                                allowTitleUpdate: Boolean(mockTitle)
+                            });
                             syncDatasetScriptFromState({ persist: false });
                             showStatus("Jeu de données fictives appliqué.");
                             return;
@@ -7268,16 +7286,17 @@
                                 : 0;
                             const structure = treeDataset.data.structure || { columnDefs: [], rowData: [] };
                             console.info("Go-Toolkit Grid: tree dataset rows=", treeRows, structure.rowData);
-                            const providedTitle = (typeof parsed?.title === "string" && parsed.title.trim())
+                            const page = getActivePage();
+                            const aiTitle = (typeof parsed?.title === "string" && parsed.title.trim())
                                 ? parsed.title.trim()
                                 : (typeof treeDataset.title === "string" && treeDataset.title.trim()
                                     ? treeDataset.title.trim()
-                                    : "Structure de données");
+                                    : "");
+                            const providedTitle = aiTitle || page?.title || "Structure de données";
                             const schemaTable =
                                 Array.isArray(treeDataset?.schema?.tables) && treeDataset.schema.tables[0]
                                     ? treeDataset.schema.tables[0]
                                     : null;
-                            const page = getActivePage();
                             const tableId = (page?.tableId || "").trim() || "structure";
                             const normalizedDataset = {
                                 schema: {
@@ -7298,10 +7317,11 @@
                                     }
                                 }
                             };
-                            if (page) {
-                                page.title = providedTitle;
-                            }
-                            applyDatasetToState(normalizedDataset, { markAsAi: true, activeTableId: tableId });
+                            applyDatasetToState(normalizedDataset, {
+                                markAsAi: true,
+                                activeTableId: tableId,
+                                allowTitleUpdate: Boolean(aiTitle)
+                            });
                             applyGridDisplayPreferences({ persist: false });
                             const exportedRows = prepareTreeRowsForExport(structure.rowData || []);
                             const treeScriptPayload = exportedRows.length ? { rows: exportedRows } : treeDataset;

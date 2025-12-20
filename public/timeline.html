@@ -1809,7 +1809,7 @@
                 </div>
                 <div class="timeline-header">
                     <div class="header-text">
-                        <h1>Bloc 1</h1>
+                        <h1>Page 1</h1>
                     </div>
                     <div class="header-buttons">
                         <div class="type-filter-panel" id="typeFilterPanel" role="group" aria-label="Filtrer par type">
@@ -1819,7 +1819,7 @@
                 <div class="timeline-wrapper">
                     <div id="timeline"></div>
                     <div id="timelineEmptyState" class="timeline-empty-state" aria-hidden="true">
-                        <p class="timeline-empty-text">Bloc vide. Remplir le Scénario → et cliquer sur ⌘ Répondre</p>
+                        <p class="timeline-empty-text">Page vide. Remplir le Scénario → et cliquer sur ⌘ Répondre</p>
 
                     </div>
                 </div>
@@ -2684,11 +2684,11 @@
                     if (Array.isArray(persistedState.views) && persistedState.views.length) {
                         views = persistedState.views.map(function (view, index) {
                             return {
-                                name: view.name || view.title || ("Bloc " + (index + 1)),
-                                title: view.title || view.name || ("Bloc " + (index + 1)),
-                                planning: view.planning || null,
-                                context: normalizeContextState(view.context)
-                            };
+                                    name: view.name || view.title || ("Page " + (index + 1)),
+                                    title: view.title || view.name || ("Page " + (index + 1)),
+                                    planning: view.planning || null,
+                                    context: normalizeContextState(view.context)
+                                };
                         });
                     } else if (persistedState.groups) {
                         var defaultLabel = persistedState.label || persistedState.name || "";
@@ -2724,7 +2724,7 @@
                     }
                 }
                 if (!views.length) {
-                    views = [{ name: "Bloc 1", title: "Bloc 1", planning: null, context: cloneDefaultContext() }];
+                    views = [{ name: "Page 1", title: "Page 1", planning: null, context: cloneDefaultContext() }];
                 }
                 views.forEach(ensureViewFilterState);
                 views.forEach(ensureViewContext);

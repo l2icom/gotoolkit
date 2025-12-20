@@ -671,6 +671,7 @@ Règles lignes :
 - Valeur inconnue → null`;
 
     const gridSystemPromptTree = `Génère un schéma arborescent pour une **seule grille AG Grid**. Un unique objet JSON, sans markdown ni texte autour.
+- Si un script JSON existe déjà dans la conversation, utilise-le comme base et applique uniquement les modifications demandées.
 
 FORMAT
 {
@@ -697,9 +698,10 @@ RÈGLES
 - \`id\` unique. Réponds uniquement avec l'objet JSON.`;
 
     const gridSystemPromptMockData = `Tu génères un flux NDJSON pour **une seule grille AG Grid**.
+- Si un script NDJSON existe déjà dans la conversation, utilise-le comme base et applique uniquement les modifications demandées.
 
 SORTIE (1 objet JSON par ligne, aucun texte/markdown) :
-1) Header : { "type": "header", "columns": [ { "field": "id", "cellDataType": "number", "editable": false }, ... ] }
+1) Header : { "type": "header", "title": "<titre>", "columns": [ { "field": "id", "cellDataType": "number", "editable": false }, ... ] }
 2) Rows   : { "type": "row", "data": { ... } }
 3) Fin    : { "type": "done", "summary": { "rows": <rowCount> } }
 

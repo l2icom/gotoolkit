@@ -2994,8 +2994,8 @@
             function createPage(position) {
                 return {
                     id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
-                    label: `Bloc ${position}`,
-                    title: `Bloc ${position}`,
+                    label: `Page ${position}`,
+                    title: `Page ${position}`,
                     input: "",
                     mermaid: "",
                     lastAiMermaid: "",
@@ -3044,13 +3044,13 @@
                 state.pages.forEach((page, index) => {
                     const btn = document.createElement("button");
                     btn.className = `tab${index === state.activeIndex ? " active" : ""}`;
-                    btn.textContent = page.label || `Bloc ${index + 1}`;
+                    btn.textContent = page.label || `Page ${index + 1}`;
                     btn.title = "Double-clique pour renommer";
                     btn.addEventListener("click", () => {
                         setActivePage(index);
                     });
                     btn.addEventListener("dblclick", () => {
-                        const name = prompt("Renommer le bloc", page.label || "Bloc");
+                        const name = prompt("Renommer le bloc", page.label || "Page");
                         if (name) {
                             page.label = name.trim();
                             renderTabs();
@@ -3541,8 +3541,8 @@
                 const page = getActivePage();
                 promptInput.value = page?.input || "";
                 mermaidOutput.value = page?.mermaid || "";
-                if (diagramTitleInput) {
-                    diagramTitleInput.value = page?.title || page?.label || `Bloc ${state.activeIndex + 1}`;
+                    if (diagramTitleInput) {
+                    diagramTitleInput.value = page?.title || page?.label || `Page ${state.activeIndex + 1}`;
                     diagramTitleInput.readOnly = true;
                 }
                 updateDrawTypeSelector(page?.drawType || DEFAULT_DRAW_TYPE);
@@ -3671,7 +3671,7 @@
                     page.lastAiMermaid = mermaidCode;
                     if (extractedTitle) {
                         page.title = extractedTitle;
-                        if (!page.label || page.label === `Bloc ${state.activeIndex + 1}` || page.label === diagramTitleInput?.value) {
+                        if (!page.label || page.label === `Page ${state.activeIndex + 1}` || page.label === diagramTitleInput?.value) {
                             page.label = extractedTitle;
                             renderTabs();
                         }
@@ -4742,7 +4742,7 @@
                         const titleFromScript = extractDiagramTitle(value);
                         if (titleFromScript) {
                             page.title = titleFromScript;
-                            if (!page.label || page.label === `Bloc ${state.activeIndex + 1}` || page.label === diagramTitleInput?.value) {
+                            if (!page.label || page.label === `Page ${state.activeIndex + 1}` || page.label === diagramTitleInput?.value) {
                                 page.label = titleFromScript;
                                 renderTabs();
                             }
@@ -4800,7 +4800,7 @@
                 deletePageBtn.addEventListener("click", () => {
                     const page = getActivePage();
                     if (!page || state.pages.length <= 1) return;
-                    const name = page.title || page.label || `Bloc ${state.activeIndex + 1}`;
+                    const name = page.title || page.label || `Page ${state.activeIndex + 1}`;
                     if (!confirm(`Supprimer la vue '${name}' ? Cette action est irréversible.`)) {
                         return;
                     }
@@ -4832,7 +4832,7 @@
                     const titleFromScript = extractDiagramTitle(restoreCode);
                     if (titleFromScript) {
                         page.title = titleFromScript;
-                        if (!page.label || page.label === `Bloc ${state.activeIndex + 1}` || page.label === diagramTitleInput?.value) {
+                        if (!page.label || page.label === `Page ${state.activeIndex + 1}` || page.label === diagramTitleInput?.value) {
                             page.label = titleFromScript;
                             renderTabs();
                         }
