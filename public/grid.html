@@ -331,32 +331,15 @@
 
         .speech-suggestion {
             position: absolute;
-
-            cellEditor: "agSelectCellEditor",
-            singleClickEdit: true,
-            cellEditorPopup: true,
-            onCellClicked: params=> {
-                try {
-                    params.api.startEditingCell({
-                        rowIndex: params.node.rowIndex, colKey: params.column.getId()
-                    });
-            }
-
-            catch (e) {
-                /* ignore */
-            }
-        }
-
-        ,
-        left: 10px;
-        right: 10px;
-        bottom: 10px;
-        pointer-events: none;
-        font: inherit;
-        line-height: 1.4;
-        white-space: pre-wrap;
-        word-break: break-word;
-        z-index: 3;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            pointer-events: none;
+            font: inherit;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+            z-index: 3;
         }
 
         .speech-suggestion span {
@@ -7493,10 +7476,19 @@
                         hideSpeechSuggestion();
                         lastSpeechInterim = "";
                     }
-                    function renderSpeechSuggestion(current, partial) {
-                        if (!promptSpeechSuggestion) return;
-                        const safeCurrent = (current || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                        const safePartial = (partial || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    function escapeSpeechSuggestionText(value) {
+                        return String(value || "")
+                            .replace(/&/g, "&amp;")
+                            .replace(/</g, "&lt;")
+                            .replace(/>/g, "&gt;");
+                    }
+
+                    function renderSpeechSuggestion(field, partial) {
+                        if (!promptSpeechSuggestion || !field) return;
+                        const value = field.value || "";
+                        const caretPos = Math.max(0, Math.min(field.selectionStart ?? value.length, value.length));
+                        const safeCurrent = escapeSpeechSuggestionText(value.slice(0, caretPos));
+                        const safePartial = escapeSpeechSuggestionText(partial);
                         if (!safePartial.trim()) {
                             hideSpeechSuggestion();
                             return;
@@ -7547,7 +7539,7 @@
                                 appendSpeechText(field, finalText);
                             }
                             if (interimText) {
-                                renderSpeechSuggestion(field.value, interimText);
+                                renderSpeechSuggestion(field, interimText);
                             } else {
                                 hideSpeechSuggestion();
                             }
