@@ -1374,10 +1374,10 @@
                 <h3 title="⌘ Promptzilla">⌘ Prompt</h3>
                 <button id="closeAiModal" class="btn-secondary" type="button">✕</button>
             </header>
-            <label>
+            <div class="template-modal-label" aria-live="polite">
                 <span>Modèle</span>
-                <select id="aiTemplateSelect"></select>
-            </label>
+                <strong id="aiTemplateLabel"></strong>
+            </div>
             <label>
                 <span>Prompt utilisateur</span>
                 <textarea id="promptTemplateField" rows="4"
@@ -1453,7 +1453,7 @@
                 const aiModal = document.getElementById("aiModal");
                 const aiSettingsBtn = document.getElementById("aiSettingsBtn");
                 const closeAiModal = document.getElementById("closeAiModal");
-                const aiTemplateSelect = document.getElementById("aiTemplateSelect");
+                const aiTemplateLabel = document.getElementById("aiTemplateLabel");
                 const templateModal = document.getElementById("templateModal");
                 const templateModalBtn = document.getElementById("templateModalBtn");
                 const templateApplyBtn = document.getElementById("templateApplyBtn");
@@ -1514,6 +1514,7 @@
                 const hasSeenTemplateModal =
                     typeof localStorage !== "undefined" &&
                     localStorage.getItem(TEMPLATE_MODAL_SEEN_KEY) === "1";
+                let templateModalContext = null;
                 let generateCooldownTimer = null;
                 let generateCooldownEndTime = 0;
 
@@ -1546,6 +1547,8 @@
                 let fileUploads = [];
                 let autoSizeTimer = null;
                 const gridElement = document.getElementById("gridContainer");
+                let speechStartHandler = null;
+                let speechStopHandler = null;
 
                 const naturalFilterState = {
                     active: false,
@@ -2505,7 +2508,7 @@
                                 templateStates[tpl.id] = normalizeTemplateState(null, tpl);
                             });
                             return {
-                                pages: [createPage(1)],
+                                pages: [],
                                 activeIndex: 0,
                                 promptTemplate: DEFAULT_PROMPT_TEMPLATE,
                                 systemPrompt: DEFAULT_SYSTEM_PROMPT,
@@ -2578,7 +2581,7 @@
                             templateStates[tpl.id] = normalizeTemplateState(null, tpl);
                         });
                         return {
-                            pages: [createPage(1)],
+                            pages: [],
                             activeIndex: 0,
                             promptTemplate: DEFAULT_PROMPT_TEMPLATE,
                             systemPrompt: DEFAULT_SYSTEM_PROMPT,
@@ -2639,24 +2642,16 @@
                     return getPageTemplateConfig()?.parser === "tree";
                 }
 
-                function renderTemplateSelect() {
-                    if (!aiTemplateSelect) return;
-                    aiTemplateSelect.innerHTML = "";
-                    GRID_TEMPLATES.forEach(tpl => {
-                        const option = document.createElement("option");
-                        option.value = tpl.id;
-                        option.textContent = tpl.label;
-                        aiTemplateSelect.appendChild(option);
-                    });
-                    aiTemplateSelect.value = state.activeTemplateId || DEFAULT_TEMPLATE_ID;
-                }
-
                 function renderTemplateMeta() {
-                    if (!templateMeta) return;
                     const tplId = getPageTemplateId() || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
                     const tpl = getTemplateConfigById(tplId);
                     const icon = getTemplateIcon(tpl.id);
-                    templateMeta.textContent = `Modèle : ${icon} ${tpl.label}`;
+                    if (templateMeta) {
+                        templateMeta.textContent = `Modèle : ${icon} ${tpl.label}`;
+                    }
+                    if (aiTemplateLabel) {
+                        aiTemplateLabel.textContent = `${icon} ${tpl.label}`;
+                    }
                 }
 
                 function renderTemplateCards(selectedId = (getPageTemplateId() || state.activeTemplateId || DEFAULT_TEMPLATE_ID)) {
@@ -2690,11 +2685,19 @@
 
                 function updateTemplateApplyBtnState() {
                     if (!templateApplyBtn) return;
-                    const locked = pageHasTemplate();
+                    const hasPage = Boolean(getActivePage());
+                    const isCreateMode = templateModalContext?.mode === "create";
+                    const locked = !isCreateMode && (!hasPage || pageHasTemplate());
                     templateApplyBtn.disabled = locked;
-                    templateApplyBtn.title = locked
-                        ? "Le modèle est déjà fixé pour cette page"
-                        : "Appliquer ce modèle à la nouvelle page";
+                    if (isCreateMode) {
+                        templateApplyBtn.title = "Créer une nouvelle page avec ce modèle";
+                    } else if (locked) {
+                        templateApplyBtn.title = hasPage
+                            ? "Le modèle est déjà fixé pour cette page"
+                            : "Aucune page active";
+                    } else {
+                        templateApplyBtn.title = "Appliquer ce modèle à la page active";
+                    }
                 }
 
                 function setActiveTemplate(templateId, options = {}) {
@@ -2725,7 +2728,6 @@
                         }
                     }
                     applyTemplateStateToUI();
-                    renderTemplateSelect();
                     renderTemplateMeta();
                     if (!skipApplyScript) {
                         try {
@@ -2743,8 +2745,10 @@
                     updateTemplateApplyBtnState();
                 }
 
-                function openTemplateModalUi() {
+                function openTemplateModalUi(options = {}) {
                     if (!templateModal) return;
+                    const mode = options.mode || "assign";
+                    templateModalContext = { mode };
                     const selectedId = getPageTemplateId() || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
                     renderTemplateCards(selectedId);
                     updateTemplateApplyBtnState();
@@ -2754,6 +2758,7 @@
                 function closeTemplateModalUi() {
                     if (!templateModal) return;
                     templateModal.classList.remove("open");
+                    templateModalContext = null;
                 }
 
                 function syncTemplateStateFromUI() {
@@ -2784,9 +2789,6 @@
                     if (gridScript) {
                         const fallback = tplState.datasetScript || "";
                         gridScript.value = getActivePageScriptOr(fallback);
-                    }
-                    if (aiTemplateSelect) {
-                        aiTemplateSelect.value = state.activeTemplateId || DEFAULT_TEMPLATE_ID;
                     }
                     renderTemplateMeta();
                 }
@@ -2840,19 +2842,29 @@
                     };
                 }
                 if (!state.datasetScript || !state.datasetScript.trim()) {
-                    const dataset = buildDatasetFromState({ activeOnly: true });
-                    state.datasetScript = hasDatasetContent(dataset) ? JSON.stringify(dataset, null, 2) : "";
+                    if (state.pages.length) {
+                        const dataset = buildDatasetFromState({ activeOnly: true });
+                        state.datasetScript = hasDatasetContent(dataset) ? JSON.stringify(dataset, null, 2) : "";
+                    } else {
+                        state.datasetScript = "";
+                    }
                 }
                 renderFontSizeOptions();
                 applyGridDisplayPreferences({ persist: false });
                 buildColumnPinMenu();
-                renderTemplateSelect();
                 renderTemplateCards();
                 renderTemplateMeta();
                 updateTemplateApplyBtnState();
-                if (!hasSeenTemplateModal) {
+                if (!state.pages.length) {
                     setTimeout(() => {
-                        openTemplateModalUi();
+                        openTemplateModalUi({ mode: "create" });
+                        try {
+                            localStorage.setItem(TEMPLATE_MODAL_SEEN_KEY, "1");
+                        } catch (err) { /* ignore */ }
+                    }, 50);
+                } else if (!hasSeenTemplateModal) {
+                    setTimeout(() => {
+                        openTemplateModalUi({ mode: "assign" });
                         try {
                             localStorage.setItem(TEMPLATE_MODAL_SEEN_KEY, "1");
                         } catch (err) { /* ignore */ }
@@ -4533,8 +4545,60 @@
                     }
                 }
 
+                function isSpeechRecognitionActive() {
+                    return Boolean(document.querySelector(".speech-button--active"));
+                }
+
+                function requestSpeechRecognitionStart(options = {}) {
+                    if (typeof speechStartHandler !== "function" || !promptInput) return;
+                    if (!options.force && isSpeechRecognitionActive()) return;
+                    try {
+                        speechStartHandler();
+                    } catch (err) {
+                        console.warn("Impossible d'activer la reconnaissance vocale.", err);
+                    }
+                }
+
+                function clearActivePageUI() {
+                    if (gridTitleInput) gridTitleInput.value = "";
+                    if (promptInput) promptInput.value = "";
+                    if (gridScript) gridScript.value = "";
+                    applyGridData({ columnDefs: [], rowData: [] }, { tableId: "" });
+                    renderTabs();
+                    scheduleNaturalFilterRecalc();
+                }
+
+                function createPageFromTemplate(templateId) {
+                    const newPage = createPage(state.pages.length + 1);
+                    newPage.templateId = templateId;
+                    state.pages.push(newPage);
+                    state.schema = state.schema || { tables: [] };
+                    if (!Array.isArray(state.schema.tables)) state.schema.tables = [];
+                    state.schema.tables.push({
+                        id: newPage.tableId,
+                        title: newPage.title,
+                        primaryKey: newPage.primaryKey || DEFAULT_PRIMARY_KEY,
+                        columns: [],
+                        relations: []
+                    });
+                    resetRelationLookups();
+                    setActivePage(state.pages.length - 1);
+                    syncDatasetScriptFromState({ persist: false });
+                    persistState();
+                    return newPage;
+                }
 
                 function setActivePage(index) {
+                    if (!Array.isArray(state.pages) || state.pages.length === 0) {
+                        state.activeIndex = 0;
+                        setActiveTemplate(state.activeTemplateId || DEFAULT_TEMPLATE_ID, {
+                            skipApplyScript: true,
+                            skipPersist: true
+                        });
+                        clearActivePageUI();
+                        persistState();
+                        return;
+                    }
                     const targetIndex = Math.max(0, Math.min(index, state.pages.length - 1));
                     state.activeIndex = targetIndex;
                     const page = getActivePage();
@@ -4557,28 +4621,31 @@
                     renderTabs();
                     persistState();
                     scheduleNaturalFilterRecalc();
+                    requestSpeechRecognitionStart();
                 }
 
                 function addPage() {
-                    const newPage = createPage(state.pages.length + 1);
-                    state.pages.push(newPage);
-                    state.schema = state.schema || { tables: [] };
-                    if (!Array.isArray(state.schema.tables)) state.schema.tables = [];
-                    state.schema.tables.push({
-                        id: newPage.tableId,
-                        title: newPage.title,
-                        primaryKey: newPage.primaryKey || DEFAULT_PRIMARY_KEY,
-                        columns: [],
-                        relations: []
-                    });
-                    resetRelationLookups();
-                    syncDatasetScriptFromState({ persist: false });
-                    setActivePage(state.pages.length - 1);
-                    openTemplateModalUi();
+                    openTemplateModalUi({ mode: "create" });
                 }
 
                 function deleteActivePage() {
-                    if (state.pages.length <= 1) return;
+                    if (state.pages.length <= 1) {
+                        const pageToDelete = getActivePage();
+                        if (pageToDelete) {
+                            state.pages = [];
+                            state.activeIndex = 0;
+                            if (pageToDelete?.tableId && Array.isArray(state?.schema?.tables)) {
+                                state.schema.tables = state.schema.tables.filter(table => table?.id !== pageToDelete.tableId);
+                            } else {
+                                state.schema = { tables: [] };
+                            }
+                            resetRelationLookups();
+                            clearActivePageUI();
+                            persistState();
+                        }
+                        openTemplateModalUi({ mode: "create" });
+                        return;
+                    }
                     const pageToDelete = getActivePage();
                     state.pages.splice(state.activeIndex, 1);
                     if (pageToDelete?.tableId && Array.isArray(state?.schema?.tables)) {
@@ -4599,7 +4666,6 @@
 
                 function openModal() {
                     aiModal?.classList.add("open");
-                    renderTemplateSelect();
                     applyTemplateStateToUI();
                 }
 
@@ -7524,12 +7590,17 @@
                 if (templateApplyBtn) {
                     templateApplyBtn.addEventListener("click", event => {
                         event.preventDefault();
+                        const selectedId = templateCardList?.dataset?.selectedId || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                        if (templateModalContext?.mode === "create") {
+                            createPageFromTemplate(selectedId);
+                            closeTemplateModalUi();
+                            return;
+                        }
                         const page = getActivePage();
                         if (!page || pageHasTemplate(page)) {
                             templateApplyBtn.disabled = true;
                             return;
                         }
-                        const selectedId = templateCardList?.dataset?.selectedId || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
                         setActiveTemplate(selectedId, { skipApplyScript: true, assignToPage: true });
                         closeTemplateModalUi();
                     });
@@ -7545,11 +7616,6 @@
                         if (event.target === templateModal) {
                             closeTemplateModalUi();
                         }
-                    });
-                }
-                if (aiTemplateSelect) {
-                    aiTemplateSelect.addEventListener("change", event => {
-                        setActiveTemplate(event.target.value, { skipApplyScript: true, assignToPage: false });
                     });
                 }
                 if (shareCreateBtn) {
@@ -7709,6 +7775,9 @@
                         wrapper?.classList.add("speech-active");
                     }
 
+                    speechStartHandler = startRecognition;
+                    speechStopHandler = stopRecognition;
+
                     document.addEventListener("click", event => {
                         const btn = event.target?.closest?.(".speech-button");
                         if (!btn) return;
@@ -7728,6 +7797,7 @@
                     setActivePage(state.activeIndex);
                     wireNavSwitcher();
                     wireSpeech();
+                    requestSpeechRecognitionStart();
 
                     if (addPageBtn) addPageBtn.addEventListener("click", addPage);
                     if (deletePageBtn) deletePageBtn.addEventListener("click", deleteActivePage);

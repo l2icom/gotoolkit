@@ -657,12 +657,12 @@
     const gridSystemPromptDataGeneration = `Tu génères un flux NDJSON pour **une seule grille AG Grid**.
 
 SORTIE (1 objet JSON par ligne, aucun texte/markdown) :
-1) Header : { "type": "header", "columns": [ { "field": "id", "cellDataType": "number", "editable": false }, ... ] }
+1) Header : { "type": "header", "title":"string" , "columns": [ { "field": "id", "cellDataType": "number", "editable": false }, ... ] }
 2) Rows   : { "type": "row", "data": { ... } }
 3) Fin    : { "type": "done", "summary": { "rows": <rowCount> } }
 
 Règles colonnes :
-- Champs : \`field\` (anglais), \`headerName\` (fr), \`cellDataType\` ∈ text|number|boolean|date|dateTime
+- Champs : \`field\` (anglais), \`headerName\` (fr), \`title\` (2-5 mots résumé) \`cellDataType\` ∈ text|number|boolean|date|dateTime
 - Inclure au minimum \`id\` (number, lecture seule et unique)
 - date and dateTime : format ISO 8601
 
@@ -730,14 +730,6 @@ Règles lignes :
     };
 
     const GRID_TEMPLATES = [
-        {
-            id: "data-example",
-            label: "Données d'exemple",
-            description: "Dataset tabulaire plat, idéal pour générer des exemples concrets.",
-            defaultPromptTemplate: gridPromptTemplates.dataGeneration || gridDefaultPromptTemplate,
-            defaultSystemPrompt: gridSystemPrompts.dataGeneration || gridSystemPrompt,
-            parser: "flat"
-        },
         {
             id: "tree-structure",
             label: "Structure de données",
