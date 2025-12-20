@@ -696,18 +696,37 @@ RÈGLES
 - \`enum\` : \`format\` liste les valeurs ou indique "liste fermée"
 - \`id\` unique. Réponds uniquement avec l'objet JSON.`;
 
+    const gridSystemPromptMockData = `Tu génères un flux NDJSON pour **une seule grille AG Grid**.
+
+SORTIE (1 objet JSON par ligne, aucun texte/markdown) :
+1) Header : { "type": "header", "columns": [ { "field": "id", "cellDataType": "number", "editable": false }, ... ] }
+2) Rows   : { "type": "row", "data": { ... } }
+3) Fin    : { "type": "done", "summary": { "rows": <rowCount> } }
+
+Règles colonnes :
+- Champs : \`field\` (anglais), \`headerName\` (fr), \`cellDataType\` ∈ text|number|boolean|date|dateTime
+- Inclure au minimum \`id\` (number, lecture seule et unique)
+- date and dateTime : format ISO 8601
+
+Règles lignes :
+- Objets plats, valeurs cohérentes avec \`cellDataType\`
+- Valeur inconnue → null`;
+
     const gridSystemPrompts = {
         dataGeneration: gridSystemPromptDataGeneration,
-        treeStructure: gridSystemPromptTree
+        treeStructure: gridSystemPromptTree,
+        mockData: gridSystemPromptMockData
     };
 
     const gridDefaultPromptTemplate = "Génère des exemples basés sur {{scenario_prompt}}.";
     const gridTreePromptTemplate =
         "Génère une arborescence structurée répondant à {{scenario_prompt}}.";
 
+    const gridMockPromptTemplate = "Génère des données fictives basées sur {{scenario_prompt}}.";
     const gridPromptTemplates = {
         dataGeneration: gridDefaultPromptTemplate,
-        treeStructure: gridTreePromptTemplate
+        treeStructure: gridTreePromptTemplate,
+        mockData: gridMockPromptTemplate
     };
 
     const GRID_TEMPLATES = [
@@ -726,6 +745,15 @@ RÈGLES
             defaultPromptTemplate: gridPromptTemplates.treeStructure || gridTreePromptTemplate,
             defaultSystemPrompt: gridSystemPrompts.treeStructure || gridSystemPromptTree,
             parser: "tree"
+        }
+        ,
+        {
+            id: "data-mock",
+            label: "Données fictives",
+            description: "Génère un flux NDJSON strictement formaté pour tester une grille unique.",
+            defaultPromptTemplate: gridPromptTemplates.mockData || gridMockPromptTemplate,
+            defaultSystemPrompt: gridSystemPrompts.mockData || gridSystemPrompt,
+            parser: "flat"
         }
     ];
 

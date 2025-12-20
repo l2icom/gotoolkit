@@ -1697,26 +1697,45 @@
                     };
                 }
 
-                function buildDatasetFromState() {
+                function buildDatasetFromState(options = {}) {
+                    const activeOnly = Boolean(options.activeOnly);
                     const schemaTablesFromState = Array.isArray(state?.schema?.tables) ? state.schema.tables : [];
-                    const schemaTables = schemaTablesFromState.length
-                        ? schemaTablesFromState.map(table => ({
-                            id: table.id,
-                            title: table.title,
-                            primaryKey: table.primaryKey || DEFAULT_PRIMARY_KEY,
-                            columns: Array.isArray(table.columns) ? table.columns : [],
-                            relations: Array.isArray(table.relations) ? table.relations : []
-                        }))
-                        : state.pages.map(page => ({
-                            id: page.tableId,
-                            title: page.title,
-                            primaryKey: page.primaryKey || DEFAULT_PRIMARY_KEY,
+                    const fullPages = Array.isArray(state.pages) ? state.pages : [];
+                    const activePage = getActivePage();
+                    const pages = activeOnly
+                        ? (activePage ? [activePage] : [])
+                        : fullPages.slice();
+                    if (!pages.length) {
+                        pages.push(createPage(1));
+                    }
+                    const desiredIds = new Set(pages.map(page => page?.tableId || ""));
+                    let schemaTables = [];
+                    if (schemaTablesFromState.length) {
+                        schemaTables = schemaTablesFromState
+                            .filter(table => table && typeof table === "object" && desiredIds.has(table.id))
+                            .map(table => ({
+                                id: table.id,
+                                title: table.title,
+                                primaryKey: table.primaryKey || DEFAULT_PRIMARY_KEY,
+                                columns: Array.isArray(table.columns) ? table.columns : [],
+                                relations: Array.isArray(table.relations) ? table.relations : []
+                            }))
+                            .filter(Boolean);
+                    }
+                    if (!schemaTables.length) {
+                        schemaTables = pages.map(page => ({
+                            id: page?.tableId || "",
+                            title: page?.title || "",
+                            primaryKey: page?.primaryKey || DEFAULT_PRIMARY_KEY,
                             columns: [],
-                            relations: Array.isArray(page.relations) ? page.relations : []
-                        }));
+                            relations: Array.isArray(page?.relations) ? page.relations : []
+                        })).filter(table => table.id);
+                    }
                     const data = {};
-                    state.pages.forEach(page => {
-                        data[page.tableId] = {
+                    pages.forEach(page => {
+                        const id = page?.tableId;
+                        if (!id) return;
+                        data[id] = {
                             columnDefs: Array.isArray(page.data?.columnDefs) ? page.data.columnDefs : [],
                             rowData: Array.isArray(page.data?.rowData) ? page.data.rowData : []
                         };
@@ -2422,20 +2441,30 @@
                 }
 
                 function syncDatasetScriptFromState(options = {}) {
-                    const dataset = buildDatasetFromState();
+                    const tplConfig = getActiveTemplateConfig();
+                    const isMockTemplate = tplConfig?.id === "data-mock";
                     const isTree = isTreeTemplateActive();
                     let next = "";
-                    if (isTree) {
-                        const activePage = getActivePage();
+                    let dataset = null;
+                    const activePage = getActivePage();
+
+                    if (isMockTemplate) {
+                        next = (activePage?.script || "").trim();
+                    } else if (isTree) {
                         const rows = prepareTreeRowsForExport(activePage?.data?.rowData || []);
                         next = rows.length ? JSON.stringify({ rows }, null, 2) : "";
                     } else {
+                        dataset = buildDatasetFromState({ activeOnly: true });
                         const hasContent = hasDatasetContent(dataset);
                         next = hasContent ? JSON.stringify(dataset, null, 2) : "";
                     }
+
                     const tplState = getActiveTemplateState();
                     tplState.datasetScript = next;
                     state.datasetScript = next;
+                    if (isMockTemplate && activePage) {
+                        activePage.script = next;
+                    }
                     if (gridScript) {
                         gridScript.value = next;
                     }
@@ -2753,7 +2782,8 @@
                         promptInput.value = tplState.scenario || "";
                     }
                     if (gridScript) {
-                        gridScript.value = tplState.datasetScript || "";
+                        const fallback = tplState.datasetScript || "";
+                        gridScript.value = getActivePageScriptOr(fallback);
                     }
                     if (aiTemplateSelect) {
                         aiTemplateSelect.value = state.activeTemplateId || DEFAULT_TEMPLATE_ID;
@@ -2810,7 +2840,7 @@
                     };
                 }
                 if (!state.datasetScript || !state.datasetScript.trim()) {
-                    const dataset = buildDatasetFromState();
+                    const dataset = buildDatasetFromState({ activeOnly: true });
                     state.datasetScript = hasDatasetContent(dataset) ? JSON.stringify(dataset, null, 2) : "";
                 }
                 renderFontSizeOptions();
@@ -2875,6 +2905,14 @@
 
                 function getActivePage() {
                     return state.pages[state.activeIndex];
+                }
+
+                function getActivePageScriptOr(fallback = "") {
+                    const page = getActivePage();
+                    if (page && typeof page.script === "string" && page.script.trim()) {
+                        return page.script;
+                    }
+                    return fallback;
                 }
 
                 function renderTabs() {
@@ -4437,9 +4475,11 @@
 
                 function getGridScriptValue() {
                     const tplState = getActiveTemplateState();
+                    const pageScript = getActivePageScriptOr("");
+                    if (pageScript.trim()) return pageScript;
                     const trimmedStateScript = ((tplState?.datasetScript || state.datasetScript || "") || "").trim();
                     if (trimmedStateScript) return trimmedStateScript;
-                    const dataset = buildDatasetFromState();
+                    const dataset = buildDatasetFromState({ activeOnly: true });
                     if (!hasDatasetContent(dataset)) return "";
                     return JSON.stringify(dataset, null, 2);
                 }
@@ -4503,7 +4543,12 @@
                     if (gridTitleInput) gridTitleInput.value = page.title || "";
                     const tplState = getActiveTemplateState();
                     if (promptInput) promptInput.value = tplState.scenario || page.scenario || "";
-                    if (gridScript) gridScript.value = tplState.datasetScript || getGridScriptValue();
+                    if (gridScript) {
+                        const fallbackScript = tplState.datasetScript || getGridScriptValue();
+                        const activeScript = getActivePageScriptOr(fallbackScript);
+                        gridScript.value = activeScript;
+                        state.datasetScript = activeScript;
+                    }
                     try {
                         gridApi?.setFilterModel?.(null);
                         gridApi?.onFilterChanged?.();
@@ -4844,6 +4889,81 @@
                     });
                     if (!headerSchema) return null;
                     return { schema: headerSchema, data };
+                }
+
+                function parseMockDataNdjson(raw) {
+                    if (!raw || typeof raw !== "string") return null;
+                    const lines = raw
+                        .split(/\r?\n/)
+                        .map(line => line.trim())
+                        .filter(Boolean);
+                    if (!lines.length) return null;
+                    const tableId = getActivePage()?.tableId || createTableId(1);
+                    const allowedTypes = new Set(["text", "number", "boolean", "date", "dateTime"]);
+                    let headerColumns = null;
+                    const rows = [];
+                    let summaryRows = null;
+                    for (const line of lines) {
+                        const parsedLine = parseJsonQuiet(line) || parseJsonTolerant(line);
+                        if (!parsedLine || typeof parsedLine !== "object") continue;
+                        const type = typeof parsedLine.type === "string" ? parsedLine.type.toLowerCase() : "";
+                        if (type === "header" && parsedLine.columns && Array.isArray(parsedLine.columns)) {
+                            const filtered = parsedLine.columns
+                                .map(col => {
+                                    const field = typeof col.field === "string" ? col.field.trim() : "";
+                                    const headerName =
+                                        typeof col.headerName === "string" && col.headerName.trim()
+                                            ? col.headerName.trim()
+                                            : field;
+                                    const cellDataType =
+                                        typeof col.cellDataType === "string" && allowedTypes.has(col.cellDataType)
+                                            ? col.cellDataType
+                                            : "text";
+                                    const editable = col.editable !== false;
+                                    return field ? { field, headerName, cellDataType, editable } : null;
+                                })
+                                .filter(Boolean);
+                            if (filtered.length) {
+                                headerColumns = filtered;
+                            }
+                        } else if (type === "row" && parsedLine.data && typeof parsedLine.data === "object") {
+                            rows.push(parsedLine.data);
+                        } else if (type === "done" && parsedLine.summary && typeof parsedLine.summary.rows === "number") {
+                            summaryRows = parsedLine.summary;
+                        }
+                    }
+                    if (!headerColumns || !headerColumns.length) {
+                        console.warn("Mock data header missing or invalid");
+                        return null;
+                    }
+                    const columnDefs = headerColumns.map(col => ({
+                        field: col.field,
+                        headerName: col.headerName,
+                        editable: col.editable,
+                        cellDataType: col.cellDataType
+                    }));
+                    if (summaryRows && summaryRows.rows !== rows.length) {
+                        console.warn(`Mock summary rows=${summaryRows.rows} but parsed ${rows.length}`);
+                    }
+                    return {
+                        schema: {
+                            tables: [
+                                {
+                                    id: tableId,
+                                    title: getActivePage()?.title || `Page ${state.activeIndex + 1}`,
+                                    primaryKey: DEFAULT_PRIMARY_KEY,
+                                    columns: headerColumns,
+                                    relations: []
+                                }
+                            ]
+                        },
+                        data: {
+                            [tableId]: {
+                                columnDefs,
+                                rowData: rows
+                            }
+                        }
+                    };
                 }
 
                 function createStreamingDatasetState() {
@@ -6906,57 +7026,70 @@
                 }
 
                 function applyDatasetToState(dataset, options = {}) {
-                    const anchorPageId = (state.pages?.[state.activeIndex] || {})?.id || null;
+                    const pagesSnapshot = Array.isArray(state.pages) ? state.pages.slice() : [];
+                    if (!pagesSnapshot.length) {
+                        pagesSnapshot.push(createPage(1));
+                    }
+                    const activeIndex = Math.max(0, Math.min(state.activeIndex || 0, pagesSnapshot.length - 1));
+                    const anchorPageId = pagesSnapshot[activeIndex]?.id || null;
                     const normalizedSchema = normalizeDatasetSchema(dataset);
                     if (!normalizedSchema.tables.length) {
                         throw new Error("Dataset sans schema.tables");
                     }
                     const dataByTable = dataset?.data && typeof dataset.data === "object" ? dataset.data : {};
-                    const previousActiveTableId = getActivePage()?.tableId || "";
                     resetRelationLookups();
 
-                    const pages = normalizedSchema.tables.map((table, index) => {
-                        const existing = state.pages.find(page => page?.tableId === table.id);
-                        const tableData = dataByTable?.[table.id] || {};
-                        const normalized = normalizePage(
-                            {
-                                id: existing?.id || `table-${table.id}`,
-                                tableId: table.id,
-                                title: table.title,
-                                primaryKey: table.primaryKey || DEFAULT_PRIMARY_KEY,
-                                relations: table.relations || [],
-                                templateId:
-                                    existing?.templateId ||
-                                    getPageTemplateId(existing) ||
-                                    getPageTemplateId() ||
-                                    state.activeTemplateId ||
-                                    DEFAULT_TEMPLATE_ID,
-                                scenario: existing?.scenario || getActivePage()?.scenario || "",
-                                data: {
-                                    columnDefs: Array.isArray(tableData.columnDefs) ? tableData.columnDefs : [],
-                                    rowData: Array.isArray(tableData.rowData) ? tableData.rowData : []
-                                }
-                            },
-                            index,
-                            state.activeTemplateId || DEFAULT_TEMPLATE_ID
-                        );
-                        return normalized;
-                    });
+                    const firstTable = normalizedSchema.tables[0];
+                    const tableData = dataByTable?.[firstTable.id] || {};
+                    const activePage = pagesSnapshot[activeIndex];
+                    const normalizedPage = normalizePage(
+                        {
+                            ...activePage,
+                            tableId: activePage.tableId,
+                            title: firstTable.title || activePage.title || `Page ${activeIndex + 1}`,
+                            primaryKey: firstTable.primaryKey || activePage.primaryKey || DEFAULT_PRIMARY_KEY,
+                            relations: Array.isArray(firstTable.relations)
+                                ? firstTable.relations
+                                : activePage.relations,
+                            data: {
+                                columnDefs: Array.isArray(tableData.columnDefs) ? tableData.columnDefs : [],
+                                rowData: Array.isArray(tableData.rowData) ? tableData.rowData : []
+                            }
+                        },
+                        activeIndex,
+                        state.activeTemplateId || DEFAULT_TEMPLATE_ID
+                    );
 
-                    state.pages = pages;
-                    state.schema = {
-                        tables: normalizedSchema.tables.map(table => ({
-                            id: table.id,
-                            title: table.title,
-                            primaryKey: table.primaryKey || DEFAULT_PRIMARY_KEY,
-                            columns: Array.isArray(table.columns) ? table.columns : [],
-                            relations: Array.isArray(table.relations) ? table.relations : []
-                        }))
+                    pagesSnapshot[activeIndex] = normalizedPage;
+                    state.pages = pagesSnapshot;
+
+                    const schemaTables = Array.isArray(state.schema?.tables) ? state.schema.tables.slice() : [];
+                    const existingSchemaIndex = schemaTables.findIndex(tbl => tbl?.id === normalizedPage.tableId);
+                    const schemaColumns =
+                        Array.isArray(firstTable.columns) && firstTable.columns.length
+                            ? firstTable.columns
+                            : (schemaTables[existingSchemaIndex] && schemaTables[existingSchemaIndex].columns) || [];
+                    const schemaRelations =
+                        Array.isArray(firstTable.relations) && firstTable.relations.length
+                            ? firstTable.relations
+                            : normalizedPage.relations || [];
+                    const schemaEntry = {
+                        id: normalizedPage.tableId,
+                        title: normalizedPage.title,
+                        primaryKey: normalizedPage.primaryKey || DEFAULT_PRIMARY_KEY,
+                        columns: schemaColumns,
+                        relations: schemaRelations
                     };
+                    if (existingSchemaIndex === -1) {
+                        schemaTables.push(schemaEntry);
+                    } else {
+                        schemaTables[existingSchemaIndex] = schemaEntry;
+                    }
+                    state.schema = { tables: schemaTables };
 
-                    const requestedActiveTableId = options.activeTableId || previousActiveTableId;
-                    const nextActiveIndex = Math.max(0, findPageIndexByTableId(requestedActiveTableId));
-                    state.activeIndex = nextActiveIndex === -1 ? 0 : nextActiveIndex;
+                    const requestedTableId = options.activeTableId || normalizedPage.tableId;
+                    const nextActiveIndex = Math.max(0, findPageIndexByTableId(requestedTableId));
+                    state.activeIndex = nextActiveIndex === -1 ? activeIndex : nextActiveIndex;
 
                     syncDatasetScriptFromState({ persist: false });
                     if (options.markAsAi) {
@@ -6967,7 +7100,7 @@
                             ? state.scenarioGeneratedTables
                             : {};
                         if (anchorPageId) {
-                            state.scenarioGeneratedTables[anchorPageId] = normalizedSchema.tables.map(table => table.id);
+                            state.scenarioGeneratedTables[anchorPageId] = [normalizedPage.tableId];
                         }
                     }
 
@@ -7014,7 +7147,8 @@
 
                     const streamingState = createStreamingDatasetState();
                     const isTree = isTreeTemplateActive();
-                    const useStream = !isTree;
+                    const isMockTemplate = tplConfig && tplConfig.id === "data-mock";
+                    const useStream = !isTree && !isMockTemplate;
 
                     try {
                         const payload = {
@@ -7046,6 +7180,19 @@
                         const activeTplState = getActiveTemplateState();
                         activeTplState.datasetScript = cleaned;
                         state.datasetScript = cleaned;
+                        if (isMockTemplate) {
+                            if (page) {
+                                page.script = cleaned;
+                            }
+                            const mockDataset = parseMockDataNdjson(cleaned);
+                            if (!mockDataset) {
+                                throw new Error("Réponse mock NDJSON invalide");
+                            }
+                            applyDatasetToState(mockDataset, { markAsAi: true, activeTableId: page?.tableId });
+                            syncDatasetScriptFromState({ persist: false });
+                            showStatus("Jeu de données fictives appliqué.");
+                            return;
+                        }
                         const ndjsonDataset = parseNdjsonDataset(cleaned);
                         const parsed = streamingState.finished ? null : (ndjsonDataset || parseJsonTolerant(cleaned));
                         const treeDataset = isTree ? normalizeTreePayload(parsed) : null;
@@ -7053,57 +7200,42 @@
                             const treeRows = Array.isArray(treeDataset?.data?.structure?.rowData)
                                 ? treeDataset.data.structure.rowData.length
                                 : 0;
-                            console.info("Go-Toolkit Grid: tree dataset rows=", treeRows, treeDataset.data.structure.rowData);
                             const structure = treeDataset.data.structure || { columnDefs: [], rowData: [] };
+                            console.info("Go-Toolkit Grid: tree dataset rows=", treeRows, structure.rowData);
                             const providedTitle = (typeof parsed?.title === "string" && parsed.title.trim())
                                 ? parsed.title.trim()
-                                : (typeof treeDataset.title === "string" && treeDataset.title.trim() ? treeDataset.title.trim() : "Structure de données");
-                            state.pages = [
-                                {
-                                    id: "page-structure",
-                                    tableId: "structure",
-                                    title: providedTitle,
-                                    primaryKey: "id",
-                                    relations: [],
-                                    templateId: state.activeTemplateId || "tree-structure",
-                                    scenario: page?.scenario || "",
-                                    data: {
+                                : (typeof treeDataset.title === "string" && treeDataset.title.trim()
+                                    ? treeDataset.title.trim()
+                                    : "Structure de données");
+                            const schemaTable =
+                                Array.isArray(treeDataset?.schema?.tables) && treeDataset.schema.tables[0]
+                                    ? treeDataset.schema.tables[0]
+                                    : null;
+                            const page = getActivePage();
+                            const tableId = (page?.tableId || "").trim() || "structure";
+                            const normalizedDataset = {
+                                schema: {
+                                    tables: [
+                                        {
+                                            id: tableId,
+                                            title: providedTitle,
+                                            primaryKey: "id",
+                                            columns: Array.isArray(schemaTable?.columns) ? schemaTable.columns : [],
+                                            relations: []
+                                        }
+                                    ]
+                                },
+                                data: {
+                                    [tableId]: {
                                         columnDefs: Array.isArray(structure.columnDefs) ? structure.columnDefs : [],
                                         rowData: Array.isArray(structure.rowData) ? structure.rowData : []
                                     }
                                 }
-                            ];
-                            state.activeIndex = 0;
-                            state.activeTemplateId = state.activeTemplateId || "tree-structure";
-                            state.schema = {
-                                tables: [
-                                    {
-                                        id: "structure",
-                                        title: providedTitle,
-                                        primaryKey: "id",
-                                        columns: [],
-                                        relations: []
-                                    }
-                                ]
                             };
-                            // ensure the UI title input and tabs reflect the provided title
-                            if (typeof providedTitle === "string" && providedTitle) {
-                                try {
-                                    if (gridTitleInput) gridTitleInput.value = providedTitle;
-                                } catch (e) {
-                                    /* ignore */
-                                }
+                            if (page) {
+                                page.title = providedTitle;
                             }
-                            applyGridData(structure, { tableId: "structure" });
-                            // update tabs/UI to reflect new page title
-                            try {
-                                renderTabs();
-                                setActivePage(0);
-                                renderTemplateSelect();
-                                renderTemplateMeta();
-                            } catch (e) {
-                                /* ignore */
-                            }
+                            applyDatasetToState(normalizedDataset, { markAsAi: true, activeTableId: tableId });
                             applyGridDisplayPreferences({ persist: false });
                             const exportedRows = prepareTreeRowsForExport(structure.rowData || []);
                             const treeScriptPayload = exportedRows.length ? { rows: exportedRows } : treeDataset;
@@ -7209,11 +7341,32 @@
 
                 function applyScriptToGrid(options = {}) {
                     const raw = gridScript.value || "";
+                    const isMockTemplate = getActiveTemplateConfig()?.id === "data-mock";
                     if (!raw.trim()) {
+                        if (isMockTemplate) {
+                            showStatus("Script mock vide, rien à appliquer.", true);
+                            return;
+                        }
                         clearGrid();
                         return;
                     }
+                    const currentPage = getActivePage();
+                    if (currentPage) {
+                        currentPage.script = raw;
+                    }
+                    state.datasetScript = raw;
                     try {
+                        const isMockTemplate = getActiveTemplateConfig()?.id === "data-mock";
+                        if (isMockTemplate) {
+                            const mockDataset = parseMockDataNdjson(raw);
+                            if (!mockDataset) {
+                                throw new Error("Mock NDJSON invalide");
+                            }
+                            applyDatasetToState(mockDataset, { markAsAi: true, activeTableId: currentPage?.tableId });
+                            syncDatasetScriptFromState({ persist: false });
+                            showStatus("Jeu de données fictives appliqué.");
+                            return;
+                        }
                         const parsed = parseJsonTolerant(cleanJson(raw));
                         if (!parsed || typeof parsed !== "object") {
                             throw new Error("JSON invalide");
@@ -7613,8 +7766,13 @@
                     if (gridScript) {
                         gridScript.addEventListener("input", () => {
                             const tplState = getActiveTemplateState();
-                            tplState.datasetScript = gridScript.value;
-                            state.datasetScript = tplState.datasetScript;
+                            const scriptValue = gridScript.value;
+                            tplState.datasetScript = scriptValue;
+                            state.datasetScript = scriptValue;
+                            const page = getActivePage();
+                            if (page) {
+                                page.script = scriptValue;
+                            }
                             persistState();
                         });
                         gridScript.addEventListener("blur", () => {
