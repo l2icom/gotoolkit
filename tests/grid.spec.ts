@@ -514,6 +514,66 @@ const SAMPLE_MULTI_TABLE_DATASET = `{
   }
 }`;
 
+test("renders tree dataset via AI stub (Structure de données)", async ({ page }) => {
+  const fixtureState = {
+    pages: [
+      {
+        id: "page-structure",
+        tableId: "structure",
+        title: "Structure de données",
+        primaryKey: "id",
+        relations: [],
+        templateId: "tree-structure",
+        scenario: "",
+        script: "",
+        lastAiScript: "",
+        data: { columnDefs: [], rowData: [] }
+      }
+    ],
+    activeIndex: 0,
+    promptTemplate: "",
+    systemPrompt: "",
+    reasoningEffort: "low",
+    displayPreferences: {},
+    activeTemplateId: "tree-structure",
+    templateStates: {},
+    schema: {
+      tables: [
+        {
+          id: "structure",
+          title: "Structure de données",
+          primaryKey: "id",
+          columns: [],
+          relations: []
+        }
+      ]
+    },
+    datasetScript: "",
+    lastAiDatasetScript: "",
+    scenarioGeneratedTables: {}
+  };
+
+  await page.addInitScript(({ state, treeResponse }) => {
+    window.localStorage.setItem("grid-ai-state", JSON.stringify(state));
+    // Stub the AI client so "Répondre" returns a tree payload immediately (non-stream).
+    (window as any).GoToolkitIA = {
+      chatCompletion: async () => treeResponse
+    };
+    (window as any).GoToolkitIAConfig = { getOpenAiModel: () => "stub-tree-model" };
+  }, { state: fixtureState, treeResponse: TREE_SAMPLE });
+
+  await page.goto("http://127.0.0.1:8080/grid.html");
+  await closeTemplateModalIfPresent(page);
+
+  // Fill scenario and trigger generation.
+  await page.locator("#promptInput").fill("demande de maintenance de moteur d'avion");
+  await page.locator("#generateBtn").click();
+
+  const gridRows = page.locator(".ag-center-cols-container .ag-row");
+  await expect(gridRows.first()).toBeVisible({ timeout: 5000 });
+  await expect(await gridRows.count()).toBeGreaterThan(0);
+});
+
 test("natural French filter narrows Clients to Alice Dupont", async ({ page }) => {
   await page.goto("http://127.0.0.1:8080/grid.html");
   await closeTemplateModalIfPresent(page);

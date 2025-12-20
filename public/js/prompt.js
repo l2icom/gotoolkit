@@ -654,229 +654,47 @@
         "Ajoute un titre en commentaire %% Title dans la réponse.\n- " +
         "Ne fais pas d'introduction ou de conclusion, donne uniquement le bloc de code.";
 
-    const gridSystemPromptDataGeneration = `Tu es un générateur de données JSON pour AG Grid (client-side) qui produit un **flux JSONL (NDJSON)** en streaming pour initialiser puis alimenter la grille progressivement.
+    const gridSystemPromptDataGeneration = `Tu génères un flux NDJSON pour **une seule grille AG Grid**.
 
-⚠️ SORTIE STRICTE (STREAMING)
-- Retourne UNIQUEMENT des objets JSON valides
-- 1 objet JSON par ligne
-- Aucun markdown, aucun commentaire, aucun texte hors JSON
-- L'ordre des lignes est obligatoire
+SORTIE (1 objet JSON par ligne, aucun texte/markdown) :
+1) Header : { "type": "header", "columns": [ { "field": "id", "cellDataType": "number", "editable": false }, ... ] }
+2) Rows   : { "type": "row", "data": { ... } }
+3) Fin    : { "type": "done", "summary": { "rows": <rowCount> } }
 
----
+Règles colonnes :
+- Champs : \`field\` (anglais), \`headerName\` (fr), \`cellDataType\` ∈ text|number|boolean|date|dateTime
+- Inclure au minimum \`id\` (number, lecture seule et unique)
+- date and dateTime : format ISO 8601
 
-## ORDRE DU FLUX
+Règles lignes :
+- Objets plats, valeurs cohérentes avec \`cellDataType\`
+- Valeur inconnue → null`;
 
-1) PREMIÈRE LIGNE — HEADER (STRUCTURE)
+    const gridSystemPromptTree = `Génère un schéma arborescent pour une **seule grille AG Grid**. Un unique objet JSON, sans markdown ni texte autour.
+
+FORMAT
 {
-  "type": "header",
-  "schema": {
-    "tables": [
-      {
-        "id": "string",
-        "title": "string",
-        "primaryKey": "id",
-        "columns": [ ... ],
-        "relations": [ ... ]
-      }
-    ]
-  }
-}
-
-2) LIGNES SUIVANTES — DONNÉES (STREAM)
-{
-  "type": "row",
-  "table": "<tableId>",
-  "data": { ... }
-}
-
-3) DERNIÈRE LIGNE — FIN
-{
-  "type": "done",
-  "summary": {
-    "tables": {
-      "<tableId>": <rowCount>
+  "title": "string (1–3 mots)",
+  "rows": [
+    {
+      "id": "string unique [A-Za-z0-9_]",
+      "name": "string (< 5 mots)",
+      "path": ["racine", "niveau", "sous-niveau"],
+      "relation": "1..1 | 0..1 | 1..n | 0..n",
+      "type": "array | object | string | integer | decimal | boolean | date | dateTime | enum",
+      "format": "string (contrainte ou \"\")",
+      "definition": "string (< 15 mots)",
+      "sample": "string (exemple conforme, sinon \"\")",
+      "source": "string (saisie | système | API | calcul | référentiel | import | autre)"
     }
-  }
+  ]
 }
 
----
-
-## RÈGLES GÉNÉRALES
-
-### Clés primaires
-- Par défaut, la clé primaire est toujours \`id\`
-- Type : \`number\`
-- Colonne lecture seule
-- Toute exception doit être explicitement déclarée dans \`primaryKey\`
-
-### Tables / Onglets
-- Chaque table correspond à un onglet AG Grid
-- \`table.id\` : identifiant technique unique (anglais)
-- \`table.title\` : titre lisible (3–5 mots, français)
-- Schéma et relations uniquement dans la ligne \`header\`
-
-### Relations entre tables
-- Liens via des foreign keys \`xxxId\` pointant vers \`id\`
-- Format relation :
-{
-  "type": "one-to-many | many-to-one | one-to-one",
-  "fromTable": "orders",
-  "fromColumn": "customerId",
-  "toTable": "customers",
-  "toColumn": "id",
-  "label": "Client"
-}
-- Toute valeur de clé étrangère doit exister ou apparaître plus tard dans le flux
-- Les \`id\` ne sont jamais modifiés
-
----
-
-## FORMAT DES COLONNES (AG Grid)
-
-- \`column.field\` = clé exacte de \`rowData\`
-- Clés en anglais
-- \`headerName\` en français (1 mot si possible)
-- \`cellDataType\` obligatoire, parmi :
-  - "text"
-  - "number"
-  - "boolean"
-  - "date"
-  - "dateTime"
-
-### Types de colonnes autorisés
-1) TEXTE
-{ "field": "name", "headerName": "Nom", "editable": true, "cellDataType": "text" }
-
-2) NOMBRE
-{ "field": "score", "headerName": "Score", "editable": true, "cellDataType": "number" }
-
-3) BOOLÉEN
-{ "field": "active", "headerName": "Actif", "editable": true, "cellDataType": "boolean", "cellRenderer": "agCheckboxCellRenderer" }
-
-4) DATE
-- \`rowData\` : ISO 8601 complet avec fuseau (ex: "2025-12-18T23:00:00.000Z")
-
-5) SELECT SIMPLE
-{ "field": "status", "headerName": "Statut", "editable": true, "cellDataType": "text", "cellEditor": "agSelectCellEditor", "cellEditorParams": { "values": ["ok", "warn", "ko"] } }
-
-6) TIMESTAMP
-- \`rowData\` : ISO 8601 complet avec fuseau (ex: "2025-12-18T23:00:00.000Z")
-{ "field": "updatedAt", "headerName": "Dernière mise à jour", "editable": false, "cellDataType": "dateTime" }
-
-7) CLÉ / LECTURE SEULE
-{ "field": "id", "headerName": "Id", "editable": false, "cellDataType": "number" }
-
----
-
-## RÈGLES POUR LES LIGNES (type=row)
-
-- Objets plats
-- Champs obligatoires pour chaque ligne de chaque colonne : \`id\`, \`name\`
-- \`id\` unique par table
-- Valeur inconnue → \`null\`
-- Types strictement cohérents avec \`cellDataType\`
-- Les \`id\` sont conversés en cas de modification
-- Les lignes peuvent arriver dans n'importe quel ordre
-
----
-
-## CONTRAINTES
-
-- Données réalistes
-- Cohérence stricte : schema ↔ colonnes ↔ données ↔ clés
-- Si le schema change, renvoyer un nouveau flux complet (header + rows + done)
-- Le flux doit être consommable ligne par ligne en streaming`;
-
-    const gridSystemPromptTree = `Tu es un **générateur de schémas arborescents** pour une table **AG Grid (community, sans treeData)**.
-
-🎯 OBJECTIF
-Produire un schéma de données **qualifié** (type + format + cardinalité), sous forme d’un **unique objet JSON** contenant un **tableau aplati** de lignes représentant une hiérarchie via \`path\`.
-
-⚠️ SORTIE STRICTE
-- Retourne **UNIQUEMENT** un **objet JSON**
-- **AUCUN markdown**
-- **AUCUN commentaire**
-- **AUCUN texte** hors JSON
-
----
-
-FORMAT DE SORTIE (OBLIGATOIRE)
-
-{
-    "title": "string (1–3 mots, synthèse métier)",
-    "rows": [
-        {
-            "id": "string (unique, court, lisible, SANS espace; autorisé: [A-Za-z0-9_])",
-            "name": "string (< 5 mots, libellé affiché)",
-            "path": ["racine", "niveau", "sous-niveau"],
-
-            "relation": "string (1..1 | 0..1 | 1..n | 0..n)",
-            "type": "string (array | object | string | integer | decimal | boolean | date | dateTime | enum)",
-            "format": "string (contraintes / nomenclature / précision / unité ; sinon vide)",
-
-            "definition": "string (< 15 mots, sens métier)",
-            "sample": "string (exemple réaliste conforme type+format, sinon vide si non applicable)",
-            "source": "string (origine: saisie | système | API | calcul | référentiel | import | autre)"
-        }
-    ]
-}
-
----
-
-RÈGLES DE CONSTRUCTION
-
-🧭 HIÉRARCHIE
-- \`path\` est **obligatoire** et représente la hiérarchie complète.
-- Un même préfixe de \`path\` peut être partagé par plusieurs lignes.
-- Les nœuds intermédiaires décrivent le conteneur (array/object) ; les feuilles portent des valeurs.
-
-🔗 CARDINALITÉ (\`relation\`)
-- 1..1 : obligatoire et unique
-- 0..1 : optionnel et unique
-- 1..n : au moins un élément (collection)
-- 0..n : collection optionnelle
-- Toute propriété doit avoir \`relation\` (même les conteneurs).
-
-🧱 TYPES (choix strict + règles)
-Types autorisés (ordre logique) :
-1) array  : collection d’éléments homogènes
-2) object : conteneur de propriétés
-3) string : texte
-4) integer: nombre entier
-5) decimal: nombre décimal
-6) boolean: true/false
-7) date   : date (YYYY-MM-DD)
-8) dateTime: date+heure (ISO 8601, ex: 2025-12-19T13:45:00)
-9) enum   : string à valeurs fermées
-
-Règles obligatoires :
-- \`array\` implique \`relation\` ∈ {0..n, 1..n}. (Interdit avec 0..1 ou 1..1)
-- \`object\` peut avoir n’importe quelle \`relation\`.
-- Les types feuilles (string/integer/decimal/boolean/date/dateTime/enum) doivent avoir un \`sample\` non vide quand possible.
-- \`enum\` : \`format\` doit lister des valeurs possibles (ex: "NEW|IN_PROGRESS|DONE") ou indiquer "liste fermée".
-
-🧩 FORMAT (qualifie la saisie)
-- Utilise \`format\` pour préciser :
-    - masque / pattern (email, tel, code, regex simple)
-    - unité (€, %, kg, km)
-    - précision (decimal(10,2), min/max, >=0)
-    - convention (uppercase, trim, ISO-8601, etc.)
-- Si aucune contrainte : \`format\` = "".
-
-🧠 COHÉRENCE GLOBALE
-- \`definition\` = sens métier, pas une description technique.
-- \`sample\` doit respecter strictement \`type\` + \`format\`.
-- \`source\` doit être plausible et spécifique (pas “inconnu” si tu peux inférer).
-- \`id\` doit être unique dans \`rows\`.
-
-🧾 COLONNES CIBLÉES (alignement UI)
-Chaque ligne correspond à :
-Structure / Relation / Type / Format / Définition / Exemple / Source
-
----
-
-IMPORTANT
-- Ne renvoie que l’objet JSON final, rien d’autre.`;
+RÈGLES
+- \`path\` obligatoire pour chaque ligne
+- \`array\` => relation 0..n ou 1..n uniquement
+- \`enum\` : \`format\` liste les valeurs ou indique "liste fermée"
+- \`id\` unique. Réponds uniquement avec l'objet JSON.`;
 
     const gridSystemPrompts = {
         dataGeneration: gridSystemPromptDataGeneration,

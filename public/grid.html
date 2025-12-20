@@ -333,21 +333,30 @@
             position: absolute;
 
             cellEditor: "agSelectCellEditor",
-            cellEditorParams: {
-                values: TREE_TYPE_OPTIONS
+            singleClickEdit: true,
+            cellEditorPopup: true,
+            onCellClicked: params=> {
+                try {
+                    params.api.startEditingCell({
+                        rowIndex: params.node.rowIndex, colKey: params.column.getId()
+                    });
             }
 
-            ,
-            // show editor as popup so the dropdown appears over the cell immediately
-            cellEditorPopup: true,
-            right: 10px;
-            bottom: 10px;
-            pointer-events: none;
-            font: inherit;
-            line-height: 1.4;
-            white-space: pre-wrap;
-            word-break: break-word;
-            z-index: 3;
+            catch (e) {
+                /* ignore */
+            }
+        }
+
+        ,
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        pointer-events: none;
+        font: inherit;
+        line-height: 1.4;
+        white-space: pre-wrap;
+        word-break: break-word;
+        z-index: 3;
         }
 
         .speech-suggestion span {
@@ -1023,6 +1032,15 @@
             color: #0f172a;
         }
 
+        .modal select {
+            border-radius: 8px;
+            border: 1px solid #dfe3f5;
+            padding: 6px 8px;
+            font-size: 13px;
+            background: #ffffff;
+            color: #0f172a;
+        }
+
         .column-pin-row {
             display: flex;
             align-items: center;
@@ -1233,7 +1251,8 @@
                 <button id="toggleDrawerBtn" class="btn drawer-toggle-btn" type="button" title="⸙ Gutenberg">⸙
                     Contexte</button>
                 <button id="aiSettingsBtn" class="btn ai-button" type="button" title="⌘ Promptzilla">⌘ Prompt</button>
-                <button id="templateModalBtn" class="btn" type="button" title="⊞ Modèle">⊞ Modèle</button>
+                <button id="templateModalBtn" class="btn" type="button" title="⊞ Modèle" style="display: none;">⊞
+                    Modèle</button>
                 <div class="menu-trigger">
                     <button id="affichageBtn" class="btn" type="button" aria-label="Affichage" title="Affichage">◯
                         Affichage</button>
@@ -1512,7 +1531,6 @@
                 const hasSeenTemplateModal =
                     typeof localStorage !== "undefined" &&
                     localStorage.getItem(TEMPLATE_MODAL_SEEN_KEY) === "1";
-                let pendingNewPage = false;
                 let generateCooldownTimer = null;
                 let generateCooldownEndTime = 0;
 
@@ -1572,6 +1590,8 @@
                     // show tooltips quickly (ms)
                     tooltipShowDelay: 50,
                     tooltipHideDelay: 200,
+                    // allow single-click to start editing cells
+                    singleClickEdit: true,
                     localeText: typeof AG_GRID_LOCALE_FR !== "undefined" ? AG_GRID_LOCALE_FR : undefined,
                     autoSizeStrategy: {
                         type: "fitGridWidth",
@@ -1594,10 +1614,6 @@
                     onColumnMoved: syncScriptFromGrid,
                     onColumnPinned: syncScriptFromGrid,
                     onColumnResized: syncScriptFromGrid
-                    ,
-                    // allow single-click to start editing cells
-                    singleClickEdit: true,
-                    stopEditingWhenGridLosesFocus: true
                 };
                 const gridApi = agGrid.createGrid(gridElement, gridOptions);
                 const gridColumnApi = gridOptions.columnApi;
@@ -1618,9 +1634,10 @@
                     return {
                         id: `page-${Date.now()}-${index}-${Math.floor(Math.random() * 10000)}`,
                         tableId,
-                        title: `Table ${index}`,
+                        title: `Page ${index}`,
                         primaryKey: DEFAULT_PRIMARY_KEY,
                         relations: [],
+                        templateId: "",
                         scenario: "",
                         script: "",
                         lastAiScript: "",
@@ -1628,7 +1645,7 @@
                     };
                 }
 
-                function normalizePage(page, index) {
+                function normalizePage(page, index, fallbackTemplateId = "") {
                     if (!page || typeof page !== "object") {
                         return createPage(index + 1);
                     }
@@ -1636,15 +1653,20 @@
                         typeof page.tableId === "string" && page.tableId.trim()
                             ? page.tableId.trim()
                             : createTableId(index + 1);
+                    const templateId =
+                        typeof page.templateId === "string" && page.templateId.trim()
+                            ? page.templateId.trim()
+                            : (typeof fallbackTemplateId === "string" ? fallbackTemplateId.trim() : "");
                     return {
                         id: page.id || `page-${Date.now()}-${index}`,
                         tableId,
-                        title: page.title || `Table ${index + 1}`,
+                        title: page.title || `Page ${index + 1}`,
                         primaryKey:
                             typeof page.primaryKey === "string" && page.primaryKey.trim()
                                 ? page.primaryKey.trim()
                                 : DEFAULT_PRIMARY_KEY,
                         relations: Array.isArray(page.relations) ? page.relations : [],
+                        templateId,
                         scenario: page.scenario || "",
                         script: page.script || "",
                         lastAiScript: page.lastAiScript || "",
@@ -1784,13 +1806,22 @@
                     path: ["Objet"],
                     type: "object",
                     format: "",
-                    definition: "Point d'entrée de la structure.",
+                    definition: "",
                     sample: "",
                     source: "Src",
                     relation: "1..1"
                 };
-                const TREE_TYPE_OPTIONS = ["object", "varchar", "number", "boolean", "date", "dateTime", "timestamp"];
-                const TREE_SOURCE_OPTIONS = ["Src", "SAP", "API", "Manual"];
+                const TREE_TYPE_OPTIONS = [
+                    "array",
+                    "object",
+                    "string",
+                    "integer",
+                    "decimal",
+                    "boolean",
+                    "date",
+                    "dateTime",
+                    "enum"
+                ];
 
                 function buildTreeColumnDefs() {
                     return [
@@ -1885,9 +1916,7 @@
                             sortable: false,
                             filter: false,
                             resizable: true,
-                            tooltipField: "source",
-                            cellEditor: "agSelectCellEditor",
-                            cellEditorParams: { values: TREE_SOURCE_OPTIONS }
+                            tooltipField: "source"
                         }
                     ];
                 }
@@ -2019,7 +2048,7 @@
                     return baseRows;
                 }
 
-                function buildTreeDatasetFromRows(rows) {
+                function buildTreeDatasetFromRows(rows, title = "Structure de données") {
                     const columnDefs = buildTreeColumnDefs();
                     const rowData = decorateTreeRows(rows, { sortPaths: true });
                     return {
@@ -2027,7 +2056,7 @@
                             tables: [
                                 {
                                     id: "structure",
-                                    title: "Structure de données",
+                                    title,
                                     primaryKey: "id",
                                     columns: [
                                         { field: "name" },
@@ -2057,8 +2086,9 @@
 
                 function normalizeTreePayload(payload) {
                     if (!payload || typeof payload !== "object") return null;
+                    const title = (typeof payload?.title === "string" && payload.title.trim()) || "Structure de données";
                     if (Array.isArray(payload.rows)) {
-                        return buildTreeDatasetFromRows(payload.rows);
+                        return buildTreeDatasetFromRows(payload.rows, title);
                     }
                     if (Array.isArray(payload.tree)) {
                         return buildTreeDatasetFromNodes(payload.tree);
@@ -2067,7 +2097,7 @@
                         return buildTreeDatasetFromNodes(payload.nodes);
                     }
                     if (Array.isArray(payload?.data?.structure?.rowData)) {
-                        return buildTreeDatasetFromRows(payload.data.structure.rowData);
+                        return buildTreeDatasetFromRows(payload.data.structure.rowData, title);
                     }
                     return null;
                 }
@@ -2473,7 +2503,8 @@
                                 templateStates,
                                 schema: { tables: [] },
                                 datasetScript: "",
-                                lastAiDatasetScript: ""
+                                lastAiDatasetScript: "",
+                                scenarioGeneratedTables: {}
                             };
                         }
                         const parsed = JSON.parse(raw);
@@ -2485,8 +2516,11 @@
                         const activeTemplateId =
                             (parsed && typeof parsed.activeTemplateId === "string" && parsed.activeTemplateId.trim()) ||
                             DEFAULT_TEMPLATE_ID;
+                        const fallbackTemplateId =
+                            (parsed && typeof parsed.activeTemplateId === "string" && parsed.activeTemplateId.trim()) ||
+                            DEFAULT_TEMPLATE_ID;
                         const pages = Array.isArray(parsed.pages)
-                            ? parsed.pages.map(normalizePage)
+                            ? parsed.pages.map((page, index) => normalizePage(page, index, fallbackTemplateId))
                             : [createPage(1)];
                         const activeIndex = Math.max(0, Math.min((parsed.activeIndex || 0), pages.length - 1));
                         const schemaTables = Array.isArray(parsed?.schema?.tables)
@@ -2519,7 +2553,11 @@
                             templateStates,
                             schema: { tables: schemaTables },
                             datasetScript: typeof parsed.datasetScript === "string" ? parsed.datasetScript : "",
-                            lastAiDatasetScript: typeof parsed.lastAiDatasetScript === "string" ? parsed.lastAiDatasetScript : ""
+                            lastAiDatasetScript: typeof parsed.lastAiDatasetScript === "string" ? parsed.lastAiDatasetScript : "",
+                            scenarioGeneratedTables:
+                                parsed && typeof parsed.scenarioGeneratedTables === "object"
+                                    ? parsed.scenarioGeneratedTables
+                                    : {}
                         };
                     } catch (err) {
                         console.warn("Impossible de charger l'état Grid", err);
@@ -2538,7 +2576,8 @@
                             templateStates,
                             schema: { tables: [] },
                             datasetScript: "",
-                            lastAiDatasetScript: ""
+                            lastAiDatasetScript: "",
+                            scenarioGeneratedTables: {}
                         };
                     }
                 }
@@ -2546,6 +2585,10 @@
                 function getTemplateConfigById(id) {
                     if (!id) return GRID_TEMPLATES[0];
                     return GRID_TEMPLATES.find(tpl => tpl.id === id) || GRID_TEMPLATES[0];
+                }
+
+                function getPageTemplateConfig() {
+                    return getTemplateConfigById(getPageTemplateId() || DEFAULT_TEMPLATE_ID);
                 }
 
                 function getTemplateIcon(templateId) {
@@ -2571,8 +2614,17 @@
                     return getTemplateConfigById(state.activeTemplateId || DEFAULT_TEMPLATE_ID);
                 }
 
+                function getPageTemplateId(page = getActivePage()) {
+                    if (!page || typeof page.templateId !== "string") return "";
+                    return page.templateId.trim();
+                }
+
+                function pageHasTemplate(page = getActivePage()) {
+                    return Boolean(getPageTemplateId(page));
+                }
+
                 function isTreeTemplateActive() {
-                    return getActiveTemplateConfig()?.parser === "tree";
+                    return getPageTemplateConfig()?.parser === "tree";
                 }
 
                 function renderTemplateSelect() {
@@ -2589,12 +2641,13 @@
 
                 function renderTemplateMeta() {
                     if (!templateMeta) return;
-                    const tpl = getActiveTemplateConfig();
+                    const tplId = getPageTemplateId() || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                    const tpl = getTemplateConfigById(tplId);
                     const icon = getTemplateIcon(tpl.id);
                     templateMeta.textContent = `Modèle : ${icon} ${tpl.label}`;
                 }
 
-                function renderTemplateCards(selectedId = state.activeTemplateId || DEFAULT_TEMPLATE_ID) {
+                function renderTemplateCards(selectedId = (getPageTemplateId() || state.activeTemplateId || DEFAULT_TEMPLATE_ID)) {
                     if (!templateCardList) return;
                     templateCardList.innerHTML = "";
                     GRID_TEMPLATES.forEach(tpl => {
@@ -2623,8 +2676,21 @@
                     templateCardList.dataset.selectedId = selectedId;
                 }
 
+                function updateTemplateApplyBtnState() {
+                    if (!templateApplyBtn) return;
+                    const locked = pageHasTemplate();
+                    templateApplyBtn.disabled = locked;
+                    templateApplyBtn.title = locked
+                        ? "Le modèle est déjà fixé pour cette page"
+                        : "Appliquer ce modèle à la nouvelle page";
+                }
+
                 function setActiveTemplate(templateId, options = {}) {
-                    const { skipApplyScript = true, resetPage = false } = options;
+                    const {
+                        skipApplyScript = true,
+                        assignToPage = false,
+                        skipPersist = false
+                    } = options;
                     const tpl = getTemplateConfigById(templateId);
                     const previousId = state.activeTemplateId || DEFAULT_TEMPLATE_ID;
                     syncTemplateStateFromUI();
@@ -2639,43 +2705,16 @@
                         templateCardList.dataset.selectedId = tpl.id;
                     }
                     const page = getActivePage();
-                    if (page) {
+                    const shouldBindToPage = assignToPage && page && !getPageTemplateId(page);
+                    if (page && (shouldBindToPage || getPageTemplateId(page) === tpl.id)) {
                         page.scenario = tplState.scenario || page.scenario || "";
+                        if (shouldBindToPage) {
+                            page.templateId = tpl.id;
+                        }
                     }
                     applyTemplateStateToUI();
                     renderTemplateSelect();
                     renderTemplateMeta();
-                    if (resetPage && !pendingNewPage) {
-                        resetDocumentForTemplateChange();
-                    }
-                    if (pendingNewPage) {
-                        try {
-                            const newPage = createPage(state.pages.length + 1);
-                            state.pages.push(newPage);
-                            state.schema = state.schema || { tables: [] };
-                            if (!Array.isArray(state.schema.tables)) state.schema.tables = [];
-                            state.schema.tables.push({
-                                id: newPage.tableId,
-                                title: newPage.title,
-                                primaryKey: newPage.primaryKey || DEFAULT_PRIMARY_KEY,
-                                columns: [],
-                                relations: []
-                            });
-                            state.activeIndex = state.pages.length - 1;
-                            const tplStateNew = ensureTemplateState(tpl.id);
-                            tplStateNew.datasetScript = "";
-                            tplStateNew.lastAiDatasetScript = "";
-                            state.datasetScript = "";
-                            state.lastAiDatasetScript = "";
-                            if (gridScript) gridScript.value = "";
-                            if (promptInput) promptInput.value = tplStateNew.scenario || "";
-                            setActivePage(state.activeIndex);
-                        } catch (err) {
-                            console.warn("Impossible de créer une nouvelle page", err);
-                        } finally {
-                            pendingNewPage = false;
-                        }
-                    }
                     if (!skipApplyScript) {
                         try {
                             applyScriptToGrid({ silentOnError: true, silentOnSuccess: true });
@@ -2683,34 +2722,20 @@
                             console.warn("Impossible d'appliquer le script du modèle", err);
                         }
                     }
-                    persistState();
+                    if (!skipPersist) {
+                        persistState();
+                    }
                     if (options.onChange && typeof options.onChange === "function" && tpl.id !== previousId) {
                         options.onChange(tpl);
                     }
-                }
-
-                function resetDocumentForTemplateChange() {
-                    const newPage = createPage(1);
-                    state.pages = [newPage];
-                    state.schema = { tables: [] };
-                    state.activeIndex = 0;
-                    newPage.data = { columnDefs: [], rowData: [] };
-                    newPage.scenario = "";
-                    newPage.script = "";
-                    newPage.lastAiScript = "";
-                    const tplState = ensureTemplateState(state.activeTemplateId || DEFAULT_TEMPLATE_ID);
-                    tplState.datasetScript = "";
-                    tplState.lastAiDatasetScript = "";
-                    state.datasetScript = "";
-                    state.lastAiDatasetScript = "";
-                    if (gridScript) gridScript.value = "";
-                    if (promptInput) promptInput.value = "";
-                    setActivePage(0);
+                    updateTemplateApplyBtnState();
                 }
 
                 function openTemplateModalUi() {
                     if (!templateModal) return;
-                    renderTemplateCards(state.activeTemplateId || DEFAULT_TEMPLATE_ID);
+                    const selectedId = getPageTemplateId() || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                    renderTemplateCards(selectedId);
+                    updateTemplateApplyBtnState();
                     templateModal.classList.add("open");
                 }
 
@@ -2762,7 +2787,12 @@
                         state.templateStates[tpl.id] = normalizeTemplateState(null, tpl);
                     }
                 });
-                state.activeTemplateId = state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                state.scenarioGeneratedTables =
+                    state.scenarioGeneratedTables && typeof state.scenarioGeneratedTables === "object"
+                        ? state.scenarioGeneratedTables
+                        : {};
+                const activePageTemplateId = (state.pages?.[state.activeIndex] || {}).templateId;
+                state.activeTemplateId = activePageTemplateId || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
                 const activeTemplateState = getActiveTemplateState();
                 if (!activeTemplateState.datasetScript && state.datasetScript) {
                     activeTemplateState.datasetScript = state.datasetScript;
@@ -2779,7 +2809,7 @@
                 if (!activeTemplateState.scenario && Array.isArray(state.pages) && state.pages.length) {
                     activeTemplateState.scenario = state.pages[state.activeIndex]?.scenario || "";
                 }
-                state.activeParser = getActiveTemplateConfig().parser || "flat";
+                state.activeParser = getPageTemplateConfig().parser || "flat";
                 state.promptTemplate = activeTemplateState.promptTemplate || state.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
                 state.systemPrompt = activeTemplateState.systemPrompt || state.systemPrompt || DEFAULT_SYSTEM_PROMPT;
                 state.datasetScript = activeTemplateState.datasetScript || state.datasetScript || "";
@@ -2804,8 +2834,9 @@
                 applyGridDisplayPreferences({ persist: false });
                 buildColumnPinMenu();
                 renderTemplateSelect();
-                renderTemplateCards(state.activeTemplateId || DEFAULT_TEMPLATE_ID);
+                renderTemplateCards();
                 renderTemplateMeta();
+                updateTemplateApplyBtnState();
                 if (!hasSeenTemplateModal) {
                     setTimeout(() => {
                         openTemplateModalUi();
@@ -2829,7 +2860,8 @@
                             templateStates: state.templateStates || {},
                             schema: state.schema || { tables: [] },
                             datasetScript: state.datasetScript || "",
-                            lastAiDatasetScript: state.lastAiDatasetScript || ""
+                            lastAiDatasetScript: state.lastAiDatasetScript || "",
+                            scenarioGeneratedTables: state.scenarioGeneratedTables || {}
                         };
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
                     } catch (err) {
@@ -3267,7 +3299,7 @@
                     };
                 }
 
-                function createRelationCountCellRenderer(manyTable, manyFk, oneId) {
+                function createRelationCountCellRenderer(manyTable, manyFk, oneId, oneName) {
                     const link = document.createElement("a");
                     link.href = "#";
                     link.style.color = "#2a7a57";
@@ -3286,12 +3318,18 @@
                             normalizedId = Number(normalizedId.trim());
                         }
                         setActivePage(idx);
-                        const knownFieldMap = getKnownFieldMap();
-                        const fieldInfo = knownFieldMap.get(manyFk);
-                        const fieldLabel = fieldInfo?.headerName || manyFk;
-                        const lookup = ensureForeignKeyLookup(manyTable, manyFk);
-                        const displayValue = lookup?.[String(normalizedId)] || normalizedId;
-                        const condition = `${fieldLabel} est ${formatNaturalFilterLiteral(displayValue)}`;
+                        const nameFilter = typeof oneName === "string" ? oneName.trim() : "";
+                        let condition = "";
+                        if (nameFilter) {
+                            condition = `name est ${formatNaturalFilterLiteral(nameFilter)}`;
+                        } else {
+                            const knownFieldMap = getKnownFieldMap();
+                            const fieldInfo = knownFieldMap.get(manyFk);
+                            const fieldLabel = fieldInfo?.headerName || manyFk;
+                            const lookup = ensureForeignKeyLookup(manyTable, manyFk);
+                            const displayValue = lookup?.[String(normalizedId)] || normalizedId;
+                            condition = `${fieldLabel} est ${formatNaturalFilterLiteral(displayValue)}`;
+                        }
                         if (gridNaturalFilterInput) {
                             gridNaturalFilterInput.value = condition;
                             naturalFilterState.lastAcceptedInput = condition;
@@ -3341,7 +3379,12 @@
                                 if (oneId == null || oneId === "") return "";
                                 const map = ensureRelationCountLookup(sides.manyTable, sides.manyFk);
                                 const count = map?.[String(oneId)] || 0;
-                                const link = createRelationCountCellRenderer(sides.manyTable, sides.manyFk, oneId);
+                                const link = createRelationCountCellRenderer(
+                                    sides.manyTable,
+                                    sides.manyFk,
+                                    oneId,
+                                    params?.data?.name
+                                );
                                 link.textContent = String(count);
                                 link.title = `Voir ${manyTitle} liés — id=${oneId}`;
                                 return link;
@@ -3371,7 +3414,7 @@
                 function applyGridData(data, options = {}) {
                     if (!data) return;
                     const tableId = options.tableId || getActivePage()?.tableId || "";
-                    let rowData = Array.isArray(data.rowData) ? data.rowData : [];
+                    const rowData = Array.isArray(data.rowData) ? data.rowData : [];
                     const isTree = isTreeTemplateActive();
                     let finalRowData = rowData;
                     let gridColumnDefs;
@@ -3407,31 +3450,6 @@
                         gridOptions.onRowDragEnd = undefined;
                         gridOptions.suppressMovableColumns = isTree;
                     }
-                    // Coerce common date formats into strict ISO forms for AG Grid
-                    if (!isTree && Array.isArray(rowData) && Array.isArray(data.columnDefs)) {
-                        try {
-                            const defs = data.columnDefs;
-                            rowData = rowData.map(r => {
-                                if (!r || typeof r !== 'object') return r;
-                                const cloned = { ...r };
-                                for (const def of defs) {
-                                    const field = def && def.field;
-                                    const expected = def && (def.cellDataType || def.dataType || null);
-                                    if (!field || !expected) continue;
-                                    if (cloned[field] == null) continue;
-                                    if (expected === 'date' || expected === 'dateTime') {
-                                        try {
-                                            cloned[field] = coerceTemporalValue(cloned[field], expected);
-                                        } catch (err) { /* ignore coercion errors */ }
-                                    }
-                                }
-                                return cloned;
-                            });
-                        } catch (err) {
-                            /* ignore */
-                        }
-                    }
-
                     if (typeof gridApi.setGridOption === "function") {
                         gridApi.setGridOption("columnDefs", gridColumnDefs);
                         gridApi.setGridOption("rowData", isTree ? finalRowData : rowData);
@@ -3998,11 +4016,6 @@
                             await handleSaveDocumentClick();
                         }
                     }
-                    try {
-                        if (typeof localStorage !== "undefined") {
-                            localStorage.removeItem(TEMPLATE_MODAL_SEEN_KEY);
-                        }
-                    } catch (err) { /* ignore */ }
                     openNewGridDocument();
                 }
 
@@ -4502,6 +4515,8 @@
                     const targetIndex = Math.max(0, Math.min(index, state.pages.length - 1));
                     state.activeIndex = targetIndex;
                     const page = getActivePage();
+                    const pageTemplateId = getPageTemplateId(page) || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                    setActiveTemplate(pageTemplateId, { skipApplyScript: true, skipPersist: true });
                     if (gridTitleInput) gridTitleInput.value = page.title || "";
                     const tplState = getActiveTemplateState();
                     if (promptInput) promptInput.value = tplState.scenario || page.scenario || "";
@@ -4517,12 +4532,21 @@
                 }
 
                 function addPage() {
-                    pendingNewPage = true;
-                    try {
-                        openTemplateModalUi();
-                    } catch (err) {
-                        pendingNewPage = false;
-                    }
+                    const newPage = createPage(state.pages.length + 1);
+                    state.pages.push(newPage);
+                    state.schema = state.schema || { tables: [] };
+                    if (!Array.isArray(state.schema.tables)) state.schema.tables = [];
+                    state.schema.tables.push({
+                        id: newPage.tableId,
+                        title: newPage.title,
+                        primaryKey: newPage.primaryKey || DEFAULT_PRIMARY_KEY,
+                        columns: [],
+                        relations: []
+                    });
+                    resetRelationLookups();
+                    syncDatasetScriptFromState({ persist: false });
+                    setActivePage(state.pages.length - 1);
+                    openTemplateModalUi();
                 }
 
                 function deleteActivePage() {
@@ -4553,6 +4577,8 @@
 
                 function closeModal() {
                     aiModal?.classList.remove("open");
+                    const pageTplId = getPageTemplateId() || DEFAULT_TEMPLATE_ID;
+                    setActiveTemplate(pageTplId, { skipApplyScript: true, skipPersist: true });
                 }
 
                 function resetPrompt() {
@@ -4756,6 +4782,9 @@
                         return '"' + p.replace(/"/g, '\\"') + '"';
                     }));
 
+                    // 5) Remove stray quotes before closing braces/brackets: ,"}]} -> ,}]}
+                    attempts.push(candidate.replace(/,\s*\"\s*([\}\]])/g, "$1"));
+
                     for (const attempt of attempts) {
                         try {
                             return JSON.parse(attempt);
@@ -4793,23 +4822,37 @@
                     if (!lines.length) return null;
                     let headerSchema = null;
                     const data = {};
+                    const tableId = getActivePage()?.tableId || createTableId(1);
                     lines.forEach(line => {
-                        const parsedLine = parseJsonQuiet(line);
+                        const parsedLine = parseJsonQuiet(line) || parseJsonTolerant(line);
                         if (!parsedLine || typeof parsedLine !== "object") return;
-                        if (parsedLine.type === "header" && parsedLine.schema) {
-                            headerSchema = parsedLine.schema;
-                            const tables = Array.isArray(headerSchema.tables) ? headerSchema.tables : [];
-                            tables.forEach(table => {
-                                const tableId = typeof table.id === "string" ? table.id : "";
-                                if (!tableId) return;
-                                const columnDefs = Array.isArray(table.columns) ? table.columns : [];
-                                data[tableId] = {
-                                    columnDefs,
-                                    rowData: []
-                                };
-                            });
+                        if (parsedLine.type === "header" && (parsedLine.schema || parsedLine.columns)) {
+                            const columns = Array.isArray(parsedLine?.schema?.columns)
+                                ? parsedLine.schema.columns
+                                : Array.isArray(parsedLine.columns)
+                                    ? parsedLine.columns
+                                    : [];
+                            headerSchema = {
+                                tables: [
+                                    {
+                                        id: tableId,
+                                        title: getActivePage()?.title || tableId,
+                                        primaryKey: DEFAULT_PRIMARY_KEY,
+                                        columns
+                                    }
+                                ]
+                            };
+                            data[tableId] = {
+                                columnDefs: columns,
+                                rowData: []
+                            };
                         } else if (parsedLine.type === "row" && parsedLine.table && parsedLine.data) {
                             const tableId = parsedLine.table;
+                            if (!data[tableId]) {
+                                data[tableId] = { columnDefs: [], rowData: [] };
+                            }
+                            data[tableId].rowData.push(parsedLine.data);
+                        } else if (parsedLine.type === "row" && parsedLine.data) {
                             if (!data[tableId]) {
                                 data[tableId] = { columnDefs: [], rowData: [] };
                             }
@@ -4826,32 +4869,60 @@
                         header: null,
                         data: {},
                         rowCounts: {},
+                        pendingRows: [],
                         finished: false
                     };
                 }
 
-                function applyStreamingHeader(state, schema, options = {}) {
-                    if (!schema || typeof schema !== "object") return;
-                    state.header = schema;
-                    state.data = {};
-                    state.rowCounts = {};
-                    const tables = Array.isArray(schema.tables) ? schema.tables : [];
-                    tables.forEach(table => {
-                        const tableId = typeof table?.id === "string" ? table.id : "";
-                        if (!tableId) return;
-                        const columnDefs = Array.isArray(table.columns) ? table.columns : [];
-                        state.data[tableId] = { columnDefs, rowData: [] };
-                        state.rowCounts[tableId] = 0;
-                    });
-                    applyDatasetToState(
-                        { schema, data: state.data },
-                        { markAsAi: true, activeTableId: options.activeTableId }
-                    );
+                function getStreamingTableId(activeTableId) {
+                    return activeTableId || getActivePage()?.tableId || createTableId(1);
                 }
 
-                function handleStreamingRow(state, rowPayload) {
-                    if (!state.header || !rowPayload || typeof rowPayload !== "object") return;
-                    const tableId = typeof rowPayload.table === "string" ? rowPayload.table : "";
+                function applyStreamingHeader(state, schema, options = {}) {
+                    if (!schema || typeof schema !== "object") return;
+                    const tableId = getStreamingTableId(options.activeTableId);
+                    const columns = Array.isArray(schema?.columns)
+                        ? schema.columns
+                        : Array.isArray(schema?.tables?.[0]?.columns)
+                            ? schema.tables[0].columns
+                            : [];
+                    const normalizedSchema = {
+                        tables: [
+                            {
+                                id: tableId,
+                                title: getActivePage()?.title || tableId,
+                                primaryKey: DEFAULT_PRIMARY_KEY,
+                                columns
+                            }
+                        ]
+                    };
+                    state.header = normalizedSchema;
+                    state.data = { [tableId]: { columnDefs: columns, rowData: [] } };
+                    state.rowCounts = { [tableId]: 0 };
+                    applyDatasetToState(
+                        { schema: normalizedSchema, data: state.data },
+                        { markAsAi: true, activeTableId: options.activeTableId || tableId }
+                    );
+                    // If some rows arrived before the header, apply them now.
+                    if (Array.isArray(state.pendingRows) && state.pendingRows.length) {
+                        state.pendingRows.forEach(rowPayload => {
+                            handleStreamingRow(state, rowPayload, { activeTableId: options.activeTableId || tableId });
+                        });
+                        state.pendingRows = [];
+                    }
+                }
+
+                function handleStreamingRow(state, rowPayload, options = {}) {
+                    if (!rowPayload || typeof rowPayload !== "object") return;
+                    if (!state.header) {
+                        // Queue rows that arrive before the header.
+                        state.pendingRows = state.pendingRows || [];
+                        state.pendingRows.push(rowPayload);
+                        return;
+                    }
+                    const tableId = typeof rowPayload.table === "string" && rowPayload.table
+                        ? rowPayload.table
+                        : getStreamingTableId(options?.activeTableId);
                     if (!tableId) return;
                     const rowData = rowPayload.data && typeof rowPayload.data === "object" ? rowPayload.data : {};
                     if (!state.data[tableId]) {
@@ -4895,10 +4966,10 @@
                         if (!trimmed) return;
                         const parsed = parseJsonQuiet(trimmed);
                         if (!parsed || typeof parsed !== "object") return;
-                        if (parsed.type === "header" && parsed.schema) {
-                            applyStreamingHeader(state, parsed.schema, { activeTableId: options.activeTableId });
+                        if (parsed.type === "header" && (parsed.schema || parsed.columns)) {
+                            applyStreamingHeader(state, parsed.schema || { columns: parsed.columns }, { activeTableId: options.activeTableId });
                         } else if (parsed.type === "row") {
-                            handleStreamingRow(state, parsed);
+                            handleStreamingRow(state, parsed, { activeTableId: options.activeTableId });
                         } else if (parsed.type === "done") {
                             finalizeStreamingDataset(state, { activeTableId: options.activeTableId });
                         }
@@ -4939,14 +5010,7 @@
                 }
 
                 function isIsoDateTime(value) {
-                    // Accepts formats like:
-                    //  YYYY-MM-DDTHH:MM:SS
-                    //  YYYY-MM-DDTHH:MM:SS.sss
-                    //  YYYY-MM-DDTHH:MM:SSZ
-                    //  YYYY-MM-DDTHH:MM:SS.sssZ
-                    //  YYYY-MM-DDTHH:MM:SS+02:00
-                    //  YYYY-MM-DDTHH:MM:SS.sss-05:00
-                    return typeof value === "string" && /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?(?:Z|[+\-][0-9]{2}:[0-9]{2})?$/.test(value);
+                    return typeof value === "string" && /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$/.test(value);
                 }
 
                 function isIsoTime(value) {
@@ -4970,80 +5034,6 @@
                 function getTodayUtc() {
                     const now = new Date();
                     return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-                }
-
-                function formatFullIsoDateTimeUtc(date) {
-                    const y = date.getUTCFullYear();
-                    const m = pad2(date.getUTCMonth() + 1);
-                    const d = pad2(date.getUTCDate());
-                    const hh = pad2(date.getUTCHours());
-                    const mm = pad2(date.getUTCMinutes());
-                    const ss = pad2(date.getUTCSeconds());
-                    return `${y}-${m}-${d}T${hh}:${mm}:${ss}`;
-                }
-
-                function tryParseEuropeanDateTime(raw) {
-                    if (typeof raw !== 'string') return null;
-                    // dd/mm/yyyy[ hh:MM[:ss]] or dd-mm-yyyy
-                    const m = raw.trim().match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
-                    if (!m) return null;
-                    const day = parseInt(m[1], 10);
-                    const mon = parseInt(m[2], 10) - 1;
-                    const year = parseInt(m[3], 10);
-                    const hh = m[4] ? parseInt(m[4], 10) : 0;
-                    const mm = m[5] ? parseInt(m[5], 10) : 0;
-                    const ss = m[6] ? parseInt(m[6], 10) : 0;
-                    return new Date(Date.UTC(year, mon, day, hh, mm, ss));
-                }
-
-                function tryParseIsoLikeWithSpace(raw) {
-                    if (typeof raw !== 'string') return null;
-                    // Accept 'YYYY-MM-DD HH:MM[:SS]' or 'YYYY/MM/DD HH:MM'
-                    const m = raw.trim().match(/^(\d{4})[\-\/]?(\d{2})[\-\/]?(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
-                    if (!m) return null;
-                    const year = parseInt(m[1], 10);
-                    const mon = parseInt(m[2], 10) - 1;
-                    const day = parseInt(m[3], 10);
-                    const hh = m[4] ? parseInt(m[4], 10) : 0;
-                    const mm = m[5] ? parseInt(m[5], 10) : 0;
-                    const ss = m[6] ? parseInt(m[6], 10) : 0;
-                    return new Date(Date.UTC(year, mon, day, hh, mm, ss));
-                }
-
-                function coerceTemporalValue(raw, expectedType) {
-                    if (raw == null) return raw;
-                    const s = String(raw).trim();
-                    if (!s) return raw;
-                    if (expectedType === 'date') {
-                        if (isIsoDate(s)) return s;
-                        if (isIsoDateTime(s)) return s.slice(0, 10);
-                        // Try european dd/mm/yyyy
-                        const dt1 = tryParseEuropeanDateTime(s);
-                        if (dt1) return formatIsoDateUtc(dt1);
-                        const dt2 = tryParseIsoLikeWithSpace(s);
-                        if (dt2) return formatIsoDateUtc(dt2);
-                        // Last resort: Date.parse
-                        const parsed = Date.parse(s);
-                        if (!Number.isNaN(parsed)) return formatIsoDateUtc(new Date(parsed));
-                        return raw;
-                    }
-                    if (expectedType === 'dateTime') {
-                        if (isIsoDateTime(s) || isIsoDate(s)) {
-                            if (isIsoDateTime(s)) return s;
-                            // iso date -> start of day
-                            const d = dateFromIsoDate(s);
-                            if (d) return formatFullIsoDateTimeUtc(d);
-                            return s;
-                        }
-                        const dt1 = tryParseEuropeanDateTime(s);
-                        if (dt1) return formatFullIsoDateTimeUtc(dt1);
-                        const dt2 = tryParseIsoLikeWithSpace(s);
-                        if (dt2) return formatFullIsoDateTimeUtc(dt2);
-                        const parsed = Date.parse(s);
-                        if (!Number.isNaN(parsed)) return formatFullIsoDateTimeUtc(new Date(parsed));
-                        return raw;
-                    }
-                    return raw;
                 }
 
                 function addDaysUtc(date, days) {
@@ -6933,6 +6923,7 @@
                 }
 
                 function applyDatasetToState(dataset, options = {}) {
+                    const anchorPageId = (state.pages?.[state.activeIndex] || {})?.id || null;
                     const normalizedSchema = normalizeDatasetSchema(dataset);
                     if (!normalizedSchema.tables.length) {
                         throw new Error("Dataset sans schema.tables");
@@ -6951,13 +6942,20 @@
                                 title: table.title,
                                 primaryKey: table.primaryKey || DEFAULT_PRIMARY_KEY,
                                 relations: table.relations || [],
+                                templateId:
+                                    existing?.templateId ||
+                                    getPageTemplateId(existing) ||
+                                    getPageTemplateId() ||
+                                    state.activeTemplateId ||
+                                    DEFAULT_TEMPLATE_ID,
                                 scenario: existing?.scenario || getActivePage()?.scenario || "",
                                 data: {
                                     columnDefs: Array.isArray(tableData.columnDefs) ? tableData.columnDefs : [],
                                     rowData: Array.isArray(tableData.rowData) ? tableData.rowData : []
                                 }
                             },
-                            index
+                            index,
+                            state.activeTemplateId || DEFAULT_TEMPLATE_ID
                         );
                         return normalized;
                     });
@@ -6982,6 +6980,12 @@
                         const tplState = getActiveTemplateState();
                         tplState.lastAiDatasetScript = state.datasetScript || tplState.datasetScript || "";
                         state.lastAiDatasetScript = tplState.lastAiDatasetScript;
+                        state.scenarioGeneratedTables = state.scenarioGeneratedTables && typeof state.scenarioGeneratedTables === "object"
+                            ? state.scenarioGeneratedTables
+                            : {};
+                        if (anchorPageId) {
+                            state.scenarioGeneratedTables[anchorPageId] = normalizedSchema.tables.map(table => table.id);
+                        }
                     }
 
                     renderTabs();
@@ -6989,9 +6993,12 @@
                     persistState();
                 }
 
-                async function requestData() {
+                async function requestData(options = {}) {
+                    const retryCount = Number.isFinite(options.retryCount) ? options.retryCount : 0;
+                    const pageTplId = getPageTemplateId() || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                    setActiveTemplate(pageTplId, { skipApplyScript: true, skipPersist: true });
                     const tplState = syncTemplateStateFromUI();
-                    const tplConfig = getActiveTemplateConfig();
+                    const tplConfig = getTemplateConfigById(pageTplId);
                     const controller = new AbortController();
                     activeRequestController = controller;
                     setLoading(true);
@@ -7023,6 +7030,8 @@
                     messages.push({ role: "user", content: userPrompt });
 
                     const streamingState = createStreamingDatasetState();
+                    const isTree = isTreeTemplateActive();
+                    const useStream = !isTree;
 
                     try {
                         const payload = {
@@ -7033,16 +7042,20 @@
                             messages,
                             reasoning: { effort: state.reasoningEffort || "low" },
                             attachments: fileAttachments,
-                            stream: true
+                            stream: useStream
                         };
-                        const response = await window.GoToolkitIA.chatCompletion({
-                            payload,
-                            stopCondition: () => false,
-                            signal: controller.signal,
-                            onChunk: chunk => {
-                                handleStreamingChunk(streamingState, chunk, { activeTableId: page?.tableId });
-                            }
-                        });
+                        const response = await window.GoToolkitIA.chatCompletion(
+                            useStream
+                                ? {
+                                    payload,
+                                    stopCondition: () => false,
+                                    signal: controller.signal,
+                                    onChunk: chunk => {
+                                        handleStreamingChunk(streamingState, chunk, { activeTableId: page?.tableId });
+                                    }
+                                }
+                                : { payload, signal: controller.signal }
+                        );
                         const cleaned = cleanJson(response);
                         if (gridScript) {
                             gridScript.value = cleaned;
@@ -7052,17 +7065,8 @@
                         state.datasetScript = cleaned;
                         const ndjsonDataset = parseNdjsonDataset(cleaned);
                         const parsed = streamingState.finished ? null : (ndjsonDataset || parseJsonTolerant(cleaned));
-                        if (!parsed || typeof parsed !== "object") {
-                            if (streamingState.header) {
-                                finalizeStreamingDataset(streamingState, { activeTableId: page?.tableId });
-                                showStatus("Jeu de données mis à jour.");
-                                return;
-                            }
-                            throw new Error("Réponse IA invalide");
-                        }
-                        const isTree = isTreeTemplateActive();
                         const treeDataset = isTree ? normalizeTreePayload(parsed) : null;
-                        if (treeDataset) {
+                        if (isTree && treeDataset) {
                             const treeRows = Array.isArray(treeDataset?.data?.structure?.rowData)
                                 ? treeDataset.data.structure.rowData.length
                                 : 0;
@@ -7078,6 +7082,7 @@
                                     title: providedTitle,
                                     primaryKey: "id",
                                     relations: [],
+                                    templateId: state.activeTemplateId || "tree-structure",
                                     scenario: page?.scenario || "",
                                     data: {
                                         columnDefs: Array.isArray(structure.columnDefs) ? structure.columnDefs : [],
@@ -7086,6 +7091,7 @@
                                 }
                             ];
                             state.activeIndex = 0;
+                            state.activeTemplateId = state.activeTemplateId || "tree-structure";
                             state.schema = {
                                 tables: [
                                     {
@@ -7110,9 +7116,12 @@
                             try {
                                 renderTabs();
                                 setActivePage(0);
+                                renderTemplateSelect();
+                                renderTemplateMeta();
                             } catch (e) {
                                 /* ignore */
                             }
+                            applyGridDisplayPreferences({ persist: false });
                             const exportedRows = prepareTreeRowsForExport(structure.rowData || []);
                             const treeScriptPayload = exportedRows.length ? { rows: exportedRows } : treeDataset;
                             if (gridScript && typeof gridScript.value === "string") {
@@ -7120,7 +7129,26 @@
                             }
                             syncDatasetScriptFromState({ persist: false });
                             persistState();
-                        } else if (parsed?.schema && parsed?.data) {
+                            showStatus("Jeu de données mis à jour.");
+                            return;
+                        }
+                        if (!parsed || typeof parsed !== "object") {
+                            const parseError = new Error("Réponse IA invalide");
+                            parseError.code = "INVALID_DATASET";
+                            throw parseError;
+                        }
+                        const isStream = Boolean(parsed?.schema && parsed?.data);
+                        if (!isStream && !parsed.schema && !parsed.data) {
+                            if (streamingState.header) {
+                                finalizeStreamingDataset(streamingState, { activeTableId: page?.tableId });
+                                showStatus("Jeu de données mis à jour.");
+                                return;
+                            }
+                            const parseError = new Error("Réponse IA invalide");
+                            parseError.code = "INVALID_DATASET";
+                            throw parseError;
+                        }
+                        if (parsed?.schema && parsed?.data) {
                             applyDatasetToState(parsed, { markAsAi: true, activeTableId: page?.tableId });
                         } else if (!isTree) {
                             const dataset =
@@ -7141,6 +7169,11 @@
                             if (!pendingAbortStatus) {
                                 showStatus("Requête annulée.", true);
                             }
+                        } else if (err && err.code === "INVALID_DATASET" && retryCount < 1) {
+                            console.warn("Requête IA: JSON invalide, nouvelle tentative...");
+                            showStatus("Réponse JSON invalide, nouvelle tentative…", true);
+                            setLoading(false);
+                            return requestData({ retryCount: retryCount + 1 });
                         } else {
                             console.error("Erreur IA", err);
                             showStatus("Impossible de générer le dataset.", true);
@@ -7153,19 +7186,42 @@
                 }
 
                 function clearGrid() {
-                    state.pages.forEach(page => {
-                        const columnDefs = Array.isArray(page?.data?.columnDefs) ? page.data.columnDefs : [];
-                        page.data = { columnDefs, rowData: [] };
-                    });
-                    resetRelationLookups();
                     const activePage = getActivePage();
-                    if (activePage) {
-                        applyGridData(activePage.data, { tableId: activePage.tableId });
+                    if (!activePage) return;
+                    const tableIds =
+                        (state.scenarioGeneratedTables && state.scenarioGeneratedTables[activePage.id]) ||
+                        [activePage.tableId];
+                    const tableSet = new Set((tableIds || []).filter(Boolean));
+                    const templateId = getPageTemplateId(activePage) || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                    const resetPage = {
+                        ...createPage(1),
+                        title: "Page 1",
+                        templateId
+                    };
+                    state.pages = [resetPage];
+                    state.activeIndex = 0;
+                    state.schema = {
+                        tables: [
+                            {
+                                id: resetPage.tableId,
+                                title: resetPage.title,
+                                primaryKey: resetPage.primaryKey,
+                                columns: [],
+                                relations: []
+                            }
+                        ]
+                    };
+                    state.scenarioGeneratedTables = {};
+                    resetRelationLookups();
+                    if (gridTitleInput) {
+                        gridTitleInput.value = resetPage.title;
                     }
+                    renderTabs();
+                    applyGridData(resetPage.data, { tableId: resetPage.tableId });
                     resetRelationLookups();
                     syncDatasetScriptFromState();
                     scheduleNaturalFilterRecalc();
-                    showStatus("Grille et script vidés.");
+                    showStatus("Données issues du scénario vidées. Retour à une page vierge.");
                 }
 
                 function applyScriptToGrid(options = {}) {
@@ -7332,10 +7388,13 @@
                 if (templateApplyBtn) {
                     templateApplyBtn.addEventListener("click", event => {
                         event.preventDefault();
+                        const page = getActivePage();
+                        if (!page || pageHasTemplate(page)) {
+                            templateApplyBtn.disabled = true;
+                            return;
+                        }
                         const selectedId = templateCardList?.dataset?.selectedId || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
-                        const shouldReset = pendingNewPage || true;
-                        setActiveTemplate(selectedId, { skipApplyScript: true, resetPage: shouldReset });
-                        pendingNewPage = false;
+                        setActiveTemplate(selectedId, { skipApplyScript: true, assignToPage: true });
                         closeTemplateModalUi();
                     });
                 }
@@ -7348,14 +7407,13 @@
                 if (templateModal) {
                     templateModal.addEventListener("click", event => {
                         if (event.target === templateModal) {
-                            pendingNewPage = false;
                             closeTemplateModalUi();
                         }
                     });
                 }
                 if (aiTemplateSelect) {
                     aiTemplateSelect.addEventListener("change", event => {
-                        setActiveTemplate(event.target.value, { skipApplyScript: true, resetPage: true });
+                        setActiveTemplate(event.target.value, { skipApplyScript: true, assignToPage: false });
                     });
                 }
                 if (shareCreateBtn) {
