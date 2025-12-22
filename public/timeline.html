@@ -2684,11 +2684,11 @@
                     if (Array.isArray(persistedState.views) && persistedState.views.length) {
                         views = persistedState.views.map(function (view, index) {
                             return {
-                                    name: view.name || view.title || ("Page " + (index + 1)),
-                                    title: view.title || view.name || ("Page " + (index + 1)),
-                                    planning: view.planning || null,
-                                    context: normalizeContextState(view.context)
-                                };
+                                name: view.name || view.title || ("Page " + (index + 1)),
+                                title: view.title || view.name || ("Page " + (index + 1)),
+                                planning: view.planning || null,
+                                context: normalizeContextState(view.context)
+                            };
                         });
                     } else if (persistedState.groups) {
                         var defaultLabel = persistedState.label || persistedState.name || "";

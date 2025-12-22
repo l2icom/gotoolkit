@@ -744,7 +744,7 @@ Règles lignes :
         {
             id: "data-mock",
             label: "Données fictives",
-            description: "Génère un flux NDJSON strictement formaté pour tester une grille unique.",
+            description: "Génère des données pour des tests ou de la conception",
             defaultPromptTemplate: gridPromptTemplates.mockData || gridMockPromptTemplate,
             defaultSystemPrompt: gridSystemPrompts.mockData || gridSystemPrompt,
             parser: "flat"

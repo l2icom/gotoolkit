@@ -3541,7 +3541,7 @@
                 const page = getActivePage();
                 promptInput.value = page?.input || "";
                 mermaidOutput.value = page?.mermaid || "";
-                    if (diagramTitleInput) {
+                if (diagramTitleInput) {
                     diagramTitleInput.value = page?.title || page?.label || `Page ${state.activeIndex + 1}`;
                     diagramTitleInput.readOnly = true;
                 }
