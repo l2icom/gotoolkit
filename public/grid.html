@@ -1352,6 +1352,7 @@
         <img src="logo.gif" alt="Logo Go-Toolkit">
         <strong>Module Grid (Le Cardinal)</strong>
         <p>Les tableaux générés ici peuvent être partagés et exportés pour enrichir vos capsules métier.</p>
+        <span>Version 2025.12.22</span>
         <button id="closeInfoPopup" type="button" class="btn-primary">Réinitialiser</button>
     </div>
 
@@ -1624,14 +1625,16 @@
                         primaryKey: DEFAULT_PRIMARY_KEY,
                         relations: [],
                         templateId: "",
+                        promptTemplate: DEFAULT_PROMPT_TEMPLATE,
+                        systemPrompt: DEFAULT_SYSTEM_PROMPT,
                         scenario: "",
-                        script: "",
-                        lastAiScript: "",
+                        datasetScript: "",
+                        lastAiDatasetScript: "",
                         data: { columnDefs: [], rowData: [] }
                     };
                 }
 
-                function normalizePage(page, index, fallbackTemplateId = "") {
+                function normalizePage(page, index, fallbackTemplateId = "", templateState = null) {
                     if (!page || typeof page !== "object") {
                         return createPage(index + 1);
                     }
@@ -1643,6 +1646,7 @@
                         typeof page.templateId === "string" && page.templateId.trim()
                             ? page.templateId.trim()
                             : (typeof fallbackTemplateId === "string" ? fallbackTemplateId.trim() : "");
+                    const templateConfig = getTemplateConfigById(templateId || DEFAULT_TEMPLATE_ID);
                     return {
                         id: page.id || `page-${Date.now()}-${index}`,
                         tableId,
@@ -1653,9 +1657,20 @@
                                 : DEFAULT_PRIMARY_KEY,
                         relations: Array.isArray(page.relations) ? page.relations : [],
                         templateId,
-                        scenario: page.scenario || "",
-                        script: page.script || "",
-                        lastAiScript: page.lastAiScript || "",
+                        promptTemplate:
+                            page.promptTemplate ||
+                            templateState?.promptTemplate ||
+                            templateConfig?.defaultPromptTemplate ||
+                            DEFAULT_PROMPT_TEMPLATE,
+                        systemPrompt:
+                            page.systemPrompt ||
+                            templateState?.systemPrompt ||
+                            templateConfig?.defaultSystemPrompt ||
+                            DEFAULT_SYSTEM_PROMPT,
+                        scenario: page.scenario || templateState?.scenario || "",
+                        datasetScript: page.datasetScript || page.script || templateState?.datasetScript || "",
+                        lastAiDatasetScript:
+                            page.lastAiDatasetScript || page.lastAiScript || templateState?.lastAiDatasetScript || "",
                         data: page.data && typeof page.data === "object"
                             ? {
                                 columnDefs: Array.isArray(page.data.columnDefs) ? page.data.columnDefs : [],
@@ -1806,15 +1821,15 @@
                     ]
                 };
                 const TREE_EMPTY_ROW = {
-                    id: "objet",
-                    name: "Objet",
-                    path: ["Objet"],
-                    type: "object",
+                    id: "liste",
+                    name: "Liste",
+                    path: ["Liste"],
+                    type: "array",
                     format: "",
                     definition: "",
                     sample: "",
-                    source: "Src",
-                    relation: "1..1"
+                    source: "",
+                    relation: "1..n"
                 };
                 const TREE_TYPE_OPTIONS = [
                     "array",
@@ -2452,7 +2467,7 @@
                     const activePage = getActivePage();
 
                     if (isMockTemplate) {
-                        next = (activePage?.script || "").trim();
+                        next = (activePage?.datasetScript || "").trim();
                     } else if (isTree) {
                         const rows = prepareTreeRowsForExport(activePage?.data?.rowData || []);
                         next = rows.length ? JSON.stringify({ rows }, null, 2) : "";
@@ -2462,11 +2477,11 @@
                         next = hasContent ? JSON.stringify(dataset, null, 2) : "";
                     }
 
-                    const tplState = getActiveTemplateState();
-                    tplState.datasetScript = next;
-                    state.datasetScript = next;
+                    if (activePage) {
+                        activePage.datasetScript = next;
+                    }
                     if (isMockTemplate && activePage) {
-                        activePage.script = next;
+                        activePage.datasetScript = next;
                     }
                     if (gridScript) {
                         gridScript.value = next;
@@ -2477,65 +2492,38 @@
                     return dataset;
                 }
 
-                function normalizeTemplateState(raw, templateConfig) {
-                    const basePrompt = templateConfig?.defaultPromptTemplate || DEFAULT_PROMPT_TEMPLATE;
-                    const baseSystem = templateConfig?.defaultSystemPrompt || DEFAULT_SYSTEM_PROMPT;
-                    if (!raw || typeof raw !== "object") {
-                        return {
-                            promptTemplate: basePrompt,
-                            systemPrompt: baseSystem,
-                            scenario: "",
-                            datasetScript: "",
-                            lastAiDatasetScript: ""
-                        };
-                    }
-                    return {
-                        promptTemplate: raw.promptTemplate || basePrompt,
-                        systemPrompt: raw.systemPrompt || baseSystem,
-                        scenario: raw.scenario || "",
-                        datasetScript: typeof raw.datasetScript === "string" ? raw.datasetScript : "",
-                        lastAiDatasetScript:
-                            typeof raw.lastAiDatasetScript === "string" ? raw.lastAiDatasetScript : ""
-                    };
-                }
-
                 function loadState() {
                     try {
                         const raw = localStorage.getItem(STORAGE_KEY);
                         if (!raw) {
-                            const templateStates = {};
-                            GRID_TEMPLATES.forEach(tpl => {
-                                templateStates[tpl.id] = normalizeTemplateState(null, tpl);
-                            });
                             return {
                                 pages: [],
                                 activeIndex: 0,
-                                promptTemplate: DEFAULT_PROMPT_TEMPLATE,
-                                systemPrompt: DEFAULT_SYSTEM_PROMPT,
                                 reasoningEffort: "low",
                                 displayPreferences: { ...DISPLAY_PREFERENCE_DEFAULTS },
                                 activeTemplateId: DEFAULT_TEMPLATE_ID,
-                                templateStates,
                                 schema: { tables: [] },
-                                datasetScript: "",
-                                lastAiDatasetScript: "",
                                 scenarioGeneratedTables: {}
                             };
                         }
                         const parsed = JSON.parse(raw);
-                        const templateStates = {};
-                        GRID_TEMPLATES.forEach(tpl => {
-                            const rawTpl = parsed?.templateStates?.[tpl.id];
-                            templateStates[tpl.id] = normalizeTemplateState(rawTpl, tpl);
-                        });
                         const activeTemplateId =
                             (parsed && typeof parsed.activeTemplateId === "string" && parsed.activeTemplateId.trim()) ||
                             DEFAULT_TEMPLATE_ID;
                         const fallbackTemplateId =
                             (parsed && typeof parsed.activeTemplateId === "string" && parsed.activeTemplateId.trim()) ||
                             DEFAULT_TEMPLATE_ID;
+                        const templateStateMap =
+                            parsed && typeof parsed.templateStates === "object" ? parsed.templateStates : {};
                         const pages = Array.isArray(parsed.pages)
-                            ? parsed.pages.map((page, index) => normalizePage(page, index, fallbackTemplateId))
+                            ? parsed.pages.map((page, index) => {
+                                const templateId =
+                                    typeof page?.templateId === "string" && page.templateId.trim()
+                                        ? page.templateId.trim()
+                                        : fallbackTemplateId;
+                                const templateState = templateStateMap[templateId];
+                                return normalizePage(page, index, fallbackTemplateId, templateState);
+                            })
                             : [createPage(1)];
                         const activeIndex = Math.max(0, Math.min((parsed.activeIndex || 0), pages.length - 1));
                         const schemaTables = Array.isArray(parsed?.schema?.tables)
@@ -2560,15 +2548,10 @@
                         return {
                             pages,
                             activeIndex,
-                            promptTemplate: parsed.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
-                            systemPrompt: parsed.systemPrompt || DEFAULT_SYSTEM_PROMPT,
                             reasoningEffort: parsed.reasoningEffort || "low",
                             displayPreferences: Object.assign({}, DISPLAY_PREFERENCE_DEFAULTS, parsed.displayPreferences || {}),
                             activeTemplateId,
-                            templateStates,
                             schema: { tables: schemaTables },
-                            datasetScript: typeof parsed.datasetScript === "string" ? parsed.datasetScript : "",
-                            lastAiDatasetScript: typeof parsed.lastAiDatasetScript === "string" ? parsed.lastAiDatasetScript : "",
                             scenarioGeneratedTables:
                                 parsed && typeof parsed.scenarioGeneratedTables === "object"
                                     ? parsed.scenarioGeneratedTables
@@ -2576,22 +2559,13 @@
                         };
                     } catch (err) {
                         console.warn("Impossible de charger l'état Grid", err);
-                        const templateStates = {};
-                        GRID_TEMPLATES.forEach(tpl => {
-                            templateStates[tpl.id] = normalizeTemplateState(null, tpl);
-                        });
                         return {
                             pages: [],
                             activeIndex: 0,
-                            promptTemplate: DEFAULT_PROMPT_TEMPLATE,
-                            systemPrompt: DEFAULT_SYSTEM_PROMPT,
                             reasoningEffort: "low",
                             displayPreferences: { ...DISPLAY_PREFERENCE_DEFAULTS },
                             activeTemplateId: DEFAULT_TEMPLATE_ID,
-                            templateStates,
                             schema: { tables: [] },
-                            datasetScript: "",
-                            lastAiDatasetScript: "",
                             scenarioGeneratedTables: {}
                         };
                     }
@@ -2612,21 +2586,37 @@
                     return "🧪";
                 }
 
-                function ensureTemplateState(id) {
-                    const tpl = getTemplateConfigById(id);
-                    state.templateStates = state.templateStates || {};
-                    if (!state.templateStates[tpl.id]) {
-                        state.templateStates[tpl.id] = normalizeTemplateState(null, tpl);
-                    }
-                    return state.templateStates[tpl.id];
-                }
-
-                function getActiveTemplateState() {
-                    return ensureTemplateState(state.activeTemplateId || DEFAULT_TEMPLATE_ID);
-                }
-
                 function getActiveTemplateConfig() {
                     return getTemplateConfigById(state.activeTemplateId || DEFAULT_TEMPLATE_ID);
+                }
+
+                function getPagePromptDefaults(page = getActivePage()) {
+                    const templateId = getPageTemplateId(page) || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                    const tplConfig = getTemplateConfigById(templateId);
+                    return {
+                        promptTemplate: tplConfig?.defaultPromptTemplate || DEFAULT_PROMPT_TEMPLATE,
+                        systemPrompt: tplConfig?.defaultSystemPrompt || DEFAULT_SYSTEM_PROMPT
+                    };
+                }
+
+                function ensurePagePromptState(page = getActivePage()) {
+                    if (!page) return;
+                    const defaults = getPagePromptDefaults(page);
+                    if (!page.promptTemplate) {
+                        page.promptTemplate = defaults.promptTemplate;
+                    }
+                    if (!page.systemPrompt) {
+                        page.systemPrompt = defaults.systemPrompt;
+                    }
+                    if (typeof page.scenario !== "string") {
+                        page.scenario = "";
+                    }
+                    if (typeof page.datasetScript !== "string") {
+                        page.datasetScript = "";
+                    }
+                    if (typeof page.lastAiDatasetScript !== "string") {
+                        page.lastAiDatasetScript = "";
+                    }
                 }
 
                 function getPageTemplateId(page = getActivePage()) {
@@ -2708,26 +2698,20 @@
                     } = options;
                     const tpl = getTemplateConfigById(templateId);
                     const previousId = state.activeTemplateId || DEFAULT_TEMPLATE_ID;
-                    syncTemplateStateFromUI();
                     state.activeTemplateId = tpl.id;
                     state.activeParser = tpl.parser || "flat";
-                    const tplState = getActiveTemplateState();
-                    state.promptTemplate = tplState.promptTemplate;
-                    state.systemPrompt = tplState.systemPrompt;
-                    state.datasetScript = tplState.datasetScript || "";
-                    state.lastAiDatasetScript = tplState.lastAiDatasetScript || "";
                     if (templateCardList) {
                         templateCardList.dataset.selectedId = tpl.id;
                     }
                     const page = getActivePage();
                     const shouldBindToPage = assignToPage && page && !getPageTemplateId(page);
                     if (page && (shouldBindToPage || getPageTemplateId(page) === tpl.id)) {
-                        page.scenario = tplState.scenario || page.scenario || "";
                         if (shouldBindToPage) {
                             page.templateId = tpl.id;
                         }
+                        ensurePagePromptState(page);
                     }
-                    applyTemplateStateToUI();
+                    applyActivePageStateToUI();
                     renderTemplateMeta();
                     if (!skipApplyScript) {
                         try {
@@ -2761,75 +2745,52 @@
                     templateModalContext = null;
                 }
 
-                function syncTemplateStateFromUI() {
-                    const tplState = getActiveTemplateState();
-                    tplState.promptTemplate = promptTemplateField?.value || tplState.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
-                    tplState.systemPrompt = systemPromptField?.value || tplState.systemPrompt || DEFAULT_SYSTEM_PROMPT;
-                    tplState.scenario = promptInput?.value || tplState.scenario || "";
-                    tplState.datasetScript = gridScript?.value || tplState.datasetScript || "";
-                    tplState.lastAiDatasetScript = tplState.lastAiDatasetScript || state.lastAiDatasetScript || "";
-                    state.promptTemplate = tplState.promptTemplate;
-                    state.systemPrompt = tplState.systemPrompt;
-                    state.datasetScript = tplState.datasetScript;
-                    state.lastAiDatasetScript = tplState.lastAiDatasetScript || "";
-                    return tplState;
-                }
-
-                function applyTemplateStateToUI() {
-                    const tplState = getActiveTemplateState();
+                function syncActivePageFromUI() {
+                    const page = getActivePage();
+                    if (!page) return null;
+                    const defaults = getPagePromptDefaults(page);
                     if (promptTemplateField) {
-                        promptTemplateField.value = tplState.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                        page.promptTemplate = promptTemplateField.value || page.promptTemplate || defaults.promptTemplate;
                     }
                     if (systemPromptField) {
-                        systemPromptField.value = tplState.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+                        page.systemPrompt = systemPromptField.value || page.systemPrompt || defaults.systemPrompt;
                     }
                     if (promptInput) {
-                        promptInput.value = tplState.scenario || "";
+                        page.scenario = promptInput.value || "";
                     }
                     if (gridScript) {
-                        const fallback = tplState.datasetScript || "";
-                        gridScript.value = getActivePageScriptOr(fallback);
+                        page.datasetScript = gridScript.value || "";
+                    }
+                    ensurePagePromptState(page);
+                    return page;
+                }
+
+                function applyActivePageStateToUI() {
+                    const page = getActivePage();
+                    const defaults = getPagePromptDefaults(page);
+                    if (promptTemplateField) {
+                        promptTemplateField.value = page?.promptTemplate || defaults.promptTemplate;
+                    }
+                    if (systemPromptField) {
+                        systemPromptField.value = page?.systemPrompt || defaults.systemPrompt;
+                    }
+                    if (promptInput) {
+                        promptInput.value = page?.scenario || "";
+                    }
+                    if (gridScript) {
+                        gridScript.value = page?.datasetScript || "";
                     }
                     renderTemplateMeta();
                 }
 
                 let state = loadState();
-                state.templateStates = state.templateStates && typeof state.templateStates === "object"
-                    ? state.templateStates
-                    : {};
-                GRID_TEMPLATES.forEach(tpl => {
-                    if (!state.templateStates[tpl.id]) {
-                        state.templateStates[tpl.id] = normalizeTemplateState(null, tpl);
-                    }
-                });
                 state.scenarioGeneratedTables =
                     state.scenarioGeneratedTables && typeof state.scenarioGeneratedTables === "object"
                         ? state.scenarioGeneratedTables
                         : {};
                 const activePageTemplateId = (state.pages?.[state.activeIndex] || {}).templateId;
                 state.activeTemplateId = activePageTemplateId || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
-                const activeTemplateState = getActiveTemplateState();
-                if (!activeTemplateState.datasetScript && state.datasetScript) {
-                    activeTemplateState.datasetScript = state.datasetScript;
-                }
-                if (!activeTemplateState.lastAiDatasetScript && state.lastAiDatasetScript) {
-                    activeTemplateState.lastAiDatasetScript = state.lastAiDatasetScript;
-                }
-                if (!activeTemplateState.promptTemplate && state.promptTemplate) {
-                    activeTemplateState.promptTemplate = state.promptTemplate;
-                }
-                if (!activeTemplateState.systemPrompt && state.systemPrompt) {
-                    activeTemplateState.systemPrompt = state.systemPrompt;
-                }
-                if (!activeTemplateState.scenario && Array.isArray(state.pages) && state.pages.length) {
-                    activeTemplateState.scenario = state.pages[state.activeIndex]?.scenario || "";
-                }
                 state.activeParser = getPageTemplateConfig().parser || "flat";
-                state.promptTemplate = activeTemplateState.promptTemplate || state.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
-                state.systemPrompt = activeTemplateState.systemPrompt || state.systemPrompt || DEFAULT_SYSTEM_PROMPT;
-                state.datasetScript = activeTemplateState.datasetScript || state.datasetScript || "";
-                state.lastAiDatasetScript =
-                    activeTemplateState.lastAiDatasetScript || state.lastAiDatasetScript || "";
                 if (!state.schema || !Array.isArray(state.schema.tables) || state.schema.tables.length === 0) {
                     state.schema = {
                         tables: state.pages.map(page => ({
@@ -2841,12 +2802,12 @@
                         }))
                     };
                 }
-                if (!state.datasetScript || !state.datasetScript.trim()) {
-                    if (state.pages.length) {
+                if (state.pages.length) {
+                    ensurePagePromptState(getActivePage());
+                    const activePage = getActivePage();
+                    if (activePage && !activePage.datasetScript.trim()) {
                         const dataset = buildDatasetFromState({ activeOnly: true });
-                        state.datasetScript = hasDatasetContent(dataset) ? JSON.stringify(dataset, null, 2) : "";
-                    } else {
-                        state.datasetScript = "";
+                        activePage.datasetScript = hasDatasetContent(dataset) ? JSON.stringify(dataset, null, 2) : "";
                     }
                 }
                 renderFontSizeOptions();
@@ -2873,19 +2834,14 @@
 
                 function persistState() {
                     try {
-                        syncTemplateStateFromUI();
+                        syncActivePageFromUI();
                         const payload = {
                             pages: state.pages.map((page, index) => normalizePage(page, index)),
                             activeIndex: Math.max(0, Math.min(state.activeIndex, state.pages.length - 1)),
-                            promptTemplate: state.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
-                            systemPrompt: state.systemPrompt || DEFAULT_SYSTEM_PROMPT,
                             reasoningEffort: state.reasoningEffort || "low",
                             displayPreferences: state.displayPreferences || { ...DISPLAY_PREFERENCE_DEFAULTS },
                             activeTemplateId: state.activeTemplateId || DEFAULT_TEMPLATE_ID,
-                            templateStates: state.templateStates || {},
                             schema: state.schema || { tables: [] },
-                            datasetScript: state.datasetScript || "",
-                            lastAiDatasetScript: state.lastAiDatasetScript || "",
                             scenarioGeneratedTables: state.scenarioGeneratedTables || {}
                         };
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -2921,8 +2877,8 @@
 
                 function getActivePageScriptOr(fallback = "") {
                     const page = getActivePage();
-                    if (page && typeof page.script === "string" && page.script.trim()) {
-                        return page.script;
+                    if (page && typeof page.datasetScript === "string" && page.datasetScript.trim()) {
+                        return page.datasetScript;
                     }
                     return fallback;
                 }
@@ -3840,14 +3796,14 @@
                     const gridData = collectGridData();
                     const title = (gridTitleInput?.value || page?.title || "Grid").trim();
                     const scenario = (promptInput?.value || "").trim();
-                    const script = gridScript?.value || "";
+                    const script = gridScript?.value || page?.datasetScript || "";
                     return {
                         title,
                         columnDefs: gridData.columnDefs,
                         rowData: gridData.rowData,
                         scenario,
                         script,
-                        lastAiScript: page?.lastAiScript || ""
+                        lastAiScript: page?.lastAiDatasetScript || ""
                     };
                 }
 
@@ -3895,7 +3851,13 @@
                         page.scenario = payload.scenario;
                     }
                     if (typeof payload.lastAiScript === "string") {
-                        page.lastAiScript = payload.lastAiScript;
+                        page.lastAiDatasetScript = payload.lastAiScript;
+                    }
+                    if (typeof payload.script === "string") {
+                        page.datasetScript = payload.script;
+                        if (gridScript) {
+                            gridScript.value = payload.script;
+                        }
                     }
                     applyGridData(page.data, { tableId: page.tableId });
                     syncDatasetScriptFromState();
@@ -4486,11 +4448,8 @@
                 }
 
                 function getGridScriptValue() {
-                    const tplState = getActiveTemplateState();
                     const pageScript = getActivePageScriptOr("");
                     if (pageScript.trim()) return pageScript;
-                    const trimmedStateScript = ((tplState?.datasetScript || state.datasetScript || "") || "").trim();
-                    if (trimmedStateScript) return trimmedStateScript;
                     const dataset = buildDatasetFromState({ activeOnly: true });
                     if (!hasDatasetContent(dataset)) return "";
                     return JSON.stringify(dataset, null, 2);
@@ -4571,6 +4530,7 @@
                 function createPageFromTemplate(templateId) {
                     const newPage = createPage(state.pages.length + 1);
                     newPage.templateId = templateId;
+                    ensurePagePromptState(newPage);
                     state.pages.push(newPage);
                     state.schema = state.schema || { tables: [] };
                     if (!Array.isArray(state.schema.tables)) state.schema.tables = [];
@@ -4605,13 +4565,14 @@
                     const pageTemplateId = getPageTemplateId(page) || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
                     setActiveTemplate(pageTemplateId, { skipApplyScript: true, skipPersist: true });
                     if (gridTitleInput) gridTitleInput.value = page.title || "";
-                    const tplState = getActiveTemplateState();
-                    if (promptInput) promptInput.value = tplState.scenario || page.scenario || "";
+                    if (promptInput) promptInput.value = page.scenario || "";
                     if (gridScript) {
-                        const fallbackScript = tplState.datasetScript || getGridScriptValue();
+                        const fallbackScript = getGridScriptValue();
                         const activeScript = getActivePageScriptOr(fallbackScript);
                         gridScript.value = activeScript;
-                        state.datasetScript = activeScript;
+                        if (page) {
+                            page.datasetScript = activeScript;
+                        }
                     }
                     try {
                         gridApi?.setFilterModel?.(null);
@@ -4666,7 +4627,7 @@
 
                 function openModal() {
                     aiModal?.classList.add("open");
-                    applyTemplateStateToUI();
+                    applyActivePageStateToUI();
                 }
 
                 function closeModal() {
@@ -4686,9 +4647,7 @@
                 }
 
                 function applyPromptSettings() {
-                    const tplState = syncTemplateStateFromUI();
-                    state.promptTemplate = tplState.promptTemplate;
-                    state.systemPrompt = tplState.systemPrompt;
+                    syncActivePageFromUI();
                     state.reasoningEffort = state.reasoningEffort || "low";
                     persistState();
                     closeModal();
@@ -7169,9 +7128,10 @@
 
                     syncDatasetScriptFromState({ persist: false });
                     if (options.markAsAi) {
-                        const tplState = getActiveTemplateState();
-                        tplState.lastAiDatasetScript = state.datasetScript || tplState.datasetScript || "";
-                        state.lastAiDatasetScript = tplState.lastAiDatasetScript;
+                        const page = getActivePage();
+                        if (page) {
+                            page.lastAiDatasetScript = page.datasetScript || "";
+                        }
                         state.scenarioGeneratedTables = state.scenarioGeneratedTables && typeof state.scenarioGeneratedTables === "object"
                             ? state.scenarioGeneratedTables
                             : {};
@@ -7187,19 +7147,22 @@
 
                 async function requestData(options = {}) {
                     const retryCount = Number.isFinite(options.retryCount) ? options.retryCount : 0;
-                    const pageTplId = getPageTemplateId() || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                    const page = getActivePage();
+                    const pageTplId = getPageTemplateId(page) || DEFAULT_TEMPLATE_ID;
                     setActiveTemplate(pageTplId, { skipApplyScript: true, skipPersist: true });
-                    const tplState = syncTemplateStateFromUI();
+                    ensurePagePromptState(page);
+                    syncActivePageFromUI();
                     const tplConfig = getTemplateConfigById(pageTplId);
                     const controller = new AbortController();
                     activeRequestController = controller;
                     setLoading(true);
                     showStatus("Génération en cours…");
-                    const page = getActivePage();
                     const scenarioText = (promptInput?.value || "").trim();
-                    const scriptText = (gridScript?.value || tplState.datasetScript || state.datasetScript || "").trim();
-                    const promptTemplate = tplState.promptTemplate || tplConfig.defaultPromptTemplate || DEFAULT_PROMPT_TEMPLATE;
-                    const systemPrompt = tplState.systemPrompt || tplConfig.defaultSystemPrompt || DEFAULT_SYSTEM_PROMPT;
+                    const scriptText = (gridScript?.value || page?.datasetScript || "").trim();
+                    const promptTemplate =
+                        page?.promptTemplate || tplConfig.defaultPromptTemplate || DEFAULT_PROMPT_TEMPLATE;
+                    const systemPrompt =
+                        page?.systemPrompt || tplConfig.defaultSystemPrompt || DEFAULT_SYSTEM_PROMPT;
                     const userPrompt = promptTemplate.replace("{{scenario_prompt}}", scenarioText || "ton sujet");
                     const fileAttachments = isOpenAIBackendSelected() ? getUploadedFileAttachments() : [];
 
@@ -7253,12 +7216,12 @@
                         if (gridScript) {
                             gridScript.value = cleaned;
                         }
-                        const activeTplState = getActiveTemplateState();
-                        activeTplState.datasetScript = cleaned;
-                        state.datasetScript = cleaned;
+                        if (page) {
+                            page.datasetScript = cleaned;
+                        }
                         if (isMockTemplate) {
                             if (page) {
-                                page.script = cleaned;
+                                page.datasetScript = cleaned;
                             }
                             const mockDataset = parseMockDataNdjson(cleaned);
                             if (!mockDataset) {
@@ -7271,7 +7234,7 @@
                             applyDatasetToState(mockDataset, {
                                 markAsAi: true,
                                 activeTableId: page?.tableId,
-                                allowTitleUpdate: Boolean(mockTitle)
+                                allowTitleUpdate: false
                             });
                             syncDatasetScriptFromState({ persist: false });
                             showStatus("Jeu de données fictives appliqué.");
@@ -7320,7 +7283,7 @@
                             applyDatasetToState(normalizedDataset, {
                                 markAsAi: true,
                                 activeTableId: tableId,
-                                allowTitleUpdate: Boolean(aiTitle)
+                                allowTitleUpdate: false
                             });
                             applyGridDisplayPreferences({ persist: false });
                             const exportedRows = prepareTreeRowsForExport(structure.rowData || []);
@@ -7399,6 +7362,7 @@
                         title: "Page 1",
                         templateId
                     };
+                    ensurePagePromptState(resetPage);
                     state.pages = [resetPage];
                     state.activeIndex = 0;
                     state.schema = {
@@ -7438,9 +7402,8 @@
                     }
                     const currentPage = getActivePage();
                     if (currentPage) {
-                        currentPage.script = raw;
+                        currentPage.datasetScript = raw;
                     }
-                    state.datasetScript = raw;
                     try {
                         const isMockTemplate = getActiveTemplateConfig()?.id === "data-mock";
                         if (isMockTemplate) {
@@ -7492,10 +7455,10 @@
                             showStatus("Réponse IA sans arbre ('rows' ou 'tree'). Ajoute \"rows\": [...] dans la sortie.", true);
                             throw new Error("Réponse IA invalide pour le modèle 'Structure de données' (champ rows/tree manquant)");
                         }
-                        const tplState = getActiveTemplateState();
-                        tplState.datasetScript = state.datasetScript || gridScript.value || "";
-                        tplState.lastAiDatasetScript = tplState.datasetScript;
-                        state.lastAiDatasetScript = tplState.lastAiDatasetScript;
+                        if (currentPage) {
+                            currentPage.datasetScript = gridScript.value || currentPage.datasetScript || "";
+                            currentPage.lastAiDatasetScript = currentPage.datasetScript;
+                        }
                         persistState();
                         if (!options.silentOnSuccess) {
                             showStatus("Script appliqué sur la grille.");
@@ -7509,19 +7472,18 @@
                 }
 
                 function restoreLastAiResponse() {
-                    const tplState = getActiveTemplateState();
+                    const page = getActivePage();
                     const script =
-                        tplState?.lastAiDatasetScript ||
-                        tplState?.datasetScript ||
-                        state?.lastAiDatasetScript ||
-                        state?.datasetScript ||
+                        page?.lastAiDatasetScript ||
+                        page?.datasetScript ||
                         "";
                     if (!script.trim()) {
                         showStatus("Aucune réponse IA à restaurer.", true);
                         return;
                     }
-                    tplState.datasetScript = script;
-                    state.datasetScript = script;
+                    if (page) {
+                        page.datasetScript = script;
+                    }
                     gridScript.value = script;
                     applyScriptToGrid();
                 }
@@ -7848,20 +7810,15 @@
                             const page = getActivePage();
                             const value = promptInput.value || "";
                             if (page) page.scenario = value;
-                            const tplState = getActiveTemplateState();
-                            tplState.scenario = value;
                             persistState();
                         });
                     }
                     if (gridScript) {
                         gridScript.addEventListener("input", () => {
-                            const tplState = getActiveTemplateState();
                             const scriptValue = gridScript.value;
-                            tplState.datasetScript = scriptValue;
-                            state.datasetScript = scriptValue;
                             const page = getActivePage();
                             if (page) {
-                                page.script = scriptValue;
+                                page.datasetScript = scriptValue;
                             }
                             persistState();
                         });
