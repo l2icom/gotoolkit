@@ -1253,12 +1253,15 @@
                     <div class="context-menu" id="capsuleMenu">
                         <div class="menu-panel">
                             <button id="capsuleNewBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
+                            <button id="capsuleJsonImportBtn" type="button" class="menu-panel-btn">⤒ Importer JSON</button>
+                            <button id="capsuleJsonExportBtn" type="button" class="menu-panel-btn">⭳ Exporter JSON</button>
                             <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
                             <button id="capsuleDownloadBtn" type="button" class="menu-panel-btn">⭳ Export CSV</button>
                             <button id="infoButton" type="button" class="menu-panel-btn">⎉ À propos</button>
                         </div>
                     </div>
                 </div>
+                <input id="capsuleJsonFileInput" type="file" accept="application/json" style="display: none;">
 
                 <div class="share-menu-wrapper">
                     <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
@@ -1501,6 +1504,9 @@
                 const capsuleMenuBtn = document.getElementById("capsuleMenuBtn");
                 const capsuleMenu = document.getElementById("capsuleMenu");
                 const capsuleNewBtn = document.getElementById("capsuleNewBtn");
+                const capsuleJsonImportBtn = document.getElementById("capsuleJsonImportBtn");
+                const capsuleJsonExportBtn = document.getElementById("capsuleJsonExportBtn");
+                const capsuleJsonFileInput = document.getElementById("capsuleJsonFileInput");
                 const saveDocumentBtn = document.getElementById("saveDocumentBtn");
                 const capsuleDownloadBtn = document.getElementById("capsuleDownloadBtn");
                 const infoButton = document.getElementById("infoButton");
@@ -1842,6 +1848,60 @@
                     "dateTime",
                     "enum"
                 ];
+                const TREE_SOURCE_OPTIONS = [
+                    "saisie",
+                    "système",
+                    "API",
+                    "calcul",
+                    "référentiel",
+                    "import",
+                    "autre"
+                ];
+
+                class TreeSourceEditor {
+                    init(params) {
+                        this.params = params;
+                        this.eInput = document.createElement("input");
+                        this.eInput.type = "text";
+                        this.eInput.value = params.value || "";
+                        this.eInput.className = "tree-source-editor";
+
+                        this.listId = `tree-source-${Math.random().toString(36).slice(2, 9)}`;
+                        this.eInput.setAttribute("list", this.listId);
+
+                        this.eList = document.createElement("datalist");
+                        this.eList.id = this.listId;
+                        TREE_SOURCE_OPTIONS.forEach(optionValue => {
+                            const option = document.createElement("option");
+                            option.value = optionValue;
+                            this.eList.appendChild(option);
+                        });
+
+                        this.eGui = document.createElement("div");
+                        this.eGui.className = "tree-source-editor-wrapper";
+                        this.eGui.appendChild(this.eInput);
+                        this.eGui.appendChild(this.eList);
+                    }
+
+                    getGui() {
+                        return this.eGui;
+                    }
+
+                    afterGuiAttached() {
+                        if (this.eInput) {
+                            this.eInput.focus();
+                            this.eInput.select();
+                        }
+                    }
+
+                    getValue() {
+                        return this.eInput ? this.eInput.value : "";
+                    }
+
+                    isPopup() {
+                        return true;
+                    }
+                }
 
                 function buildTreeColumnDefs() {
                     return [
@@ -1936,7 +1996,9 @@
                             sortable: false,
                             filter: false,
                             resizable: true,
-                            tooltipField: "source"
+                            tooltipField: "source",
+                            cellEditor: TreeSourceEditor,
+                            cellEditorPopup: true
                         }
                     ];
                 }
@@ -2911,6 +2973,19 @@
                     return `${safeTitle}-${timestamp}.csv`;
                 }
 
+                function buildJsonFileName() {
+                    const page = getActivePage();
+                    const title = (gridTitleInput?.value || page?.title || "Grid").trim() || "Grid";
+                    const normalizedTitle = title
+                        .replace(/\s+/g, "-")
+                        .replace(/[^A-Za-z0-9-_]/g, "")
+                        .replace(/-+/g, "-")
+                        .replace(/^-|-$/g, "");
+                    const safeTitle = normalizedTitle || "Grid";
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+                    return `${safeTitle}-${timestamp}.json`;
+                }
+
                 function getAllRelationsFromSchema() {
                     const tables = Array.isArray(state?.schema?.tables) ? state.schema.tables : [];
                     return tables
@@ -3865,6 +3940,89 @@
                     persistState();
                 }
 
+                function buildDocumentExportPayload() {
+                    const pages = state.pages.map((page, index) => {
+                        const templateId = getPageTemplateId(page) || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                        return normalizePage(page, index, templateId);
+                    });
+                    return {
+                        version: 1,
+                        exportedAt: new Date().toISOString(),
+                        pages,
+                        activeIndex: Math.max(0, Math.min(state.activeIndex, pages.length - 1)),
+                        schema: state.schema || { tables: [] },
+                        reasoningEffort: state.reasoningEffort || "low",
+                        displayPreferences: state.displayPreferences || { ...DISPLAY_PREFERENCE_DEFAULTS },
+                        activeTemplateId: state.activeTemplateId || DEFAULT_TEMPLATE_ID,
+                        scenarioGeneratedTables: state.scenarioGeneratedTables || {}
+                    };
+                }
+
+                function applyDocumentImportPayload(payload) {
+                    if (!payload || typeof payload !== "object") {
+                        showStatus("Fichier JSON invalide.", true);
+                        return false;
+                    }
+                    const rawPages = Array.isArray(payload.pages) ? payload.pages : [];
+                    if (!rawPages.length) {
+                        showStatus("Document JSON sans pages.", true);
+                        return false;
+                    }
+                    const fallbackTemplateId =
+                        (typeof payload.activeTemplateId === "string" && payload.activeTemplateId.trim()) ||
+                        DEFAULT_TEMPLATE_ID;
+                    const templateStateMap =
+                        payload && typeof payload.templateStates === "object" ? payload.templateStates : {};
+                    const pages = rawPages.map((page, index) => {
+                        const templateId =
+                            typeof page?.templateId === "string" && page.templateId.trim()
+                                ? page.templateId.trim()
+                                : fallbackTemplateId;
+                        const templateState = templateStateMap[templateId];
+                        return normalizePage(page, index, fallbackTemplateId, templateState);
+                    });
+                    state.pages = pages;
+                    state.activeIndex = Math.max(
+                        0,
+                        Math.min(
+                            Number.isFinite(payload.activeIndex) ? payload.activeIndex : 0,
+                            pages.length - 1
+                        )
+                    );
+                    state.activeTemplateId = fallbackTemplateId;
+                    state.reasoningEffort = payload.reasoningEffort || state.reasoningEffort || "low";
+                    state.displayPreferences = Object.assign(
+                        {},
+                        DISPLAY_PREFERENCE_DEFAULTS,
+                        payload.displayPreferences || {}
+                    );
+                    state.scenarioGeneratedTables =
+                        payload && typeof payload.scenarioGeneratedTables === "object"
+                            ? payload.scenarioGeneratedTables
+                            : {};
+                    if (payload.schema && Array.isArray(payload.schema.tables)) {
+                        state.schema = payload.schema;
+                    } else {
+                        state.schema = {
+                            tables: pages.map(page => ({
+                                id: page.tableId,
+                                title: page.title,
+                                primaryKey: page.primaryKey || DEFAULT_PRIMARY_KEY,
+                                columns: [],
+                                relations: Array.isArray(page.relations) ? page.relations : []
+                            }))
+                        };
+                    }
+                    currentDraftId = null;
+                    updateUrlWithEditId(null);
+                    applyGridDisplayPreferences({ persist: false });
+                    renderTabs();
+                    setActivePage(state.activeIndex);
+                    persistState();
+                    showStatus("Document JSON importé.");
+                    return true;
+                }
+
                 function getEditIdFromUrl() {
                     try {
                         const params = new URLSearchParams(window.location.search || "");
@@ -3995,6 +4153,32 @@
                     url.searchParams.delete(EDIT_QUERY_PARAM);
                     url.hash = "";
                     window.location.href = url.toString();
+                }
+
+                function downloadDocumentJson() {
+                    syncActivePageFromUI();
+                    const payload = buildDocumentExportPayload();
+                    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = buildJsonFileName();
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                }
+
+                async function handleDocumentJsonImport(file) {
+                    if (!file) return;
+                    try {
+                        const text = await file.text();
+                        const payload = JSON.parse(text);
+                        applyDocumentImportPayload(payload);
+                    } catch (err) {
+                        console.error("Erreur d'import JSON", err);
+                        showStatus("Impossible d'importer le JSON.", true);
+                    }
                 }
 
                 async function handleNewDocumentClick() {
@@ -7352,41 +7536,26 @@
                 function clearGrid() {
                     const activePage = getActivePage();
                     if (!activePage) return;
-                    const tableIds =
-                        (state.scenarioGeneratedTables && state.scenarioGeneratedTables[activePage.id]) ||
-                        [activePage.tableId];
-                    const tableSet = new Set((tableIds || []).filter(Boolean));
-                    const templateId = getPageTemplateId(activePage) || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
-                    const resetPage = {
-                        ...createPage(1),
-                        title: "Page 1",
-                        templateId
-                    };
-                    ensurePagePromptState(resetPage);
-                    state.pages = [resetPage];
-                    state.activeIndex = 0;
-                    state.schema = {
-                        tables: [
-                            {
-                                id: resetPage.tableId,
-                                title: resetPage.title,
-                                primaryKey: resetPage.primaryKey,
-                                columns: [],
-                                relations: []
-                            }
-                        ]
-                    };
-                    state.scenarioGeneratedTables = {};
-                    resetRelationLookups();
-                    if (gridTitleInput) {
-                        gridTitleInput.value = resetPage.title;
+                    activePage.data = { columnDefs: [], rowData: [] };
+                    activePage.datasetScript = "";
+                    activePage.lastAiDatasetScript = "";
+                    if (state.scenarioGeneratedTables && activePage.id) {
+                        delete state.scenarioGeneratedTables[activePage.id];
                     }
-                    renderTabs();
-                    applyGridData(resetPage.data, { tableId: resetPage.tableId });
+                    if (Array.isArray(state?.schema?.tables)) {
+                        const table = state.schema.tables.find(item => item?.id === activePage.tableId);
+                        if (table) {
+                            table.columns = [];
+                        }
+                    }
+                    if (gridScript) {
+                        gridScript.value = "";
+                    }
+                    applyGridData(activePage.data, { tableId: activePage.tableId });
                     resetRelationLookups();
                     syncDatasetScriptFromState();
                     scheduleNaturalFilterRecalc();
-                    showStatus("Données issues du scénario vidées. Retour à une page vierge.");
+                    showStatus("Données de la page vidées.");
                 }
 
                 function applyScriptToGrid(options = {}) {
@@ -7532,6 +7701,30 @@
                         event.preventDefault();
                         event.stopPropagation();
                         await handleNewDocumentClick();
+                    });
+                }
+                if (capsuleJsonExportBtn) {
+                    capsuleJsonExportBtn.addEventListener("click", event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        closeGridMenus();
+                        downloadDocumentJson();
+                    });
+                }
+                if (capsuleJsonImportBtn && capsuleJsonFileInput) {
+                    capsuleJsonImportBtn.addEventListener("click", event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        closeGridMenus();
+                        capsuleJsonFileInput.click();
+                    });
+                    capsuleJsonFileInput.addEventListener("change", event => {
+                        const file = event?.target?.files?.[0];
+                        if (capsuleJsonFileInput) {
+                            capsuleJsonFileInput.value = "";
+                        }
+                        if (!file) return;
+                        void handleDocumentJsonImport(file);
                     });
                 }
                 if (saveDocumentBtn) {
