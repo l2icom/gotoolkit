@@ -877,7 +877,8 @@
             width: 100%;
             border-radius: 10px;
             border: 1px solid #dfe3f5;
-            padding: 8px 10px;
+            padding: 6px 8px;
+            margin: 4px 0px 2px 0px;
             font-size: 12px;
             background: #fbfbff;
             color: #101428;
@@ -1022,6 +1023,41 @@
             font-size: 13px;
             background: #ffffff;
             color: #0f172a;
+        }
+
+        .tree-source-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .tree-source-header-btn {
+            border: none;
+            background: transparent;
+            color: #1b1f2a;
+            border-radius: 6px;
+            font-size: 12px;
+            padding: 2px 6px;
+            cursor: pointer;
+        }
+
+        .tree-source-header-btn:hover,
+        .tree-source-header-btn:focus-visible {
+            border-color: #2a7a57;
+            outline: none;
+        }
+
+        .tree-source-modal textarea {
+            width: 100%;
+            min-height: 160px;
+            border-radius: 10px;
+            border: 1px solid #dfe3f5;
+            padding: 10px 12px;
+            font-size: 13px;
+            color: #0f172a;
+            resize: vertical;
         }
 
         .column-pin-row {
@@ -1253,8 +1289,10 @@
                     <div class="context-menu" id="capsuleMenu">
                         <div class="menu-panel">
                             <button id="capsuleNewBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
-                            <button id="capsuleJsonImportBtn" type="button" class="menu-panel-btn">⤒ Importer JSON</button>
-                            <button id="capsuleJsonExportBtn" type="button" class="menu-panel-btn">⭳ Exporter JSON</button>
+                            <button id="capsuleJsonImportBtn" type="button" class="menu-panel-btn">⤒ Importer
+                                JSON</button>
+                            <button id="capsuleJsonExportBtn" type="button" class="menu-panel-btn">⭳ Exporter
+                                JSON</button>
                             <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
                             <button id="capsuleDownloadBtn" type="button" class="menu-panel-btn">⭳ Export CSV</button>
                             <button id="infoButton" type="button" class="menu-panel-btn">⎉ À propos</button>
@@ -1398,6 +1436,38 @@
             </div>
         </div>
     </div>
+    <div class="modal-overlay" id="treeSourceModal">
+        <div class="modal tree-source-modal">
+            <header class="modal-header">
+                <h3>Sources</h3>
+                <button id="closeTreeSourceModal" class="btn-secondary" type="button">✕</button>
+            </header>
+            <label>
+                <span>Liste des sources (une par ligne)</span>
+                <textarea id="treeSourceListInput" rows="8" placeholder="saisie&#10;système&#10;API"></textarea>
+            </label>
+            <div class="modal-actions">
+                <button id="cancelTreeSourceModal" class="btn" type="button">Réinitialiser</button>
+                <button id="saveTreeSourceModal" class="btn-primary" type="button">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="treeTypeModal">
+        <div class="modal tree-source-modal">
+            <header class="modal-header">
+                <h3>Types</h3>
+                <button id="closeTreeTypeModal" class="btn-secondary" type="button">✕</button>
+            </header>
+            <label>
+                <span>Liste des types (un par ligne)</span>
+                <textarea id="treeTypeListInput" rows="8" placeholder="array&#10;object&#10;string"></textarea>
+            </label>
+            <div class="modal-actions">
+                <button id="cancelTreeTypeModal" class="btn" type="button">Réinitialiser</button>
+                <button id="saveTreeTypeModal" class="btn-primary" type="button">Enregistrer</button>
+            </div>
+        </div>
+    </div>
 
     <script src="js/prompt.js"></script>
     <script src="js/ia-config.js"></script>
@@ -1463,6 +1533,16 @@
                 const templateApplyBtn = document.getElementById("templateApplyBtn");
                 const templateCardList = document.getElementById("templateCardList");
                 const closeTemplateModal = document.getElementById("closeTemplateModal");
+                const treeSourceModal = document.getElementById("treeSourceModal");
+                const treeSourceListInput = document.getElementById("treeSourceListInput");
+                const saveTreeSourceModal = document.getElementById("saveTreeSourceModal");
+                const cancelTreeSourceModal = document.getElementById("cancelTreeSourceModal");
+                const closeTreeSourceModal = document.getElementById("closeTreeSourceModal");
+                const treeTypeModal = document.getElementById("treeTypeModal");
+                const treeTypeListInput = document.getElementById("treeTypeListInput");
+                const saveTreeTypeModal = document.getElementById("saveTreeTypeModal");
+                const cancelTreeTypeModal = document.getElementById("cancelTreeTypeModal");
+                const closeTreeTypeModal = document.getElementById("closeTreeTypeModal");
                 const resetPromptBtn = document.getElementById("resetPromptBtn");
                 const applyAiSettingsBtn = document.getElementById("applyAiSettingsBtn");
                 const generateBtn = document.getElementById("generateBtn");
@@ -1894,48 +1974,52 @@
                     "autre"
                 ];
 
-                class TreeSourceEditor {
+                class TreeSourceHeader {
                     init(params) {
                         this.params = params;
-                        this.eInput = document.createElement("input");
-                        this.eInput.type = "text";
-                        this.eInput.value = params.value || "";
-                        this.eInput.className = "tree-source-editor";
-
-                        this.listId = `tree-source-${Math.random().toString(36).slice(2, 9)}`;
-                        this.eInput.setAttribute("list", this.listId);
-
-                        this.eList = document.createElement("datalist");
-                        this.eList.id = this.listId;
-                        TREE_SOURCE_OPTIONS.forEach(optionValue => {
-                            const option = document.createElement("option");
-                            option.value = optionValue;
-                            this.eList.appendChild(option);
-                        });
-
                         this.eGui = document.createElement("div");
-                        this.eGui.className = "tree-source-editor-wrapper";
-                        this.eGui.appendChild(this.eInput);
-                        this.eGui.appendChild(this.eList);
+                        this.eGui.className = "tree-source-header";
+                        const label = document.createElement("span");
+                        label.textContent = params.displayName || "Source";
+                        const btn = document.createElement("button");
+                        btn.type = "button";
+                        btn.className = "tree-source-header-btn";
+                        btn.textContent = "⛭";
+                        btn.title = "Configurer les sources";
+                        btn.addEventListener("click", event => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            openTreeSourceOptionsModal();
+                        });
+                        this.eGui.append(label, btn);
                     }
 
                     getGui() {
                         return this.eGui;
                     }
-
-                    afterGuiAttached() {
-                        if (this.eInput) {
-                            this.eInput.focus();
-                            this.eInput.select();
-                        }
+                }
+                class TreeTypeHeader {
+                    init(params) {
+                        this.params = params;
+                        this.eGui = document.createElement("div");
+                        this.eGui.className = "tree-source-header";
+                        const label = document.createElement("span");
+                        label.textContent = params.displayName || "Type";
+                        const btn = document.createElement("button");
+                        btn.type = "button";
+                        btn.className = "tree-source-header-btn";
+                        btn.textContent = "⛭";
+                        btn.title = "Configurer les types";
+                        btn.addEventListener("click", event => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            openTreeTypeOptionsModal();
+                        });
+                        this.eGui.append(label, btn);
                     }
 
-                    getValue() {
-                        return this.eInput ? this.eInput.value : "";
-                    }
-
-                    isPopup() {
-                        return true;
+                    getGui() {
+                        return this.eGui;
                     }
                 }
 
@@ -1993,9 +2077,10 @@
                             filter: false,
                             resizable: true,
                             cellEditor: "agSelectCellEditor",
-                            cellEditorParams: { values: TREE_TYPE_OPTIONS },
+                            cellEditorParams: () => ({ values: getTreeTypeOptions() }),
                             tooltipField: "type",
                             width: 80,
+                            headerComponent: TreeTypeHeader
                         },
                         {
                             field: "format",
@@ -2033,8 +2118,9 @@
                             filter: false,
                             resizable: true,
                             tooltipField: "source",
-                            cellEditor: TreeSourceEditor,
-                            cellEditorPopup: true
+                            cellEditor: "agSelectCellEditor",
+                            cellEditorParams: () => ({ values: getTreeSourceOptions() }),
+                            headerComponent: TreeSourceHeader
                         }
                     ];
                 }
@@ -2600,6 +2686,9 @@
                                 reasoningEffort: "low",
                                 displayPreferences: { ...DISPLAY_PREFERENCE_DEFAULTS },
                                 activeTemplateId: DEFAULT_TEMPLATE_ID,
+                                templatePromptOverrides: {},
+                                treeSourceOptions: TREE_SOURCE_OPTIONS.slice(),
+                                treeTypeOptions: TREE_TYPE_OPTIONS.slice(),
                                 schema: { tables: [] },
                                 scenarioGeneratedTables: {}
                             };
@@ -2649,6 +2738,18 @@
                             reasoningEffort: parsed.reasoningEffort || "low",
                             displayPreferences: Object.assign({}, DISPLAY_PREFERENCE_DEFAULTS, parsed.displayPreferences || {}),
                             activeTemplateId,
+                            templatePromptOverrides:
+                                parsed && typeof parsed.templatePromptOverrides === "object"
+                                    ? parsed.templatePromptOverrides
+                                    : {},
+                            treeSourceOptions:
+                                parsed && Array.isArray(parsed.treeSourceOptions)
+                                    ? parsed.treeSourceOptions
+                                    : TREE_SOURCE_OPTIONS.slice(),
+                            treeTypeOptions:
+                                parsed && Array.isArray(parsed.treeTypeOptions)
+                                    ? parsed.treeTypeOptions
+                                    : TREE_TYPE_OPTIONS.slice(),
                             schema: { tables: schemaTables },
                             scenarioGeneratedTables:
                                 parsed && typeof parsed.scenarioGeneratedTables === "object"
@@ -2663,6 +2764,9 @@
                             reasoningEffort: "low",
                             displayPreferences: { ...DISPLAY_PREFERENCE_DEFAULTS },
                             activeTemplateId: DEFAULT_TEMPLATE_ID,
+                            templatePromptOverrides: {},
+                            treeSourceOptions: TREE_SOURCE_OPTIONS.slice(),
+                            treeTypeOptions: TREE_TYPE_OPTIONS.slice(),
                             schema: { tables: [] },
                             scenarioGeneratedTables: {}
                         };
@@ -2691,19 +2795,28 @@
                 function getPagePromptDefaults(page = getActivePage()) {
                     const templateId = getPageTemplateId(page) || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
                     const tplConfig = getTemplateConfigById(templateId);
+                    const override = state.templatePromptOverrides?.[templateId];
                     return {
-                        promptTemplate: tplConfig?.defaultPromptTemplate || DEFAULT_PROMPT_TEMPLATE,
-                        systemPrompt: tplConfig?.defaultSystemPrompt || DEFAULT_SYSTEM_PROMPT
+                        promptTemplate:
+                            override?.promptTemplate || tplConfig?.defaultPromptTemplate || DEFAULT_PROMPT_TEMPLATE,
+                        systemPrompt:
+                            override?.systemPrompt || tplConfig?.defaultSystemPrompt || DEFAULT_SYSTEM_PROMPT
                     };
                 }
 
                 function ensurePagePromptState(page = getActivePage()) {
                     if (!page) return;
+                    const templateId = getPageTemplateId(page) || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                    const override = state.templatePromptOverrides?.[templateId];
                     const defaults = getPagePromptDefaults(page);
-                    if (!page.promptTemplate) {
+                    if (override?.promptTemplate) {
+                        page.promptTemplate = override.promptTemplate;
+                    } else if (!page.promptTemplate) {
                         page.promptTemplate = defaults.promptTemplate;
                     }
-                    if (!page.systemPrompt) {
+                    if (override?.systemPrompt) {
+                        page.systemPrompt = override.systemPrompt;
+                    } else if (!page.systemPrompt) {
                         page.systemPrompt = defaults.systemPrompt;
                     }
                     if (typeof page.scenario !== "string") {
@@ -2714,6 +2827,118 @@
                     }
                     if (typeof page.lastAiDatasetScript !== "string") {
                         page.lastAiDatasetScript = "";
+                    }
+                }
+
+                function getTreeSourceOptions() {
+                    if (Array.isArray(state?.treeSourceOptions) && state.treeSourceOptions.length) {
+                        return state.treeSourceOptions;
+                    }
+                    return TREE_SOURCE_OPTIONS.slice();
+                }
+
+                function getTreeTypeOptions() {
+                    if (Array.isArray(state?.treeTypeOptions) && state.treeTypeOptions.length) {
+                        return state.treeTypeOptions;
+                    }
+                    return TREE_TYPE_OPTIONS.slice();
+                }
+
+                function expandTreeSystemPrompt(promptText) {
+                    if (typeof promptText !== "string") return promptText;
+                    const types = getTreeTypeOptions().join(" | ");
+                    const sources = getTreeSourceOptions().join(" | ");
+                    return promptText
+                        .replace(/\{\{\s*tree_type_options\s*\}\}/g, types)
+                        .replace(/\{\{\s*tree_source_options\s*\}\}/g, sources);
+                }
+
+                function normalizeOptionList(raw) {
+                    const list = Array.isArray(raw) ? raw : [];
+                    const cleaned = list
+                        .map(item => (item == null ? "" : String(item)).trim())
+                        .filter(Boolean);
+                    const unique = [];
+                    const seen = new Set();
+                    cleaned.forEach(value => {
+                        const key = value.toLowerCase();
+                        if (seen.has(key)) return;
+                        seen.add(key);
+                        unique.push(value);
+                    });
+                    return unique;
+                }
+
+                function openTreeSourceOptionsModal() {
+                    if (!treeSourceModal || !treeSourceListInput) return;
+                    const options = getTreeSourceOptions();
+                    treeSourceListInput.value = options.join("\n");
+                    treeSourceModal.classList.add("open");
+                }
+
+                function closeTreeSourceOptionsModal() {
+                    if (!treeSourceModal) return;
+                    treeSourceModal.classList.remove("open");
+                }
+
+                function saveTreeSourceOptions() {
+                    if (!treeSourceListInput) return;
+                    const raw = treeSourceListInput.value || "";
+                    const lines = raw.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+                    const options = normalizeOptionList(lines.length ? lines : TREE_SOURCE_OPTIONS);
+                    state.treeSourceOptions = options;
+                    persistState();
+                    if (gridApi && isTreeTemplateActive()) {
+                        gridApi.setColumnDefs(buildTreeColumnDefs());
+                        gridApi.refreshHeader();
+                    }
+                    closeTreeSourceOptionsModal();
+                }
+                function resetTreeSourceOptions() {
+                    state.treeSourceOptions = TREE_SOURCE_OPTIONS.slice();
+                    persistState();
+                    if (treeSourceListInput) {
+                        treeSourceListInput.value = state.treeSourceOptions.join("\n");
+                    }
+                    if (gridApi && isTreeTemplateActive()) {
+                        gridApi.setColumnDefs(buildTreeColumnDefs());
+                        gridApi.refreshHeader();
+                    }
+                }
+                function openTreeTypeOptionsModal() {
+                    if (!treeTypeModal || !treeTypeListInput) return;
+                    const options = getTreeTypeOptions();
+                    treeTypeListInput.value = options.join("\n");
+                    treeTypeModal.classList.add("open");
+                }
+
+                function closeTreeTypeOptionsModal() {
+                    if (!treeTypeModal) return;
+                    treeTypeModal.classList.remove("open");
+                }
+
+                function saveTreeTypeOptions() {
+                    if (!treeTypeListInput) return;
+                    const raw = treeTypeListInput.value || "";
+                    const lines = raw.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+                    const options = normalizeOptionList(lines.length ? lines : TREE_TYPE_OPTIONS);
+                    state.treeTypeOptions = options;
+                    persistState();
+                    if (gridApi && isTreeTemplateActive()) {
+                        gridApi.setColumnDefs(buildTreeColumnDefs());
+                        gridApi.refreshHeader();
+                    }
+                    closeTreeTypeOptionsModal();
+                }
+                function resetTreeTypeOptions() {
+                    state.treeTypeOptions = TREE_TYPE_OPTIONS.slice();
+                    persistState();
+                    if (treeTypeListInput) {
+                        treeTypeListInput.value = state.treeTypeOptions.join("\n");
+                    }
+                    if (gridApi && isTreeTemplateActive()) {
+                        gridApi.setColumnDefs(buildTreeColumnDefs());
+                        gridApi.refreshHeader();
                     }
                 }
 
@@ -2739,6 +2964,9 @@
                     }
                     if (aiTemplateLabel) {
                         aiTemplateLabel.textContent = `${icon} ${tpl.label}`;
+                    }
+                    if (aiModal?.classList.contains("open")) {
+                        applyActivePageStateToUI();
                     }
                 }
 
@@ -2802,12 +3030,19 @@
                         templateCardList.dataset.selectedId = tpl.id;
                     }
                     const page = getActivePage();
+                    const previousPageTemplateId = getPageTemplateId(page);
                     const shouldBindToPage = assignToPage && page && !getPageTemplateId(page);
                     if (page && (shouldBindToPage || getPageTemplateId(page) === tpl.id)) {
                         if (shouldBindToPage) {
                             page.templateId = tpl.id;
                         }
                         ensurePagePromptState(page);
+                        const currentPageTemplateId = getPageTemplateId(page);
+                        if (currentPageTemplateId && currentPageTemplateId !== previousPageTemplateId) {
+                            const defaults = getPagePromptDefaults(page);
+                            page.promptTemplate = defaults.promptTemplate;
+                            page.systemPrompt = defaults.systemPrompt;
+                        }
                     }
                     applyActivePageStateToUI();
                     renderTemplateMeta();
@@ -2867,10 +3102,10 @@
                     const page = getActivePage();
                     const defaults = getPagePromptDefaults(page);
                     if (promptTemplateField) {
-                        promptTemplateField.value = page?.promptTemplate || defaults.promptTemplate;
+                        promptTemplateField.value = defaults.promptTemplate;
                     }
                     if (systemPromptField) {
-                        systemPromptField.value = page?.systemPrompt || defaults.systemPrompt;
+                        systemPromptField.value = defaults.systemPrompt;
                     }
                     if (promptInput) {
                         promptInput.value = page?.scenario || "";
@@ -2886,6 +3121,18 @@
                     state.scenarioGeneratedTables && typeof state.scenarioGeneratedTables === "object"
                         ? state.scenarioGeneratedTables
                         : {};
+                state.templatePromptOverrides =
+                    state.templatePromptOverrides && typeof state.templatePromptOverrides === "object"
+                        ? state.templatePromptOverrides
+                        : {};
+                state.treeSourceOptions =
+                    Array.isArray(state.treeSourceOptions)
+                        ? normalizeOptionList(state.treeSourceOptions)
+                        : TREE_SOURCE_OPTIONS.slice();
+                state.treeTypeOptions =
+                    Array.isArray(state.treeTypeOptions)
+                        ? normalizeOptionList(state.treeTypeOptions)
+                        : TREE_TYPE_OPTIONS.slice();
                 const activePageTemplateId = (state.pages?.[state.activeIndex] || {}).templateId;
                 state.activeTemplateId = activePageTemplateId || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
                 state.activeParser = getPageTemplateConfig().parser || "flat";
@@ -2939,6 +3186,13 @@
                             reasoningEffort: state.reasoningEffort || "low",
                             displayPreferences: state.displayPreferences || { ...DISPLAY_PREFERENCE_DEFAULTS },
                             activeTemplateId: state.activeTemplateId || DEFAULT_TEMPLATE_ID,
+                            templatePromptOverrides: state.templatePromptOverrides || {},
+                            treeSourceOptions: Array.isArray(state.treeSourceOptions)
+                                ? normalizeOptionList(state.treeSourceOptions)
+                                : TREE_SOURCE_OPTIONS.slice(),
+                            treeTypeOptions: Array.isArray(state.treeTypeOptions)
+                                ? normalizeOptionList(state.treeTypeOptions)
+                                : TREE_TYPE_OPTIONS.slice(),
                             schema: state.schema || { tables: [] },
                             scenarioGeneratedTables: state.scenarioGeneratedTables || {}
                         };
@@ -3990,6 +4244,9 @@
                         reasoningEffort: state.reasoningEffort || "low",
                         displayPreferences: state.displayPreferences || { ...DISPLAY_PREFERENCE_DEFAULTS },
                         activeTemplateId: state.activeTemplateId || DEFAULT_TEMPLATE_ID,
+                        templatePromptOverrides: state.templatePromptOverrides || {},
+                        treeSourceOptions: getTreeSourceOptions(),
+                        treeTypeOptions: getTreeTypeOptions(),
                         scenarioGeneratedTables: state.scenarioGeneratedTables || {}
                     };
                 }
@@ -4032,6 +4289,18 @@
                         DISPLAY_PREFERENCE_DEFAULTS,
                         payload.displayPreferences || {}
                     );
+                    state.templatePromptOverrides =
+                        payload && typeof payload.templatePromptOverrides === "object"
+                            ? payload.templatePromptOverrides
+                            : {};
+                    state.treeSourceOptions =
+                        payload && Array.isArray(payload.treeSourceOptions)
+                            ? normalizeOptionList(payload.treeSourceOptions)
+                            : TREE_SOURCE_OPTIONS.slice();
+                    state.treeTypeOptions =
+                        payload && Array.isArray(payload.treeTypeOptions)
+                            ? normalizeOptionList(payload.treeTypeOptions)
+                            : TREE_TYPE_OPTIONS.slice();
                     state.scenarioGeneratedTables =
                         payload && typeof payload.scenarioGeneratedTables === "object"
                             ? payload.scenarioGeneratedTables
@@ -4784,6 +5053,7 @@
                     const page = getActivePage();
                     const pageTemplateId = getPageTemplateId(page) || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
                     setActiveTemplate(pageTemplateId, { skipApplyScript: true, skipPersist: true });
+                    ensurePagePromptState(page);
                     if (gridTitleInput) gridTitleInput.value = page.title || "";
                     if (promptInput) promptInput.value = page.scenario || "";
                     if (gridScript) {
@@ -4868,6 +5138,15 @@
 
                 function applyPromptSettings() {
                     syncActivePageFromUI();
+                    const page = getActivePage();
+                    const templateId = getPageTemplateId(page) || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                    if (page) {
+                        state.templatePromptOverrides = state.templatePromptOverrides || {};
+                        state.templatePromptOverrides[templateId] = {
+                            promptTemplate: page.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
+                            systemPrompt: page.systemPrompt || DEFAULT_SYSTEM_PROMPT
+                        };
+                    }
                     state.reasoningEffort = state.reasoningEffort || "low";
                     persistState();
                     closeModal();
@@ -7374,6 +7653,10 @@
                     }
                     state.schema = { tables: schemaTables };
 
+                    if (normalizedPage.id === getActivePage()?.id && gridTitleInput) {
+                        gridTitleInput.value = normalizedPage.title || "";
+                    }
+
                     const isMockTemplate =
                         getTemplateConfigById(getPageTemplateId(normalizedPage) || state.activeTemplateId || DEFAULT_TEMPLATE_ID)?.id === "data-mock";
                     const isTreeTemplate =
@@ -7428,8 +7711,11 @@
                     const scriptText = (gridScript?.value || page?.datasetScript || "").trim();
                     const promptTemplate =
                         page?.promptTemplate || tplConfig.defaultPromptTemplate || DEFAULT_PROMPT_TEMPLATE;
-                    const systemPrompt =
+                    let systemPrompt =
                         page?.systemPrompt || tplConfig.defaultSystemPrompt || DEFAULT_SYSTEM_PROMPT;
+                    if (isTree) {
+                        systemPrompt = expandTreeSystemPrompt(systemPrompt);
+                    }
                     const userPrompt = promptTemplate.replace("{{scenario_prompt}}", scenarioText || "ton sujet");
                     const fileAttachments = isOpenAIBackendSelected() ? getUploadedFileAttachments() : [];
 
@@ -7507,7 +7793,7 @@
                                 activeTableId: originTableId,
                                 targetPageId: originPageId,
                                 preserveActive: true,
-                                allowTitleUpdate: false
+                                allowTitleUpdate: Boolean(mockTitle)
                             });
                             syncDatasetScriptFromState({ persist: false });
                             showStatus("Jeu de données fictives appliqué.");
@@ -7558,7 +7844,7 @@
                                 activeTableId: originTableId,
                                 targetPageId: originPageId,
                                 preserveActive: true,
-                                allowTitleUpdate: false
+                                allowTitleUpdate: Boolean(aiTitle)
                             });
                             applyGridDisplayPreferences({ persist: false });
                             const exportedRows = prepareTreeRowsForExport(structure.rowData || []);
@@ -7863,6 +8149,65 @@
                         openTemplateModalUi();
                     });
                 }
+                if (saveTreeSourceModal) {
+                    saveTreeSourceModal.addEventListener("click", event => {
+                        event.preventDefault();
+                        saveTreeSourceOptions();
+                    });
+                }
+                if (cancelTreeSourceModal) {
+                    cancelTreeSourceModal.addEventListener("click", event => {
+                        event.preventDefault();
+                        resetTreeSourceOptions();
+                    });
+                }
+                if (closeTreeSourceModal) {
+                    closeTreeSourceModal.addEventListener("click", event => {
+                        event.preventDefault();
+                        closeTreeSourceOptionsModal();
+                    });
+                }
+                if (treeSourceModal) {
+                    treeSourceModal.addEventListener("click", event => {
+                        if (event.target === treeSourceModal) {
+                            closeTreeSourceOptionsModal();
+                        }
+                    });
+                }
+                if (saveTreeTypeModal) {
+                    saveTreeTypeModal.addEventListener("click", event => {
+                        event.preventDefault();
+                        saveTreeTypeOptions();
+                    });
+                }
+                if (cancelTreeTypeModal) {
+                    cancelTreeTypeModal.addEventListener("click", event => {
+                        event.preventDefault();
+                        resetTreeTypeOptions();
+                    });
+                }
+                if (closeTreeTypeModal) {
+                    closeTreeTypeModal.addEventListener("click", event => {
+                        event.preventDefault();
+                        closeTreeTypeOptionsModal();
+                    });
+                }
+                if (treeTypeModal) {
+                    treeTypeModal.addEventListener("click", event => {
+                        if (event.target === treeTypeModal) {
+                            closeTreeTypeOptionsModal();
+                        }
+                    });
+                }
+                document.addEventListener("keydown", event => {
+                    if (event.key !== "Escape") return;
+                    if (treeSourceModal?.classList.contains("open")) {
+                        closeTreeSourceOptionsModal();
+                    }
+                    if (treeTypeModal?.classList.contains("open")) {
+                        closeTreeTypeOptionsModal();
+                    }
+                });
                 if (templateApplyBtn) {
                     templateApplyBtn.addEventListener("click", event => {
                         event.preventDefault();

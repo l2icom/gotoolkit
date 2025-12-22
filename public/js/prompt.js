@@ -675,18 +675,18 @@ Règles lignes :
 
 FORMAT
 {
-  "title": "string (1–3 mots)",
+  "title": "(2-4 mots résumé)",
   "rows": [
     {
       "id": "string unique [A-Za-z0-9_]",
       "name": "string (< 5 mots)",
       "path": ["racine", "niveau", "sous-niveau"],
       "relation": "1..1 | 0..1 | 1..n | 0..n",
-      "type": "array | object | string | integer | decimal | boolean | date | dateTime | enum",
+      "type": "{{tree_type_options}}",
       "format": "string (contrainte ou \"\")",
       "definition": "string (< 15 mots)",
       "sample": "string (exemple conforme, sinon \"\")",
-      "source": "string (saisie | système | API | calcul | référentiel | import | autre)"
+      "source": "string ({{tree_source_options}})"
     }
   ]
 }
@@ -701,7 +701,7 @@ RÈGLES
 - Si un script NDJSON existe déjà dans la conversation, utilise-le comme base et applique uniquement les modifications demandées.
 
 SORTIE (1 objet JSON par ligne, aucun texte/markdown) :
-1) Header : { "type": "header", "title": "<titre>", "columns": [ { "field": "id", "cellDataType": "number", "editable": false }, ... ] }
+1) Header : { "type": "header", "title": "(2-4 mots résumé)", "columns": [ { "field": "id", "cellDataType": "number", "editable": false }, ... ] }
 2) Rows   : { "type": "row", "data": { ... } }
 3) Fin    : { "type": "done", "summary": { "rows": <rowCount> } }
 
