@@ -1767,6 +1767,42 @@
                     return { schema: { tables: schemaTables }, data };
                 }
 
+                function buildDatasetFromPage(page) {
+                    if (!page) return { schema: { tables: [] }, data: {} };
+                    const schemaTablesFromState = Array.isArray(state?.schema?.tables) ? state.schema.tables : [];
+                    const tableId = page?.tableId || "";
+                    let schemaTables = [];
+                    if (schemaTablesFromState.length && tableId) {
+                        schemaTables = schemaTablesFromState
+                            .filter(table => table && typeof table === "object" && table.id === tableId)
+                            .map(table => ({
+                                id: table.id,
+                                title: table.title,
+                                primaryKey: table.primaryKey || DEFAULT_PRIMARY_KEY,
+                                columns: Array.isArray(table.columns) ? table.columns : [],
+                                relations: Array.isArray(table.relations) ? table.relations : []
+                            }))
+                            .filter(Boolean);
+                    }
+                    if (!schemaTables.length && tableId) {
+                        schemaTables = [{
+                            id: tableId,
+                            title: page?.title || "",
+                            primaryKey: page?.primaryKey || DEFAULT_PRIMARY_KEY,
+                            columns: [],
+                            relations: Array.isArray(page?.relations) ? page.relations : []
+                        }];
+                    }
+                    const data = {};
+                    if (tableId) {
+                        data[tableId] = {
+                            columnDefs: Array.isArray(page.data?.columnDefs) ? page.data.columnDefs : [],
+                            rowData: Array.isArray(page.data?.rowData) ? page.data.rowData : []
+                        };
+                    }
+                    return { schema: { tables: schemaTables }, data };
+                }
+
                 const TREE_SAMPLE_DATASET = {
                     rows: [
                         {
@@ -5219,7 +5255,12 @@
                     state.rowCounts = { [tableId]: 0 };
                     applyDatasetToState(
                         { schema: normalizedSchema, data: state.data },
-                        { markAsAi: true, activeTableId: options.activeTableId || tableId }
+                        {
+                            markAsAi: true,
+                            activeTableId: options.activeTableId || tableId,
+                            targetPageId: options.targetPageId,
+                            preserveActive: options.preserveActive
+                        }
                     );
                     // If some rows arrived before the header, apply them now.
                     if (Array.isArray(state.pendingRows) && state.pendingRows.length) {
@@ -5268,9 +5309,22 @@
                 function finalizeStreamingDataset(state, options = {}) {
                     if (!state.header) return;
                     const dataset = { schema: state.header, data: state.data };
-                    applyDatasetToState(dataset, { markAsAi: true, activeTableId: options.activeTableId });
-                    syncDatasetScriptFromState();
-                    scheduleNaturalFilterRecalc();
+                    applyDatasetToState(dataset, {
+                        markAsAi: true,
+                        activeTableId: options.activeTableId,
+                        targetPageId: options.targetPageId,
+                        preserveActive: options.preserveActive
+                    });
+                    const activePage = getActivePage();
+                    const isTargetActive = options.targetPageId
+                        ? activePage?.id === options.targetPageId
+                        : options.activeTableId
+                            ? activePage?.tableId === options.activeTableId
+                            : true;
+                    if (!options.preserveActive || isTargetActive) {
+                        syncDatasetScriptFromState();
+                        scheduleNaturalFilterRecalc();
+                    }
                     state.finished = true;
                 }
 
@@ -5285,11 +5339,17 @@
                         const parsed = parseJsonQuiet(trimmed);
                         if (!parsed || typeof parsed !== "object") return;
                         if (parsed.type === "header" && (parsed.schema || parsed.columns)) {
-                            applyStreamingHeader(state, parsed.schema || { columns: parsed.columns }, { activeTableId: options.activeTableId });
+                            applyStreamingHeader(state, parsed.schema || { columns: parsed.columns }, {
+                                activeTableId: options.activeTableId
+                            });
                         } else if (parsed.type === "row") {
                             handleStreamingRow(state, parsed, { activeTableId: options.activeTableId });
                         } else if (parsed.type === "done") {
-                            finalizeStreamingDataset(state, { activeTableId: options.activeTableId });
+                            finalizeStreamingDataset(state, {
+                                activeTableId: options.activeTableId,
+                                targetPageId: options.targetPageId,
+                                preserveActive: options.preserveActive
+                            });
                         }
                     });
                 }
@@ -7246,8 +7306,16 @@
                     if (!pagesSnapshot.length) {
                         pagesSnapshot.push(createPage(1));
                     }
-                    const activeIndex = Math.max(0, Math.min(state.activeIndex || 0, pagesSnapshot.length - 1));
-                    const anchorPageId = pagesSnapshot[activeIndex]?.id || null;
+                    const currentActiveIndex = Math.max(0, Math.min(state.activeIndex || 0, pagesSnapshot.length - 1));
+                    let targetIndex = currentActiveIndex;
+                    if (options.targetPageId) {
+                        const foundIndex = pagesSnapshot.findIndex(page => page?.id === options.targetPageId);
+                        if (foundIndex !== -1) targetIndex = foundIndex;
+                    } else if (options.activeTableId) {
+                        const foundIndex = pagesSnapshot.findIndex(page => page?.tableId === options.activeTableId);
+                        if (foundIndex !== -1) targetIndex = foundIndex;
+                    }
+                    const anchorPageId = pagesSnapshot[targetIndex]?.id || null;
                     const normalizedSchema = normalizeDatasetSchema(dataset);
                     if (!normalizedSchema.tables.length) {
                         throw new Error("Dataset sans schema.tables");
@@ -7257,10 +7325,10 @@
 
                     const firstTable = normalizedSchema.tables[0];
                     const tableData = dataByTable?.[firstTable.id] || {};
-                    const activePage = pagesSnapshot[activeIndex];
+                    const activePage = pagesSnapshot[targetIndex];
                     const nextTitle = allowTitleUpdate && firstTable.title
                         ? firstTable.title
-                        : (activePage.title || `Page ${activeIndex + 1}`);
+                        : (activePage.title || `Page ${targetIndex + 1}`);
                     const normalizedPage = normalizePage(
                         {
                             ...activePage,
@@ -7275,11 +7343,11 @@
                                 rowData: Array.isArray(tableData.rowData) ? tableData.rowData : []
                             }
                         },
-                        activeIndex,
+                        targetIndex,
                         state.activeTemplateId || DEFAULT_TEMPLATE_ID
                     );
 
-                    pagesSnapshot[activeIndex] = normalizedPage;
+                    pagesSnapshot[targetIndex] = normalizedPage;
                     state.pages = pagesSnapshot;
 
                     const schemaTables = Array.isArray(state.schema?.tables) ? state.schema.tables.slice() : [];
@@ -7306,16 +7374,26 @@
                     }
                     state.schema = { tables: schemaTables };
 
-                    const requestedTableId = options.activeTableId || normalizedPage.tableId;
-                    const nextActiveIndex = Math.max(0, findPageIndexByTableId(requestedTableId));
-                    state.activeIndex = nextActiveIndex === -1 ? activeIndex : nextActiveIndex;
-
-                    syncDatasetScriptFromState({ persist: false });
-                    if (options.markAsAi) {
-                        const page = getActivePage();
-                        if (page) {
-                            page.lastAiDatasetScript = page.datasetScript || "";
+                    const isMockTemplate =
+                        getTemplateConfigById(getPageTemplateId(normalizedPage) || state.activeTemplateId || DEFAULT_TEMPLATE_ID)?.id === "data-mock";
+                    const isTreeTemplate =
+                        getTemplateConfigById(getPageTemplateId(normalizedPage) || state.activeTemplateId || DEFAULT_TEMPLATE_ID)?.parser === "tree";
+                    if (!isMockTemplate) {
+                        if (isTreeTemplate) {
+                            const rows = prepareTreeRowsForExport(normalizedPage?.data?.rowData || []);
+                            normalizedPage.datasetScript = rows.length ? JSON.stringify({ rows }, null, 2) : "";
+                        } else {
+                            const datasetForPage = buildDatasetFromPage(normalizedPage);
+                            normalizedPage.datasetScript = hasDatasetContent(datasetForPage)
+                                ? JSON.stringify(datasetForPage, null, 2)
+                                : "";
                         }
+                    }
+                    if (normalizedPage.id === getActivePage()?.id) {
+                        syncDatasetScriptFromState({ persist: false });
+                    }
+                    if (options.markAsAi) {
+                        normalizedPage.lastAiDatasetScript = normalizedPage.datasetScript || "";
                         state.scenarioGeneratedTables = state.scenarioGeneratedTables && typeof state.scenarioGeneratedTables === "object"
                             ? state.scenarioGeneratedTables
                             : {};
@@ -7325,13 +7403,18 @@
                     }
 
                     renderTabs();
-                    setActivePage(state.activeIndex);
+                    if (!options.preserveActive || targetIndex === currentActiveIndex) {
+                        state.activeIndex = targetIndex;
+                        setActivePage(state.activeIndex);
+                    }
                     persistState();
                 }
 
                 async function requestData(options = {}) {
                     const retryCount = Number.isFinite(options.retryCount) ? options.retryCount : 0;
                     const page = getActivePage();
+                    const originPageId = page?.id || null;
+                    const originTableId = page?.tableId || "";
                     const pageTplId = getPageTemplateId(page) || DEFAULT_TEMPLATE_ID;
                     setActiveTemplate(pageTplId, { skipApplyScript: true, skipPersist: true });
                     ensurePagePromptState(page);
@@ -7391,7 +7474,11 @@
                                     stopCondition: () => false,
                                     signal: controller.signal,
                                     onChunk: chunk => {
-                                        handleStreamingChunk(streamingState, chunk, { activeTableId: page?.tableId });
+                                        handleStreamingChunk(streamingState, chunk, {
+                                            activeTableId: originTableId,
+                                            targetPageId: originPageId,
+                                            preserveActive: true
+                                        });
                                     }
                                 }
                                 : { payload, signal: controller.signal }
@@ -7417,7 +7504,9 @@
                                     : "";
                             applyDatasetToState(mockDataset, {
                                 markAsAi: true,
-                                activeTableId: page?.tableId,
+                                activeTableId: originTableId,
+                                targetPageId: originPageId,
+                                preserveActive: true,
                                 allowTitleUpdate: false
                             });
                             syncDatasetScriptFromState({ persist: false });
@@ -7466,7 +7555,9 @@
                             };
                             applyDatasetToState(normalizedDataset, {
                                 markAsAi: true,
-                                activeTableId: tableId,
+                                activeTableId: originTableId,
+                                targetPageId: originPageId,
+                                preserveActive: true,
                                 allowTitleUpdate: false
                             });
                             applyGridDisplayPreferences({ persist: false });
@@ -7497,13 +7588,23 @@
                             throw parseError;
                         }
                         if (parsed?.schema && parsed?.data) {
-                            applyDatasetToState(parsed, { markAsAi: true, activeTableId: page?.tableId });
+                            applyDatasetToState(parsed, {
+                                markAsAi: true,
+                                activeTableId: originTableId,
+                                targetPageId: originPageId,
+                                preserveActive: true
+                            });
                         } else if (!isTree) {
                             const dataset =
                                 parsed?.schema && parsed?.data
                                     ? parsed
                                     : buildDatasetFromSingleTablePayload(parsed, page?.tableId, page?.title);
-                            applyDatasetToState(dataset, { markAsAi: true, activeTableId: page?.tableId });
+                            applyDatasetToState(dataset, {
+                                markAsAi: true,
+                                activeTableId: originTableId,
+                                targetPageId: originPageId,
+                                preserveActive: true
+                            });
                         } else {
                             console.warn("Modèle 'Structure de données' : aucun champ 'rows', 'tree' ou 'nodes' détecté.");
                             showStatus("Réponse IA sans arbre ('rows' ou 'tree'). Ajoute \"rows\": [...] dans la sortie.", true);
