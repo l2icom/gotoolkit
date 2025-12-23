@@ -493,6 +493,29 @@
             justify-content: flex-end;
         }
 
+        #gridCellTooltip {
+            position: fixed;
+            pointer-events: none;
+            background: rgba(16, 20, 40, 0.92);
+            color: #f8fafc;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.4;
+            max-width: 320px;
+            word-break: break-word;
+            opacity: 0;
+            transform: translateY(4px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            z-index: 9999;
+            box-shadow: 0 6px 20px rgba(15, 23, 42, 0.35);
+        }
+
+        #gridCellTooltip.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         .tree-template .treeCell {
             display: flex;
             align-items: center;
@@ -1233,13 +1256,13 @@
 <body class="app-body">
     <div class="app">
         <header class="app-header">
-            <a class="app-home-link" href="index.html" title="Revenir à l'accueil">☍</a>
+            <a class="app-home-link" href="index.html?v=2025.12.22" title="Revenir à l'accueil">☍</a>
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button">▦ Grid ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="canvas.html">◍ Canvas</a>
-                    <a class="nav-switch-link" href="draw.html">◇ Draw</a>
-                    <a class="nav-switch-link" href="timeline.html">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.22">◍ Canvas</a>
+                    <a class="nav-switch-link" href="draw.html?v=2025.12.22">◇ Draw</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.22">⇥ Timeline</a>
                 </div>
             </div>
 
@@ -1451,7 +1474,7 @@
         </div>
     </div>
 
-    <script src="js/prompt.js"></script>
+    <script src="js/prompt.js?v=2025.12.22"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/idb-doc-store.js"></script>
@@ -1630,6 +1653,24 @@
                     lastAcceptedInput: ""
                 };
 
+                const SPEECH_MODE_STORAGE_KEY = "go-toolkit-speech-mode";
+
+                function getSpeechModePreference() {
+                    if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
+                        return "manual";
+                    }
+                    try {
+                        const stored = window.localStorage.getItem(SPEECH_MODE_STORAGE_KEY);
+                        return stored === "auto" ? "auto" : "manual";
+                    } catch (error) {
+                        return "manual";
+                    }
+                }
+
+                function isSpeechAutoEnabled() {
+                    return getSpeechModePreference() === "auto";
+                }
+
                 const gridOptions = {
                     defaultColDef: {
                         editable: true,
@@ -1676,6 +1717,82 @@
                     window.goToolkitGridApi = gridApi;
                     window.goToolkitGridOptions = gridOptions;
                 }
+
+                const gridCellTooltip = document.createElement("div");
+                gridCellTooltip.id = "gridCellTooltip";
+                document.body.appendChild(gridCellTooltip);
+                let tooltipOwnerCell = null;
+
+                function hideCellTooltip() {
+                    tooltipOwnerCell = null;
+                    gridCellTooltip.textContent = "";
+                    gridCellTooltip.classList.remove("visible");
+                    gridCellTooltip.style.left = "-9999px";
+                    gridCellTooltip.style.top = "-9999px";
+                }
+
+                function positionCellTooltip(cell) {
+                    if (!cell || !tooltipOwnerCell) return;
+                    const rect = cell.getBoundingClientRect();
+                    gridCellTooltip.classList.add("visible");
+                    const tooltipRect = gridCellTooltip.getBoundingClientRect();
+                    const horizontalMargin = 8;
+                    let left = Math.max(
+                        horizontalMargin,
+                        Math.min(rect.left, window.innerWidth - tooltipRect.width - horizontalMargin)
+                    );
+                    let top = rect.bottom + 6;
+                    if (top + tooltipRect.height > window.innerHeight - 8) {
+                        top = rect.top - tooltipRect.height - 6;
+                    }
+                    if (top < 8) {
+                        top = 8;
+                    }
+                    gridCellTooltip.style.left = `${left}px`;
+                    gridCellTooltip.style.top = `${top}px`;
+                }
+
+                function getCellContentElement(cell) {
+                    if (!cell) return null;
+                    return (
+                        cell.querySelector(".treeCell .label") ||
+                        cell.querySelector(".ag-cell-value") ||
+                        cell.querySelector(".ag-cell-text") ||
+                        cell
+                    );
+                }
+
+                function handleGridMouseMove(event) {
+                    const cell = event.target.closest(".ag-cell");
+                    if (!cell || !gridElement.contains(cell)) {
+                        hideCellTooltip();
+                        return;
+                    }
+                    if (cell === tooltipOwnerCell) return;
+                    const content = getCellContentElement(cell);
+                    if (!content) {
+                        hideCellTooltip();
+                        return;
+                    }
+                    if (content.scrollWidth <= content.clientWidth) {
+                        hideCellTooltip();
+                        return;
+                    }
+                    const text = (content.textContent || "").trim();
+                    if (!text) {
+                        hideCellTooltip();
+                        return;
+                    }
+                    tooltipOwnerCell = cell;
+                    gridCellTooltip.textContent = text;
+                    gridCellTooltip.classList.remove("visible");
+                    gridCellTooltip.style.left = "-9999px";
+                    gridCellTooltip.style.top = "-9999px";
+                    positionCellTooltip(cell);
+                }
+
+                gridElement.addEventListener("mousemove", handleGridMouseMove);
+                gridElement.addEventListener("mouseleave", hideCellTooltip);
 
                 function handleGlobalPointerDown(event) {
                     if (!gridApi) return;
@@ -2021,7 +2138,7 @@
                     return [
                         {
                             field: "name",
-                            headerName: "Structure",
+                            headerName: "Identifiant",
                             editable: true,
                             sortable: false,
                             filter: false,
@@ -2088,12 +2205,12 @@
                         },
                         {
                             field: "definition",
-                            headerName: "Définition",
+                            headerName: "Description",
                             editable: true,
                             sortable: false,
                             filter: false,
                             resizable: true,
-                            tooltipField: "definition"
+                            tooltipField: "description"
                         },
                         {
                             field: "sample",
@@ -3249,9 +3366,9 @@
                         const btn = document.createElement("button");
                         btn.className = `tab${index === state.activeIndex ? " active" : ""}`;
                         btn.type = "button";
-                    const label = `Page ${index + 1}`;
-                    btn.textContent = label;
-                    btn.title = label;
+                        const label = `Page ${index + 1}`;
+                        btn.textContent = label;
+                        btn.title = label;
                         btn.addEventListener("click", () => setActivePage(index));
                         pageTabs.appendChild(btn);
                     });
@@ -5014,6 +5131,11 @@
                     }
                 }
 
+                function maybeAutoStartSpeechRecognition(options = {}) {
+                    if (!isSpeechAutoEnabled()) return;
+                    requestSpeechRecognitionStart(options);
+                }
+
                 function clearActivePageUI() {
                     if (gridTitleInput) gridTitleInput.value = "";
                     if (promptInput) promptInput.value = "";
@@ -5079,7 +5201,7 @@
                     renderTabs();
                     persistState();
                     scheduleNaturalFilterRecalc();
-                    requestSpeechRecognitionStart();
+                    maybeAutoStartSpeechRecognition();
                 }
 
                 function addPage() {
@@ -8450,7 +8572,7 @@
                     setActivePage(state.activeIndex);
                     wireNavSwitcher();
                     wireSpeech();
-                    requestSpeechRecognitionStart();
+                    maybeAutoStartSpeechRecognition();
 
                     if (addPageBtn) addPageBtn.addEventListener("click", addPage);
                     if (deletePageBtn) deletePageBtn.addEventListener("click", deleteActivePage);

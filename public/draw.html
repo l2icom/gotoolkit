@@ -956,13 +956,13 @@
 <body class="app-body">
     <div class="app">
         <header class="app-header">
-            <a class="app-home-link" href="index.html" title="Revenir à l'accueil">☍</a>
+                    <a class="app-home-link" href="index.html?v=2025.12.22" title="Revenir à l'accueil">☍</a>
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button">◇ Draw ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="canvas.html">◍ Canvas</a>
-                    <a class="nav-switch-link" href="grid.html">▦ Grid</a>
-                    <a class="nav-switch-link" href="timeline.html">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.22">◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2025.12.22">▦ Grid</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.22">⇥ Timeline</a>
                 </div>
             </div>
 
@@ -1142,7 +1142,7 @@
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
-    <script src="js/prompt.js"></script>
+    <script src="js/prompt.js?v=2025.12.22"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/template-criteria.js"></script>
@@ -1629,6 +1629,7 @@
             }
 
             function initAutoSpeechOnDrawLoad() {
+                if (!isSpeechAutoEnabled()) return;
                 autoStartSpeechForField("promptInput");
             }
 
@@ -1692,6 +1693,24 @@
             }
 
             let drawTemplateTooltipRaf = null;
+            let promptTooltipRenderAllowed = false;
+            const SPEECH_MODE_STORAGE_KEY = "go-toolkit-speech-mode";
+
+            function getSpeechModePreference() {
+                if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
+                    return "manual";
+                }
+                try {
+                    const stored = window.localStorage.getItem(SPEECH_MODE_STORAGE_KEY);
+                    return stored === "auto" ? "auto" : "manual";
+                } catch (error) {
+                    return "manual";
+                }
+            }
+
+            function isSpeechAutoEnabled() {
+                return getSpeechModePreference() === "auto";
+            }
 
             function positionDrawTemplateTooltip() {
                 const tooltip = document.getElementById("templateTooltip");
@@ -1703,11 +1722,16 @@
                 if (!targetRect.width || !targetRect.height || !tooltipRect.width || !tooltipRect.height) {
                     return;
                 }
-                const gap = 8;
-                const left = Math.max(gap, targetRect.left - tooltipRect.width - gap);
-                const maxTop = Math.max(gap, window.innerHeight - tooltipRect.height - gap);
-                const topCandidate = targetRect.top + (targetRect.height - tooltipRect.height) / 2;
-                const top = Math.min(maxTop, Math.max(gap, topCandidate));
+                const gap = 6;
+                const maxLeft = Math.max(gap, window.innerWidth - tooltipRect.width - gap);
+                const left = Math.min(maxLeft, Math.max(gap, targetRect.left));
+                let top = targetRect.bottom + gap;
+                if (top + tooltipRect.height + gap > window.innerHeight) {
+                    top = targetRect.top - tooltipRect.height - gap;
+                }
+                if (top < gap) {
+                    top = gap;
+                }
                 tooltip.style.left = `${left}px`;
                 tooltip.style.top = `${top}px`;
             }
@@ -1729,8 +1753,11 @@
                 if (!tooltip) return;
                 const lines = GoToolkitTemplateCriteria.renderTooltipLines(template, statusMap);
                 tooltip.innerHTML = lines.join("<br>");
-                tooltip.setAttribute("aria-hidden", lines.length ? "false" : "true");
-                scheduleDrawTemplateTooltipPosition();
+                const shouldShow = promptTooltipRenderAllowed && Boolean(lines.length);
+                tooltip.setAttribute("aria-hidden", shouldShow ? "false" : "true");
+                if (shouldShow) {
+                    scheduleDrawTemplateTooltipPosition();
+                }
             }
 
             function updateSelectedTemplateLabelDisplay() {
@@ -1901,6 +1928,7 @@
                 const tooltip = document.getElementById('templateTooltip');
                 if (!promptEl || !wrapper || !tooltip) return;
                 let inactivityTimer = null;
+                let focusClickPending = false;
                 const INACTIVITY_MS = 5000;
 
                 function clearInactivityTimer() {
@@ -1913,25 +1941,24 @@
                 function startInactivityTimer() {
                     clearInactivityTimer();
                     inactivityTimer = setTimeout(() => {
-                        try {
-                            wrapper.classList.remove('is-focused');
-                            tooltip.setAttribute('aria-hidden', 'true');
-                        } catch (e) { /* noop */ }
                         inactivityTimer = null;
+                        hidePromptTooltip({ removeFocus: true });
                     }, INACTIVITY_MS);
                 }
 
                 function showPromptTooltip() {
+                    promptTooltipRenderAllowed = true;
+                    focusClickPending = false;
                     wrapper.classList.add('is-focused');
                     const sel = getSelectedPromptzilla();
                     const status = sel?.id ? templateCriteriaStatus[sel.id] : null;
                     renderTemplateTooltip(sel, status);
-                    tooltip.setAttribute('aria-hidden', tooltip.textContent ? 'false' : 'true');
                     startInactivityTimer();
-                    scheduleDrawTemplateTooltipPosition();
                 }
 
                 function hidePromptTooltip({ removeFocus = false } = {}) {
+                    promptTooltipRenderAllowed = false;
+                    focusClickPending = false;
                     tooltip.setAttribute('aria-hidden', 'true');
                     clearInactivityTimer();
                     if (removeFocus) {
@@ -1939,8 +1966,14 @@
                     }
                 }
 
+                promptEl.addEventListener('pointerdown', () => {
+                    focusClickPending = true;
+                });
+
                 promptEl.addEventListener('focus', () => {
-                    showPromptTooltip();
+                    if (focusClickPending) {
+                        showPromptTooltip();
+                    }
                 });
 
                 promptEl.addEventListener('blur', () => {

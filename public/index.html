@@ -754,28 +754,28 @@
                 <p class="section-label superpower-label label-link" id="superpowerToggle">⚡︎ Super-pouvoirs</p>
             </div>
             <div class="launcher-grid">
-                <a class="launcher" href="canvas.html">
+                <a class="launcher" href="canvas.html?v=2025.12.22">
                     <span class="launcher-emoji">◍</span>
                     <span class="launcher-name">
                         Canvas (50 Nuances)
                         <div class="launcher-desc">Varie ton vocabulaire</div>
                     </span>
                 </a>
-                <a class="launcher" href="timeline.html">
+                <a class="launcher" href="timeline.html?v=2025.12.22">
                     <span class="launcher-emoji">⇥</span>
                     <span class="launcher-name">
                         Timeline (Goal Digger)
                         <div class="launcher-desc">Trace ta feuille de route</div>
                     </span>
                 </a>
-                <a class="launcher" href="draw.html">
+                <a class="launcher" href="draw.html?v=2025.12.22">
                     <span class="launcher-emoji">◇</span>
                     <span class="launcher-name">
                         Draw (Le Cardinal)
                         <div class="launcher-desc">Modélise tes idées</div>
                     </span>
                 </a>
-                <a class="launcher" href="grid.html">
+                <a class="launcher" href="grid.html?v=2025.12.22">
                     <span class="launcher-emoji">▦</span>
                     <span class="launcher-name">
                         Grid (Le Cardinal)
@@ -997,10 +997,22 @@
         <div id="settingsModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
             <div class="feedback-modal">
                 <header>
-                    <h3>⌘ IA</h3>
+                    <h3>⌘ Paramètres</h3>
                     <button id="closeSettingsBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
                 </header>
                 <form class="feedback-form" onsubmit="return false;">
+                    <div class="field-row">
+                        <label style="width:100%">
+                            <span class="label-title">Commande vocale</span>
+                            <select id="speechModeSelect">
+                                <option value="manual">Manuel (par défaut)</option>
+                                <option value="auto">Auto (au lancement)</option>
+                            </select>
+                            <span class="label-subtitle">
+                                Désactive l'activation automatique dans chaque module (Grid, Canvas, Draw, Timeline)
+                            </span>
+                        </label>
+                    </div>
                     <div class="field-row">
                         <label>
                             <span class="label-title">Moteur IA</span>
@@ -1246,10 +1258,10 @@
             const capsuleDrafts = window.goToolkitCapsuleDrafts;
 
             const APP_DEFINITIONS = {
-                nuances: { emoji: "◍", name: "50 Nuances", page: "canvas.html", collection: "slides" },
-                plan: { emoji: "⇥", name: "Goal Digger", page: "timeline.html", collection: "timelines" },
-                draw: { emoji: "◇", name: "Le Cardinal", page: "draw.html", collection: "diagrams" },
-                grid: { emoji: "▦", name: "Module Grid", page: "grid.html", collection: "grids" }
+                nuances: { emoji: "◍", name: "50 Nuances", page: "canvas.html?v=2025.12.22", collection: "slides" },
+                plan: { emoji: "⇥", name: "Goal Digger", page: "timeline.html?v=2025.12.22", collection: "timelines" },
+                draw: { emoji: "◇", name: "Le Cardinal", page: "draw.html?v=2025.12.22", collection: "diagrams" },
+                grid: { emoji: "▦", name: "Module Grid", page: "grid.html?v=2025.12.22", collection: "grids" }
             };
             let refreshGalleryPromise = null;
             let refreshSavedPromise = null;
@@ -2305,6 +2317,7 @@
         const settingsApiKeyInput = document.getElementById("iaApiKeyInput");
         const settingsReasoningSelect = document.getElementById("reasoningEffortSelect");
         const settingsOpenAiModelSelect = document.getElementById("openaiModelSelect");
+        const settingsSpeechModeSelect = document.getElementById("speechModeSelect");
         const settingsOllamaUrlInput = document.getElementById("ollamaUrlInput");
         const settingsOllamaApiKeyInput = document.getElementById("ollamaApiKeyInput");
         const settingsOllamaAddressSelect = document.getElementById("ollamaAddressSelect");
@@ -2466,6 +2479,10 @@
                 updateBackendVisibility();
                 const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("nuances-reasoning-effort") || "low";
                 if (settingsReasoningSelect) settingsReasoningSelect.value = storedReasoning;
+                const storedSpeechMode = localStorage.getItem("go-toolkit-speech-mode") || "manual";
+                if (settingsSpeechModeSelect) {
+                    settingsSpeechModeSelect.value = storedSpeechMode === "auto" ? "auto" : "manual";
+                }
             } catch (e) { /* noop */ }
             settingsModal.classList.add("open");
             settingsModal.setAttribute("aria-hidden", "false");
@@ -2503,6 +2520,10 @@
                 } else {
                     try { localStorage.setItem("go-toolkit-ai-backend", selectedBackend); } catch (e) { }
                 }
+                const speechModeValue = (settingsSpeechModeSelect?.value || "manual") === "auto" ? "auto" : "manual";
+                try {
+                    localStorage.setItem("go-toolkit-speech-mode", speechModeValue);
+                } catch (e) { }
                 // expose immediate selection to runtime
                 try { window.GoToolkitSelectedAIBackend = selectedBackend; } catch (e) { }
                 const ollamaUrlValue = (settingsOllamaUrlInput?.value || "").trim();

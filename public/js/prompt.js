@@ -664,7 +664,7 @@ SORTIE (1 objet JSON par ligne, aucun texte/markdown) :
 Règles colonnes :
 - Champs : \`field\` (anglais), \`headerName\` (fr), \`title\` (2-5 mots résumé) \`cellDataType\` ∈ text|number|boolean|date|dateTime
 - Inclure au minimum \`id\` (number, lecture seule et unique)
-- date and dateTime : format ISO 8601
+- date and dateTime : format ISO 8601 2024-12-22T00:00:00Z
 
 Règles lignes :
 - Objets plats, valeurs cohérentes avec \`cellDataType\`

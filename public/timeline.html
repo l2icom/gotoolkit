@@ -1594,14 +1594,14 @@
     <div class="app">
         <div class="app-header">
             <div class="tabs-actions">
-                <a class="app-home-link" href="index.html" title="Revenir à l'accueil">☍</a>
+                <a class="app-home-link" href="index.html?v=2025.12.22" title="Revenir à l'accueil">☍</a>
                 <div class="nav-switch">
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                         aria-expanded="false">⇥ Timeline ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                        <a class="nav-switch-link" href="canvas.html" role="menuitem"> ◍ Canvas</a>
-                        <a class="nav-switch-link" href="grid.html" role="menuitem">▦ Grid</a>
-                        <a class="nav-switch-link" href="draw.html" role="menuitem">◇ Draw</a>
+                        <a class="nav-switch-link" href="canvas.html?v=2025.12.22" role="menuitem"> ◍ Canvas</a>
+                        <a class="nav-switch-link" href="grid.html?v=2025.12.22" role="menuitem">▦ Grid</a>
+                        <a class="nav-switch-link" href="draw.html?v=2025.12.22" role="menuitem">◇ Draw</a>
                     </div>
                 </div>
 
@@ -1964,7 +1964,7 @@
         <script src="js/share-worker-client.js"></script>
         <script src="js/share-history.js"></script>
         <script src="js/capsule-drafts.js"></script>
-        <script src="js/prompt.js"></script>
+        <script src="js/prompt.js?v=2025.12.22"></script>
         <script src="js/ia-client.js"></script>
         <script src="js/ia-config.js"></script>
         <script src="js/template-criteria.js"></script>
@@ -6678,6 +6678,24 @@
                     }
                 });
 
+                const SPEECH_MODE_STORAGE_KEY = "go-toolkit-speech-mode";
+
+                function getSpeechModePreference() {
+                    if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
+                        return "manual";
+                    }
+                    try {
+                        const stored = window.localStorage.getItem(SPEECH_MODE_STORAGE_KEY);
+                        return stored === "auto" ? "auto" : "manual";
+                    } catch (error) {
+                        return "manual";
+                    }
+                }
+
+                function isSpeechAutoEnabled() {
+                    return getSpeechModePreference() === "auto";
+                }
+
                 function maybeAutoStartSpeechForField(fieldId) {
                     if (!SpeechRecognitionCtor) {
                         return;
@@ -6694,6 +6712,7 @@
                 }
 
                 function initAutoSpeechOnTimelineLoad() {
+                    if (!isSpeechAutoEnabled()) return;
                     maybeAutoStartSpeechForField("promptCreate");
                 }
 
