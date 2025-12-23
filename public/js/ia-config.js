@@ -467,7 +467,7 @@
         function createWebWorkerInstance() {
             if (!global.Worker) return null;
             try {
-                return new Worker("/webllm-worker.js", { type: "module" });
+                return new Worker("/js/webllm-worker.js", { type: "module" });
             } catch (err) {
                 console.warn("[GoToolkit WebLLM] Worker creation failed", err);
                 return null;
@@ -480,7 +480,7 @@
             }
             swRegistrationPromise = (async function () {
                 try {
-                    const reg = await navigator.serviceWorker.register("/webllm-sw.js", {
+                    const reg = await navigator.serviceWorker.register("/js/webllm-sw.js", {
                         type: "module",
                         updateViaCache: "none",
                         scope: "/"

@@ -742,6 +742,15 @@ Règles lignes :
         }
         ,
         {
+            id: "data-mapping",
+            label: "Mapping de données",
+            description: "Permettre le mapping entre deux systèmes dans le cadre d'une intégration.",
+            defaultPromptTemplate: gridPromptTemplates.treeStructure || gridTreePromptTemplate,
+            defaultSystemPrompt: gridSystemPrompts.treeStructure || gridSystemPromptTree,
+            parser: "tree"
+        }
+        ,
+        {
             id: "data-mock",
             label: "Données fictives",
             description: "Génère des données pour des tests ou de la conception",

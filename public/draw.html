@@ -3074,6 +3074,8 @@
 
             function renderTabs() {
                 pageTabs.innerHTML = "";
+                const titleForTabs = state.activeIndex >= 0 ? `Page ${state.activeIndex + 1}` : "";
+                pageTabs.title = titleForTabs;
                 state.pages.forEach((page, index) => {
                     const btn = document.createElement("button");
                     btn.className = `tab${index === state.activeIndex ? " active" : ""}`;
@@ -3704,10 +3706,6 @@
                     page.lastAiMermaid = mermaidCode;
                     if (extractedTitle) {
                         page.title = extractedTitle;
-                        if (!page.label || page.label === `Page ${state.activeIndex + 1}` || page.label === diagramTitleInput?.value) {
-                            page.label = extractedTitle;
-                            renderTabs();
-                        }
                         if (diagramTitleInput) {
                             diagramTitleInput.value = extractedTitle;
                         }
@@ -4111,6 +4109,9 @@
             }
 
             function createArrowElement(startX, startY, endX, endY, options = {}) {
+                const cleanOptions = { ...options };
+                delete cleanOptions.startArrowhead;
+                delete cleanOptions.endArrowhead;
                 return createBaseElement("arrow", {
                     x: startX,
                     y: startY,
@@ -4122,10 +4123,32 @@
                     ],
                     backgroundColor: "transparent",
                     strokeColor: options.strokeColor || "#1c2a55",
-                    startArrowhead: null,
-                    endArrowhead: "arrow",
-                    ...options
+                    startArrowhead: options.startArrowhead ?? null,
+                    endArrowhead: options.endArrowhead ?? "arrow",
+                    ...cleanOptions
                 });
+            }
+
+            function resolveArrowDirection(arrowString, startCoords, endCoords) {
+                const normalized = (arrowString || "").replace(/\s+/g, "");
+                const hasLeftHead = normalized.includes("<");
+                const hasRightHead = normalized.includes(">");
+                const shouldSwap = hasLeftHead && !hasRightHead;
+                const start = shouldSwap ? endCoords : startCoords;
+                const end = shouldSwap ? startCoords : endCoords;
+                const startArrowhead = hasLeftHead && hasRightHead ? "arrow" : null;
+                const endArrowhead =
+                    hasRightHead || (!hasLeftHead && !hasRightHead) || (hasLeftHead && !hasRightHead)
+                        ? "arrow"
+                        : null;
+                return {
+                    startX: start.x,
+                    startY: start.y,
+                    endX: end.x,
+                    endY: end.y,
+                    startArrowhead,
+                    endArrowhead
+                };
             }
 
             function computeCompactionFactor(count, start = 4, end = 16) {
@@ -4194,17 +4217,20 @@
                     if (nodeMatch) {
                         registerNode(nodeMatch[1], nodeMatch[2]);
                     }
-                    const edgeMatch = line.match(/^([A-Za-z0-9_]+)\s*[-.]{1,4}[>]{1,2}\s*([A-Za-z0-9_]+)(?:\s*:?\s*(.+))?/);
-                    if (edgeMatch) {
-                        registerNode(edgeMatch[1]);
-                        registerNode(edgeMatch[2]);
-                        edges.push({
-                            from: edgeMatch[1],
-                            to: edgeMatch[2],
-                            label: edgeMatch[3]?.trim()
-                        });
-                    }
-                });
+                const edgeMatch = line.match(
+                    /^([A-Za-z0-9_]+)\s*([-.=|<>o*]+)\s*([A-Za-z0-9_]+)(?:\s*:?\s*(.+))?/
+                );
+                if (edgeMatch) {
+                    registerNode(edgeMatch[1]);
+                    registerNode(edgeMatch[3]);
+                    edges.push({
+                        from: edgeMatch[1],
+                        to: edgeMatch[3],
+                        label: edgeMatch[4]?.trim(),
+                        arrow: edgeMatch[2]
+                    });
+                }
+            });
 
                 if (!nodeMap.size) {
                     return null;
@@ -4270,11 +4296,19 @@
                     const startY = source.y + source.height / 2;
                     const endX = target.x + target.width / 2;
                     const endY = target.y + target.height / 2;
-                    const arrow = createArrowElement(startX, startY, endX, endY);
+                    const arrowSpec = resolveArrowDirection(
+                        edge.arrow,
+                        { x: startX, y: startY },
+                        { x: endX, y: endY }
+                    );
+                    const arrow = createArrowElement(arrowSpec.startX, arrowSpec.startY, arrowSpec.endX, arrowSpec.endY, {
+                        startArrowhead: arrowSpec.startArrowhead,
+                        endArrowhead: arrowSpec.endArrowhead
+                    });
                     elements.push(arrow);
                     if (edge.label) {
-                        const labelX = (startX + endX) / 2 - 40;
-                        const labelY = (startY + endY) / 2 - 20;
+                        const labelX = (arrowSpec.startX + arrowSpec.endX) / 2 - 40;
+                        const labelY = (arrowSpec.startY + arrowSpec.endY) / 2 - 20;
                         elements.push(createTextElement(edge.label, labelX, labelY, {
                             fontSize: 14,
                             width: 80,
@@ -4307,14 +4341,17 @@
                         registerParticipant(participantMatch[1], participantMatch[2]?.trim());
                         return;
                     }
-                    const messageMatch = line.match(/^([A-Za-z0-9_]+)\s*([-.]+[>]{1,2})\s*([A-Za-z0-9_]+)\s*:?\s*(.*)?/);
+                    const messageMatch = line.match(
+                        /^([A-Za-z0-9_]+)\s*([-.=|<>]+)\s*([A-Za-z0-9_]+)\s*:?\s*(.*)?/
+                    );
                     if (messageMatch) {
                         registerParticipant(messageMatch[1]);
                         registerParticipant(messageMatch[3]);
                         messages.push({
                             from: messageMatch[1],
                             to: messageMatch[3],
-                            text: messageMatch[4]?.trim() || ""
+                            text: messageMatch[4]?.trim() || "",
+                            arrow: messageMatch[2]
                         });
                     }
                 });
@@ -4370,14 +4407,21 @@
                     const endX = positions.get(message.to);
                     if (startX == null || endX == null) return;
                     const y = topY + headerBaseHeight + 20 + idx * messageSpacing;
-                    const arrow = createArrowElement(startX, y, endX, y, {
-                        strokeWidth: 1.5
+                    const arrowSpec = resolveArrowDirection(
+                        message.arrow,
+                        { x: startX, y },
+                        { x: endX, y }
+                    );
+                    const arrow = createArrowElement(arrowSpec.startX, arrowSpec.startY, arrowSpec.endX, arrowSpec.endY, {
+                        strokeWidth: 1.5,
+                        startArrowhead: arrowSpec.startArrowhead,
+                        endArrowhead: arrowSpec.endArrowhead
                     });
                     elements.push(arrow);
                     if (message.text) {
-                        const horizontalGap = Math.abs(endX - startX);
+                        const horizontalGap = Math.abs(arrowSpec.endX - arrowSpec.startX);
                         const labelWidth = Math.max(90, horizontalGap - 40);
-                        const labelX = Math.min(startX, endX) + (horizontalGap - labelWidth) / 2;
+                        const labelX = Math.min(arrowSpec.startX, arrowSpec.endX) + (horizontalGap - labelWidth) / 2;
                         elements.push(createTextElement(message.text, labelX, y - 22, {
                             width: labelWidth,
                             fontSize: 13,
@@ -4421,7 +4465,7 @@
                         classes.push({ id, label, members });
                         continue;
                     }
-                    const relationMatch = line.match(/^([A-Za-z0-9_]+)\s+([<:\.o*\-|]+)\s+([A-Za-z0-9_]+)/);
+                    const relationMatch = line.match(/^([A-Za-z0-9_]+)\s+([<:\.o*\-|>=]+)\s+([A-Za-z0-9_]+)/);
                     if (relationMatch) {
                         relations.push({
                             from: relationMatch[1],
@@ -4502,9 +4546,16 @@
                     const from = classPositions.get(rel.from);
                     const to = classPositions.get(rel.to);
                     if (!from || !to) return;
-                    const arrow = createArrowElement(from.x, from.y, to.x, to.y, {
+                    const arrowSpec = resolveArrowDirection(
+                        rel.marker,
+                        { x: from.x, y: from.y },
+                        { x: to.x, y: to.y }
+                    );
+                    const arrow = createArrowElement(arrowSpec.startX, arrowSpec.startY, arrowSpec.endX, arrowSpec.endY, {
                         strokeWidth: rel.marker.includes("..") ? 1 : 2,
-                        strokeStyle: rel.marker.includes("..") ? "dashed" : "solid"
+                        strokeStyle: rel.marker.includes("..") ? "dashed" : "solid",
+                        startArrowhead: arrowSpec.startArrowhead,
+                        endArrowhead: arrowSpec.endArrowhead
                     });
                     elements.push(arrow);
                 });
@@ -4775,10 +4826,6 @@
                         const titleFromScript = extractDiagramTitle(value);
                         if (titleFromScript) {
                             page.title = titleFromScript;
-                            if (!page.label || page.label === `Page ${state.activeIndex + 1}` || page.label === diagramTitleInput?.value) {
-                                page.label = titleFromScript;
-                                renderTabs();
-                            }
                             if (diagramTitleInput) {
                                 diagramTitleInput.value = titleFromScript;
                             }
@@ -4865,10 +4912,6 @@
                     const titleFromScript = extractDiagramTitle(restoreCode);
                     if (titleFromScript) {
                         page.title = titleFromScript;
-                        if (!page.label || page.label === `Page ${state.activeIndex + 1}` || page.label === diagramTitleInput?.value) {
-                            page.label = titleFromScript;
-                            renderTabs();
-                        }
                         if (diagramTitleInput) {
                             diagramTitleInput.value = titleFromScript;
                         }

@@ -525,6 +525,15 @@
             padding: 0 2px;
         }
 
+        .tree-template .treeCell .label.placeholder {
+            color: #7a7f9b;
+            font-style: italic;
+        }
+
+        .tree-template .ag-cell.bold-mapping-cell .ag-cell-value {
+            font-weight: 700;
+        }
+
         .tree-template .indent {
             width: calc(var(--indent, 14px) * var(--depth, 0));
             flex: 0 0 auto;
@@ -1294,12 +1303,11 @@
                     <div class="context-menu" id="capsuleMenu">
                         <div class="menu-panel">
                             <button id="capsuleNewBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
-                            <button id="capsuleJsonImportBtn" type="button" class="menu-panel-btn">⤒ Importer
-                                JSON</button>
-                            <button id="capsuleJsonExportBtn" type="button" class="menu-panel-btn">⭳ Exporter
-                                JSON</button>
                             <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫 Enregistrer</button>
-                            <button id="capsuleDownloadBtn" type="button" class="menu-panel-btn">⭳ Export CSV</button>
+                            <button id="capsuleJsonImportBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
+                            <button id="capsuleJsonExportBtn" type="button" class="menu-panel-btn">⭳
+                                Télécharger</button>
+                            <button id="capsuleDownloadBtn" type="button" class="menu-panel-btn">⭳ CSV</button>
                             <button id="infoButton" type="button" class="menu-panel-btn">⎉ À propos</button>
                         </div>
                     </div>
@@ -1560,6 +1568,7 @@
                 const gridNaturalFilterGhost = document.getElementById("gridNaturalFilterGhost");
                 const gridNaturalFilterSuggestions = document.getElementById("gridNaturalFilterSuggestions");
                 let gridNaturalFilterInputOriginalPlaceholder = gridNaturalFilterInput?.placeholder || "";
+                let state = null;
                 const statusToast = document.getElementById("statusToast");
                 const statusLabel = document.querySelector(".status-label");
                 const pageTabs = document.getElementById("pageTabs");
@@ -1694,6 +1703,17 @@
                         defaultMinWidth: 85
                     },
                     rowHeight: DISPLAY_PREFERENCE_DEFAULTS.rowHeight,
+                    getRowHeight: params => {
+                        const base =
+                            (state?.displayPreferences?.rowHeight ?? DISPLAY_PREFERENCE_DEFAULTS.rowHeight);
+                        if (!isDataMappingTemplateActive()) {
+                            return base;
+                        }
+                        const text = typeof params?.data?.rules === "string" ? params.data.rules : "";
+                        const lines = text ? text.split(/\r?\n/).length : 1;
+                        const extra = Math.max(0, lines - 1) * 16;
+                        return base + extra;
+                    },
                     rowData: [],
                     columnDefs: [],
                     isExternalFilterPresent: () => Boolean(naturalFilterState.active),
@@ -2064,6 +2084,22 @@
                     source: "",
                     relation: "1..n"
                 };
+                const STATUS_OPTIONS_DEFAULT = ["À faire", "À valider", "En cours", "Fait"];
+                const DEFAULT_MAPPING_STATUS = STATUS_OPTIONS_DEFAULT[0];
+                const DATA_MAPPING_EMPTY_ROW = {
+                    id: "domain",
+                    name: "Nouveau",
+                    sourceField: "",
+                    targetField: "Nouveau",
+                    description: "",
+                    path: ["Domaine"],
+                    __path: ["domain"],
+                    type: "",
+                    format: "",
+                    status: DEFAULT_MAPPING_STATUS,
+                    rules: "",
+                    relation: "1..1"
+                };
                 const TREE_TYPE_OPTIONS = [
                     "array",
                     "object",
@@ -2095,7 +2131,7 @@
                         const btn = document.createElement("button");
                         btn.type = "button";
                         btn.className = "tree-source-header-btn";
-                        btn.textContent = "⛭";
+                        btn.textContent = "⋮";
                         btn.title = "Configurer les sources";
                         btn.addEventListener("click", event => {
                             event.preventDefault();
@@ -2119,7 +2155,7 @@
                         const btn = document.createElement("button");
                         btn.type = "button";
                         btn.className = "tree-source-header-btn";
-                        btn.textContent = "⛭";
+                        btn.textContent = "⋮";
                         btn.title = "Configurer les types";
                         btn.addEventListener("click", event => {
                             event.preventDefault();
@@ -2134,7 +2170,36 @@
                     }
                 }
 
+                class StatusHeader {
+                    init(params) {
+                        this.params = params;
+                        this.eGui = document.createElement("div");
+                        this.eGui.className = "tree-source-header";
+                        const label = document.createElement("span");
+                        label.textContent = params.displayName || "Statut";
+                        const btn = document.createElement("button");
+                        btn.type = "button";
+                        btn.className = "tree-source-header-btn";
+                        btn.textContent = "⋮";
+                        btn.title = "Configurer les statuts";
+                        btn.addEventListener("click", event => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            openStatusOptionsPrompt();
+                        });
+                        this.eGui.append(label, btn);
+                    }
+
+                    getGui() {
+                        return this.eGui;
+                    }
+                }
+
                 function buildTreeColumnDefs() {
+                    return isDataMappingTemplateActive() ? buildDataMappingColumnDefs() : buildTreeStructureColumnDefs();
+                }
+
+                function buildTreeStructureColumnDefs() {
                     return [
                         {
                             field: "name",
@@ -2236,6 +2301,113 @@
                     ];
                 }
 
+                function buildDataMappingColumnDefs() {
+                    return [
+                        {
+                            field: "targetField",
+                            headerName: "Cible",
+                            editable: true,
+                            sortable: false,
+                            filter: false,
+                            resizable: true,
+                            pinned: "left",
+                            rowDrag: false,
+                            width: 150,
+                            minWidth: 150,
+                            suppressSizeToFit: true,
+                            tooltipField: "targetField",
+                            cellRenderer: structureCellRenderer,
+
+                        },
+                        {
+                            field: "__actions",
+                            colId: "__actions",
+                            headerName: "",
+                            width: 70,
+                            maxWidth: 70,
+                            pinned: "left",
+                            sortable: false,
+                            filter: false,
+                            resizable: false,
+                            rowDrag: false,
+                            suppressMovable: true,
+                            valueGetter: () => null,
+                            valueFormatter: () => "",
+                            suppressKeyboardEvent: () => true,
+                            cellRenderer: treeActionRenderer
+                        },
+                        {
+                            field: "sourceField",
+                            headerName: "Source",
+                            editable: true,
+                            sortable: false,
+                            filter: false,
+                            resizable: true,
+                            pinned: "left",
+                            rowDrag: false,
+                            width: 150,
+                            minWidth: 150,
+                            suppressSizeToFit: true,
+                            tooltipField: "sourceField",
+                            cellClass: "bold-mapping-cell",
+                        },
+
+                        {
+                            field: "status",
+                            headerName: "Statut",
+                            editable: true,
+                            sortable: false,
+                            filter: false,
+                            resizable: true,
+                            cellEditor: "agSelectCellEditor",
+                            cellEditorParams: () => ({ values: getStatusOptions() }),
+                            tooltipField: "status",
+                            width: 80,
+                            headerComponent: StatusHeader
+                        },
+
+                        {
+                            field: "type",
+                            headerName: "Type",
+                            editable: true,
+                            sortable: false,
+                            filter: false,
+                            resizable: true,
+                            cellEditor: "agSelectCellEditor",
+                            cellEditorParams: () => ({ values: getTreeTypeOptions() }),
+                            tooltipField: "type",
+                            width: 80,
+                            headerComponent: TreeTypeHeader
+                        },
+                        {
+                            field: "description",
+                            headerName: "Description",
+                            editable: true,
+                            sortable: false,
+                            filter: false,
+                            resizable: true,
+                            tooltipField: "description",
+                            width: 240
+                        },
+                        {
+                            field: "rules",
+                            headerName: "Règles",
+                            editable: true,
+                            sortable: false,
+                            filter: false,
+                            resizable: true,
+                            tooltipField: "rules",
+                            cellEditor: "agLargeTextCellEditor",
+                            cellEditorParams: () => ({
+                                maxLength: 2048,
+                                rows: 4
+                            }),
+                            autoHeight: true,
+                            wrapText: true
+                        }
+                    ];
+                }
+
                 function normalizeTreePath(rawPath, fallback = []) {
                     if (Array.isArray(rawPath)) {
                         return rawPath.map(item => (item == null ? "" : String(item))).filter(Boolean);
@@ -2251,20 +2423,37 @@
 
                 function normalizeTreeRowInput(row, parentPath = []) {
                     if (!row || typeof row !== "object") return null;
-                    const fallbackName = row.name || row.id || "item";
                     const rawPath = row.path ?? row.__path;
-                    const fallbackPath = rawPath ? [] : [...parentPath, fallbackName];
+                    const fallbackName = row.name || row.id || "item";
+                    const normalizedTargetField =
+                        typeof row.targetField === "string" ? row.targetField.trim() : "";
+                    const labelValue = normalizedTargetField || fallbackName;
+                    const fallbackPath = rawPath ? [] : [...parentPath, labelValue];
                     const path = normalizeTreePath(rawPath, fallbackPath);
                     const level = Math.max(0, path.length - 1);
+                    const targetField = typeof row.targetField === "string" ? row.targetField.trim() : "";
+                    const descriptionValue = typeof row.description === "string" ? row.description.trim() : "";
+                    const statusValue = typeof row.status === "string" ? row.status.trim() : "";
+                    const rulesValue = typeof row.rules === "string" ? row.rules : "";
+                    const isMapping = isDataMappingTemplateActive();
+                    const effectiveStatus =
+                        (isMapping && statusValue) ? statusValue : isMapping ? DEFAULT_MAPPING_STATUS : statusValue;
                     return {
                         id: row.id || path.join("::") || fallbackName,
-                        name: fallbackName,
+                        name: labelValue,
+                        targetField: targetField || labelValue,
+                        sourceField: typeof row.sourceField === "string"
+                            ? row.sourceField.trim()
+                            : "",
                         type: row.type || "",
+                        description: descriptionValue,
                         format: row.format || "",
                         definition: row.definition || "",
                         sample: row.sample || "",
                         source: row.source || "",
                         relation: row.relation || "1..1",
+                        status: effectiveStatus || (isMapping ? DEFAULT_MAPPING_STATUS : ""),
+                        rules: rulesValue,
                         path,
                         __path: path,
                         level
@@ -2363,31 +2552,45 @@
                     return baseRows;
                 }
 
-                function buildTreeDatasetFromRows(rows, title = "Structure de données") {
+                function buildTreeDatasetFromRows(rows, title = "Structure de données", templateId = getPageTemplateId()) {
+                    const resolvedTemplateId =
+                        templateId || state?.activeTemplateId || DEFAULT_TEMPLATE_ID;
                     const columnDefs = buildTreeColumnDefs();
                     const rowData = decorateTreeRows(rows, { sortPaths: true });
+                    const isMapping = resolvedTemplateId === "data-mapping";
+                    const tableId = isMapping ? "mapping" : "structure";
+                    const columns = isMapping
+                        ? [
+                            { field: "targetField" },
+                            { field: "sourceField" },
+                            { field: "type" },
+                            { field: "format" },
+                            { field: "status" },
+                            { field: "rules" }
+                        ]
+                        : [
+                            { field: "name" },
+                            { field: "type" },
+                            { field: "format" },
+                            { field: "definition" },
+                            { field: "sample" },
+                            { field: "source" },
+                            { field: "relation" }
+                        ];
                     return {
                         schema: {
                             tables: [
                                 {
-                                    id: "structure",
+                                    id: tableId,
                                     title,
                                     primaryKey: "id",
-                                    columns: [
-                                        { field: "name" },
-                                        { field: "type" },
-                                        { field: "format" },
-                                        { field: "definition" },
-                                        { field: "sample" },
-                                        { field: "source" },
-                                        { field: "relation" }
-                                    ],
+                                    columns,
                                     relations: []
                                 }
                             ]
                         },
                         data: {
-                            structure: {
+                            [tableId]: {
                                 columnDefs,
                                 rowData
                             }
@@ -2444,19 +2647,35 @@
                     syncScriptFromGrid();
                 }
 
-                function prepareTreeRowsForExport(rows = []) {
+                function prepareTreeRowsForExport(rows = [], templateId = getPageTemplateId()) {
                     const cloned = Array.isArray(rows) ? rows.map(row => ({ ...row })) : [];
-                    return decorateTreeRows(cloned).map(row => ({
-                        id: row.id || pathKey(row.__path),
-                        name: row.name || "",
-                        path: Array.isArray(row.__path) ? row.__path : [],
-                        type: row.type || "",
-                        format: row.format || "",
-                        definition: row.definition || "",
-                        sample: row.sample || "",
-                        source: row.source || "",
-                        relation: row.relation || "1..1"
-                    }));
+                    const isMapping = templateId === "data-mapping";
+                    return decorateTreeRows(cloned).map(row => {
+                        if (isMapping) {
+                            return {
+                                id: row.id || pathKey(row.__path),
+                                sourceField: row.sourceField || row.name || "",
+                                targetField: row.targetField || "",
+                                path: Array.isArray(row.__path) ? row.__path : [],
+                                type: row.type || "",
+                                description: row.description || "",
+                                status: row.status || DEFAULT_MAPPING_STATUS,
+                                rules: row.rules || "",
+                                format: row.format || ""
+                            };
+                        }
+                        return {
+                            id: row.id || pathKey(row.__path),
+                            name: row.name || "",
+                            path: Array.isArray(row.__path) ? row.__path : [],
+                            type: row.type || "",
+                            format: row.format || "",
+                            definition: row.definition || "",
+                            sample: row.sample || "",
+                            source: row.source || "",
+                            relation: row.relation || "1..1"
+                        };
+                    });
                 }
 
                 function hasDatasetContent(dataset) {
@@ -2494,18 +2713,26 @@
                     const parentPath = Array.isArray(parentNode?.data?.__path) ? parentNode.data.__path : [];
                     const newPath = [...parentPath, `New_${Date.now().toString().slice(-4)}`];
                     const rows = collectAllRows();
+                    const isMapping = isDataMappingTemplateActive();
+                    const targetLabel = "Nouveau";
                     const newRow = {
                         id: `new_${Date.now()}`,
                         __path: newPath,
                         path: newPath,
                         level: parentPath.length,
-                        name: "New",
+                        name: targetLabel,
+                        sourceField: "",
+                        targetField: targetLabel,
+                        description: "",
                         type: "",
                         format: "",
                         definition: "",
                         sample: "",
                         source: "",
-                        relation: "1..1"
+                        relation: "1..1",
+                        status: isMapping ? DEFAULT_MAPPING_STATUS : "",
+                        rules: "",
+                    };
                     };
                     try {
                         const insertAt = (() => {
@@ -2675,7 +2902,8 @@
 
                     const label = document.createElement("span");
                     label.className = "label";
-                    label.textContent = params.value || "";
+                    const valueText = params.value || "";
+                    label.textContent = valueText;
 
                     function clearDropState() {
                         wrapper.removeAttribute("data-drop");
@@ -2766,7 +2994,10 @@
                     if (isMockTemplate) {
                         next = (activePage?.datasetScript || "").trim();
                     } else if (isTree) {
-                        const rows = prepareTreeRowsForExport(activePage?.data?.rowData || []);
+                        const rows = prepareTreeRowsForExport(
+                            activePage?.data?.rowData || [],
+                            getPageTemplateId(activePage) || state.activeTemplateId || DEFAULT_TEMPLATE_ID
+                        );
                         next = rows.length ? JSON.stringify({ rows }, null, 2) : "";
                     } else {
                         dataset = buildDatasetFromState({ activeOnly: true });
@@ -2863,6 +3094,10 @@
                                 parsed && Array.isArray(parsed.treeTypeOptions)
                                     ? parsed.treeTypeOptions
                                     : TREE_TYPE_OPTIONS.slice(),
+                            statusOptions:
+                                parsed && Array.isArray(parsed.statusOptions)
+                                    ? parsed.statusOptions
+                                    : STATUS_OPTIONS_DEFAULT.slice(),
                             schema: { tables: schemaTables },
                             scenarioGeneratedTables:
                                 parsed && typeof parsed.scenarioGeneratedTables === "object"
@@ -2880,6 +3115,7 @@
                             templatePromptOverrides: {},
                             treeSourceOptions: TREE_SOURCE_OPTIONS.slice(),
                             treeTypeOptions: TREE_TYPE_OPTIONS.slice(),
+                            statusOptions: STATUS_OPTIONS_DEFAULT.slice(),
                             schema: { tables: [] },
                             scenarioGeneratedTables: {}
                         };
@@ -2957,6 +3193,13 @@
                     return TREE_TYPE_OPTIONS.slice();
                 }
 
+                function getStatusOptions() {
+                    if (Array.isArray(state?.statusOptions) && state.statusOptions.length) {
+                        return state.statusOptions;
+                    }
+                    return STATUS_OPTIONS_DEFAULT.slice();
+                }
+
                 function expandTreeSystemPrompt(promptText) {
                     if (typeof promptText !== "string") return promptText;
                     const types = getTreeTypeOptions().join(" | ");
@@ -2992,6 +3235,21 @@
                 function closeTreeSourceOptionsModal() {
                     if (!treeSourceModal) return;
                     treeSourceModal.classList.remove("open");
+                }
+
+                function openStatusOptionsPrompt() {
+                    const current = getStatusOptions().join("\n");
+                    const raw = window.prompt("Définis les statuts (un par ligne)", current);
+                    if (raw == null) return;
+                    const lines = raw.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+                    const options = normalizeOptionList(lines.length ? lines : STATUS_OPTIONS_DEFAULT);
+                    if (!options.length) return;
+                    state.statusOptions = options;
+                    persistState();
+                    if (gridApi && isDataMappingTemplateActive()) {
+                        setGridColumnDefs(buildTreeColumnDefs());
+                        gridApi.refreshHeader();
+                    }
                 }
 
                 function setGridColumnDefs(columnDefs) {
@@ -3077,6 +3335,10 @@
 
                 function isTreeTemplateActive() {
                     return getPageTemplateConfig()?.parser === "tree";
+                }
+
+                function isDataMappingTemplateActive(page = getActivePage()) {
+                    return getPageTemplateConfig(page)?.id === "data-mapping";
                 }
 
                 function renderTemplateMeta() {
@@ -3240,7 +3502,7 @@
                     renderTemplateMeta();
                 }
 
-                let state = loadState();
+                state = loadState();
                 state.scenarioGeneratedTables =
                     state.scenarioGeneratedTables && typeof state.scenarioGeneratedTables === "object"
                         ? state.scenarioGeneratedTables
@@ -3317,6 +3579,9 @@
                             treeTypeOptions: Array.isArray(state.treeTypeOptions)
                                 ? normalizeOptionList(state.treeTypeOptions)
                                 : TREE_TYPE_OPTIONS.slice(),
+                            statusOptions: Array.isArray(state.statusOptions)
+                                ? normalizeOptionList(state.statusOptions)
+                                : STATUS_OPTIONS_DEFAULT.slice(),
                             schema: state.schema || { tables: [] },
                             scenarioGeneratedTables: state.scenarioGeneratedTables || {}
                         };
@@ -3900,7 +4165,17 @@
                         gridColumnDefs = buildTreeColumnDefs();
                         gridElement?.classList?.add("tree-template");
                         if (!finalRowData.length) {
-                            finalRowData = [TREE_EMPTY_ROW];
+                            finalRowData = [
+                                isDataMappingTemplateActive()
+                                    ? {
+                                        ...DATA_MAPPING_EMPTY_ROW,
+                                        path: [...DATA_MAPPING_EMPTY_ROW.path],
+                                        __path: [...(Array.isArray(DATA_MAPPING_EMPTY_ROW.__path)
+                                            ? DATA_MAPPING_EMPTY_ROW.__path
+                                            : DATA_MAPPING_EMPTY_ROW.path)]
+                                    }
+                                    : TREE_EMPTY_ROW
+                            ];
                         }
                         finalRowData = decorateTreeRows(finalRowData);
                         data.rowData = finalRowData;
@@ -7817,7 +8092,8 @@
                         getTemplateConfigById(getPageTemplateId(normalizedPage) || state.activeTemplateId || DEFAULT_TEMPLATE_ID)?.parser === "tree";
                     if (!isMockTemplate) {
                         if (isTreeTemplate) {
-                            const rows = prepareTreeRowsForExport(normalizedPage?.data?.rowData || []);
+                            const templateId = getPageTemplateId(normalizedPage) || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                            const rows = prepareTreeRowsForExport(normalizedPage?.data?.rowData || [], templateId);
                             normalizedPage.datasetScript = rows.length ? JSON.stringify({ rows }, null, 2) : "";
                         } else {
                             const datasetForPage = buildDatasetFromPage(normalizedPage);
@@ -8001,7 +8277,8 @@
                                 allowTitleUpdate: Boolean(aiTitle)
                             });
                             applyGridDisplayPreferences({ persist: false });
-                            const exportedRows = prepareTreeRowsForExport(structure.rowData || []);
+                            const templateId = getPageTemplateId(page) || state.activeTemplateId || DEFAULT_TEMPLATE_ID;
+                            const exportedRows = prepareTreeRowsForExport(structure.rowData || [], templateId);
                             const treeScriptPayload = exportedRows.length ? { rows: exportedRows } : treeDataset;
                             if (gridScript && typeof gridScript.value === "string") {
                                 gridScript.value = JSON.stringify(treeScriptPayload, null, 2);
