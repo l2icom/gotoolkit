@@ -524,24 +524,6 @@
             display: none;
         }
 
-        .tree-template .dragHandle {
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #64748b;
-            border-radius: 6px;
-            cursor: grab;
-        }
-
-        .tree-template .dragHandle:active {
-            cursor: grabbing;
-        }
-
-        .tree-template .dragHandle:hover {
-            background: rgba(15, 23, 42, 0.08);
-        }
 
         .tree-template .badge {
             font-weight: 800;
@@ -1695,6 +1677,18 @@
                     window.goToolkitGridOptions = gridOptions;
                 }
 
+                function handleGlobalPointerDown(event) {
+                    if (!gridApi) return;
+                    const editingCell = document.querySelector(".ag-cell-inline-editing");
+                    if (!editingCell) return;
+                    if (editingCell.contains(event.target)) return;
+                    gridApi.stopEditing();
+                }
+
+                if (typeof document !== "undefined") {
+                    document.addEventListener("pointerdown", handleGlobalPointerDown, true);
+                }
+
                 const DEFAULT_PRIMARY_KEY = "id";
 
                 function createTableId(index) {
@@ -2557,11 +2551,6 @@
                     wrapper.className = "treeCell";
                     wrapper.setAttribute("draggable", "true");
 
-                    const dragHandle = document.createElement("span");
-                    dragHandle.className = "dragHandle";
-                    dragHandle.textContent = "⋮⋮";
-                    dragHandle.title = "Déplacer la ligne";
-                    dragHandle.setAttribute("aria-hidden", "true");
                     const indent = document.createElement("span");
                     indent.className = "indent";
                     indent.style.setProperty("--depth", level);
@@ -2575,17 +2564,19 @@
                         wrapper.removeAttribute("data-drop");
                     }
 
-                    wrapper.addEventListener("dragstart", event => {
+                    const beginDrag = event => {
                         treeDragState.draggingPath = Array.isArray(params.data?.__path)
                             ? params.data.__path
                             : normalizeTreePath(params.data?.path || []);
                         event.dataTransfer.effectAllowed = "move";
-                    });
+                    };
+                    wrapper.addEventListener("dragstart", beginDrag);
 
-                    wrapper.addEventListener("dragend", () => {
+                    const endDrag = () => {
                         treeDragState.draggingPath = null;
                         clearDropState();
-                    });
+                    };
+                    wrapper.addEventListener("dragend", endDrag);
 
                     wrapper.addEventListener("dragover", event => {
                         if (!treeDragState.draggingPath) return;
@@ -2615,7 +2606,7 @@
                         clearDropState();
                     });
 
-                    wrapper.append(dragHandle, indent, label);
+                    wrapper.append(indent, label);
                     return wrapper;
                 }
 
