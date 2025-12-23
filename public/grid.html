@@ -2557,6 +2557,11 @@
                     wrapper.className = "treeCell";
                     wrapper.setAttribute("draggable", "true");
 
+                    const dragHandle = document.createElement("span");
+                    dragHandle.className = "dragHandle";
+                    dragHandle.textContent = "⋮⋮";
+                    dragHandle.title = "Déplacer la ligne";
+                    dragHandle.setAttribute("aria-hidden", "true");
                     const indent = document.createElement("span");
                     indent.className = "indent";
                     indent.style.setProperty("--depth", level);
@@ -2610,7 +2615,7 @@
                         clearDropState();
                     });
 
-                    wrapper.append(indent, label);
+                    wrapper.append(dragHandle, indent, label);
                     return wrapper;
                 }
 
@@ -3253,9 +3258,9 @@
                         const btn = document.createElement("button");
                         btn.className = `tab${index === state.activeIndex ? " active" : ""}`;
                         btn.type = "button";
-                        const label = (page?.title || "").trim() || `Table ${index + 1}`;
-                        btn.textContent = label;
-                        btn.title = label;
+                    const label = `Page ${index + 1}`;
+                    btn.textContent = label;
+                    btn.title = label;
                         btn.addEventListener("click", () => setActivePage(index));
                         pageTabs.appendChild(btn);
                     });
