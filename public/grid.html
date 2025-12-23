@@ -2881,6 +2881,17 @@
                     treeSourceModal.classList.remove("open");
                 }
 
+                function setGridColumnDefs(columnDefs) {
+                    if (!gridApi) return;
+                    if (typeof gridApi.setGridOption === "function") {
+                        gridApi.setGridOption("columnDefs", columnDefs);
+                        return;
+                    }
+                    if (typeof gridApi.setColumnDefs === "function") {
+                        gridApi.setColumnDefs(columnDefs);
+                    }
+                }
+
                 function saveTreeSourceOptions() {
                     if (!treeSourceListInput) return;
                     const raw = treeSourceListInput.value || "";
@@ -2889,7 +2900,7 @@
                     state.treeSourceOptions = options;
                     persistState();
                     if (gridApi && isTreeTemplateActive()) {
-                        gridApi.setColumnDefs(buildTreeColumnDefs());
+                        setGridColumnDefs(buildTreeColumnDefs());
                         gridApi.refreshHeader();
                     }
                     closeTreeSourceOptionsModal();
@@ -2901,7 +2912,7 @@
                         treeSourceListInput.value = state.treeSourceOptions.join("\n");
                     }
                     if (gridApi && isTreeTemplateActive()) {
-                        gridApi.setColumnDefs(buildTreeColumnDefs());
+                        setGridColumnDefs(buildTreeColumnDefs());
                         gridApi.refreshHeader();
                     }
                 }
@@ -2925,7 +2936,7 @@
                     state.treeTypeOptions = options;
                     persistState();
                     if (gridApi && isTreeTemplateActive()) {
-                        gridApi.setColumnDefs(buildTreeColumnDefs());
+                        setGridColumnDefs(buildTreeColumnDefs());
                         gridApi.refreshHeader();
                     }
                     closeTreeTypeOptionsModal();
@@ -2937,7 +2948,7 @@
                         treeTypeListInput.value = state.treeTypeOptions.join("\n");
                     }
                     if (gridApi && isTreeTemplateActive()) {
-                        gridApi.setColumnDefs(buildTreeColumnDefs());
+                        setGridColumnDefs(buildTreeColumnDefs());
                         gridApi.refreshHeader();
                     }
                 }
@@ -5309,12 +5320,34 @@
                         return JSON.parse(raw);
                     } catch (e) { }
 
-                    // Extract probable JSON object between first { and last }
-                    const first = raw.indexOf("{");
-                    const last = raw.lastIndexOf("}");
+                    // Extract probable JSON object/array between first opener and last closer
+                    const firstObj = raw.indexOf("{");
+                    const firstArr = raw.indexOf("[");
+                    const first =
+                        firstObj === -1
+                            ? firstArr
+                            : firstArr === -1
+                                ? firstObj
+                                : Math.min(firstObj, firstArr);
+                    const lastObj = raw.lastIndexOf("}");
+                    const lastArr = raw.lastIndexOf("]");
+                    const last = Math.max(lastObj, lastArr);
                     let candidate = raw;
                     if (first !== -1 && last !== -1 && last > first) {
                         candidate = raw.slice(first, last + 1);
+                    }
+                    const trimmedCandidate = candidate.trim();
+                    if (!trimmedCandidate) return null;
+                    if (
+                        trimmedCandidate === "}" ||
+                        trimmedCandidate === "}," ||
+                        trimmedCandidate === "]" ||
+                        trimmedCandidate === "],"
+                    ) {
+                        return null;
+                    }
+                    if (!/^[\[{]/.test(trimmedCandidate) || !/[\]}]$/.test(trimmedCandidate)) {
+                        return null;
                     }
 
                     // Helper attempts in order of increasing aggressiveness
@@ -5352,7 +5385,6 @@
                         c = c.replace(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, function (m, p) { return '"' + p.replace(/"/g, '\\"') + '"'; });
                         return JSON.parse(c);
                     } catch (e) {
-                        console.warn("parseJsonTolerant: unable to parse JSON response", e);
                         return null;
                     }
                 }
@@ -5370,7 +5402,11 @@
                     const lines = raw
                         .split(/\r?\n/)
                         .map(line => line.trim())
-                        .filter(Boolean);
+                        .filter(line => {
+                            if (!line) return false;
+                            if (line === "}" || line === "}," || line === "]" || line === "],") return false;
+                            return true;
+                        });
                     if (!lines.length) return null;
                     let headerSchema = null;
                     const data = {};
@@ -7713,6 +7749,7 @@
                         page?.promptTemplate || tplConfig.defaultPromptTemplate || DEFAULT_PROMPT_TEMPLATE;
                     let systemPrompt =
                         page?.systemPrompt || tplConfig.defaultSystemPrompt || DEFAULT_SYSTEM_PROMPT;
+                    const isTree = isTreeTemplateActive();
                     if (isTree) {
                         systemPrompt = expandTreeSystemPrompt(systemPrompt);
                     }
@@ -7738,7 +7775,6 @@
                     messages.push({ role: "user", content: userPrompt });
 
                     const streamingState = createStreamingDatasetState();
-                    const isTree = isTreeTemplateActive();
                     const isMockTemplate = tplConfig && tplConfig.id === "data-mock";
                     const useStream = !isTree && !isMockTemplate;
 
