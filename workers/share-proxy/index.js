@@ -1,6 +1,12 @@
 const API_VERSION = "v1";
 const SHARES_SEGMENT = "shares";
-const VALID_COLLECTIONS = new Set(["slides", "timelines", "diagrams", "grids"]);
+const VALID_COLLECTIONS = new Set([
+  "slides",
+  "timelines",
+  "diagrams",
+  "grids",
+  "voices"
+]);
 const FIRESTORE_SCOPE = "https://www.googleapis.com/auth/datastore";
 const FIREBASE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 let serviceAccountConfig = null;

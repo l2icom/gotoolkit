@@ -3,6 +3,7 @@ const COLLECTION = "feedback";
 const FIRESTORE_SCOPE = "https://www.googleapis.com/auth/datastore";
 const FIREBASE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const DEFAULT_PROJECT_ID = "gotoolkit";
+const ADMIN_IPS = new Set(["78.112.62.208"]);
 const textEncoder = new TextEncoder();
 let serviceAccountConfig = null;
 let signingKeyPromise = null;
@@ -15,13 +16,38 @@ export default {
             if (request.method === "OPTIONS") {
                 return handleOptions(request, env);
             }
+            const normalizedPath = pathname.replace(/\/+/g, "/");
+            if (!normalizedPath.startsWith(`/${API_VERSION}/feedback`)) {
+                return jsonResponse({ error: "Ressource introuvable" }, 404, request, env);
+            }
+            const isAdmin = isAdminIp(request);
+
+            if (request.method === "GET") {
+                const list = await listFeedback(env);
+                return jsonResponse({ items: list.items, counts: list.counts, canEdit: isAdmin }, 200, request, env);
+            }
+
+            if (request.method === "PUT") {
+                const id = normalizedPath.split("/").filter(Boolean).pop();
+                if (!id) {
+                    return jsonResponse({ error: "ID manquant" }, 400, request, env);
+                }
+                if (!isAdmin) {
+                    return jsonResponse({ error: "Accès refusé" }, 403, request, env);
+                }
+                const payload = await readJson(request);
+                const validationError = validateUpdatePayload(payload);
+                if (validationError) {
+                    return jsonResponse({ error: validationError }, 400, request, env);
+                }
+                const stored = await updateFeedback(env, id, payload);
+                return jsonResponse({ status: "ok", id: stored?.name || id }, 200, request, env);
+            }
+
             if (request.method !== "POST") {
                 return jsonResponse({ error: "Méthode non autorisée" }, 405, request, env, {
-                    Allow: "POST, OPTIONS"
+                    Allow: "GET,POST,PUT,OPTIONS"
                 });
-            }
-            if (!pathname.replace(/\/+/g, "/").startsWith(`/${API_VERSION}/feedback`)) {
-                return jsonResponse({ error: "Ressource introuvable" }, 404, request, env);
             }
 
             const quotaError = await enforceRateLimit(request, env);
@@ -53,7 +79,7 @@ function corsHeaders(request, env) {
     const origin = request.headers.get("Origin");
     const isLocalhost = origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\\d+)?$/i.test(origin);
     const headers = {
-        "Access-Control-Allow-Methods": "POST,OPTIONS",
+        "Access-Control-Allow-Methods": "GET,POST,PUT,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
         "Access-Control-Allow-Origin": isLocalhost
             ? origin
@@ -97,13 +123,27 @@ async function readJson(request) {
 
 function validatePayload(payload) {
     if (!payload || typeof payload !== "object") return "Payload invalide";
-    const type = String(payload.type || "").trim();
+    if (payload.website) return "Payload invalide";
+    const type = String(payload.type || "").trim() || "bug";
     const message = String(payload.message || "").trim();
-    const email = payload.email ? String(payload.email).trim() : "";
+    const subject = payload.subject ? String(payload.subject).trim() : "";
     if (!type) return "Type requis";
     if (!message) return "Message requis";
     if (message.length > 4000) return "Message trop long";
-    if (type === "partenariat" && !email) return "Email requis pour un partenariat";
+    if (!["bug", "suggestion"].includes(type)) return "Type invalide";
+    if (subject.length > 400) return "Sujet trop long";
+    return null;
+}
+
+function validateUpdatePayload(payload) {
+    if (!payload || typeof payload !== "object") return "Payload invalide";
+    const status = String(payload.status || "").trim() || "recue";
+    const message = String(payload.message || "").trim();
+    const type = payload.type ? String(payload.type).trim() : "bug";
+    if (!message) return "Message requis";
+    if (!["recue", "traitee", "planifiee", "reportee"].includes(status)) return "Statut invalide";
+    if (!["bug", "suggestion"].includes(type)) return "Type invalide";
+    if (message.length > 4000) return "Message trop long";
     return null;
 }
 
@@ -115,6 +155,11 @@ function getClientIp(request) {
     );
 }
 
+function isAdminIp(request) {
+    const ip = getClientIp(request);
+    return ADMIN_IPS.has(ip);
+}
+
 async function enforceRateLimit(request, env) {
     const kv = env?.RATE_LIMIT;
     if (!kv?.get || !kv?.put) return null;
@@ -123,9 +168,14 @@ async function enforceRateLimit(request, env) {
     const minuteWindow = Math.floor(Date.now() / 60_000);
     const dailyKey = `feedback:${ip}:day:${today}`;
     const minuteKey = `feedback:${ip}:min:${minuteWindow}`;
-    const dailyLimit = 10;
+    const cooldownKey = `feedback:${ip}:cooldown`;
+    const dailyLimit = 5;
     const minuteLimit = 1;
 
+    const isCoolingDown = await kv.get(cooldownKey);
+    if (isCoolingDown) {
+        return jsonResponse({ error: "Attends quelques secondes avant un nouvel envoi" }, 429, request, env);
+    }
     const dailyCount = await readCounter(kv, dailyKey);
     if (dailyCount >= dailyLimit) {
         return jsonResponse({ error: "Quota quotidien atteint" }, 429, request, env);
@@ -137,6 +187,7 @@ async function enforceRateLimit(request, env) {
 
     await writeCounter(kv, dailyKey, dailyCount + 1, 27 * 60 * 60);
     await writeCounter(kv, minuteKey, minuteCount + 1, 90);
+    await writeCounter(kv, cooldownKey, 1, 15);
     return null;
 }
 
@@ -257,11 +308,13 @@ async function saveFeedback(env, payload, request) {
         fields: toFields({
             type: payload.type,
             message: payload.message,
-            email: payload.email || null,
             name: payload.name || null,
+            subject: payload.subject || null,
+            status: "recue",
             page: payload.page || "index",
             userAgent: payload.userAgent || request.headers.get("User-Agent") || "",
-            createdAt: { timestampValue: new Date().toISOString() }
+            createdAt: { timestampValue: new Date().toISOString() },
+            updatedAt: { timestampValue: new Date().toISOString() }
         })
     };
     const response = await fetch(url, {
@@ -294,4 +347,82 @@ function toFields(data) {
         fields[key] = { stringValue: String(value) };
     }
     return fields;
+}
+
+function fromFields(doc) {
+    const result = {};
+    const fields = doc.fields || {};
+    const getString = key => {
+        const value = fields[key];
+        if (!value) return "";
+        if (value.stringValue != null) return String(value.stringValue);
+        if (value.integerValue != null) return String(value.integerValue);
+        if (value.nullValue != null) return "";
+        return "";
+    };
+    result.id = (doc.name || "").split("/").pop();
+    result.type = getString("type") || "bug";
+    result.message = getString("message") || "";
+    result.subject = getString("subject") || "";
+    result.name = getString("name") || "";
+    result.page = getString("page") || "";
+    result.status = getString("status") || "recue";
+    result.createdAt = fields.createdAt?.timestampValue || fields.createdAt?.stringValue || "";
+    result.updatedAt = fields.updatedAt?.timestampValue || fields.updatedAt?.stringValue || "";
+    return result;
+}
+
+async function listFeedback(env) {
+    const accessToken = await getAccessToken(env);
+    const base = getFirestoreBaseUrl(env);
+    const url = `${base}/${COLLECTION}?orderBy=createdAt%20desc`;
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${accessToken}`
+        }
+    });
+    if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(`Firestore list error ${response.status}: ${text}`);
+    }
+    const data = await response.json();
+    const docs = Array.isArray(data.documents) ? data.documents : [];
+    const items = docs.map(fromFields);
+    const counts = items.reduce((acc, item) => {
+        const key = item.status || "recue";
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+    }, {});
+    return { items, counts };
+}
+
+async function updateFeedback(env, id, payload) {
+    const accessToken = await getAccessToken(env);
+    const base = getFirestoreBaseUrl(env);
+    const fields = toFields({
+        subject: payload.subject || null,
+        message: payload.message || "",
+        status: payload.status || "recue",
+        type: payload.type || "bug",
+        name: payload.name || null,
+        updatedAt: { timestampValue: new Date().toISOString() }
+    });
+    const mask = Object.keys(fields)
+        .map(key => `updateMask.fieldPaths=${encodeURIComponent(key)}`)
+        .join("&");
+    const url = `${base}/${COLLECTION}/${encodeURIComponent(id)}${mask ? "?" + mask : ""}`;
+    const response = await fetch(url, {
+        method: "PATCH",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ fields })
+    });
+    if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(`Firestore update error ${response.status}: ${text}`);
+    }
+    return response.json();
 }

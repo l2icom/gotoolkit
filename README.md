@@ -1,59 +1,47 @@
-# Go-Toolkit — des livrables produit “prêts à partager”, en quelques minutes
+# GoToolkit
 
-Go-Toolkit est une boîte à outils pensée pour les Product Owners, consultants et équipes produit qui ont besoin de **mettre en forme une idée rapidement** : cadrage, ateliers, planning, schémas, tableaux… avec un **copilote IA** et des **exports immédiats**.
+Boîte à outils 100 % navigateur pour produire vite des livrables partageables (planches, tableaux, diagrammes, timelines, comptes-rendus vocaux) avec aide IA optionnelle et liens de partage.
 
-L’objectif n’est pas de “faire de l’IA”, mais de **sortir des supports clairs et actionnables** (slides, roadmap, diagrammes, tables) sans passer par une installation lourde ni un outillage complexe.
+## Ce qui compose le projet
+- Site statique dans `public/` : modules HTML/JS/CSS écrits à la main + assets vendoriés. Ouvrable directement ou via un serveur local.
+- Pont React/Excalidraw dans `src/connect/index.tsx`, bundlé en `public/js/connect.bundle.js` avec `npm run build`.
+- Workers Cloudflare dans `workers/` : proxy OpenAI, service de partage, collecte de feedback.
+- Test de fumée Playwright dans `tests/` (`grid-mock.spec.ts`).
 
-## Ce que ça apporte (côté métier)
+## Modules
+- **Launcher** (`public/index.html`) : page d’entrée vers les modules avec le cache-buster `?v=2025.12.24.2` et une URL de partage par défaut.
+- **Canvas** (`public/canvas.html`) : planches multi-slides alimentées par les templates de `public/js/prompt.js`. Exports PNG, PPTX, capsule JSON, brouillons locaux et lien de partage (collection Firestore `slides`).
+- **Grid** (`public/grid.html`) : générateur de tableaux AG Grid avec modal de templates + bulles de critères (`prompt.js`, `public/js/template-criteria.js`). Pages multiples, export CSV/JSON, brouillons locaux, partage (`grids`). Couvert par le test Playwright.
+- **Draw** (`public/draw.html`) : hôte Excalidraw branché sur `window.GoToolkitExcalidraw` (Mermaid → Excalidraw, application de scènes, accès API brut). Templates `prompt.js`, capsules, partage (`diagrams`), prompts IA pour générer un schéma.
+- **Timeline** (`public/timeline.html`) : planning vis-timeline avec exports XLSX/PNG/JSON, capsule + partage (`timelines`) et IA pour rédiger un plan.
+- **Voice** (`public/voice.html`) : enregistreur + dictée (Web Speech + mode “whisperer”), éditeur de transcript, sujets temporisés, participants, résumés par page. Brouillons locaux, menu de partage (collection `voices`; l’allowlist du worker ne l’inclut pas encore), connectée à `GoToolkitIA`.
 
-- **Accélère la préparation d’ateliers** : structurer un sujet, cadrer une décision, aligner le vocabulaire.
-- **Améliore la qualité des livrables** : formats cohérents, prompts contextualisés, modèles prêts à l’emploi.
-- **Réduit le temps de mise en forme** : édition directe dans l’interface + export PowerPoint/Excel/image/CSV/JSON.
-- **Garde le contrôle** : tout fonctionne dans le navigateur ; le partage est toujours une action volontaire.
+## IA et backends
+- Config dans `public/js/ia-config.js` : OpenAI (direct ou proxy `https://openai.gotoolkit.workers.dev`), Ollama (URL/API key), WebLLM (liste de modèles) et fenêtre de contexte, stockés en `localStorage`.
+- `public/js/ia-client.js` expose `GoToolkitIAClient.chatCompletion(payload)` et `GoToolkitIA.chatCompletion(payload)` ; normalise les flux SSE/NDJSON, streame les réponses et route vers le backend choisi (`GoToolkitAIBackend` gère la sélection + fallback proxy).
+- WebLLM : service worker/worker dans `public/js/webllm-sw.js` et `public/js/webllm-worker.js`.
+- Excalidraw : `src/connect/index.tsx` expose `window.GoToolkitExcalidraw` (`initialize`, `applyScene`, `convertMermaid`, `getApi`).
 
-## Les 4 modules
+## Données, brouillons et partage
+- IndexedDB via `public/js/idb-doc-store.js` pour les capsules locales (`public/js/capsule-drafts.js`) et l’historique des partages (`public/js/share-history.js`), avec fallback `localStorage`.
+- Les liens de partage passent par `public/js/share-worker-client.js` et `window.GO_TOOLKIT_SHARE_API_URL(S)` (inclut `https://share.gotoolkit.workers.dev` par défaut). L’API Firestore dans `workers/share-proxy` autorise `slides`, `timelines`, `diagrams`, `grids`, `voices`.
+- `public/config.json` porte les flags (seulement `enableTours` pour l’instant).
 
-- **50 Nuances** (`public/canvas.html`) : des “planches” éditables pour cadrer un sujet (roadmap, arbitrage, comparaison, parcours, alignement, etc.) et produire un contenu synthétique et présentable. Exports `PPTX`, image, `JSON` (capsule) + lien de partage optionnel.
-- **Goal Digger** (`public/timeline.html`) : une timeline interactive pour construire / ajuster un planning (jalons, durées, dépendances), avec génération assistée. Exports texte, image, `XLSX`, `JSON` + lien de partage optionnel.
-- **Le Cardinal** (`public/draw.html`) : un module de diagrammes pour illustrer un raisonnement (processus, séquence, modèle métier, etc.) avec génération IA et édition visuelle/texte. Export capsule `JSON` + lien de partage optionnel.
-- **Module Grid** (`public/grid.html`) : un générateur de tableaux de données pour passer d’un sujet flou à une **table structurée** éditable. Export `CSV` + capsule `JSON` + lien de partage optionnel.
+## Build, run, test
+- Dépendances : `npm install`.
+- Build du pont Excalidraw : `npm run build` (ou `npm run build:connect`) → écrit `public/js/connect.bundle.js` + assets.
+- Serveur local : `npm start` (`npx serve public -l 5000`) ou ouverture directe des HTML de `public/`.
+- Tests : `npm run test:playwright` exécute `tests/grid-mock.spec.ts` sur `public/grid.html`.
 
-## Comment ça se passe (en 3 étapes)
+## Déploiement
+- Déployer le dossier `public/` sur n’importe quel hébergeur statique. `firebase.json` est prêt (assets immuables, `index.html` no-cache).
+- Anti-cache : requiert le `?v=2025.12.24.2` sur les liens du launcher et les scripts (ex. `js/prompt.js?v=...`) ; à incrémenter partout quand les assets changent.
+- Workers Cloudflare :
+  - `workers/openai-proxy` : CORS + quotas + garde-fous payload ; secrets `OPENAI_API_KEY` et KV `RATE_LIMIT`.
+  - `workers/share-proxy` : partage Firestore ; `FIREBASE_SERVICE_ACCOUNT` (JSON), `FIREBASE_PROJECT_ID` optionnel, `SHARE_ALLOWED_ORIGINS`, KV `RATE_LIMIT`.
+  - `workers/feedback-proxy` : collecte feedback ; mêmes secrets + KV.
 
-1. **Choisis un module** et un modèle (quand disponible).
-2. **Décris ton contexte** en langage naturel, puis lance la génération IA.
-3. **Affines** (édition directe) puis **exportes** ou **partages** un lien.
-
-## Confidentialité & partage
-
-- Par défaut, les données restent **dans ton navigateur** (brouillons sauvegardés localement).
-- Les exports sont **locaux** (fichiers téléchargés).
-- Les **capsules** (fichiers `JSON`) servent à sauvegarder un livrable et à le reprendre plus tard.
-- Le bouton **☍ Nexus** permet de générer un **lien de partage** uniquement si une API de partage est configurée.
-
-## Essayer en 2 minutes
-
-- Ouvre le lanceur : `public/index.html` (ou directement un des fichiers : `canvas.html`, `timeline.html`, `draw.html`, `grid.html`).
-- Si besoin, sers le dossier `public/` (utile pour certaines fonctionnalités d’export) : `npx serve public`
-- Configure l’IA depuis l’interface (clé OpenAI, proxy, ou WebLLM “dev” selon ta configuration).
-
-## Déploiement (simple)
-
-Go-Toolkit est un site statique : héberge simplement le dossier `public/` (Firebase Hosting est prêt à l’emploi via `firebase.json`, mais ce n’est pas obligatoire).
-
-## Option “équipe” (si tu veux un partage interne)
-
-Le repo contient des workers dans `workers/` pour :
-
-- **Relayer l’IA** (proxy) si tu ne veux pas gérer des clés côté navigateur.
-- **Activer le partage** via une base Firestore (liens Nexus).
-
-Ces options restent facultatives : Go-Toolkit fonctionne déjà en mode local sans serveur.
-
-## Limites actuelles (assumées)
-
-- Pas d’authentification / gestion d’utilisateurs : c’est un outil léger orienté livrables.
-- Pas de synchronisation multi-appareils sans activer le partage.
-- Chaque module est autonome (pas de “mémoire” partagée entre modules).
-
-Si tu veux que le README mette l’accent sur un cas d’usage (PO, consulting, sales enablement, delivery), dis-moi ton public cible et je l’adapte.
+## Repères utiles
+- Templates et métadonnées : `public/js/prompt.js`, `public/js/template-criteria.js`.
+- Shell visuel commun : `public/styles/app-shell.css`.
+- Attendus Playwright : `tests/grid-mock.spec.ts`.

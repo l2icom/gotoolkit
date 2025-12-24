@@ -620,6 +620,166 @@
             flex: 1 1 220px;
         }
 
+        .feedback-helper {
+            margin: 4px 0 0 0;
+            color: var(--muted);
+            font-size: 0.75rem;
+        }
+
+        .requests-button {
+            position: fixed;
+            left: 10px;
+            bottom: 12px;
+            z-index: 60;
+            border: 1px solid var(--border-soft);
+            background: var(--surface);
+            color: var(--text);
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            box-shadow: var(--shadow-soft);
+            cursor: pointer;
+        }
+
+        .requests-modal {
+            min-width: 1200px;
+            max-width: 95vw;
+            background: var(--surface);
+            border-radius: 12px;
+            box-shadow: var(--shadow-soft);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .requests-body {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 10px;
+            min-height: 480px;
+            max-height: 80vh;
+            }
+
+        .requests-list-panel {
+            border: 1px solid var(--border-soft);
+            border-radius: 10px;
+            background: var(--surface-soft);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .requests-filter {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border-soft);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: space-between;
+        }
+
+        .requests-filter select {
+            border-radius: 8px;
+            border: 1px solid var(--border-soft);
+            padding: 4px 6px;
+            font-size: 0.8rem;
+            background: #fff;
+        }
+
+        .requests-list {
+            overflow-y: auto;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .requests-item {
+            border: 1px solid var(--border-soft);
+            border-radius: 10px;
+            padding: 6px;
+            background: #fff;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .requests-item.active {
+            border-color: var(--primary);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .requests-item-title {
+            margin: 0;
+            font-weight: 700;
+            font-size: 0.82rem;
+        }
+
+        .requests-item-meta {
+            color: var(--muted);
+            font-size: 0.72rem;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .requests-item-message {
+            margin: 0;
+            font-size: 0.76rem;
+            color: var(--text);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .requests-content {
+            border: 1px solid var(--border-soft);
+            border-radius: 10px;
+            background: #fff;
+            padding: 8px;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 8px;
+            min-height: 0;
+        }
+
+        .requests-content h4 {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .request-content-body {
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .request-content-body label {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            font-size: 0.8rem;
+        }
+
+        .request-content-body input,
+        .request-content-body textarea,
+        .request-content-body select {
+            border: 1px solid var(--border-soft);
+            border-radius: 8px;
+            padding: 6px;
+            font-size: 0.82rem;
+        }
+
+        .requests-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
         .feedback-actions {
             display: flex;
             align-items: center;
@@ -748,7 +908,7 @@
             </div>
             <h1>Go-Toolkit</h1>
             <p>Le vaisseau spatial des super-POs</p>
-            <span class="hero-version">v2025.12.24.1</span>
+            <span class="hero-version">v2025.12.24.2</span>
 
             <div class="hero-meta">
                 <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Feedback</button>
@@ -761,35 +921,35 @@
                 <p class="section-label superpower-label label-link" id="superpowerToggle">⚡︎ Super-pouvoirs</p>
             </div>
             <div class="launcher-grid">
-                <a class="launcher" href="canvas.html?v=2025.12.24.1">
+                <a class="launcher" href="canvas.html?v=2025.12.24.2">
                     <span class="launcher-emoji">◍</span>
                     <span class="launcher-name">
                         Canvas (50 Nuances)
                         <div class="launcher-desc">Varie ton vocabulaire</div>
                     </span>
                 </a>
-                <a class="launcher" href="timeline.html?v=2025.12.24.1">
+                <a class="launcher" href="timeline.html?v=2025.12.24.2">
                     <span class="launcher-emoji">⇥</span>
                     <span class="launcher-name">
                         Timeline (Goal Digger)
                         <div class="launcher-desc">Trace ta feuille de route</div>
                     </span>
                 </a>
-                <a class="launcher" href="draw.html?v=2025.12.24.1">
+                <a class="launcher" href="draw.html?v=2025.12.24.2">
                     <span class="launcher-emoji">◇</span>
                     <span class="launcher-name">
                         Draw (Indélébile)
                         <div class="launcher-desc">Modélise tes idées</div>
                     </span>
                 </a>
-                <a class="launcher" href="voice.html?v=2025.12.24.1">
+                <a class="launcher" href="voice.html?v=2025.12.24.2">
                     <span class="launcher-emoji">▷</span>
                     <span class="launcher-name">
                         Voice (Goal Digger)
                         <div class="launcher-desc">Pilote tes réunions</div>
                     </span>
                 </a>
-                <a class="launcher" href="grid.html?v=2025.12.24.1">
+                <a class="launcher" href="grid.html?v=2025.12.24.2">
                     <span class="launcher-emoji">▦</span>
                     <span class="launcher-name">
                         Grid (Le Cardinal)
@@ -821,10 +981,13 @@
             <p id="savedEmpty" class="share-helper" hidden>Aucune capsule enregistrée localement.</p>
         </section>
 
+        <button id="openRequestsBtn" class="requests-button" type="button">Demandes (<span
+                id="requestsCount">0</span>)</button>
+
         <div id="feedbackModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
             <div class="feedback-modal">
                 <header>
-                    <h3>☄ Antenne feedback</h3>
+                    <h3>☄ Feedback</h3>
                     <button id="closeFeedbackBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
                 </header>
                 <form id="feedbackForm" class="feedback-form">
@@ -834,35 +997,92 @@
                             <input id="feedbackName" name="name" type="text" autocomplete="name"
                                 placeholder="Ton nom" />
                         </label>
-                        <label>
-                            <span class="label-title">Email <span id="emailRequiredMark" class="required-asterisk"
-                                    aria-hidden="true"></span></span>
-                            <input id="feedbackEmail" name="email" type="email" autocomplete="email"
-                                placeholder="prenom@domaine.com" />
-                        </label>
                     </div>
                     <label>
                         <span class="label-title">Type <span class="required-asterisk"
                                 aria-hidden="true">*</span></span>
                         <select id="feedbackType" name="type" required>
-                            <option value="" disabled selected>Choisir un type</option>
-                            <option value="bug">Bug</option>
-                            <option value="amelioration">Amélioration</option>
-                            <option value="partenariat">Partenariat</option>
-                            <option value="autre">Autre</option>
+                            <option value="bug" selected>Bug</option>
+                            <option value="suggestion">Suggestion</option>
                         </select>
                     </label>
+                    <input type="text" id="feedbackWebsite" name="website" style="position:absolute;left:-9999px;opacity:0;"
+                        tabindex="-1" aria-hidden="true" autocomplete="off">
                     <label>
-                        <span class="label-title">Détails <span class="required-asterisk"
+                        <span class="label-title">Sujet</span>
+                        <input id="feedbackSubject" name="subject" type="text" placeholder="Titre de la demande" />
+                    </label>
+                    <label>
+                        <span class="label-title">Message<span class="required-asterisk"
                                 aria-hidden="true">*</span></span>
                         <textarea id="feedbackMessage" name="message" rows="10" required
                             placeholder="Décris ton retour"></textarea>
+                        <p class="feedback-helper">Pour toute demande de partenariat ou autre, veuillez envoyer un mail
+                            à <a href="mailto:quang.tran@savane-group.com">quang.tran@savane-group.com</a>.</p>
                     </label>
                     <div class="feedback-actions">
                         <button type="button" id="cancelFeedbackBtn" class="btn-secondary">Annuler</button>
                         <button type="submit" id="submitFeedbackBtn" class="btn-primary">Envoyer</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <div id="requestsModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+            <div class="requests-modal">
+                <header style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                    <h3 style="margin:0;font-size:1.1rem;">📂 Demandes</h3>
+                    <button id="closeRequestsBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
+                </header>
+                <div class="requests-body">
+                    <aside class="requests-list-panel">
+                        <div class="requests-filter">
+                            <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
+                                Statut
+                                <select id="requestsFilter">
+                                    <option value="recue">Reçues</option>
+                                    <option value="traitee">Traitées</option>
+                                    <option value="planifiee">Planifiées</option>
+                                    <option value="reportee">Reportées</option>
+                                </select>
+                            </label>
+                            <span id="requestsTotalLabel" style="font-size:0.8rem;color:var(--muted);"></span>
+                        </div>
+                        <div id="requestsList" class="requests-list" aria-live="polite"></div>
+                    </aside>
+                    <section class="requests-content">
+                        <div>
+                            <h4 id="requestTitle">Aucune sélection</h4>
+                            <p id="requestMeta" class="requests-item-meta"></p>
+                        </div>
+                        <div class="request-content-body">
+                            <label>
+                                Sujet
+                                <input id="requestSubject" type="text" readonly />
+                            </label>
+                            <label>
+                                Type
+                                <input id="requestType" type="text" readonly />
+                            </label>
+                            <label id="requestStatusWrapper">
+                                Statut
+                                <select id="requestStatus" disabled>
+                                    <option value="recue">Reçue</option>
+                                    <option value="traitee">Traitée</option>
+                                    <option value="planifiee">Planifiée</option>
+                                    <option value="reportee">Reportée</option>
+                                </select>
+                            </label>
+                            <label>
+                                Message
+                                <textarea id="requestMessage" rows="12" readonly></textarea>
+                            </label>
+                        </div>
+                        <div class="requests-actions">
+                            <button id="saveRequestBtn" class="btn-primary" type="button" disabled>Sauvegarder</button>
+                        </div>
+                    </section>
+                </div>
             </div>
         </div>
 
@@ -1278,10 +1498,16 @@
             const capsuleDrafts = window.goToolkitCapsuleDrafts;
 
             const APP_DEFINITIONS = {
-                nuances: { emoji: "◍", name: "50 Nuances", page: "canvas.html?v=2025.12.24.1", collection: "slides" },
-                plan: { emoji: "⇥", name: "Goal Digger", page: "timeline.html?v=2025.12.24.1", collection: "timelines" },
-                draw: { emoji: "◇", name: "Le Cardinal", page: "draw.html?v=2025.12.24.1", collection: "diagrams" },
-                grid: { emoji: "▦", name: "Module Grid", page: "grid.html?v=2025.12.24.1", collection: "grids" }
+                nuances: { emoji: "◍", name: "Canvas", page: "canvas.html?v=2025.12.24.2", collection: "slides" },
+                plan: { emoji: "⇥", name: "Timeline", page: "timeline.html?v=2025.12.24.2", collection: "timelines" },
+                draw: { emoji: "◇", name: "Draw", page: "draw.html?v=2025.12.24.2", collection: "diagrams" },
+                grid: { emoji: "▦", name: "Grid", page: "grid.html?v=2025.12.24.2", collection: "grids" },
+                voice: { emoji: "▷", name: "Voice", page: "voice.html?v=2025.12.24.2", collection: "voices" }
+            };
+            const GRID_TEMPLATE_LABELS = {
+                "tree-structure": "Structure de données",
+                "data-mapping": "Mapping de données",
+                "data-mock": "Données fictives"
             };
             let refreshGalleryPromise = null;
             let refreshSavedPromise = null;
@@ -1401,8 +1627,22 @@
                 if (app === "grid") {
                     const tabName = payload?.title || "Tableau";
                     const context = payload?.scenario || "";
-                    const templateLabel = payload?.title || "";
+                    const templateLabel =
+                        payload?.templateLabel ||
+                        GRID_TEMPLATE_LABELS[payload?.templateId] ||
+                        payload?.templateId ||
+                        "";
                     return { tabName, lines: normalizeLines(context), templateLabel };
+                }
+                if (app === "voice") {
+                    const firstPage = payload?.pages?.[0];
+                    const tabName = firstPage?.title || "Voice";
+                    const summary = firstPage?.summary || "";
+                    const transcript = firstPage?.transcript || "";
+                    const scenario = firstPage?.scenario || "";
+                    const lines = normalizeLines(summary || scenario || transcript);
+                    const templateLabel = firstPage?.templateName || firstPage?.templateId || "";
+                    return { tabName, lines, templateLabel };
                 }
                 return { tabName: "Sans titre", lines: [], templateLabel: "" };
             }
@@ -1746,16 +1986,37 @@
         const feedbackForm = document.getElementById("feedbackForm");
         const feedbackType = document.getElementById("feedbackType");
         const feedbackMessage = document.getElementById("feedbackMessage");
-        const feedbackEmail = document.getElementById("feedbackEmail");
-        const emailRequiredMark = document.getElementById("emailRequiredMark");
+        const feedbackSubject = document.getElementById("feedbackSubject");
         const submitFeedbackBtn = document.getElementById("submitFeedbackBtn");
         const toastEl = document.getElementById("feedbackToast");
         const messagePlaceholders = {
             bug: "Décris le bug, les étapes pour reproduire, le résultat attendu et le résultat observé.",
-            amelioration: "Décris l'amélioration souhaitée, le contexte et l'impact attendu.",
-            partenariat: "Décris ta proposition, le type de partenariat et les objectifs communs.",
-            autre: "Décris ton retour ou ta question."
+            suggestion: "Décris la suggestion, le contexte et l'impact attendu."
         };
+        const requestsBtn = document.getElementById("openRequestsBtn");
+        const requestsModal = document.getElementById("requestsModal");
+        const closeRequestsBtn = document.getElementById("closeRequestsBtn");
+        const requestsList = document.getElementById("requestsList");
+        const requestsFilter = document.getElementById("requestsFilter");
+        const requestsCountLabel = document.getElementById("requestsCount");
+        const requestsTotalLabel = document.getElementById("requestsTotalLabel");
+        const requestTitle = document.getElementById("requestTitle");
+        const requestMeta = document.getElementById("requestMeta");
+        const requestSubject = document.getElementById("requestSubject");
+        const requestTypeField = document.getElementById("requestType");
+        const requestStatusSelect = document.getElementById("requestStatus");
+        const requestStatusWrapper = document.getElementById("requestStatusWrapper");
+        const requestMessageField = document.getElementById("requestMessage");
+        const saveRequestBtn = document.getElementById("saveRequestBtn");
+        const feedbackWebsite = document.getElementById("feedbackWebsite");
+        const REQUEST_STATUS_LABELS = {
+            recue: "Reçue",
+            traitee: "Traitée",
+            planifiee: "Planifiée",
+            reportee: "Reportée"
+        };
+        let requestsState = { items: [], canEdit: false };
+        let activeRequestId = null;
 
         function showToast(message, isError = false) {
             if (!toastEl) return;
@@ -1766,15 +2027,155 @@
         }
 
         function updateMessagePlaceholder(type) {
-            const placeholder = messagePlaceholders[type] || messagePlaceholders.autre;
+            const placeholder = messagePlaceholders[type] || messagePlaceholders.bug;
             feedbackMessage.placeholder = placeholder;
         }
 
-        function updateEmailRequirement(type) {
-            const requireEmail = type === "partenariat";
-            feedbackEmail.required = requireEmail;
-            if (emailRequiredMark) {
-                emailRequiredMark.textContent = requireEmail ? "*" : "";
+        function formatRequestMeta(item) {
+            const typeLabel = item.type ? item.type.toUpperCase() : "—";
+            const name = item.name || "Anonyme";
+            const status = REQUEST_STATUS_LABELS[item.status] || "Reçue";
+            const date = item.createdAt ? new Date(item.createdAt).toLocaleString("fr-FR") : "";
+            return `${status} · ${typeLabel} · ${name}${date ? " · " + date : ""}`;
+        }
+
+        function renderRequestDetail(item) {
+            const hasItem = Boolean(item);
+            requestTitle.textContent = hasItem ? (item.subject || "(sans sujet)") : "Aucune sélection";
+            requestMeta.textContent = hasItem ? formatRequestMeta(item) : "";
+            if (requestSubject) requestSubject.value = hasItem ? (item.subject || "") : "";
+            if (requestTypeField) requestTypeField.value = hasItem ? (item.type || "") : "";
+            if (requestStatusSelect) requestStatusSelect.value = hasItem ? (item.status || "recue") : "recue";
+            if (requestMessageField) requestMessageField.value = hasItem ? (item.message || "") : "";
+            if (requestsState.canEdit && hasItem) {
+                requestSubject?.removeAttribute("readonly");
+                requestMessageField?.removeAttribute("readonly");
+                requestStatusSelect?.removeAttribute("disabled");
+                saveRequestBtn.disabled = false;
+            } else {
+                requestSubject?.setAttribute("readonly", "true");
+                requestMessageField?.setAttribute("readonly", "true");
+                requestStatusSelect?.setAttribute("disabled", "true");
+                saveRequestBtn.disabled = true;
+            }
+        }
+
+        function renderRequestsList() {
+            if (!requestsList) return;
+            requestsList.innerHTML = "";
+            const filter = requestsFilter?.value || "recue";
+            const items = requestsState.items
+                .filter(item => item.status === filter)
+                .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+            if (!items.length) {
+                const empty = document.createElement("p");
+                empty.textContent = "Aucune demande pour ce statut.";
+                empty.className = "share-helper";
+                requestsList.appendChild(empty);
+                return;
+            }
+            items.forEach(item => {
+                const el = document.createElement("div");
+                el.className = "requests-item";
+                if (item.id === activeRequestId) el.classList.add("active");
+                const title = document.createElement("p");
+                title.className = "requests-item-title";
+                title.textContent = item.subject || "(sans sujet)";
+                const meta = document.createElement("p");
+                meta.className = "requests-item-meta";
+                meta.textContent = `${REQUEST_STATUS_LABELS[item.status] || "Reçue"} · ${(item.type || "").toUpperCase()} · ${item.name || "Anonyme"}`;
+                const msg = document.createElement("p");
+                msg.className = "requests-item-message";
+                msg.textContent = item.message || "";
+                el.appendChild(title);
+                el.appendChild(meta);
+                el.appendChild(msg);
+                el.addEventListener("click", () => {
+                    activeRequestId = item.id;
+                    renderRequestsList();
+                    renderRequestDetail(item);
+                });
+                requestsList.appendChild(el);
+            });
+        }
+
+        function updateRequestCounters() {
+            const total = requestsState.items.length;
+            const filter = requestsFilter?.value || "recue";
+            const statusCounts = requestsState.items.reduce((acc, item) => {
+                const key = item.status || "recue";
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+            if (requestsCountLabel) requestsCountLabel.textContent = statusCounts.recue || 0;
+            if (requestsTotalLabel) requestsTotalLabel.textContent = `${REQUEST_STATUS_LABELS[filter] || "Reçues"} (${statusCounts[filter] || 0})`;
+            if (requestsFilter) {
+                Array.from(requestsFilter.options).forEach(opt => {
+                    const key = opt.value;
+                    const count = statusCounts[key] || 0;
+                    opt.textContent = `${REQUEST_STATUS_LABELS[key] || key} (${count})`;
+                });
+            }
+        }
+
+        async function fetchRequests() {
+            try {
+                const endpoint = (window.GO_TOOLKIT_FEEDBACK_API_URL || "https://feedback.gotoolkit.workers.dev/v1/feedback") + "";
+                const response = await fetch(endpoint, { method: "GET" });
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status);
+                }
+                const data = await response.json();
+                const items = Array.isArray(data.items) ? data.items : [];
+                requestsState = { items, canEdit: Boolean(data.canEdit) };
+                if (requestStatusWrapper) {
+                    requestStatusWrapper.style.display = "";
+                }
+                updateRequestCounters();
+                renderRequestsList();
+                if (items.length) {
+                    activeRequestId = items[0].id;
+                    renderRequestDetail(items[0]);
+                } else {
+                    activeRequestId = null;
+                    renderRequestDetail(null);
+                }
+            } catch (err) {
+                console.warn("Impossible de charger les demandes", err);
+            }
+        }
+
+        async function saveCurrentRequest() {
+            if (!requestsState.canEdit || !activeRequestId) return;
+            saveRequestBtn.disabled = true;
+            saveRequestBtn.textContent = "Sauvegarde...";
+            try {
+                const endpoint = (window.GO_TOOLKIT_FEEDBACK_API_URL || "https://feedback.gotoolkit.workers.dev/v1/feedback") + "/" + encodeURIComponent(activeRequestId);
+                const current = requestsState.items.find(i => i.id === activeRequestId) || {};
+                const payload = {
+                    subject: (requestSubject?.value || "").trim(),
+                    message: (requestMessageField?.value || "").trim(),
+                    status: (requestStatusSelect?.value || "recue"),
+                    type: (requestTypeField?.value || "").toLowerCase(),
+                    name: current.name || null
+                };
+                const response = await fetch(endpoint, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const text = await response.text().catch(() => "");
+                    throw new Error(text || "Sauvegarde impossible");
+                }
+                await fetchRequests();
+                showToast("Demande mise à jour.");
+            } catch (err) {
+                console.error("Sauvegarde demande impossible", err);
+                showToast("Sauvegarde impossible", true);
+            } finally {
+                saveRequestBtn.disabled = false;
+                saveRequestBtn.textContent = "Sauvegarder";
             }
         }
         function updateStatusIcon(el, state) {
@@ -2275,13 +2676,25 @@
             feedbackType?.focus();
         }
 
+        function openRequestsModal() {
+            if (!requestsModal) return;
+            requestsModal.classList.add("open");
+            requestsModal.setAttribute("aria-hidden", "false");
+            fetchRequests();
+        }
+
+        function closeRequestsModal() {
+            if (!requestsModal) return;
+            requestsModal.classList.remove("open");
+            requestsModal.setAttribute("aria-hidden", "true");
+        }
+
         function closeModal() {
             if (!feedbackModal) return;
             feedbackModal.classList.remove("open");
             feedbackModal.setAttribute("aria-hidden", "true");
             feedbackForm?.reset();
-            updateMessagePlaceholder("autre");
-            updateEmailRequirement("autre");
+            updateMessagePlaceholder("bug");
         }
 
         async function handleSubmit(event) {
@@ -2290,14 +2703,14 @@
                 feedbackForm.reportValidity();
                 return;
             }
-            const type = feedbackType.value;
-            const message = feedbackMessage.value.trim();
-            const email = feedbackEmail.value.trim();
-            const name = (document.getElementById("feedbackName")?.value || "").trim();
-            if (type === "partenariat" && !email) {
-                showToast("Email requis pour un partenariat.", true);
+            if (feedbackWebsite && feedbackWebsite.value.trim()) {
+                showToast("Formulaire invalide.", true);
                 return;
             }
+            const type = feedbackType.value || "bug";
+            const message = feedbackMessage.value.trim();
+            const name = (document.getElementById("feedbackName")?.value || "").trim();
+            const subject = (feedbackSubject?.value || "").trim();
             submitFeedbackBtn.disabled = true;
             submitFeedbackBtn.textContent = "Envoi...";
             try {
@@ -2309,9 +2722,9 @@
                     },
                     body: JSON.stringify({
                         name: name || null,
-                        email: email || null,
                         type,
                         message,
+                        subject: subject || null,
                         page: "index",
                         userAgent: navigator.userAgent || ""
                     })
@@ -2365,10 +2778,10 @@
         const VOICE_AUDIO_DB = { name: "go-toolkit-voice-audio", store: "recordings" };
 
         try {
-                const storedSpeechEngine = localStorage.getItem(SPEECH_ENGINE_STORAGE_KEY) || "web-speech";
-                const hasApiKey = typeof config?.getApiKey === "function" ? Boolean(config.getApiKey()) : Boolean(localStorage.getItem("go-toolkit-api-key") || "");
-                const speechEngine = storedSpeechEngine === "whisperer" && hasApiKey ? "whisperer" : "web-speech";
-                window.GoToolkitSpeechEngine = speechEngine;
+            const storedSpeechEngine = localStorage.getItem(SPEECH_ENGINE_STORAGE_KEY) || "web-speech";
+            const hasApiKey = typeof config?.getApiKey === "function" ? Boolean(config.getApiKey()) : Boolean(localStorage.getItem("go-toolkit-api-key") || "");
+            const speechEngine = storedSpeechEngine === "whisperer" && hasApiKey ? "whisperer" : "web-speech";
+            window.GoToolkitSpeechEngine = speechEngine;
         } catch (e) {
             window.GoToolkitSpeechEngine = "web-speech";
         }
@@ -2708,12 +3121,23 @@
         feedbackType?.addEventListener("change", event => {
             const value = event.target.value;
             updateMessagePlaceholder(value);
-            updateEmailRequirement(value);
         });
         feedbackForm?.addEventListener("submit", handleSubmit);
+        requestsBtn?.addEventListener("click", openRequestsModal);
+        closeRequestsBtn?.addEventListener("click", closeRequestsModal);
+        requestsModal?.addEventListener("click", event => {
+            if (event.target === requestsModal) closeRequestsModal();
+        });
+        requestsFilter?.addEventListener("change", () => {
+            renderRequestsList();
+            updateRequestCounters();
+        });
+        saveRequestBtn?.addEventListener("click", () => {
+            saveCurrentRequest();
+        });
 
-        updateMessagePlaceholder("autre");
-        updateEmailRequirement("autre");
+        updateMessagePlaceholder("bug");
+        fetchRequests().catch(() => { /* noop */ });
 
         function setIaStatus(backend) {
             if (openaiStatusEl) {

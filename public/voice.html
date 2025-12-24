@@ -905,10 +905,10 @@
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                     aria-expanded="false">▷ Voice ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.24.1" role="menuitem"> ◍ Canvas</a>
-                    <a class="nav-switch-link" href="grid.html?v=2025.12.24.1" role="menuitem">▦ Grid</a>
-                    <a class="nav-switch-link" href="draw.html?v=2025.12.24.1" role="menuitem">◇ Draw</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.24.1" role="menuitem">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.24.2" role="menuitem"> ◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2025.12.24.2" role="menuitem">▦ Grid</a>
+                    <a class="nav-switch-link" href="draw.html?v=2025.12.24.2" role="menuitem">◇ Draw</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.24.2" role="menuitem">⇥ Timeline</a>
                 </div>
             </div>
 
@@ -1123,7 +1123,7 @@
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
             <strong>Module Voice (Goal Digger)</strong>
-            <span>Version 2025.12.24.1</span>
+            <span>Version 2025.12.24.2</span>
             <span>Développé par Quang TRAN.</span>
             <span>Usage réservé à Savane Consulting.</span>
             <div class="info-actions">
@@ -1146,7 +1146,7 @@
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
     <script src="js/ia-config.js"></script>
-    <script src="js/prompt.js?v=2025.12.24.1"></script>
+    <script src="js/prompt.js?v=2025.12.24.2"></script>
     <script src="js/ia-client.js"></script>
 
     <script>
@@ -1384,6 +1384,8 @@
                     script: "",
                     transcript: "",
                     summary: "",
+                    templateId: "",
+                    templateName: "",
                     subjects: [],
                     duration: null,
                     participants: [
@@ -1404,6 +1406,8 @@
                     if (!next.tabLabel) next.tabLabel = next.title || next.label || "Page";
                     if (typeof next.lastIaResponse !== "string") next.lastIaResponse = "";
                     if (typeof next.summary !== "string") next.summary = "";
+                    if (typeof next.templateId !== "string") next.templateId = "";
+                    if (typeof next.templateName !== "string") next.templateName = "";
                     return next;
                 });
                 if (!raw.activePageId && raw.pages[0]) raw.activePageId = raw.pages[0].id;
@@ -2036,11 +2040,18 @@
             function renderPage() {
                 const page = getActivePage();
                 if (!page) return;
+                selectedTemplateId = page.templateId || selectedTemplateId;
+                const tplFromState = templateList.find(tpl => tpl.id === page.templateId);
+                selectedTemplateText = tplFromState?.text || selectedTemplateText || "";
                 if (pageTitleEl) pageTitleEl.textContent = page.title || "Page";
                 if (promptCreate) promptCreate.value = page.scenario || "";
                 if (promptModify) promptModify.value = page.script || "";
                 if (transcribeInput) transcribeInput.value = page.transcript || "";
                 if (summaryTextarea) summaryTextarea.value = page.summary || "";
+                if (promptTemplateMeta) {
+                    const label = page.templateName || tplFromState?.title || "—";
+                    promptTemplateMeta.textContent = `Modèle : ${label}`;
+                }
                 updateTranscriptMeta();
                 renderGuidelines();
             }
@@ -2076,6 +2087,12 @@
                 const tpl = templateList.find(t => t.id === selectedTemplateId);
                 if (!tpl) return;
                 selectedTemplateText = tpl.text || "";
+                const page = getActivePage();
+                if (page) {
+                    page.templateId = tpl.id;
+                    page.templateName = tpl.title || "";
+                    persistState();
+                }
                 promptTemplateMeta.textContent = `Modèle : ${tpl.title}`;
                 persistScenario();
                 closePromptzilla();

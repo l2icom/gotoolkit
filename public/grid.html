@@ -1401,7 +1401,7 @@
         <img src="logo.gif" alt="Logo Go-Toolkit">
         <strong>Module Grid (Le Cardinal)</strong>
         <p>Les tableaux générés ici peuvent être partagés et exportés pour enrichir vos capsules métier.</p>
-        <span>Version 2025.12.24.1</span>
+        <span>Version 2025.12.24.2</span>
         <button id="closeInfoPopup" type="button" class="btn-primary">Réinitialiser</button>
     </div>
 
@@ -1477,7 +1477,7 @@
         </div>
     </div>
 
-    <script src="js/prompt.js?v=2025.12.24.1"></script>
+    <script src="js/prompt.js?v=2025.12.24.2"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/idb-doc-store.js"></script>
@@ -4555,13 +4555,16 @@
                     const title = (gridTitleInput?.value || page?.title || "Grid").trim();
                     const scenario = (promptInput?.value || "").trim();
                     const script = gridScript?.value || page?.datasetScript || "";
+                    const tpl = getPageTemplateConfig(page);
                     return {
                         title,
                         columnDefs: gridData.columnDefs,
                         rowData: gridData.rowData,
                         scenario,
                         script,
-                        lastAiScript: page?.lastAiDatasetScript || ""
+                        lastAiScript: page?.lastAiDatasetScript || "",
+                        templateId: tpl?.id || "",
+                        templateLabel: tpl?.label || ""
                     };
                 }
 
