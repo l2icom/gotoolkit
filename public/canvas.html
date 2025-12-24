@@ -7415,6 +7415,20 @@
             }
         })();
     </script>
+    <script>
+        window.GoToolkitAppFeedbackConfig = {
+            appId: "canvas",
+            appName: "Canvas",
+            defaultType: "bug-canvas",
+            shareCollection: "slides",
+            buildSharePayload: () => ({
+                app: "canvas",
+                url: window.location.href,
+                payload: typeof buildStatePayload === "function" ? buildStatePayload() : {}
+            })
+        };
+    </script>
+    <script src="js/feedback-app.js"></script>
 
 </body>
 

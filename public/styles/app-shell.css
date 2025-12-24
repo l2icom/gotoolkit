@@ -200,6 +200,184 @@ button.btn-primary {
     color: #ffffff;
 }
 
+.feedback-app-button {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 220;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    background: var(--app-surface);
+    color: var(--app-text);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.feedback-app-button:hover,
+.feedback-app-button:focus-visible {
+    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.3);
+    outline: none;
+}
+
+.feedback-app-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.65);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    z-index: 230;
+}
+
+.feedback-app-backdrop.open {
+    display: flex;
+}
+
+.feedback-app-dialog {
+    width: min(95vw, 960px);
+    min-width: 800px;
+    background: var(--app-surface);
+    border-radius: 16px;
+    padding: 10px;
+    box-shadow: 0 28px 60px rgba(15, 23, 42, 0.25);
+    max-height: 90vh;
+    overflow: auto;
+    font-size: 13px;
+}
+
+.feedback-app-dialog header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.feedback-app-dialog h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.feedback-app-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.feedback-app-label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--app-text);
+}
+
+.feedback-app-input,
+.feedback-app-dialog select {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--app-border);
+    padding: 6px 10px;
+    font-size: 13px;
+    font-family: var(--app-font);
+    background: var(--app-surface-soft);
+    color: var(--app-text);
+}
+
+.feedback-app-textarea {
+    min-height: 220px;
+    border-radius: 8px;
+    border: 1px solid var(--app-border);
+    padding: 6px 10px;
+    font-family: var(--app-font);
+    font-size: 13px;
+    background: var(--app-surface-soft);
+    color: var(--app-text);
+    resize: vertical;
+}
+
+.feedback-app-helper {
+    margin: 0;
+    font-size: 12px;
+    color: var(--app-muted);
+}
+
+.feedback-app-share-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.feedback-app-share-checkbox {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--app-text);
+}
+
+.feedback-app-share-info {
+    font-size: 12px;
+    color: var(--app-text);
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px dashed var(--app-border);
+    background: var(--app-surface-soft);
+}
+
+.feedback-app-share-link {
+    display: block;
+    word-break: break-word;
+    color: #2563eb;
+    text-decoration: underline;
+    margin-top: 4px;
+}
+
+.feedback-app-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.feedback-app-actions .btn {
+    min-width: 0;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.feedback-app-close-btn {
+    border: none;
+    background: transparent;
+    padding: 4px;
+    font-size: 16px;
+    color: var(--app-text);
+    cursor: pointer;
+}
+
+.feedback-app-toast {
+    position: fixed;
+    bottom: 96px;
+    right: 16px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.85);
+    color: #fff;
+    font-size: 12px;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 240;
+}
+
+.feedback-app-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 .btn-secondary,
 button.btn-secondary {
     background: var(--app-surface, #ffffff);

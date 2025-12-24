@@ -8093,6 +8093,20 @@
             }
         })();
     </script>
+    <script>
+        window.GoToolkitAppFeedbackConfig = {
+            appId: "timeline",
+            appName: "Timeline",
+            defaultType: "bug-timeline",
+            shareCollection: "timelines",
+            buildSharePayload: () => ({
+                app: "timeline",
+                url: window.location.href,
+                payload: typeof buildTimelineStatePayload === "function" ? buildTimelineStatePayload() : {}
+            })
+        };
+    </script>
+    <script src="js/feedback-app.js"></script>
 </body>
 
 </html>

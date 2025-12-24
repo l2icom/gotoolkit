@@ -4,6 +4,15 @@ const FIRESTORE_SCOPE = "https://www.googleapis.com/auth/datastore";
 const FIREBASE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const DEFAULT_PROJECT_ID = "gotoolkit";
 const ADMIN_IPS = new Set(["78.112.62.208"]);
+const FEEDBACK_TYPES = new Set([
+    "bug-general",
+    "bug-canvas",
+    "bug-draw",
+    "bug-grid",
+    "bug-timeline",
+    "bug-voice",
+    "suggestion"
+]);
 const textEncoder = new TextEncoder();
 let serviceAccountConfig = null;
 let signingKeyPromise = null;
@@ -124,14 +133,18 @@ async function readJson(request) {
 function validatePayload(payload) {
     if (!payload || typeof payload !== "object") return "Payload invalide";
     if (payload.website) return "Payload invalide";
-    const type = String(payload.type || "").trim() || "bug";
+    const rawType = String(payload.type || "").trim().toLowerCase();
+    const type = rawType || "bug-general";
     const message = String(payload.message || "").trim();
     const subject = payload.subject ? String(payload.subject).trim() : "";
+    const shareUrl = payload.shareUrl ? String(payload.shareUrl).trim() : "";
     if (!type) return "Type requis";
     if (!message) return "Message requis";
     if (message.length > 4000) return "Message trop long";
-    if (!["bug", "suggestion"].includes(type)) return "Type invalide";
+    if (!FEEDBACK_TYPES.has(type)) return "Type invalide";
     if (subject.length > 400) return "Sujet trop long";
+    if (shareUrl.length > 2048) return "Lien partagé trop long";
+    if (shareUrl && !/^https?:\/\//i.test(shareUrl)) return "Lien partagé invalide";
     return null;
 }
 
@@ -312,6 +325,7 @@ async function saveFeedback(env, payload, request) {
             subject: payload.subject || null,
             status: "recue",
             page: payload.page || "index",
+            shareUrl: payload.shareUrl || null,
             userAgent: payload.userAgent || request.headers.get("User-Agent") || "",
             createdAt: { timestampValue: new Date().toISOString() },
             updatedAt: { timestampValue: new Date().toISOString() }
@@ -369,6 +383,7 @@ function fromFields(doc) {
     result.status = getString("status") || "recue";
     result.createdAt = fields.createdAt?.timestampValue || fields.createdAt?.stringValue || "";
     result.updatedAt = fields.updatedAt?.timestampValue || fields.updatedAt?.stringValue || "";
+    result.shareUrl = getString("shareUrl") || "";
     return result;
 }
 
@@ -400,14 +415,18 @@ async function listFeedback(env) {
 async function updateFeedback(env, id, payload) {
     const accessToken = await getAccessToken(env);
     const base = getFirestoreBaseUrl(env);
-    const fields = toFields({
+    const updateData = {
         subject: payload.subject || null,
         message: payload.message || "",
         status: payload.status || "recue",
-        type: payload.type || "bug",
+        type: payload.type || "bug-general",
         name: payload.name || null,
         updatedAt: { timestampValue: new Date().toISOString() }
-    });
+    };
+    if (Object.prototype.hasOwnProperty.call(payload, "shareUrl")) {
+        updateData.shareUrl = payload.shareUrl || null;
+    }
+    const fields = toFields(updateData);
     const mask = Object.keys(fields)
         .map(key => `updateMask.fieldPaths=${encodeURIComponent(key)}`)
         .join("&");

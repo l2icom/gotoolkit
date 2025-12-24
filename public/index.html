@@ -628,7 +628,7 @@
 
         .requests-button {
             position: fixed;
-            left: 10px;
+            right: 10px;
             bottom: 12px;
             z-index: 60;
             border: 1px solid var(--border-soft);
@@ -1002,7 +1002,12 @@
                         <span class="label-title">Type <span class="required-asterisk"
                                 aria-hidden="true">*</span></span>
                         <select id="feedbackType" name="type" required>
-                            <option value="bug" selected>Bug</option>
+                            <option value="bug-general" selected>Bug Général</option>
+                            <option value="bug-canvas">Bug Canvas</option>
+                            <option value="bug-draw">Bug Draw</option>
+                            <option value="bug-grid">Bug Grid</option>
+                            <option value="bug-timeline">Bug Timeline</option>
+                            <option value="bug-voice">Bug Voice</option>
                             <option value="suggestion">Suggestion</option>
                         </select>
                     </label>
@@ -1010,7 +1015,7 @@
                         tabindex="-1" aria-hidden="true" autocomplete="off">
                     <label>
                         <span class="label-title">Sujet</span>
-                        <input id="feedbackSubject" name="subject" type="text" placeholder="Titre de la demande" />
+                        <input id="feedbackSubject" name="subject" type="text" placeholder="Titre de la demande" required />
                     </label>
                     <label>
                         <span class="label-title">Message<span class="required-asterisk"
@@ -1076,6 +1081,10 @@
                             <label>
                                 Message
                                 <textarea id="requestMessage" rows="12" readonly></textarea>
+                            </label>
+                            <label>
+                                Lien partagé
+                                <input id="requestShareUrl" type="text" readonly />
                             </label>
                         </div>
                         <div class="requests-actions">
@@ -2007,6 +2016,7 @@
         const requestStatusSelect = document.getElementById("requestStatus");
         const requestStatusWrapper = document.getElementById("requestStatusWrapper");
         const requestMessageField = document.getElementById("requestMessage");
+        const requestShareUrl = document.getElementById("requestShareUrl");
         const saveRequestBtn = document.getElementById("saveRequestBtn");
         const feedbackWebsite = document.getElementById("feedbackWebsite");
         const REQUEST_STATUS_LABELS = {
@@ -2027,7 +2037,8 @@
         }
 
         function updateMessagePlaceholder(type) {
-            const placeholder = messagePlaceholders[type] || messagePlaceholders.bug;
+            const normalized = type && String(type).toLowerCase().startsWith("bug") ? "bug" : type;
+            const placeholder = messagePlaceholders[normalized] || messagePlaceholders.bug;
             feedbackMessage.placeholder = placeholder;
         }
 
@@ -2047,6 +2058,7 @@
             if (requestTypeField) requestTypeField.value = hasItem ? (item.type || "") : "";
             if (requestStatusSelect) requestStatusSelect.value = hasItem ? (item.status || "recue") : "recue";
             if (requestMessageField) requestMessageField.value = hasItem ? (item.message || "") : "";
+            if (requestShareUrl) requestShareUrl.value = hasItem ? (item.shareUrl || "") : "";
             if (requestsState.canEdit && hasItem) {
                 requestSubject?.removeAttribute("readonly");
                 requestMessageField?.removeAttribute("readonly");

@@ -9092,6 +9092,20 @@
             }
         })();
     </script>
+    <script>
+        window.GoToolkitAppFeedbackConfig = {
+            appId: "grid",
+            appName: "Grid",
+            defaultType: "bug-grid",
+            shareCollection: "grids",
+            buildSharePayload: () => ({
+                app: "grid",
+                url: window.location.href,
+                payload: typeof buildGridSharePayload === "function" ? buildGridSharePayload() : {}
+            })
+        };
+    </script>
+    <script src="js/feedback-app.js"></script>
 </body>
 
 </html>

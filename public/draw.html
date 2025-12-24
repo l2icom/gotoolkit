@@ -5178,6 +5178,20 @@
             }
         })();
     </script>
+    <script>
+        window.GoToolkitAppFeedbackConfig = {
+            appId: "draw",
+            appName: "Draw",
+            defaultType: "bug-draw",
+            shareCollection: "diagrams",
+            buildSharePayload: async () => ({
+                app: "draw",
+                url: window.location.href,
+                payload: typeof buildCapsulePayload === "function" ? await buildCapsulePayload() : {}
+            })
+        };
+    </script>
+    <script src="js/feedback-app.js"></script>
 </body>
 
 </html>
