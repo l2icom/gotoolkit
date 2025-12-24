@@ -5096,22 +5096,22 @@
                 }
 
                 function clearTimelineStorageAndReload() {
-                        try {
-                            // Preserve admin token and OpenAI key across reset
-                            var __preservedOpenAiKey = null;
-                            var __preservedAdminToken = null;
-                            try { __preservedOpenAiKey = localStorage.getItem('go-toolkit-api-key'); } catch (e) { }
-                            try { __preservedAdminToken = localStorage.getItem('feedback-admin-token'); } catch (e) { }
-                            localStorage.clear();
-                            if (__preservedOpenAiKey) {
-                                try { localStorage.setItem('go-toolkit-api-key', __preservedOpenAiKey); } catch (e) { }
-                            }
-                            if (__preservedAdminToken) {
-                                try { localStorage.setItem('feedback-admin-token', __preservedAdminToken); } catch (e) { }
-                            }
-                        } catch (err) {
-                            console.warn("Impossible de vider localStorage", err);
+                    try {
+                        // Preserve admin token and OpenAI key across reset
+                        var __preservedOpenAiKey = null;
+                        var __preservedAdminToken = null;
+                        try { __preservedOpenAiKey = localStorage.getItem('go-toolkit-api-key'); } catch (e) { }
+                        try { __preservedAdminToken = localStorage.getItem('feedback-admin-token'); } catch (e) { }
+                        localStorage.clear();
+                        if (__preservedOpenAiKey) {
+                            try { localStorage.setItem('go-toolkit-api-key', __preservedOpenAiKey); } catch (e) { }
                         }
+                        if (__preservedAdminToken) {
+                            try { localStorage.setItem('feedback-admin-token', __preservedAdminToken); } catch (e) { }
+                        }
+                    } catch (err) {
+                        console.warn("Impossible de vider localStorage", err);
+                    }
                     try {
                         sessionStorage.clear();
                     } catch (err) {
