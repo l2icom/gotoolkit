@@ -14,7 +14,7 @@ Boîte à outils 100 % navigateur pour produire vite des livrables partageables 
 - **Grid** (`public/grid.html`) : générateur de tableaux AG Grid avec modal de templates + bulles de critères (`prompt.js`, `public/js/template-criteria.js`). Pages multiples, export CSV/JSON, brouillons locaux, partage (`grids`). Couvert par le test Playwright.
 - **Draw** (`public/draw.html`) : hôte Excalidraw branché sur `window.GoToolkitExcalidraw` (Mermaid → Excalidraw, application de scènes, accès API brut). Templates `prompt.js`, capsules, partage (`diagrams`), prompts IA pour générer un schéma.
 - **Timeline** (`public/timeline.html`) : planning vis-timeline avec exports XLSX/PNG/JSON, capsule + partage (`timelines`) et IA pour rédiger un plan.
-- **Voice** (`public/voice.html`) : enregistreur + dictée (Web Speech + mode “whisperer”), éditeur de transcript, sujets temporisés, participants, résumés par page. Brouillons locaux, menu de partage (collection `voices`; l’allowlist du worker ne l’inclut pas encore), connectée à `GoToolkitIA`.
+- **Voice** (`public/voice.html`) : enregistreur + dictée (Web Speech + mode “whisperer”), éditeur de transcript, sujets temporisés, participants, résumés par page. Brouillons locaux, menu de partage (collection `voices` autorisée sur le worker Cloudflare), connectée à `GoToolkitIA`.
 
 ## IA et backends
 - Config dans `public/js/ia-config.js` : OpenAI (direct ou proxy `https://openai.gotoolkit.workers.dev`), Ollama (URL/API key), WebLLM (liste de modèles) et fenêtre de contexte, stockés en `localStorage`.
