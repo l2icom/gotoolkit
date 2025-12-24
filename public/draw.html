@@ -960,9 +960,9 @@
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button">◇ Draw ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.24">◍ Canvas</a>
-                    <a class="nav-switch-link" href="grid.html?v=2025.12.24">▦ Grid</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.24">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.25">◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2025.12.25">▦ Grid</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.25">⇥ Timeline</a>
                 </div>
             </div>
 
@@ -1142,7 +1142,7 @@
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
-    <script src="js/prompt.js?v=2025.12.24"></script>
+    <script src="js/prompt.js?v=2025.12.25"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/template-criteria.js"></script>
@@ -3078,9 +3078,9 @@
 
             function renderTabs() {
                 pageTabs.innerHTML = "";
-                const titleForTabs = state.activeIndex >= 0 ? `Page ${state.activeIndex + 1}` : "";
-                pageTabs.title = titleForTabs;
-                state.pages.forEach((page, index) => {
+                const activeLabel = state.activeIndex >= 0 ? state.pages[state.activeIndex]?.label || `Page ${state.activeIndex + 1}` : "";
+                pageTabs.dataset.activePageLabel = activeLabel || "";
+            state.pages.forEach((page, index) => {
                     const btn = document.createElement("button");
                     btn.className = `tab${index === state.activeIndex ? " active" : ""}`;
                     btn.textContent = page.label || `Page ${index + 1}`;
