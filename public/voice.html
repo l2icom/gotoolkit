@@ -3130,6 +3130,13 @@
                     toggleIaModal(false);
                     toggleContextPanel(false);
                     closeInfoPopup();
+                    if (subjectModalOverlay?.classList.contains("open")) {
+                        subjectModalOverlay.classList.remove("open");
+                        subjectModalOverlay.setAttribute("aria-hidden", "true");
+                    }
+                    if (promptzillaOverlay?.classList.contains("open")) {
+                        closePromptzilla();
+                    }
                 }
             });
 
