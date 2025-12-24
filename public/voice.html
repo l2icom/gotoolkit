@@ -183,6 +183,68 @@
             background: #fff;
         }
 
+        .info-popup {
+            position: absolute;
+            top: 56px;
+            right: 12px;
+            width: 280px;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 12px;
+            z-index: 200;
+        }
+
+        .info-popup.open {
+            display: flex;
+        }
+
+        .info-popup img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            align-self: center;
+        }
+
+        .info-popup a {
+            color: #2a7a57;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .info-popup button {
+            border-radius: 8px;
+            border: 1px solid rgba(15, 23, 42, 0.15);
+            background: #fff;
+            color: #0f172a;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            min-width: 110px;
+        }
+
+        .info-popup button.update-btn {
+            background: #2a7a57;
+            border-color: #2a7a57;
+            color: #fff;
+        }
+
+        .info-popup button.secondary {
+            background: #fff;
+            border-color: rgba(15, 23, 42, 0.15);
+            color: #0f172a;
+        }
+
+        .info-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
         textarea {
             width: 100%;
             border-radius: 10px;
@@ -843,10 +905,10 @@
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                     aria-expanded="false">▷ Voice ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.25" role="menuitem"> ◍ Canvas</a>
-                    <a class="nav-switch-link" href="grid.html?v=2025.12.25" role="menuitem">▦ Grid</a>
-                    <a class="nav-switch-link" href="draw.html?v=2025.12.25" role="menuitem">◇ Draw</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.25" role="menuitem">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.24.1" role="menuitem"> ◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2025.12.24.1" role="menuitem">▦ Grid</a>
+                    <a class="nav-switch-link" href="draw.html?v=2025.12.24.1" role="menuitem">◇ Draw</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.24.1" role="menuitem">⇥ Timeline</a>
                 </div>
             </div>
 
@@ -864,33 +926,6 @@
                     Contexte</button>
                 <button class="btn" id="openIaModal" aria-label="Ouvrir Prompt" title="⌘ Promptzilla">⌘
                     Prompt</button>
-
-                <div class="menu-trigger">
-                    <button class="btn" id="optionsBtn" aria-label="Affichage" title="Affichage">◯
-                        Affichage</button>
-                    <div class="context-menu" id="optionsMenu">
-                        <div class="menu-panel">
-                            <label>
-                                Taille (px)
-                                <select id="fontSizeInput">
-                                    <option value="12">12</option>
-                                    <option value="13" selected>13</option>
-                                    <option value="14">14</option>
-                                    <option value="15">15</option>
-                                    <option value="16">16</option>
-                                </select>
-                            </label>
-                            <label>
-                                Hauteur
-                                <select id="layoutDensitySelect">
-                                    <option value="cozy">Confort</option>
-                                    <option value="compact">Compact</option>
-                                    <option value="roomy">Aéré</option>
-                                </select>
-                            </label>
-                        </div>
-                    </div>
-                </div>
 
                 <div class="menu-trigger">
                     <button class="btn" id="fileMenuBtn" aria-label="Capsule" title="Capsule">⬠ Capsule</button>
@@ -1084,21 +1119,15 @@
             </div>
         </div>
 
-        <div class="modal-overlay" id="aboutVoiceModal" role="dialog" aria-modal="true"
-            aria-labelledby="aboutVoiceTitle">
-            <div class="modal" style="max-width:520px;">
-                <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;">
-                    <h3 id="aboutVoiceTitle">⎉ Voice</h3>
-                    <button class="modal-close btn" id="aboutVoiceClose" type="button" aria-label="Fermer">×</button>
-                </div>
-                <p style="margin:0 0 8px 0;font-size:14px;color:var(--muted);">
-                    Capsule dédiée aux réunions orales. Génère une trame en JSON, suit la transcription et coche les
-                    messages clés au fil de la discussion.</p>
-                <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--muted);line-height:1.5;">
-                    <li>Modèles orientés rituels produit/tech</li>
-                    <li>Transcription via Web Speech ou Whisperer (réglages)</li>
-                    <li>Partage privé via Nexus (collection Firestore <code>voices</code>)</li>
-                </ul>
+        <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
+            <img src="logo.gif" alt="Logo Go-Toolkit">
+            <strong>Module Voice (Goal Digger)</strong>
+            <span>Version 2025.12.24.1</span>
+            <span>Développé par Quang TRAN.</span>
+            <span>Usage réservé à Savane Consulting.</span>
+            <div class="info-actions">
+                <button id="updateAppBtn" type="button" class="update-btn">Réinitialiser</button>
+                <button id="tourReplayBtn" type="button" class="secondary">Tour guidé</button>
             </div>
         </div>
 
@@ -1116,7 +1145,7 @@
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
     <script src="js/ia-config.js"></script>
-    <script src="js/prompt.js?v=2025.12.25"></script>
+    <script src="js/prompt.js?v=2025.12.24.1"></script>
     <script src="js/ia-client.js"></script>
 
     <script>
@@ -1166,7 +1195,7 @@
                     </label>
                 </div>
                 <div class="modal-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;">
-                    <button type="button" class="btn" id="cancelSubjectModal">Annuler</button>
+                    <button type="button" class="btn" id="cancelSubjectModal" style="display:none;">Supprimer</button>
                     <button type="button" class="btn-primary" id="confirmSubjectModal">Ajouter</button>
                 </div>
             </div>`;
@@ -1234,10 +1263,6 @@
             const addSubjectBtn = document.getElementById("addSubjectBtn");
             const evaluateBtn = document.getElementById("evaluateBtn");
             const refreshFromScriptBtn = document.getElementById("refreshFromScriptBtn");
-            const fontSizeInput = document.getElementById("fontSizeInput");
-            const layoutDensitySelect = document.getElementById("layoutDensitySelect");
-            const optionsBtn = document.getElementById("optionsBtn");
-            const optionsMenu = document.getElementById("optionsMenu");
             const fileMenuBtn = document.getElementById("fileMenuBtn");
             const fileMenu = document.getElementById("fileMenu");
             const newDocumentBtn = document.getElementById("newDocumentBtn");
@@ -1246,8 +1271,10 @@
             const saveDocumentBtn = document.getElementById("saveDocumentBtn");
             const exportJsonBtn = document.getElementById("exportJsonBtn");
             const aboutVoiceBtn = document.getElementById("aboutVoiceBtn");
-            const aboutVoiceModal = document.getElementById("aboutVoiceModal");
-            const aboutVoiceClose = document.getElementById("aboutVoiceClose");
+            const infoPopup = document.getElementById("infoPopup");
+            const infoButton = aboutVoiceBtn;
+            const updateAppBtn = document.getElementById("updateAppBtn");
+            const tourReplayBtn = document.getElementById("tourReplayBtn");
             const viewTabs = document.getElementById("viewTabs");
             const addViewBtn = document.getElementById("addViewBtn");
             const deleteViewBtn = document.getElementById("deleteViewBtn");
@@ -2843,6 +2870,14 @@
                 }
             }
 
+            function closeInfoPopup() {
+                infoPopup?.classList.remove("open");
+            }
+
+            function toggleInfoPopup() {
+                infoPopup?.classList.toggle("open");
+            }
+
             async function clearAudioStoreAll() {
                 await clearAudioDb();
                 setAudioBlob(null, { skipSave: true });
@@ -2920,12 +2955,33 @@
             refreshFromScriptBtn?.addEventListener("click", applyScriptFromTextarea);
             addSubjectBtn?.addEventListener("click", () => {
                 openSubjectModal(null);
+                const confirmBtn = document.getElementById("confirmSubjectModal");
+                const deleteBtn = document.getElementById("cancelSubjectModal");
+                if (confirmBtn) confirmBtn.dataset.subjectId = "";
+                if (deleteBtn) deleteBtn.style.display = "none";
             });
             document.getElementById("closeSubjectModal")?.addEventListener("click", () => {
                 subjectModalOverlay.classList.remove("open");
                 subjectModalOverlay.setAttribute("aria-hidden", "true");
             });
             document.getElementById("cancelSubjectModal")?.addEventListener("click", () => {
+                const existingId = document.getElementById("confirmSubjectModal")?.dataset?.subjectId || "";
+                const deleteBtn = document.getElementById("cancelSubjectModal");
+                const page = getActivePage();
+                if (existingId && page) {
+                    const confirmed = window.confirm("Supprimer ce sujet ?");
+                    if (confirmed) {
+                        page.subjects = (page.subjects || []).filter(s => s.id !== existingId);
+                        if (page.activeSubjectId === existingId) {
+                            page.activeSubjectId = page.subjects[0]?.id || null;
+                        }
+                        persistState();
+                        renderGuidelines();
+                        showToast("Sujet supprimé.");
+                    }
+                } else if (deleteBtn) {
+                    deleteBtn.style.display = "none";
+                }
                 subjectModalOverlay.classList.remove("open");
                 subjectModalOverlay.setAttribute("aria-hidden", "true");
             });
@@ -2939,6 +2995,7 @@
                 const page = getActivePage();
                 if (!page) return;
                 const existingId = document.getElementById("confirmSubjectModal")?.dataset?.subjectId || "";
+                const deleteBtn = document.getElementById("cancelSubjectModal");
                 if (existingId) {
                     const target = page.subjects.find(s => s.id === existingId);
                     if (target) {
@@ -2957,6 +3014,11 @@
                     };
                     page.subjects = page.subjects || [];
                     page.subjects.push(newSubject);
+                    const confirmBtn = document.getElementById("confirmSubjectModal");
+                    if (confirmBtn) {
+                        confirmBtn.dataset.subjectId = newSubject.id;
+                    }
+                    if (deleteBtn) deleteBtn.style.display = "inline-flex";
                 }
                 persistState();
                 renderGuidelines();
@@ -3014,24 +3076,10 @@
                 renderTabs();
                 persistState();
             });
-            fontSizeInput?.addEventListener("change", () => {
-                const size = Number(fontSizeInput.value) || 13;
-                document.documentElement.style.setProperty("--global-font-size", `${size}px`);
-                if (transcribeInput) transcribeInput.style.fontSize = `${size}px`;
-                if (guidelineList) guidelineList.style.fontSize = `${size - 1}px`;
-            });
-            layoutDensitySelect?.addEventListener("change", () => {
-                const density = layoutDensitySelect.value;
-                const padding = density === "compact" ? "6px" : density === "roomy" ? "14px" : "10px";
-                document.querySelectorAll(".panel").forEach(el => el.style.padding = padding);
-                document.querySelectorAll(".voice-card").forEach(el => el.style.padding = density === "compact" ? "10px" : "14px");
-            });
-            optionsBtn?.addEventListener("click", ev => { ev.stopPropagation(); toggleOptionsMenu(); });
             fileMenuBtn?.addEventListener("click", ev => { ev.stopPropagation(); toggleFileMenu(); });
             shareBtn?.addEventListener("click", ev => { ev.stopPropagation(); toggleShareMenu(); });
             navSwitcherBtn?.addEventListener("click", ev => { ev.stopPropagation(); toggleNavMenu(); });
             document.addEventListener("click", ev => {
-                if (optionsMenu?.contains(ev.target) || optionsBtn === ev.target) return;
                 if (fileMenu?.contains(ev.target) || fileMenuBtn === ev.target) return;
                 if (shareMenu?.contains(ev.target) || shareBtn === ev.target) return;
                 if (navSwitcherMenu?.contains(ev.target) || navSwitcherBtn === ev.target) return;
@@ -3056,11 +3104,18 @@
                 closeMenus();
             });
             exportJsonBtn?.addEventListener("click", () => { exportJson(); closeMenus(); });
-            aboutVoiceBtn?.addEventListener("click", () => {
-                aboutVoiceModal?.classList.add("open");
+            aboutVoiceBtn?.addEventListener("click", ev => {
+                ev.stopPropagation();
+                toggleInfoPopup();
             });
-            aboutVoiceClose?.addEventListener("click", () => {
-                aboutVoiceModal?.classList.remove("open");
+            updateAppBtn?.addEventListener("click", () => {
+                resetDocument();
+                closeInfoPopup();
+                showToast("Capsule réinitialisée.");
+            });
+            tourReplayBtn?.addEventListener("click", () => {
+                closeInfoPopup();
+                showToast("Tour guidé indisponible pour le moment.");
             });
             addViewBtn?.addEventListener("click", addPage);
             deleteViewBtn?.addEventListener("click", deletePage);
@@ -3074,6 +3129,7 @@
                     closeMenus();
                     toggleIaModal(false);
                     toggleContextPanel(false);
+                    closeInfoPopup();
                 }
             });
 
@@ -3088,6 +3144,11 @@
             toggleContextPanel(true);
             populateAudioSpeedOptions();
             audioPlayer.playbackRate = getAudioSpeed();
+            document.addEventListener("click", ev => {
+                if (infoPopup && !infoPopup.contains(ev.target) && ev.target !== infoButton) {
+                    closeInfoPopup();
+                }
+            });
         })();
     </script>
     <script>
