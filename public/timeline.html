@@ -1593,10 +1593,10 @@
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                         aria-expanded="false">⇥ Timeline ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                        <a class="nav-switch-link" href="canvas.html?v=2025.12.24.2" role="menuitem"> ◍ Canvas</a>
-                        <a class="nav-switch-link" href="grid.html?v=2025.12.24.2" role="menuitem">▦ Grid</a>
-                        <a class="nav-switch-link" href="draw.html?v=2025.12.24.2" role="menuitem">◇ Draw</a>
-                        <a class="nav-switch-link" href="voice.html?v=2025.12.24.2" role="menuitem">▷ Voice</a>
+                        <a class="nav-switch-link" href="canvas.html?v=2025.12.24.5" role="menuitem"> ◍ Canvas</a>
+                        <a class="nav-switch-link" href="grid.html?v=2025.12.24.5" role="menuitem">▦ Grid</a>
+                        <a class="nav-switch-link" href="draw.html?v=2025.12.24.5" role="menuitem">◇ Draw</a>
+                        <a class="nav-switch-link" href="voice.html?v=2025.12.24.5" role="menuitem">▷ Voice</a>
                     </div>
                 </div>
 
@@ -1959,7 +1959,7 @@
         <script src="js/share-worker-client.js"></script>
         <script src="js/share-history.js"></script>
         <script src="js/capsule-drafts.js"></script>
-        <script src="js/prompt.js?v=2025.12.24.2"></script>
+        <script src="js/prompt.js?v=2025.12.24.5"></script>
         <script src="js/ia-client.js"></script>
         <script src="js/ia-config.js"></script>
         <script src="js/template-criteria.js"></script>
@@ -8079,34 +8079,34 @@
 
             })();
         </script>
-    <script>
-        (function removeVersionQueryParam() {
-            try {
-                const url = new URL(window.location.href);
-                if (!url.searchParams.has("v")) return;
-                url.searchParams.delete("v");
-                const search = url.searchParams.toString();
-                const newUrl = url.pathname + (search ? `?${search}` : "") + url.hash;
-                window.history.replaceState({}, "", newUrl);
-            } catch (err) {
-                /* noop */
-            }
-        })();
-    </script>
-    <script>
-        window.GoToolkitAppFeedbackConfig = {
-            appId: "timeline",
-            appName: "Timeline",
-            defaultType: "bug-timeline",
-            shareCollection: "timelines",
-            buildSharePayload: () => ({
-                app: "timeline",
-                url: window.location.href,
-                payload: typeof buildTimelineStatePayload === "function" ? buildTimelineStatePayload() : {}
-            })
-        };
-    </script>
-    <script src="js/feedback-app.js"></script>
+        <script>
+            (function removeVersionQueryParam() {
+                try {
+                    const url = new URL(window.location.href);
+                    if (!url.searchParams.has("v")) return;
+                    url.searchParams.delete("v");
+                    const search = url.searchParams.toString();
+                    const newUrl = url.pathname + (search ? `?${search}` : "") + url.hash;
+                    window.history.replaceState({}, "", newUrl);
+                } catch (err) {
+                    /* noop */
+                }
+            })();
+        </script>
+        <script>
+            window.GoToolkitAppFeedbackConfig = {
+                appId: "timeline",
+                appName: "Timeline",
+                defaultType: "bug-timeline",
+                shareCollection: "timelines",
+                buildSharePayload: () => ({
+                    app: "timeline",
+                    url: window.location.href,
+                    payload: typeof buildTimelineStatePayload === "function" ? buildTimelineStatePayload() : {}
+                })
+            };
+        </script>
+        <script src="js/feedback-app.js"></script>
 </body>
 
 </html>

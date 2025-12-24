@@ -950,14 +950,14 @@
 <body class="app-body">
     <div class="app">
         <header class="app-header">
-                    <a class="app-home-link" href="index.html" title="Revenir à l'accueil">☍</a>
+            <a class="app-home-link" href="index.html" title="Revenir à l'accueil">☍</a>
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button">◇ Draw ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.24.2">◍ Canvas</a>
-                    <a class="nav-switch-link" href="grid.html?v=2025.12.24.2">▦ Grid</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.24.2">⇥ Timeline</a>
-                    <a class="nav-switch-link" href="voice.html?v=2025.12.24.2">▷ Voice</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.24.5">◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2025.12.24.5">▦ Grid</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.24.5">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="voice.html?v=2025.12.24.5">▷ Voice</a>
                 </div>
             </div>
 
@@ -1137,7 +1137,7 @@
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
-    <script src="js/prompt.js?v=2025.12.24.2"></script>
+    <script src="js/prompt.js?v=2025.12.24.5"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/template-criteria.js"></script>
@@ -3075,7 +3075,7 @@
                 pageTabs.innerHTML = "";
                 const activeLabel = state.activeIndex >= 0 ? state.pages[state.activeIndex]?.label || `Page ${state.activeIndex + 1}` : "";
                 pageTabs.dataset.activePageLabel = activeLabel || "";
-            state.pages.forEach((page, index) => {
+                state.pages.forEach((page, index) => {
                     const btn = document.createElement("button");
                     btn.className = `tab${index === state.activeIndex ? " active" : ""}`;
                     btn.textContent = page.label || `Page ${index + 1}`;
@@ -4218,20 +4218,20 @@
                     if (nodeMatch) {
                         registerNode(nodeMatch[1], nodeMatch[2]);
                     }
-                const edgeMatch = line.match(
-                    /^([A-Za-z0-9_]+)\s*([-.=|<>o*]+)\s*([A-Za-z0-9_]+)(?:\s*:?\s*(.+))?/
-                );
-                if (edgeMatch) {
-                    registerNode(edgeMatch[1]);
-                    registerNode(edgeMatch[3]);
-                    edges.push({
-                        from: edgeMatch[1],
-                        to: edgeMatch[3],
-                        label: edgeMatch[4]?.trim(),
-                        arrow: edgeMatch[2]
-                    });
-                }
-            });
+                    const edgeMatch = line.match(
+                        /^([A-Za-z0-9_]+)\s*([-.=|<>o*]+)\s*([A-Za-z0-9_]+)(?:\s*:?\s*(.+))?/
+                    );
+                    if (edgeMatch) {
+                        registerNode(edgeMatch[1]);
+                        registerNode(edgeMatch[3]);
+                        edges.push({
+                            from: edgeMatch[1],
+                            to: edgeMatch[3],
+                            label: edgeMatch[4]?.trim(),
+                            arrow: edgeMatch[2]
+                        });
+                    }
+                });
 
                 if (!nodeMap.size) {
                     return null;
