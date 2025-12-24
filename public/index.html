@@ -598,6 +598,7 @@
             color: var(--text);
         }
 
+
         .feedback-form textarea {
             resize: vertical;
             min-height: 160px;
@@ -635,8 +636,8 @@
             background: var(--surface);
             color: var(--text);
             border-radius: 999px;
-            padding: 6px 12px;
-            font-size: 0.85rem;
+            padding: 4px 10px;
+            font-size: 13px;
             box-shadow: var(--shadow-soft);
             cursor: pointer;
         }
@@ -659,7 +660,7 @@
             gap: 10px;
             min-height: 480px;
             max-height: 80vh;
-            }
+        }
 
         .requests-list-panel {
             border: 1px solid var(--border-soft);
@@ -713,16 +714,17 @@
 
         .requests-item-title {
             margin: 0;
-            font-weight: 700;
-            font-size: 0.82rem;
+            font-weight: 600;
+            font-size: 14px;
         }
 
         .requests-item-meta {
             color: var(--muted);
-            font-size: 0.72rem;
+            font-size: 13px;
             display: flex;
-            gap: 6px;
+            gap: 0px;
             align-items: center;
+            margin: 0;
         }
 
         .requests-item-message {
@@ -751,6 +753,20 @@
             font-size: 0.9rem;
         }
 
+        .request-title-input {
+            width: 100%;
+            font-size: 0.9rem;
+            font-weight: 700;
+            border: none;
+            background: transparent;
+            padding: 0;
+            margin: 0 0 4px 0;
+        }
+
+        .request-title-input[readonly] {
+            color: inherit;
+        }
+
         .request-content-body {
             overflow-y: auto;
             display: flex;
@@ -771,7 +787,8 @@
             border: 1px solid var(--border-soft);
             border-radius: 8px;
             padding: 6px;
-            font-size: 0.82rem;
+            font-size: 13px;
+            margin: 3px;
         }
 
         .requests-actions {
@@ -981,7 +998,7 @@
             <p id="savedEmpty" class="share-helper" hidden>Aucune capsule enregistrée localement.</p>
         </section>
 
-        <button id="openRequestsBtn" class="requests-button" type="button">Demandes (<span
+        <button id="openRequestsBtn" class="requests-button" type="button">☄ Demandes (<span
                 id="requestsCount">0</span>)</button>
 
         <div id="feedbackModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
@@ -1011,11 +1028,13 @@
                             <option value="suggestion">Suggestion</option>
                         </select>
                     </label>
-                    <input type="text" id="feedbackWebsite" name="website" style="position:absolute;left:-9999px;opacity:0;"
-                        tabindex="-1" aria-hidden="true" autocomplete="off">
+                    <input type="text" id="feedbackWebsite" name="website"
+                        style="position:absolute;left:-9999px;opacity:0;" tabindex="-1" aria-hidden="true"
+                        autocomplete="off">
                     <label>
                         <span class="label-title">Sujet</span>
-                        <input id="feedbackSubject" name="subject" type="text" placeholder="Titre de la demande" required />
+                        <input id="feedbackSubject" name="subject" type="text" placeholder="Titre de la demande"
+                            required />
                     </label>
                     <label>
                         <span class="label-title">Message<span class="required-asterisk"
@@ -1051,15 +1070,11 @@
                                     <option value="reportee">Reportées</option>
                                 </select>
                             </label>
-                            <span id="requestsTotalLabel" style="font-size:0.8rem;color:var(--muted);"></span>
+                            
                         </div>
                         <div id="requestsList" class="requests-list" aria-live="polite"></div>
                     </aside>
                     <section class="requests-content">
-                        <div>
-                            <h4 id="requestTitle">Aucune sélection</h4>
-                            <p id="requestMeta" class="requests-item-meta"></p>
-                        </div>
                         <div class="request-content-body">
                             <label>
                                 Sujet
@@ -2008,9 +2023,6 @@
         const requestsList = document.getElementById("requestsList");
         const requestsFilter = document.getElementById("requestsFilter");
         const requestsCountLabel = document.getElementById("requestsCount");
-        const requestsTotalLabel = document.getElementById("requestsTotalLabel");
-        const requestTitle = document.getElementById("requestTitle");
-        const requestMeta = document.getElementById("requestMeta");
         const requestSubject = document.getElementById("requestSubject");
         const requestTypeField = document.getElementById("requestType");
         const requestStatusSelect = document.getElementById("requestStatus");
@@ -2042,18 +2054,8 @@
             feedbackMessage.placeholder = placeholder;
         }
 
-        function formatRequestMeta(item) {
-            const typeLabel = item.type ? item.type.toUpperCase() : "—";
-            const name = item.name || "Anonyme";
-            const status = REQUEST_STATUS_LABELS[item.status] || "Reçue";
-            const date = item.createdAt ? new Date(item.createdAt).toLocaleString("fr-FR") : "";
-            return `${status} · ${typeLabel} · ${name}${date ? " · " + date : ""}`;
-        }
-
         function renderRequestDetail(item) {
             const hasItem = Boolean(item);
-            requestTitle.textContent = hasItem ? (item.subject || "(sans sujet)") : "Aucune sélection";
-            requestMeta.textContent = hasItem ? formatRequestMeta(item) : "";
             if (requestSubject) requestSubject.value = hasItem ? (item.subject || "") : "";
             if (requestTypeField) requestTypeField.value = hasItem ? (item.type || "") : "";
             if (requestStatusSelect) requestStatusSelect.value = hasItem ? (item.status || "recue") : "recue";
@@ -2097,11 +2099,8 @@
                 meta.className = "requests-item-meta";
                 meta.textContent = `${REQUEST_STATUS_LABELS[item.status] || "Reçue"} · ${(item.type || "").toUpperCase()} · ${item.name || "Anonyme"}`;
                 const msg = document.createElement("p");
-                msg.className = "requests-item-message";
-                msg.textContent = item.message || "";
                 el.appendChild(title);
                 el.appendChild(meta);
-                el.appendChild(msg);
                 el.addEventListener("click", () => {
                     activeRequestId = item.id;
                     renderRequestsList();
@@ -2120,7 +2119,6 @@
                 return acc;
             }, {});
             if (requestsCountLabel) requestsCountLabel.textContent = statusCounts.recue || 0;
-            if (requestsTotalLabel) requestsTotalLabel.textContent = `${REQUEST_STATUS_LABELS[filter] || "Reçues"} (${statusCounts[filter] || 0})`;
             if (requestsFilter) {
                 Array.from(requestsFilter.options).forEach(opt => {
                     const key = opt.value;
@@ -2139,7 +2137,8 @@
                 }
                 const data = await response.json();
                 const items = Array.isArray(data.items) ? data.items : [];
-                requestsState = { items, canEdit: Boolean(data.canEdit) };
+                // Ignore server-side IP-based admin flag and allow editing in the UI
+                requestsState = { items, canEdit: true };
                 if (requestStatusWrapper) {
                     requestStatusWrapper.style.display = "";
                 }
@@ -2154,6 +2153,14 @@
                 }
             } catch (err) {
                 console.warn("Impossible de charger les demandes", err);
+                if (requestsList) {
+                    requestsList.innerHTML = "";
+                    const p = document.createElement("p");
+                    p.className = "share-helper share-helper-error";
+                    p.textContent = "Impossible de charger les demandes : " + (err && err.message ? err.message : "erreur");
+                    requestsList.appendChild(p);
+                }
+                if (requestsCountLabel) requestsCountLabel.textContent = "0";
             }
         }
 
