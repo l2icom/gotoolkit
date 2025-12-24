@@ -1019,6 +1019,186 @@ classDiagram
         }
     ];
 
+    const voicePromptzilla = [
+        {
+            id: "backlog-grooming",
+            title: "🧹 Backlog Grooming",
+            text:
+                "Affiner les stories avant le sprint.\n" +
+                "☐ Priorités et risques\n" +
+                "☐ Clarification des critères\n" +
+                "☐ Estimations ou dépendances"
+        },
+        {
+            id: "sprint-review",
+            title: "🔁 Sprint Review",
+            text:
+                "Partager les incréments du sprint.\n" +
+                "☐ Objectifs atteints\n" +
+                "☐ Démo des livrables\n" +
+                "☐ Feedback et décisions"
+        },
+        {
+            id: "feature-demo",
+            title: "🎬 Feature Demo",
+            text:
+                "Mettre en scène une nouvelle fonctionnalité.\n" +
+                "☐ Scénario utilisateur\n" +
+                "☐ Valeur métier\n" +
+                "☐ Points de vigilance"
+        },
+        {
+            id: "brainstorm-ux",
+            title: "✨ Brainstorm UX",
+            text:
+                "Explorer des pistes d'expérience.\n" +
+                "☐ Problème et contexte\n" +
+                "☐ Variations d'interaction\n" +
+                "☐ Critères de choix"
+        },
+        {
+            id: "workshop-ux",
+            title: "🧠 Workshop UX",
+            text:
+                "Animer un atelier collaboratif.\n" +
+                "☐ Participants et rôles\n" +
+                "☐ Activités et livrables\n" +
+                "☐ Planning minute"
+        },
+        {
+            id: "daily-tech",
+            title: "🔧 Daily Tech",
+            text:
+                "Synchroniser l'équipe technique.\n" +
+                "☐ Avancées\n" +
+                "☐ Blocages\n" +
+                "☐ Priorités du jour"
+        },
+        {
+            id: "comite-tech",
+            title: "🏛️ Comité Tech",
+            text:
+                "Arbitrer les sujets techniques.\n" +
+                "☐ Décisions à prendre\n" +
+                "☐ Impacts produit/infra\n" +
+                "☐ Actions et responsables"
+        },
+        {
+            id: "pitch-produit",
+            title: "📢 Pitch produit",
+            text:
+                "Présenter la valeur d’un produit ou d’une release.\n" +
+                "☐ Problème / besoin adressé\n" +
+                "☐ Proposition de valeur\n" +
+                "☐ Démo rapide / points clés\n" +
+                "☐ Appel à l’action"
+        },
+        {
+            id: "recueil-besoins",
+            title: "🧾 Recueil de besoins",
+            text:
+                "Capturer les attentes et contraintes d’un demandeur.\n" +
+                "☐ Contexte métier\n" +
+                "☐ Objectifs / KPIs\n" +
+                "☐ Contraintes / priorités\n" +
+                "☐ Prochaines étapes"
+        },
+        {
+            id: "entretien-candidat",
+            title: "👥 Entretien candidat",
+            text:
+                "Structurer un entretien de recrutement.\n" +
+                "☐ Parcours / réalisations\n" +
+                "☐ Compétences clés\n" +
+                "☐ Situations vécues\n" +
+                "☐ Motivations / fit"
+        },
+        {
+            id: "entretien-client",
+            title: "🤝 Entretien client",
+            text:
+                "Explorer les besoins et irritants d’un client.\n" +
+                "☐ Contexte et enjeux\n" +
+                "☐ Problèmes rencontrés\n" +
+                "☐ Attentes / priorités\n" +
+                "☐ Actions / suivis"
+        }
+    ];
+
+    const voiceCreateSystemTemplate = `Tu es un product owner expérimenté chargé de générer une trame de discussion pour une réunion.
+
+Contexte utilisateur : {{scenario_prompt}}
+Objectifs de la réunion : {{template_text}}
+
+⚠️ SORTIE STRICTE
+- Réponds UNIQUEMENT avec un objet JSON valide
+- Aucune phrase explicative, aucun markdown, aucun commentaire
+- Toutes les clés sont obligatoires
+- Respecte strictement les types et cardinalités
+
+STRUCTURE ATTENDUE :
+
+{
+  "title": "string (3 à 7 mots, titre synthétique de la réunion)",
+  "duration": number (durée totale estimée en minutes, entier > 0),
+
+  "participants": [
+    {
+      "name": "string (prénom ou identifiant court)",
+      "role": "string (rôle fonctionnel, ex: Product Owner, Dev, Client)"
+    }
+  ],
+
+  "subjects": [
+    {
+      "label": "string (nom court du sujet, max 5 mots)",
+      "keySentences": [
+        "string (phrase clé 1, action ou décision attendue)",
+        "string (phrase clé 2)",
+        "string (phrase clé 3)"
+      ],
+      "timeframe": {
+        "start": number (minute de début, >= 0), // 0 pour le premier sujet
+        "end": number (minute de fin, > start) // selon l'ampleur du sujet
+      }
+    }
+  ]
+}
+
+RÈGLES MÉTIER :
+- subjects contient exactement 3 éléments
+- keySentences contient exactement 3 phrases
+- Les timeframes doivent couvrir toute la durée sans chevauchement
+- Le dernier timeframe.end = duration
+- Le contenu doit être adapté à une réunion professionnelle
+- Ne pas mettre d'autres participants à part soi si non spécifié par l'utilisateur`
+        ;
+
+    const voiceEvaluatePrompt = `Analyse {{transcript_content}} et indique si chaque phrase clé est exprimée directement, indirectement ou absente.
+Réponds en JSON strict:
+{
+  "subjects": [
+    {
+      "title": "string",
+      "keySentences": [
+        { "text": "string", "match": "direct"|"indirect"|"missing" }
+      ]
+    }
+  ]
+}`;
+
+    const voiceSummaryPrompt = `Tu es un assistant qui synthétise des échanges oraux en français.
+
+Consigne :
+- Résume le contenu ci-dessous en 5 phrases maximum.
+- Appuie-toi sur le modèle "{{template_text}}" pour conserver uniquement l'essentiel.
+- Mets en avant décisions, actions (avec responsable si présent) et points ouverts.
+
+Transcription à résumer :
+{{transcript_content}}
+
+Réponds en texte brut, sans JSON ni balisage.`;
+
     const timelinePromptzilla = [
         {
             id: "product",
@@ -1157,6 +1337,10 @@ Contraintes de nommage et quantités :
         canvasDefaultPromptTemplate,
         canvasBottomPromptTemplate,
         canvasSuggestionsPromptTemplate,
+        voicePromptzilla,
+        voiceCreateSystemTemplate,
+        voiceEvaluatePrompt,
+        voiceSummaryPrompt,
         timelinePromptzilla,
         timelineCreateSystemTemplate
     };

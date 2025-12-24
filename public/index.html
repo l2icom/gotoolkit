@@ -603,6 +603,13 @@
             min-height: 160px;
         }
 
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border: 1px solid var(--primary);
+            box-shadow: 0 0 0 1px var(--primary);
+        }
+
         .feedback-form .field-row {
             display: flex;
             gap: 10px;
@@ -773,6 +780,13 @@
                     <span class="launcher-name">
                         Draw (Indélébile)
                         <div class="launcher-desc">Modélise tes idées</div>
+                    </span>
+                </a>
+                <a class="launcher" href="voice.html?v=2025.12.25">
+                    <span class="launcher-emoji">▷</span>
+                    <span class="launcher-name">
+                        Voice (Goal Digger)
+                        <div class="launcher-desc">Pilote tes réunions</div>
                     </span>
                 </a>
                 <a class="launcher" href="grid.html?v=2025.12.25">
@@ -996,6 +1010,18 @@
                 <form class="feedback-form" onsubmit="return false;">
                     <div class="field-row">
                         <label style="width:100%">
+                            <span class="label-title">Moteur vocal</span>
+                            <select id="speechEngineSelect">
+                                <option value="web-speech">Web Speech (natif)</option>
+                                <option value="whisperer">Whisperer (OpenAI)</option>
+                            </select>
+                            <span class="label-subtitle">
+                                Choix du moteur de transcription pour toutes les pages.
+                            </span>
+                        </label>
+                    </div>
+                    <div class="field-row">
+                        <label style="width:100%">
                             <span class="label-title">Commande vocale</span>
                             <select id="speechModeSelect">
                                 <option value="manual">Manuel (par défaut)</option>
@@ -1038,8 +1064,9 @@
                                             class="btn-secondary">Vérifier</button>
                                     </div>
                                 </div>
-                                <span class="label-subtitle">Réponse plus rapide, téléversement de fichiers</span>
-                                <input id="iaApiKeyInput" type="password" placeholder="sk-..." />
+                                <span class="label-subtitle">Réponse plus rapide et retranscription avancée (<2€ /mois
+                                        en usage normal)</span>
+                                        <input id="iaApiKeyInput" type="password" placeholder="sk-..." />
                             </label>
                         </div>
 
@@ -1521,6 +1548,9 @@
                     event.stopPropagation();
                     const confirmed = window.confirm("Supprimer cette capsule ?");
                     if (!confirmed) return;
+                    if (record.app === "voice") {
+                        await deleteVoiceAudio(record.id);
+                    }
                     await capsuleDrafts.removeRecord?.(record.id);
                     refreshSavedGallery().catch(() => { /* noop */ });
                 });
@@ -2310,6 +2340,7 @@
         const settingsApiKeyInput = document.getElementById("iaApiKeyInput");
         const settingsReasoningSelect = document.getElementById("reasoningEffortSelect");
         const settingsOpenAiModelSelect = document.getElementById("openaiModelSelect");
+        const settingsSpeechEngineSelect = document.getElementById("speechEngineSelect");
         const settingsSpeechModeSelect = document.getElementById("speechModeSelect");
         const settingsOllamaUrlInput = document.getElementById("ollamaUrlInput");
         const settingsOllamaApiKeyInput = document.getElementById("ollamaApiKeyInput");
@@ -2330,6 +2361,17 @@
         const ollamaSettingsEl = document.getElementById("ollamaSettings");
         const webllmSettingsEl = document.getElementById("webllmSettings");
         const webllmModelSelect = document.getElementById("webllmModelSelect");
+        const SPEECH_ENGINE_STORAGE_KEY = "go-toolkit-speech-engine";
+        const VOICE_AUDIO_DB = { name: "go-toolkit-voice-audio", store: "recordings" };
+
+        try {
+                const storedSpeechEngine = localStorage.getItem(SPEECH_ENGINE_STORAGE_KEY) || "web-speech";
+                const hasApiKey = typeof config?.getApiKey === "function" ? Boolean(config.getApiKey()) : Boolean(localStorage.getItem("go-toolkit-api-key") || "");
+                const speechEngine = storedSpeechEngine === "whisperer" && hasApiKey ? "whisperer" : "web-speech";
+                window.GoToolkitSpeechEngine = speechEngine;
+        } catch (e) {
+            window.GoToolkitSpeechEngine = "web-speech";
+        }
 
         function updateBackendVisibility() {
             const val = (aiBackendSelect && aiBackendSelect.value) || "openai";
@@ -2472,6 +2514,18 @@
                 updateBackendVisibility();
                 const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("nuances-reasoning-effort") || "low";
                 if (settingsReasoningSelect) settingsReasoningSelect.value = storedReasoning;
+                const storedSpeechEngine = localStorage.getItem(SPEECH_ENGINE_STORAGE_KEY) || "web-speech";
+                const hasApiKey = (config && typeof config.getApiKey === "function" ? config.getApiKey() : localStorage.getItem("go-toolkit-api-key")) || "";
+                const canUseWhisperer = Boolean(hasApiKey);
+                if (settingsSpeechEngineSelect) {
+                    settingsSpeechEngineSelect.value = canUseWhisperer && storedSpeechEngine === "whisperer" ? "whisperer" : "web-speech";
+                    settingsSpeechEngineSelect.querySelectorAll('option[value="whisperer"]').forEach(opt => {
+                        opt.disabled = !canUseWhisperer;
+                    });
+                }
+                try {
+                    window.GoToolkitSpeechEngine = settingsSpeechEngineSelect?.value || "web-speech";
+                } catch (e) { /* noop */ }
                 const storedSpeechMode = localStorage.getItem("go-toolkit-speech-mode") || "manual";
                 if (settingsSpeechModeSelect) {
                     settingsSpeechModeSelect.value = storedSpeechMode === "auto" ? "auto" : "manual";
@@ -2486,6 +2540,27 @@
             if (!settingsModal) return;
             settingsModal.classList.remove("open");
             settingsModal.setAttribute("aria-hidden", "true");
+        }
+
+        async function deleteVoiceAudio(draftId) {
+            if (!draftId || !("indexedDB" in window)) return;
+            try {
+                const req = indexedDB.open(VOICE_AUDIO_DB.name, 1);
+                const db = await new Promise((resolve, reject) => {
+                    req.onupgradeneeded = () => {
+                        const db = req.result;
+                        if (!db.objectStoreNames.contains(VOICE_AUDIO_DB.store)) {
+                            db.createObjectStore(VOICE_AUDIO_DB.store);
+                        }
+                    };
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error || new Error("IndexedDB audio KO"));
+                });
+                const tx = db.transaction(VOICE_AUDIO_DB.store, "readwrite");
+                tx.objectStore(VOICE_AUDIO_DB.store).delete(draftId);
+            } catch (err) {
+                console.warn("Suppression audio voice", err);
+            }
         }
 
         async function persistSettings({ skipClose = false, showSavedToast = true } = {}) {
@@ -2517,6 +2592,12 @@
                 try {
                     localStorage.setItem("go-toolkit-speech-mode", speechModeValue);
                 } catch (e) { }
+                const speechEngineValue =
+                    (settingsSpeechEngineSelect?.value === "whisperer" && Boolean(apiKey)) ? "whisperer" : "web-speech";
+                try {
+                    localStorage.setItem(SPEECH_ENGINE_STORAGE_KEY, speechEngineValue);
+                } catch (e) { /* noop */ }
+                try { window.GoToolkitSpeechEngine = speechEngineValue; } catch (e) { /* noop */ }
                 // expose immediate selection to runtime
                 try { window.GoToolkitSelectedAIBackend = selectedBackend; } catch (e) { }
                 const ollamaUrlValue = (settingsOllamaUrlInput?.value || "").trim();

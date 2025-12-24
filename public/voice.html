@@ -1,0 +1,3109 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <script>window.GO_TOOLKIT_SHARE_API_URL = 'https://share.gotoolkit.workers.dev/'</script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voice | Go-Toolkit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="styles/app-shell.css">
+    <style>
+        :root {
+            --bg: #f3f4f6;
+            --surface: #ffffff;
+            --surface-soft: #f8fafc;
+            --border: #e5e7eb;
+            --border-strong: #cbd5e1;
+            --primary: #2a7a57;
+            --primary-soft: rgba(42, 122, 87, 0.1);
+            --text: #0f172a;
+            --muted: #6b7280;
+            --radius-lg: 16px;
+            --radius-sm: 10px;
+            --shadow-soft: 0 14px 34px rgba(15, 23, 42, 0.1);
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+            overflow: hidden;
+        }
+
+        .app {
+            height: 100vh;
+            max-width: none;
+        }
+
+        .app-main {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr;
+            gap: 12px;
+            min-height: 0;
+            height: calc(100vh - 20px);
+        }
+
+        .app-main.context-open {
+            grid-template-columns: 1fr 350px;
+        }
+
+        .voice-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-soft);
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+            width: 100%;
+        }
+
+        .voice-main-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .voice-title {
+            font-size: 15px;
+            font-weight: 500;
+            margin: 0;
+            padding: 4px 8px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            cursor: text;
+            min-width: 120px;
+            max-width: 100%;
+        }
+
+        .voice-title:focus-visible {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--primary-soft);
+        }
+
+        .voice-main-body {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 12px;
+            min-height: 0;
+            flex: 1 1 auto;
+        }
+
+        .panel {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface-soft);
+            padding: 10px;
+            display: grid;
+            grid-template-rows: auto 2fr auto 1fr;
+            gap: 8px;
+            min-height: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-weight: 500;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .recording-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .audio-controls {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 170px;
+        }
+
+        .audio-play-btn,
+        .audio-download-btn {
+            border: 1px solid var(--border-strong);
+            background: transparent;
+            border-radius: 8px;
+            padding: 2px 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .audio-progress {
+            width: 120px;
+            accent-color: var(--primary);
+            appearance: none;
+            height: 6px;
+            border-radius: 6px;
+            background: #e5e7eb;
+            outline: none;
+        }
+
+        .audio-progress::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px var(--border-strong);
+        }
+
+        .audio-progress::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px var(--border-strong);
+        }
+
+        .audio-speed {
+            border: 1px solid var(--border-strong);
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 13px;
+            background: #fff;
+        }
+
+        textarea {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid var(--border-strong);
+            padding: 8px 10px;
+            font-size: 13px;
+            font-family: Menlo, Consolas, "Courier New", monospace;
+            resize: none;
+            min-height: 120px;
+            background: #fff;
+            line-height: 1.45;
+        }
+
+        textarea:focus,
+        input:focus {
+            outline: none;
+            border: 1px solid var(--primary);
+            box-shadow: 0 0 0 1px var(--primary-soft);
+        }
+
+        .speech-active {
+            border: 2px solid #B11226 !important;
+            animation: speech-border 2s infinite ease-in-out;
+        }
+
+        .speech-active:focus {
+            border: 1px solid #B11226 !important;
+            box-shadow: none;
+        }
+
+        @keyframes speech-border {
+            0% {
+                box-shadow: 0 0 0 0 rgba(177, 18, 38, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 0 4px rgba(177, 18, 38, 0.15);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(177, 18, 38, 0.4);
+            }
+        }
+
+        .transcribe-area {
+            font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.3;
+            min-height: 0;
+            height: 100%;
+        }
+
+        .transcribe-wrapper {
+            position: relative;
+            height: 100%;
+            min-height: 0;
+        }
+
+        .transcribe-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .transcribe-area::-webkit-scrollbar-thumb {
+            background: rgba(42, 122, 87, 0.35);
+            border-radius: 999px;
+        }
+
+        .transcribe-ghost {
+            position: absolute;
+            inset: 0;
+            padding: 8px 10px;
+            pointer-events: none;
+            transform: translate(0, 0);
+            color: var(--muted);
+            white-space: pre-wrap;
+            font-size: 13px;
+            line-height: 1.3;
+            font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            z-index: 3;
+        }
+
+        .transcribe-mirror {
+            position: absolute;
+            visibility: hidden;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            padding: 8px 10px;
+            font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.3;
+            inset: 0;
+        }
+
+        .transcribe-ghost span {
+            font-size: 13px;
+        }
+
+        .speech-field-wrapper {
+            position: relative;
+            height: 100%;
+        }
+
+        .speech-field-wrapper textarea {
+            padding-right: 40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .speech-button {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.85);
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            color: var(--muted);
+            border-radius: 999px;
+            transition: box-shadow 0.2s ease, opacity 0.2s ease;
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 3;
+            transform: translateX(2px);
+        }
+
+        .speech-button--active,
+        .speech-button:active {
+            color: #B11226;
+            animation: speech-blink 2s infinite linear;
+            opacity: 1;
+        }
+
+        .summary-wrapper {
+            min-height: 0;
+            height: 100%;
+        }
+
+        .summary-area {
+            min-height: 0;
+            height: 100%;
+            line-height: 1.45;
+            font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        }
+
+        @keyframes speech-blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .subject-ranges {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 10px 0 12px 0;
+            width: 100%;
+        }
+
+        .subject-range-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .subject-range-row input[type="range"] {
+            flex: 1 1 auto;
+            appearance: none;
+            height: 6px;
+            border-radius: 6px;
+            background: #e5e7eb;
+            outline: none;
+        }
+
+        .subject-range-row input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px var(--border-strong);
+        }
+
+        .subject-range-row input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px var(--border-strong);
+        }
+
+        .subject-range-meta {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        #guidelineDuration {
+            font-size: 14px;
+            border: 1px solid var(--border-strong);
+            border-radius: 10px;
+            padding: 4px 6px;
+        }
+
+        .guidelines-panel {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+        }
+
+        .subject-tabs {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 6px;
+            width: 100%;
+            flex-direction: row;
+            padding: 8px 0px 8px 0px;
+        }
+
+        .subject-tab {
+            border: 1px solid var(--border-strong);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            background: var(--surface);
+            color: var(--text);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1 1 auto;
+            min-width: 0;
+            width: auto;
+        }
+
+        .edit-subject-btn {
+            border: none;
+            background: transparent;
+            padding: 0;
+            margin: 0;
+            line-height: 1;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .subject-tab.active {
+            background: transparent;
+            color: var(--text);
+            border-color: var(--primary);
+            border-width: 2px;
+        }
+
+        .subject-tab .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .status-dot--none {
+            background: #dc2626;
+        }
+
+        .status-dot--partial {
+            background: #f59e0b;
+        }
+
+        .status-dot--complete {
+            background: #16a34a;
+        }
+
+        .guideline-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: auto;
+        }
+
+        .participants-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .participant-row {
+            display: grid;
+            grid-template-columns: 1fr 0.8fr auto;
+            gap: 6px;
+        }
+
+        .participant-row input {
+            border: 1px solid var(--border-strong);
+            border-radius: 10px;
+            padding: 6px 8px;
+            font-size: 12px;
+        }
+
+        .participant-add-btn {
+            align-self: flex-start;
+            border-radius: 10px;
+            border: 1px dashed var(--border-strong);
+            background: var(--surface-soft);
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .participants-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 8px;
+        }
+
+        .guideline-item {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background: var(--surface-soft);
+            font-size: 13px;
+        }
+
+        .guideline-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .guideline-actions label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--muted);
+            cursor: pointer;
+        }
+
+        .guideline-actions input[type="checkbox"] {
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            border-radius: 999px;
+            font-size: 13px;
+        }
+
+
+
+        .advice-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px;
+        }
+
+        .advice-card {
+            border: 1px dashed var(--border-strong);
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-size: 12px;
+            background: var(--surface-soft);
+        }
+
+        .gutenberg-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-soft);
+            padding: 10px;
+            width: 350px;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 0;
+        }
+
+        .gutenberg-card.open {
+            display: flex;
+        }
+
+        .prompt-template-meta {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            background: rgba(17, 24, 39, 0.9);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 10px;
+            box-shadow: var(--shadow-soft);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            transform: translateY(10px);
+            z-index: 200;
+        }
+
+        .toast.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .context-menu {
+            min-width: 180px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 120;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 14px;
+            padding: 14px;
+            width: min(720px, 96vw);
+            max-height: 90vh;
+            overflow: auto;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .promptzilla-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+        }
+
+        .promptzilla-card {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px;
+            cursor: pointer;
+            background: var(--surface-soft);
+        }
+
+        .promptzilla-card.selected {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-soft);
+        }
+
+        .tabs-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            flex-wrap: wrap;
+        }
+
+        .nav-switch {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            margin-right: 6px;
+        }
+
+        .nav-switch-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            min-width: 180px;
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 6px;
+            display: none;
+            z-index: 50;
+            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif) !important;
+        }
+
+        .nav-switch-menu.open {
+            display: block;
+        }
+
+        .nav-switch-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+            text-decoration: none;
+            color: #1f2a56;
+        }
+
+        .nav-switch-link:hover,
+        .nav-switch-link:focus-visible {
+            background: rgba(42, 122, 87, 0.08);
+        }
+
+        .menu-trigger {
+            position: relative;
+            display: inline-flex;
+        }
+
+        .context-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: var(--surface);
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.2);
+            display: none;
+            min-width: 220px;
+            z-index: 40;
+        }
+
+        .context-menu.open {
+            display: block;
+        }
+
+        .context-menu label,
+        .context-menu button {
+            font-size: 12px;
+        }
+
+        .global-actions {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            max-width: 800px;
+            width: 100%;
+            justify-content: flex-end;
+            align-items: flex-start;
+        }
+
+        .share-menu {
+            min-width: 260px;
+        }
+
+        .ia-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: 100%;
+        }
+
+        .ia-actions>.header-row {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ia-header-actions {
+            width: 100%;
+            padding: 4px 0;
+        }
+
+        .gutenberg-recette-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .ia-prompt-fields textarea {
+            width: 100%;
+        }
+
+        #clearScenarioBtn {
+            margin-left: auto;
+            margin-right: 4px;
+        }
+
+        @media (max-width: 1100px) {
+            .app-main {
+                width: 100%;
+                grid-template-columns: 1fr;
+            }
+
+            .global-actions {
+                justify-content: flex-start;
+            }
+
+            .voice-main-body {
+                grid-template-columns: 1fr;
+            }
+
+            .gutenberg-card {
+                position: fixed;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                width: min(360px, 92vw);
+                max-width: 100%;
+                transform: translateX(110%);
+                opacity: 0;
+                pointer-events: none;
+                transition: transform 0.2s ease, opacity 0.2s ease;
+                z-index: 110;
+            }
+
+            .gutenberg-card.open {
+                transform: translateX(0);
+                opacity: 1;
+                pointer-events: auto;
+            }
+    </style>
+</head>
+
+<body class="app-body">
+    <div class="app">
+        <div class="app-header">
+            <a class="app-home-link" href="index.html" title="Revenir à l'accueil">☍</a>
+            <div class="nav-switch">
+                <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
+                    aria-expanded="false">▷ Voice ▾</button>
+                <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.25" role="menuitem"> ◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2025.12.25" role="menuitem">▦ Grid</a>
+                    <a class="nav-switch-link" href="draw.html?v=2025.12.25" role="menuitem">◇ Draw</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.25" role="menuitem">⇥ Timeline</a>
+                </div>
+            </div>
+
+            <div class="tabs-actions">
+                <div id="viewTabs" class="tabs"></div>
+                <button class="tab-action" id="addViewBtn" type="button" aria-label="Ajouter une vue">+</button>
+                <button class="tab-action" id="deleteViewBtn" type="button"
+                    aria-label="Supprimer la vue active">×</button>
+            </div>
+
+            <div class="global-actions">
+                <button class="btn" id="openPromptzillaBtn" aria-label="Ouvrir ⊞ Modèle"
+                    title="⊞ Petit Robert Downey Jr">⊞ Modèle</button>
+                <button class="btn" id="openContextModal" aria-label="Ouvrir Contexte" title="⸙ Gutenberg">⸙
+                    Contexte</button>
+                <button class="btn" id="openIaModal" aria-label="Ouvrir Prompt" title="⌘ Promptzilla">⌘
+                    Prompt</button>
+
+                <div class="menu-trigger">
+                    <button class="btn" id="optionsBtn" aria-label="Affichage" title="Affichage">◯
+                        Affichage</button>
+                    <div class="context-menu" id="optionsMenu">
+                        <div class="menu-panel">
+                            <label>
+                                Taille (px)
+                                <select id="fontSizeInput">
+                                    <option value="12">12</option>
+                                    <option value="13" selected>13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                </select>
+                            </label>
+                            <label>
+                                Hauteur
+                                <select id="layoutDensitySelect">
+                                    <option value="cozy">Confort</option>
+                                    <option value="compact">Compact</option>
+                                    <option value="roomy">Aéré</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="menu-trigger">
+                    <button class="btn" id="fileMenuBtn" aria-label="Capsule" title="Capsule">⬠ Capsule</button>
+                    <div class="context-menu file-menu" id="fileMenu">
+                        <div class="menu-panel">
+                            <button id="newDocumentBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
+                            <button id="importJsonBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
+                            <button id="saveDocumentBtn" type="button" class="menu-panel-btn">🖫
+                                Enregistrer</button>
+                            <button id="exportJsonBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
+                            <button id="aboutVoiceBtn" type="button" class="menu-panel-btn">⎉ À propos</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="menu-trigger">
+                    <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
+                        title="Lien de la capsule">☍ Nexus</button>
+                    <div class="context-menu share-menu" id="shareMenu">
+                        <div class="menu-panel">
+                            <div class="menu-header" style="padding:8px 12px;font-weight:600;">Lien de la capsule
+                            </div>
+                            <div class="share-link-line" style="padding:0 12px 8px 12px;">
+                                <input id="shareLinkField" class="share-link-field" type="text" readonly
+                                    placeholder="Appuie sur Créer pour générer un lien privé.">
+                            </div>
+                            <div class="share-actions" style="display:flex;gap:8px;padding:0 12px 8px 12px;">
+                                <button id="shareUpdateBtn" type="button" class="btn" hidden>⟳ Actualiser</button>
+                                <button id="shareCreateBtn" type="button" class="btn-primary">☍ Créer</button>
+                            </div>
+                            <p class="share-menu-status" id="shareMenuStatus"
+                                style="padding:0 12px 10px 12px;font-size:12px;color:var(--muted);margin:0;"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Promptzilla modal -->
+        <div class="modal-overlay" id="promptzillaOverlay" role="dialog" aria-modal="true"
+            aria-labelledby="promptzillaTitle">
+            <div class="modal promptzilla-modal">
+                <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;">
+                    <h3 id="promptzillaTitle" title="⊞ Petit Robert Downey Jr">⊞ Modèle</h3>
+                    <button class="modal-close btn" id="promptzillaClose" type="button"
+                        aria-label="Fermer ⊞ Modèle">×</button>
+                </div>
+                <div class="promptzilla-grid" id="promptzillaList">
+                    <!-- cards rendered by JS -->
+                </div>
+                <div class="modal-actions" style="margin-top:10px;display:flex;justify-content:flex-end;gap:8px;">
+                    <button id="promptzillaValidateBtn" class="btn-primary">Appliquer</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-main">
+            <div class="voice-card">
+                <div class="voice-main-header">
+                    <div>
+                        <div id="pageTitle" class="voice-title" contenteditable="true" role="textbox"
+                            aria-label="Titre de la page">Page 1</div>
+                    </div>
+                </div>
+                <div class="voice-main-body">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <span>Note</span>
+                            <div class="recording-toolbar">
+                                <span id="transcriptMeta" class="badge" style="background:#e5e7eb;color:#000;">0' /
+                                    0'</span>
+                                <div class="audio-controls">
+                                    <button id="audioPlayBtn" type="button" class="audio-play-btn" title="Lire / pause"
+                                        aria-label="Lire l'enregistrement">▶</button>
+                                    <input id="audioProgress" class="audio-progress" type="range" min="0" max="1"
+                                        step="0.01" value="0" aria-label="Progression audio" disabled>
+                                    <select id="audioSpeedSelect" class="audio-speed" title="Vitesse de lecture"
+                                        aria-label="Vitesse de lecture"></select>
+                                    <button id="audioDownloadBtn" type="button" class="audio-download-btn"
+                                        title="Télécharger l'enregistrement" aria-label="Télécharger">♬</button>
+                                    <button id="audioClearBtn" type="button" class="audio-download-btn"
+                                        title="Supprimer l'enregistrement"
+                                        aria-label="Supprimer l'enregistrement">⊘</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="transcribe-wrapper speech-field-wrapper">
+                            <textarea id="transcribeInput" class="transcribe-area" placeholder=""
+                                aria-label="Transcription"></textarea>
+                            <div id="transcribeGhost" class="transcribe-ghost" aria-live="polite"></div>
+                            <div id="transcribeMirror" class="transcribe-mirror" aria-hidden="true"></div>
+                            <button class="speech-button" id="speechToggleBtn" type="button"
+                                data-speech-target="transcribeInput" title="Dictée vocale"
+                                aria-label="Activer la dictée vocale">◉</button>
+                        </div>
+                        <div class="panel-header" style="margin-top:4px;">
+                            <span>Résumé</span>
+                            <button id="summarizeBtn" type="button" class="btn">⌘ Résumer</button>
+                        </div>
+                        <div class="summary-wrapper">
+                            <textarea id="summaryTextarea" class="summary-area" rows="8"
+                                placeholder="Synthèse de la discussion." aria-label="Résumé IA"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="guidelines-panel">
+                        <div id="guidelineProgress">
+                            <div class="panel-header" style="align-items:flex-start;">
+                                <div style="display:flex;flex-direction:column;gap:4px;font-weight:600;">
+                                    <div>Sujets</div>
+                                    <select id="guidelineDuration">
+                                        <!-- options filled by JS -->
+                                    </select>
+                                </div>
+                                <div class="guideline-actions">
+                                    <button id="evaluateBtn" type="button" class="btn">⌘ Évaluer</button>
+                                    <button id="addSubjectBtn" type="button" class="btn">+ Sujet</button>
+                                </div>
+                            </div>
+                            <div class="subject-tabs" id="subjectTabs"></div>
+                            <div id="subjectRanges" class="subject-ranges"></div>
+                            <ul class="guideline-list" id="guidelineList">
+                                <li style="color:var(--muted);font-size:13px;">Ajoute un scénario et clique sur ⌘
+                                    Répondre
+                                    pour générer les sujets.</li>
+                            </ul>
+                        </div>
+                        <div id="guidelineMeta" class="meta-row" style="width:100%;font-size:14px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gutenberg-card open" id="contextModalOverlay" role="complementary" aria-hidden="false">
+                <div class="ia-actions">
+                    <div class="header-row ia-header-actions gutenberg-recette">
+                        <div class="gutenberg-recette-header">
+                            <label for="promptCreate">Scénario</label>
+                            <button class="btn" type="button" id="clearScenarioBtn"
+                                aria-label="Réinitialiser le scénario">⊘ Vider</button>
+                            <button class="btn btn-primary" id="respondBtn" type="button">
+                                <span>⌘ Répondre</span>
+                            </button>
+                        </div>
+                        <div class="ia-prompt-fields">
+                            <div class="prompt-template-meta" id="promptTemplateMeta">Modèle : —</div>
+                            <textarea id="promptCreate" class="ia-prompt-field" rows="10"
+                                placeholder="Décris le contexte, les objectifs et les interlocuteurs."></textarea>
+                        </div>
+                    </div>
+                    <div class="header-row ia-header-actions gutenberg-script">
+                        <div class="gutenberg-recette-header">
+                            <label for="promptModify"
+                                style="margin-top:0;display:block;font-size:13px;color:var(--muted)">Script
+                                (JSON)</label>
+                            <button class="btn" type="button" id="applyScriptBtn"
+                                title="Restaurer la dernière réponse IA">↺ Restaurer</button>
+                        </div>
+                        <div class="ia-prompt-fields">
+                            <textarea id="promptModify" class="ia-prompt-field" rows="16"
+                                placeholder='{"title": "...", "subjects": [...]}'></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="iaModalOverlay" role="dialog" aria-modal="true" aria-labelledby="iaModalTitle">
+            <div class="modal">
+                <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;">
+                    <h3 id="iaModalTitle" title="⌘ Promptzilla">⌘ Prompt</h3>
+                    <button class="modal-close btn" id="iaModalClose" type="button" aria-label="Fermer l'IA">×</button>
+                </div>
+                <div class="ia-actions">
+                    <div class="header-row ia-header-actions">
+                        <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;">
+                            <label for="iaTemplateEditor" style="margin:0;">Prompt</label>
+                            <select id="iaPromptSelect" style="min-width:160px;">
+                                <option value="system">Trame</option>
+                                <option value="evaluate">Évaluation</option>
+                                <option value="summary">Résumé</option>
+                            </select>
+                        </div>
+                        <textarea id="iaTemplateEditor" rows="14"
+                            style="font-family: Menlo, Consolas, 'Courier New', monospace; font-size:13px; line-height:1.2; height:320px; overflow:auto; resize:vertical; padding:8px;"></textarea>
+                    </div>
+                    <div class="modal-actions" style="display:flex;justify-content:flex-end;gap:8px;">
+                        <button id="iaResetBtn" class="btn" type="button">Réinitialiser</button>
+                        <button id="iaApplyBtn" class="btn-primary" type="button">Appliquer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="aboutVoiceModal" role="dialog" aria-modal="true"
+            aria-labelledby="aboutVoiceTitle">
+            <div class="modal" style="max-width:520px;">
+                <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;">
+                    <h3 id="aboutVoiceTitle">⎉ Voice</h3>
+                    <button class="modal-close btn" id="aboutVoiceClose" type="button" aria-label="Fermer">×</button>
+                </div>
+                <p style="margin:0 0 8px 0;font-size:14px;color:var(--muted);">
+                    Capsule dédiée aux réunions orales. Génère une trame en JSON, suit la transcription et coche les
+                    messages clés au fil de la discussion.</p>
+                <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--muted);line-height:1.5;">
+                    <li>Modèles orientés rituels produit/tech</li>
+                    <li>Transcription via Web Speech ou Whisperer (réglages)</li>
+                    <li>Partage privé via Nexus (collection Firestore <code>voices</code>)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="copyToast" class="toast" aria-live="polite" aria-atomic="true"></div>
+    </div>
+
+    <input id="importJsonInput" type="file" accept="application/json" hidden />
+
+    <script>
+        window.GO_TOOLKIT_SHARE_API_URL =
+            window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
+    </script>
+    <script src="js/idb-doc-store.js"></script>
+    <script src="js/share-worker-client.js"></script>
+    <script src="js/share-history.js"></script>
+    <script src="js/capsule-drafts.js"></script>
+    <script src="js/ia-config.js"></script>
+    <script src="js/prompt.js?v=2025.12.25"></script>
+    <script src="js/ia-client.js"></script>
+
+    <script>
+        (() => {
+            const STORAGE_KEY = "voice-capsule";
+            const FIRESTORE_COLLECTION = "voices";
+            const SHARE_QUERY_PARAM = "share";
+            const SPEECH_ENGINE_STORAGE_KEY = "go-toolkit-speech-engine";
+            const templateList = (window.GoPrompts && window.GoPrompts.voicePromptzilla) || [];
+            const defaultSystemPrompt =
+                (window.GoPrompts && window.GoPrompts.voiceCreateSystemTemplate) ||
+                (document.getElementById("iaTemplateEditor")?.value || "");
+            const defaultEvaluatePrompt =
+                (window.GoPrompts && window.GoPrompts.voiceEvaluatePrompt) ||
+                `Analyse la transcription et indique si chaque phrase clé est exprimée directement, partiellement ou absente. Réponds en JSON: { subjects: [{ title, keySentences: [{ text, match: "direct"|"partiel"|"missing" }] }]}.`;
+            const defaultSummaryPrompt =
+                (window.GoPrompts && window.GoPrompts.voiceSummaryPrompt) ||
+                `En t'appuyant sur le modèle "{{template_text}}", produis un résumé bref en français du contenu suivant : {{transcript_content}}. Mets en avant les décisions, actions et points ouverts en 5 phrases maximum.`;
+            const promptDefaults = {
+                system: defaultSystemPrompt || "",
+                evaluate: defaultEvaluatePrompt,
+                summary: defaultSummaryPrompt
+            };
+            const promptState = { ...promptDefaults };
+            let activeIaPrompt = "system";
+            let activeRequestId = null;
+            let activeRequestController = null;
+            let respondCountdownTimer = null;
+            const subjectModal = document.createElement("div");
+            subjectModal.className = "modal-overlay";
+            subjectModal.setAttribute("role", "dialog");
+            subjectModal.setAttribute("aria-hidden", "true");
+            subjectModal.innerHTML = `<div class="modal" style="max-width:800px;">
+                <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;">
+                    <h3>Sujet</h3>
+                    <button type="button" class="btn" id="closeSubjectModal">×</button>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <label style="font-size:13px;">Titre du sujet
+                        <input id="newSubjectTitle" type="text" placeholder="Sujet 1" style="width:100%;border:1px solid var(--border-strong);border-radius:10px;padding:6px 8px;">
+                    </label>
+                    <label style="font-size:13px;">Durée (min)
+                        <input id="newSubjectDuration" type="number" min="1" max="90" value="15" style="width:100%;border:1px solid var(--border-strong);border-radius:10px;padding:6px 8px;">
+                    </label>
+                    <label style="font-size:13px;">3 à 5 points clés (séparés par des retours à la ligne)
+                        <textarea id="newSubjectPoints" rows="5" style="border:1px solid var(--border-strong);border-radius:10px;padding:6px 8px;overflow:hidden;"></textarea>
+                    </label>
+                </div>
+                <div class="modal-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;">
+                    <button type="button" class="btn" id="cancelSubjectModal">Annuler</button>
+                    <button type="button" class="btn-primary" id="confirmSubjectModal">Ajouter</button>
+                </div>
+            </div>`;
+            document.body.appendChild(subjectModal);
+            const enforceSubjectPointsLimit = () => {
+                const el = document.getElementById("newSubjectPoints");
+                if (!el) return;
+                const lines = (el.value || "").split(/\r?\n/).slice(0, 5);
+                const next = lines.join("\n");
+                if (next !== el.value) {
+                    const pos = el.selectionStart;
+                    el.value = next;
+                    if (typeof pos === "number") {
+                        const clampedPos = Math.min(pos, next.length);
+                        el.selectionStart = clampedPos;
+                        el.selectionEnd = clampedPos;
+                    }
+                }
+            };
+            enforceSubjectPointsLimit();
+            document.getElementById("newSubjectPoints")?.addEventListener("input", enforceSubjectPointsLimit);
+            const promptzillaOverlay = document.getElementById("promptzillaOverlay");
+            const promptzillaList = document.getElementById("promptzillaList");
+            const promptzillaClose = document.getElementById("promptzillaClose");
+            const promptzillaValidate = document.getElementById("promptzillaValidateBtn");
+            const openPromptzillaBtn = document.getElementById("openPromptzillaBtn");
+            const promptTemplateMeta = document.getElementById("promptTemplateMeta");
+            const openContextModalBtn = document.getElementById("openContextModal");
+            const contextPanel = document.getElementById("contextModalOverlay");
+            const appMain = document.querySelector(".app-main");
+            const openIaModalBtn = document.getElementById("openIaModal");
+            const iaModalOverlay = document.getElementById("iaModalOverlay");
+            const iaModalClose = document.getElementById("iaModalClose");
+            const iaApplyBtn = document.getElementById("iaApplyBtn");
+            const iaResetBtn = document.getElementById("iaResetBtn");
+            const iaPromptSelect = document.getElementById("iaPromptSelect");
+            const iaTemplateEditor = document.getElementById("iaTemplateEditor");
+            const promptCreate = document.getElementById("promptCreate");
+            const promptModify = document.getElementById("promptModify");
+            const respondBtn = document.getElementById("respondBtn");
+            const respondDefaultLabel = respondBtn?.textContent || "⌘ Répondre";
+            const clearScenarioBtn = document.getElementById("clearScenarioBtn");
+            const applyScriptBtn = document.getElementById("applyScriptBtn");
+            const transcribeInput = document.getElementById("transcribeInput");
+            const transcribeGhost = document.getElementById("transcribeGhost");
+            const transcribeMirror = document.getElementById("transcribeMirror");
+            const speechToggleBtn = document.getElementById("speechToggleBtn");
+            const summarizeBtn = document.getElementById("summarizeBtn");
+            const summaryTextarea = document.getElementById("summaryTextarea");
+            const audioPlayBtn = document.getElementById("audioPlayBtn");
+            const audioProgress = document.getElementById("audioProgress");
+            const audioSpeedSelect = document.getElementById("audioSpeedSelect");
+            const audioDownloadBtn = document.getElementById("audioDownloadBtn");
+            const audioClearBtn = document.getElementById("audioClearBtn");
+            const recordBtn = document.getElementById("recordBtn");
+            const pauseBtn = document.getElementById("pauseBtn");
+            const recordStatus = document.getElementById("recordStatus");
+            const transcriptMeta = document.getElementById("transcriptMeta");
+            const pageTitleEl = document.getElementById("pageTitle");
+            const subjectTabs = document.getElementById("subjectTabs");
+            const subjectRanges = document.getElementById("subjectRanges");
+            const guidelineList = document.getElementById("guidelineList");
+            const guidelineMeta = document.getElementById("guidelineMeta");
+            let guidelineDuration = document.getElementById("guidelineDuration");
+            const addSubjectBtn = document.getElementById("addSubjectBtn");
+            const evaluateBtn = document.getElementById("evaluateBtn");
+            const refreshFromScriptBtn = document.getElementById("refreshFromScriptBtn");
+            const fontSizeInput = document.getElementById("fontSizeInput");
+            const layoutDensitySelect = document.getElementById("layoutDensitySelect");
+            const optionsBtn = document.getElementById("optionsBtn");
+            const optionsMenu = document.getElementById("optionsMenu");
+            const fileMenuBtn = document.getElementById("fileMenuBtn");
+            const fileMenu = document.getElementById("fileMenu");
+            const newDocumentBtn = document.getElementById("newDocumentBtn");
+            const importJsonBtn = document.getElementById("importJsonBtn");
+            const importJsonInput = document.getElementById("importJsonInput");
+            const saveDocumentBtn = document.getElementById("saveDocumentBtn");
+            const exportJsonBtn = document.getElementById("exportJsonBtn");
+            const aboutVoiceBtn = document.getElementById("aboutVoiceBtn");
+            const aboutVoiceModal = document.getElementById("aboutVoiceModal");
+            const aboutVoiceClose = document.getElementById("aboutVoiceClose");
+            const viewTabs = document.getElementById("viewTabs");
+            const addViewBtn = document.getElementById("addViewBtn");
+            const deleteViewBtn = document.getElementById("deleteViewBtn");
+            const navSwitcherBtn = document.getElementById("navSwitcherBtn");
+            const navSwitcherMenu = document.getElementById("navSwitcherMenu");
+            const shareBtn = document.getElementById("shareBtn");
+            const shareMenu = document.getElementById("shareMenu");
+            const shareLinkField = document.getElementById("shareLinkField");
+            const shareCreateBtn = document.getElementById("shareCreateBtn");
+            const shareUpdateBtn = document.getElementById("shareUpdateBtn");
+            const shareMenuStatus = document.getElementById("shareMenuStatus");
+            const copyToast = document.getElementById("copyToast");
+            const shareHistory = window.goToolkitShareHistory;
+            const shareWorkerService = window.goToolkitShareWorker;
+            const capsuleDrafts = window.goToolkitCapsuleDrafts;
+            const subjectModalOverlay = subjectModal;
+
+            let selectedTemplateId = null;
+            let selectedTemplateText = "";
+            let speechRecognition = null;
+            let recognitionActive = false;
+            let recognitionPaused = false;
+            let transcriptPrefix = "";
+            let recordingStartedAt = null;
+            let recordingTimer = null;
+            let recordingElapsedSec = 0;
+            let lastTimestampMinute = null;
+            let currentShareToken = null;
+            let shareLoadedFromRemote = false;
+            let shareStatusMessage = "";
+            let shareStatusType = "";
+            let shareRequestInProgress = false;
+            let shareLastUpdatedAt = null;
+            const SELF_PARTICIPANT_KEY = "go-toolkit-voice-self";
+            const DEFAULT_SUBJECT_DURATION = 15;
+            const MIN_SUBJECT_MINUTES = 10;
+            const MAX_SUBJECT_MINUTES = 90;
+            const MAX_PARTICIPANTS = 6;
+            const setSpeechButtonState = isActive => {
+                const btn = speechToggleBtn || recordBtn || pauseBtn;
+                if (btn) {
+                    btn.classList.toggle("speech-button--active", Boolean(isActive));
+                }
+                if (transcribeInput) {
+                    transcribeInput.classList.toggle("speech-active", Boolean(isActive));
+                }
+            };
+            const AUDIO_DB = {
+                name: "go-toolkit-voice-audio",
+                store: "recordings",
+                key: "latest"
+            };
+            let mediaRecorder = null;
+            let mediaStream = null;
+            let audioChunks = [];
+            let audioBlob = null;
+            let audioUrl = null;
+            const audioPlayer = new Audio();
+            let audioDbPromise = null;
+
+            function getStoredSelfParticipant() {
+                try {
+                    const raw = localStorage.getItem(SELF_PARTICIPANT_KEY);
+                    if (!raw) return null;
+                    const parsed = JSON.parse(raw);
+                    if (parsed && typeof parsed === "object") {
+                        return {
+                            name: parsed.name || "",
+                            role: parsed.role || ""
+                        };
+                    }
+                } catch (e) { /* noop */ }
+                return null;
+            }
+
+            function saveSelfParticipant(participant) {
+                if (!participant) return;
+                try {
+                    const payload = {
+                        name: participant.name || "",
+                        role: participant.role || ""
+                    };
+                    localStorage.setItem(SELF_PARTICIPANT_KEY, JSON.stringify(payload));
+                } catch (e) { /* noop */ }
+            }
+
+            function ensureParticipants(list) {
+                let arr = Array.isArray(list) ? list.map(p => ({ name: p?.name || "", role: p?.role || "" })) : [];
+                arr = arr.slice(0, MAX_PARTICIPANTS);
+                while (arr.length < 2) {
+                    arr.push({ name: "", role: "" });
+                }
+                if (arr.length > MAX_PARTICIPANTS) {
+                    arr = arr.slice(0, MAX_PARTICIPANTS);
+                }
+                return arr;
+            }
+
+            const defaultPage = () => {
+                const self = getStoredSelfParticipant();
+                return {
+                    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+                    title: "Page 1",
+                    tabLabel: "Page 1",
+                    scenario: "",
+                    script: "",
+                    transcript: "",
+                    summary: "",
+                    subjects: [],
+                    duration: null,
+                    participants: [
+                        self || { name: "", role: "" },
+                        { name: "", role: "" }
+                    ],
+                    lastIaResponse: "",
+                    activeSubjectId: null,
+                    checks: {}
+                };
+            };
+
+            function normalizeState(raw) {
+                if (!raw || !Array.isArray(raw.pages)) return raw;
+                raw.pages = raw.pages.map(p => {
+                    const next = { ...p };
+                    next.participants = ensureParticipants(next.participants);
+                    if (!next.tabLabel) next.tabLabel = next.title || next.label || "Page";
+                    if (typeof next.lastIaResponse !== "string") next.lastIaResponse = "";
+                    if (typeof next.summary !== "string") next.summary = "";
+                    return next;
+                });
+                if (!raw.activePageId && raw.pages[0]) raw.activePageId = raw.pages[0].id;
+                return raw;
+            }
+
+            let state = (() => {
+                try {
+                    const stored = localStorage.getItem(STORAGE_KEY);
+                    if (stored) {
+                        const parsed = JSON.parse(stored);
+                        if (parsed && Array.isArray(parsed.pages) && parsed.pages.length) {
+                            return normalizeState(parsed);
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Impossible de charger l'état Voice", err);
+                }
+                return { pages: [defaultPage()], activePageId: null };
+            })();
+
+            if (!state.activePageId && state.pages[0]) {
+                state.activePageId = state.pages[0].id;
+            }
+
+            function persistState() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                } catch (err) {
+                    console.warn("Impossible de persister la capsule Voice", err);
+                }
+            }
+
+            function showToast(message, isError) {
+                if (!copyToast) return;
+                copyToast.textContent = message;
+                copyToast.style.background = "rgba(17, 24, 39, 0.9)";
+                copyToast.classList.add("visible");
+                setTimeout(() => copyToast.classList.remove("visible"), 2600);
+            }
+
+            function setShareStatus(message, type) {
+                shareStatusMessage = message || "";
+                shareStatusType = type || "";
+            }
+
+            function buildShareUrl(token) {
+                if (!token || !shareWorkerService) return "";
+                return `${shareWorkerService.baseUrl}/${shareWorkerService.version}/shares/${FIRESTORE_COLLECTION}/${token}`;
+            }
+
+            function updateShareMenuUI() {
+                const hasToken = Boolean(currentShareToken);
+                if (shareLinkField) {
+                    shareLinkField.value = hasToken ? buildShareUrl(currentShareToken) : "";
+                    shareLinkField.placeholder = hasToken ? "" : "Appuie sur Créer pour générer un lien privé.";
+                }
+                if (shareCreateBtn) {
+                    shareCreateBtn.disabled = shareRequestInProgress || !shareWorkerService?.isReady;
+                    shareCreateBtn.classList.toggle("btn-primary", !hasToken);
+                    shareCreateBtn.classList.toggle("btn", hasToken);
+                }
+                if (shareUpdateBtn) {
+                    shareUpdateBtn.hidden = !hasToken;
+                    shareUpdateBtn.disabled = shareRequestInProgress || !hasToken || !shareWorkerService?.isReady;
+                }
+                if (shareMenuStatus) {
+                    const text = shareStatusMessage ||
+                        (!shareWorkerService?.isReady
+                            ? "Le partage privé nécessite le worker Cloudflare."
+                            : shareLastUpdatedAt
+                                ? `Mis à jour ${new Date(shareLastUpdatedAt).toLocaleString()}`
+                                : "Seules les personnes disposant du lien peuvent y accéder.");
+                    shareMenuStatus.textContent = text;
+                    const isError =
+                        (shareStatusType === "error" && Boolean(text)) ||
+                        (!shareWorkerService?.isReady && !shareStatusMessage);
+                    shareMenuStatus.classList.toggle("error", isError);
+                }
+            }
+
+            function getActivePage() {
+                return state.pages.find(p => p.id === state.activePageId) || state.pages[0];
+            }
+
+            function setActivePage(id) {
+                state.activePageId = id;
+                persistState();
+                renderTabs();
+                renderPage();
+            }
+
+            function addPage() {
+                const nextIndex = state.pages.length + 1;
+                const page = defaultPage();
+                page.title = `Page ${nextIndex}`;
+                page.tabLabel = page.title;
+                state.pages.push(page);
+                setActivePage(page.id);
+            }
+
+            function deletePage() {
+                if (state.pages.length <= 1) return;
+                state.pages = state.pages.filter(p => p.id !== state.activePageId);
+                state.activePageId = state.pages[0]?.id || null;
+                persistState();
+                renderTabs();
+                renderPage();
+            }
+
+            function renderTabs() {
+                if (!viewTabs) return;
+                viewTabs.innerHTML = "";
+                state.pages.forEach((page, idx) => {
+                    if (!page.tabLabel) {
+                        page.tabLabel = page.title || `Page ${idx + 1}`;
+                    }
+                    const btn = document.createElement("button");
+                    btn.className = "tab" + (page.id === state.activePageId ? " active" : "");
+                    btn.type = "button";
+                    btn.textContent = page.tabLabel || page.title || "Page";
+                    btn.addEventListener("click", () => setActivePage(page.id));
+                    btn.addEventListener("dblclick", () => {
+                        const next = prompt("Renommer l'onglet ?", page.tabLabel || page.title || "");
+                        if (next && next.trim()) {
+                            page.tabLabel = next.trim();
+                            persistState();
+                            renderTabs();
+                        }
+                    });
+                    viewTabs.appendChild(btn);
+                });
+            }
+
+            function updateTranscriptMeta() {
+                if (!transcribeInput || !transcriptMeta) return;
+                const formatTime = secs => {
+                    const total = Math.max(0, Math.floor(secs || 0));
+                    const m = Math.floor(total / 60);
+                    const s = total % 60;
+                    return `${m}'${String(s).padStart(2, "0")}"`;
+                };
+                const page = getActivePage();
+                const hasAudio = audioUrl && !Number.isNaN(audioPlayer?.duration || NaN) && (audioPlayer?.duration || 0) > 0;
+                if (hasAudio) {
+                    const current = Math.floor(audioPlayer.currentTime || 0);
+                    const totalAudio = Math.floor(audioPlayer.duration || 0);
+                    transcriptMeta.textContent = `${formatTime(current)} / ${formatTime(totalAudio)}`;
+                    return;
+                }
+                const totalMinutes = page?.duration
+                    ? Number(page.duration)
+                    : (page?.subjects?.length || 0) * DEFAULT_SUBJECT_DURATION;
+                const totalSeconds = Math.max(0, Math.floor((totalMinutes || 0) * 60));
+                const elapsedSec = recordingElapsedSec || 0;
+                transcriptMeta.textContent = `${formatTime(elapsedSec)} / ${formatTime(totalSeconds)}`;
+            }
+
+            function getLastTimestampMinuteFromTranscript(text = "") {
+                const regex = /\[(\d{2,}):(\d{2})\]/g;
+                let match = null;
+                let last = null;
+                while ((match = regex.exec(text)) !== null) {
+                    const mins = Number(match[1]);
+                    const secs = Number(match[2]);
+                    if (!Number.isNaN(mins) && !Number.isNaN(secs)) {
+                        last = Math.floor((mins * 60 + secs) / 60);
+                    }
+                }
+                return last;
+            }
+
+            function updateGhostOverlay(interimText = "") {
+                if (!transcribeInput || !transcribeGhost || !transcribeMirror) return;
+                const ghostText = interimText || "";
+                if (!ghostText) {
+                    transcribeGhost.textContent = "";
+                    transcribeGhost.style.transform = "translate(0, 0)";
+                    return;
+                }
+                const styles = window.getComputedStyle(transcribeInput);
+                transcribeMirror.style.fontSize = styles.fontSize;
+                transcribeMirror.style.lineHeight = styles.lineHeight;
+                transcribeMirror.style.width = `${transcribeInput.clientWidth}px`;
+                transcribeMirror.textContent = "";
+                const before = document.createElement("span");
+                const caret = document.createElement("span");
+                caret.textContent = "\u200b";
+                before.textContent = (transcribeInput.value || "").slice(0, transcribeInput.selectionStart || 0);
+                transcribeMirror.append(before, caret);
+                const caretRect = caret.getBoundingClientRect();
+                const inputRect = transcribeInput.getBoundingClientRect();
+                const paddingLeft = parseFloat(styles.paddingLeft) || 0;
+                const paddingTop = parseFloat(styles.paddingTop) || 0;
+                const left = caretRect.left - inputRect.left + transcribeInput.scrollLeft - paddingLeft + 5;
+                const top = caretRect.top - inputRect.top + transcribeInput.scrollTop - paddingTop + 2;
+                transcribeGhost.textContent = ghostText;
+                transcribeGhost.style.transform = `translate(${left}px, ${top}px)`;
+            }
+
+            function updateRangeVisual(rangeInput, totalDurationMinutes = 0) {
+                if (!rangeInput) return;
+                const total = Math.max(1, Number(totalDurationMinutes) || 1);
+                const progressRatio = Math.min(1, Math.max(0, (recordingElapsedSec / 60) / total));
+                const pct = progressRatio * 100;
+                if (pct <= 0.001) {
+                    rangeInput.style.background = "#e5e7eb";
+                } else {
+                    rangeInput.style.background = `linear-gradient(to right, var(--primary) 0%, var(--primary) ${pct}%, #e5e7eb ${pct}%, #e5e7eb 100%)`;
+                }
+            }
+
+            function updateRecordingUi() {
+                updateTranscriptMeta();
+                const page = getActivePage();
+                const total = page?.duration || 0;
+                const activeRange = subjectRanges?.querySelector('input[type="range"]');
+                if (activeRange) {
+                    updateRangeVisual(activeRange, total);
+                }
+            }
+
+            function addDefaultSubjectsIfEmpty(page) {
+                if (!page || (page.subjects && page.subjects.length)) return;
+                page.subjects = [
+                    {
+                        id: "subject-1",
+                        title: "Sujet 1",
+                        timeframe: { start: 0, end: DEFAULT_SUBJECT_DURATION },
+                        keySentences: [{ text: "Point 1.1", match: "pending" }, { text: "Point 1.2", match: "pending" }]
+                    },
+                    {
+                        id: "subject-2",
+                        title: "Sujet 2",
+                        timeframe: { start: DEFAULT_SUBJECT_DURATION, end: DEFAULT_SUBJECT_DURATION * 2 },
+                        keySentences: [{ text: "Point 2.1", match: "pending" }, { text: "Point 2.2", match: "pending" }]
+                    }
+                ];
+                page.activeSubjectId = page.subjects[0].id;
+            }
+
+            function normalizeSubjects(raw = []) {
+                return raw.map((subject, index) => {
+                    const keySentences = (subject["key-sentences"] || subject.keySentences || subject.key_sentence || subject.sentences || [])
+                        .map((entry, idx) => {
+                            if (typeof entry === "string") return { text: entry, match: "pending" };
+                            if (entry && typeof entry === "object") {
+                                return {
+                                    text: entry.text || entry.label || entry.sentence || `Point ${idx + 1}`,
+                                    match: entry.match || entry.status || "pending"
+                                };
+                            }
+                            return { text: `Point ${idx + 1}`, match: "pending" };
+                        })
+                        .filter(item => item.text && item.text.trim());
+                    return {
+                        id: subject.id || `subject-${index + 1}`,
+                        title: subject.title || subject.name || `Sujet ${index + 1}`,
+                        timeframe: subject.timeframe || subject["time-frame"] || {},
+                        keySentences
+                    };
+                });
+            }
+
+            function applyScriptJson(text) {
+                if (!text) return null;
+                const cleaned = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+                const parsed = JSON.parse(cleaned);
+                const page = getActivePage();
+                if (!page) return null;
+                if (parsed.title) page.title = parsed.title;
+                if (Array.isArray(parsed.subjects)) {
+                    page.subjects = normalizeSubjects(parsed.subjects);
+                    page.activeSubjectId = page.subjects[0]?.id || null;
+                }
+                if (parsed.duration) page.duration = parsed.duration;
+                if (Array.isArray(parsed.participants)) page.participants = ensureParticipants(parsed.participants);
+                else page.participants = ensureParticipants(page.participants);
+                if (parsed.transcript && typeof parsed.transcript === "string") {
+                    page.transcript = parsed.transcript;
+                    if (transcribeInput) transcribeInput.value = parsed.transcript;
+                }
+                if (parsed.summary && typeof parsed.summary === "string") {
+                    page.summary = parsed.summary;
+                    if (summaryTextarea) summaryTextarea.value = parsed.summary;
+                }
+                page.script = JSON.stringify(parsed, null, 2);
+                persistState();
+                renderPage();
+                return parsed;
+            }
+
+            function openSubjectModal(subjectId) {
+                const page = getActivePage();
+                if (!page) return;
+                const subject = page.subjects?.find(s => s.id === subjectId);
+                const titleInput = document.getElementById("newSubjectTitle");
+                const durationInput = document.getElementById("newSubjectDuration");
+                const pointsInput = document.getElementById("newSubjectPoints");
+                const confirmBtn = document.getElementById("confirmSubjectModal");
+                const heading = subjectModalOverlay?.querySelector(".modal-header h3");
+                if (heading) heading.textContent = subject ? "Éditer un sujet" : "Ajouter un sujet";
+                if (confirmBtn) confirmBtn.textContent = subject ? "Mettre à jour" : "Ajouter";
+                if (titleInput) titleInput.value = subject?.title || "";
+                if (durationInput) durationInput.value = subject ? (subject.timeframe?.end || DEFAULT_SUBJECT_DURATION) - (subject.timeframe?.start || 0) : String(DEFAULT_SUBJECT_DURATION);
+                if (pointsInput) pointsInput.value = (subject?.keySentences || []).map(k => k.text || "").join("\n");
+                confirmBtn.dataset.subjectId = subject?.id || "";
+                subjectModalOverlay?.classList.add("open");
+                subjectModalOverlay?.setAttribute("aria-hidden", "false");
+            }
+
+            function renderGuidelines() {
+                const page = getActivePage();
+                if (!page) return;
+                addDefaultSubjectsIfEmpty(page);
+                page.participants = ensureParticipants(page.participants);
+                const subjects = page.subjects || [];
+                const totalDuration = page.duration || (subjects.length * DEFAULT_SUBJECT_DURATION);
+                let rollingEnd = 0;
+                const minDurationClamp = Math.max(0, totalDuration - 1);
+                subjects.forEach((subject, idx) => {
+                    const start = Math.min(idx === 0 ? 0 : rollingEnd, minDurationClamp);
+                    const existingDuration = (typeof subject.timeframe?.end === "number" && typeof subject.timeframe?.start === "number")
+                        ? Math.max(1, subject.timeframe.end - subject.timeframe.start)
+                        : DEFAULT_SUBJECT_DURATION;
+                    let end = typeof subject.timeframe?.end === "number" ? subject.timeframe.end : start + existingDuration;
+                    end = Math.min(totalDuration, Math.max(start + 1, end));
+                    if (idx === subjects.length - 1) {
+                        end = totalDuration || Math.max(start + 1, DEFAULT_SUBJECT_DURATION);
+                        if (end <= start) {
+                            start = Math.max(0, end - 1);
+                        }
+                    }
+                    subject.timeframe = { start, end };
+                    rollingEnd = end;
+                });
+                function getSubjectStart(idx) {
+                    if (idx === 0) return 0;
+                    const prev = subjects[idx - 1];
+                    return prev && typeof prev.timeframe?.end === "number" ? prev.timeframe.end : getSubjectStart(idx - 1) + DEFAULT_SUBJECT_DURATION;
+                }
+                if (subjectTabs) {
+                    subjectTabs.innerHTML = "";
+                    subjects.forEach(subject => {
+                        const matched = (subject.keySentences || []).filter(item => item.match === "direct" || item.match === "partiel").length;
+                        const total = subject.keySentences?.length || 0;
+                        let statusClass = "status-dot status-dot--none";
+                        if (matched > 0 && matched < total) {
+                            statusClass = "status-dot status-dot--partial";
+                        } else if (matched > 0 && matched === total) {
+                            statusClass = "status-dot status-dot--complete";
+                        }
+                        const tab = document.createElement("button");
+                        tab.className = "subject-tab" + (subject.id === page.activeSubjectId ? " active" : "");
+                        tab.type = "button";
+                        tab.innerHTML = `<div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;">
+<span style="display:flex;align-items:center;gap:8px;justify-content:space-between;width:100%;"><span><span class="${statusClass}" aria-hidden="true"></span>${subject.title}</span><span class="edit-subject-btn" role="button" data-id="${subject.id}" title="Éditer">✎</span></span>
+</div>`;
+                        tab.addEventListener("click", () => {
+                            page.activeSubjectId = subject.id;
+                            persistState();
+                            renderGuidelines();
+                        });
+                        subjectTabs.appendChild(tab);
+                    });
+                    subjectTabs.querySelectorAll(".edit-subject-btn").forEach(btn => {
+                        btn.addEventListener("click", ev => {
+                            ev.stopPropagation();
+                            const id = btn.getAttribute("data-id");
+                            openSubjectModal(id);
+                        });
+                    });
+                }
+
+                const activeSubject =
+                    subjects.find(s => s.id === page.activeSubjectId) || subjects[0] || null;
+                if (!page.activeSubjectId && activeSubject) {
+                    page.activeSubjectId = activeSubject.id;
+                }
+
+                if (guidelineMeta) {
+                    guidelineMeta.innerHTML = "";
+                    const header = document.createElement("div");
+                    header.className = "participants-header";
+                    const title = document.createElement("div");
+                    title.style.fontWeight = "600";
+                    title.textContent = "Participants";
+                    const addBtn = document.createElement("button");
+                    addBtn.type = "button";
+                    addBtn.className = "participant-add-btn";
+                    addBtn.textContent = "+ Participant";
+                    addBtn.addEventListener("click", () => {
+                        if (page.participants.length >= MAX_PARTICIPANTS) {
+                            showToast(`Maximum ${MAX_PARTICIPANTS} participants.`, true);
+                            addBtn.disabled = true;
+                            return;
+                        }
+                        page.participants.push({ name: "", role: "" });
+                        persistState();
+                        renderGuidelines();
+                    });
+                    addBtn.disabled = page.participants.length >= MAX_PARTICIPANTS;
+                    header.append(title, addBtn);
+                    const list = document.createElement("div");
+                    list.className = "participants-list";
+                    page.participants.forEach((participant, idx) => {
+                        const row = document.createElement("div");
+                        row.className = "participant-row";
+                        const nameInput = document.createElement("input");
+                        nameInput.type = "text";
+                        nameInput.placeholder = idx === 0 ? "Moi" : `Participant ${idx + 1}`;
+                        nameInput.value = participant.name || "";
+                        const roleInput = document.createElement("input");
+                        roleInput.type = "text";
+                        roleInput.placeholder = "Rôle";
+                        roleInput.value = participant.role || "";
+                        const deleteBtn = document.createElement("button");
+                        deleteBtn.type = "button";
+                        deleteBtn.className = "btn";
+                        deleteBtn.textContent = "×";
+                        deleteBtn.style.width = "32px";
+                        deleteBtn.addEventListener("click", () => {
+                            if (page.participants.length <= 1) return;
+                            page.participants.splice(idx, 1);
+                            persistState();
+                            renderGuidelines();
+                        });
+                        const save = () => {
+                            page.participants[idx] = { name: nameInput.value.trim(), role: roleInput.value.trim() };
+                            if (idx === 0) {
+                                saveSelfParticipant(page.participants[idx]);
+                            }
+                            persistState();
+                        };
+                        nameInput.addEventListener("blur", save);
+                        roleInput.addEventListener("blur", save);
+                        row.append(nameInput, roleInput, deleteBtn);
+                        list.appendChild(row);
+                    });
+                    guidelineMeta.append(header, list);
+                }
+                if (!guidelineDuration) {
+                    guidelineDuration = document.createElement("select");
+                    guidelineDuration.id = "guidelineDuration";
+                    guidelineDuration.style.fontSize = "14px";
+                    guidelineDuration.style.border = "1px solid var(--border-strong)";
+                    guidelineDuration.style.borderRadius = "10px";
+                    guidelineDuration.style.padding = "6px 8px";
+                }
+                guidelineDuration.innerHTML = "";
+                for (let min = MIN_SUBJECT_MINUTES; min <= MAX_SUBJECT_MINUTES; min += 5) {
+                    const opt = document.createElement("option");
+                    opt.value = String(min);
+                    opt.textContent = `${min}'`;
+                    if (page.duration === min) opt.selected = true;
+                    guidelineDuration.appendChild(opt);
+                }
+                if (!page.duration) {
+                    guidelineDuration.value = String(DEFAULT_SUBJECT_DURATION);
+                    page.duration = DEFAULT_SUBJECT_DURATION;
+                }
+                if (!guidelineDuration.dataset.bound) {
+                    guidelineDuration.addEventListener("change", () => {
+                        const val = Math.min(MAX_SUBJECT_MINUTES, Math.max(MIN_SUBJECT_MINUTES, Number(guidelineDuration.value) || DEFAULT_SUBJECT_DURATION));
+                        const currentPage = getActivePage();
+                        if (currentPage) {
+                            currentPage.duration = val;
+                            persistState();
+                            renderGuidelines();
+                        }
+                    });
+                    guidelineDuration.dataset.bound = "true";
+                }
+
+                if (subjectRanges) {
+                    subjectRanges.innerHTML = "";
+                    const activeIndex = subjects.findIndex(s => s.id === page.activeSubjectId);
+                    const idx = activeIndex >= 0 ? activeIndex : 0;
+                    const subject = subjects[idx];
+                    const isLast = idx === subjects.length - 1;
+                    if (subject) {
+                        const prevSubject = isLast && idx > 0 ? subjects[idx - 1] : null;
+                        const prevEnd = idx === 0
+                            ? 0
+                            : Math.max(0, typeof subjects[idx - 1].timeframe?.end === "number"
+                                ? subjects[idx - 1].timeframe.end
+                                : getSubjectStart(idx));
+                        const start = prevEnd;
+                        let safeEnd = typeof subject.timeframe?.end === "number" ? subject.timeframe.end : start + DEFAULT_SUBJECT_DURATION;
+                        if (isLast) {
+                            safeEnd = totalDuration;
+                            if (safeEnd <= start) {
+                                safeEnd = Math.max(start + 1, totalDuration || start + 1);
+                            }
+                        } else {
+                            safeEnd = Math.min(totalDuration, Math.max(start + 1, safeEnd));
+                        }
+                        subject.timeframe = { start, end: safeEnd };
+                        const row = document.createElement("div");
+                        row.className = "subject-range-row";
+                        const rangeContainer = document.createElement("div");
+                        rangeContainer.style.display = "flex";
+                        rangeContainer.style.alignItems = "center";
+                        rangeContainer.style.gap = "6px";
+                        const rangeInput = document.createElement("input");
+                        rangeInput.type = "range";
+                        if (isLast && prevSubject) {
+                            const minBoundary = Math.min(totalDuration - 1, Math.max((prevSubject.timeframe?.start || 0) + 1, start + 1));
+                            const maxBoundary = Math.max(minBoundary, totalDuration - 1);
+                            rangeInput.min = String(minBoundary);
+                            rangeInput.max = String(maxBoundary);
+                            rangeInput.step = "1";
+                            rangeInput.value = String(Math.min(maxBoundary, Math.max(minBoundary, prevSubject.timeframe?.end || start + 1)));
+                        } else {
+                            rangeInput.min = String(start + 1);
+                            rangeInput.max = String(Math.max(start + 1, totalDuration));
+                            rangeInput.step = "1";
+                            rangeInput.value = String(safeEnd);
+                        }
+                        const meta = document.createElement("div");
+                        meta.className = "subject-range-meta";
+                        const durationMinutes = Math.max(1, Math.round((safeEnd - start) * 10) / 10);
+                        rangeInput.addEventListener("input", () => {
+                            if (isLast && prevSubject) {
+                                const minBoundary = Number(rangeInput.min);
+                                const maxBoundary = Number(rangeInput.max);
+                                const boundary = Math.min(maxBoundary, Math.max(minBoundary, Number(rangeInput.value)));
+                                prevSubject.timeframe = prevSubject.timeframe || {};
+                                prevSubject.timeframe.end = boundary;
+                                subject.timeframe.start = boundary;
+                                subject.timeframe.end = totalDuration;
+                                const dur = Math.max(1, Math.round((subject.timeframe.end - subject.timeframe.start) * 10) / 10);
+                                meta.textContent = `${subject.timeframe.start}' → ${subject.timeframe.end}'`;
+                                if (durationLabel) {
+                                    durationLabel.textContent = isNaN(dur) ? "" : `${dur} mn`;
+                                }
+                            } else {
+                                let nextEnd = Number(rangeInput.value);
+                                nextEnd = Math.min(totalDuration, Math.max(start + 1, nextEnd));
+                                subject.timeframe.end = nextEnd;
+                                const dur = Math.max(1, Math.round((nextEnd - start) * 10) / 10);
+                                meta.textContent = `${start}' → ${nextEnd}'`;
+                                if (durationLabel) {
+                                    durationLabel.textContent = isNaN(dur) ? "" : `${dur} mn`;
+                                }
+                                // Propagate start times to following subjects
+                                for (let i = idx + 1; i < subjects.length; i++) {
+                                    const previous = subjects[i - 1];
+                                    const current = subjects[i];
+                                    const previousEnd = typeof previous.timeframe?.end === "number"
+                                        ? previous.timeframe.end
+                                        : previous.timeframe?.start + DEFAULT_SUBJECT_DURATION || 0;
+                                    const currentDuration = typeof current.timeframe?.end === "number" && typeof current.timeframe?.start === "number"
+                                        ? Math.max(1, current.timeframe.end - current.timeframe.start)
+                                        : DEFAULT_SUBJECT_DURATION;
+                                    const nextStart = previousEnd;
+                                    const nextEndBound = Math.min(totalDuration, Math.max(nextStart + 1, nextStart + currentDuration));
+                                    current.timeframe = { start: nextStart, end: nextEndBound };
+                                }
+                            }
+                            persistState();
+                            updateRangeVisual(rangeInput, totalDuration);
+                        });
+                        updateRangeVisual(rangeInput, totalDuration);
+                        const initialDuration = Math.max(1, Math.round((safeEnd - start) * 10) / 10);
+                        meta.textContent = `${start}' → ${safeEnd}'`;
+                        const durationLabel = document.createElement("div");
+                        durationLabel.className = "subject-range-meta";
+                        durationLabel.textContent = isNaN(initialDuration) ? "" : `${initialDuration} mn`;
+                        rangeContainer.append(durationLabel, rangeInput, meta);
+                        row.append(rangeContainer);
+                        subjectRanges.appendChild(row);
+                    }
+                }
+
+                if (guidelineList) {
+                    guidelineList.innerHTML = "";
+                    if (!activeSubject) {
+                        // no subjects yet
+                    } else {
+                        activeSubject.keySentences.forEach((item, idx) => {
+                            const li = document.createElement("li");
+                            li.className = "guideline-item";
+                            const title = document.createElement("div");
+                            title.textContent = item.text || `Point ${idx + 1}`;
+                            const actions = document.createElement("div");
+                            actions.className = "guideline-actions";
+                            const directId = `${activeSubject.id}-direct-${idx}`;
+                            const indirectId = `${activeSubject.id}-partiel-${idx}`;
+                            const direct = document.createElement("label");
+                            const directInput = document.createElement("input");
+                            directInput.type = "checkbox";
+                            directInput.id = directId;
+                            directInput.checked = item.match === "direct";
+                            directInput.addEventListener("change", () => {
+                                item.match = directInput.checked ? "direct" : "pending";
+                                if (directInput.checked) {
+                                    indirectInput.checked = false;
+                                }
+                                persistState();
+                                renderGuidelines();
+                            });
+                            direct.appendChild(directInput);
+                            direct.appendChild(document.createTextNode("Oui"));
+                            const indirect = document.createElement("label");
+                            const indirectInput = document.createElement("input");
+                            indirectInput.type = "checkbox";
+                            indirectInput.id = indirectId;
+                            indirectInput.checked = item.match === "partiel";
+                            indirectInput.addEventListener("change", () => {
+                                item.match = indirectInput.checked ? "partiel" : "pending";
+                                if (indirectInput.checked) {
+                                    directInput.checked = false;
+                                }
+                                persistState();
+                                renderGuidelines();
+                            });
+                            indirect.appendChild(indirectInput);
+                            indirect.appendChild(document.createTextNode("Partiel"));
+                            actions.append(direct, indirect);
+                            li.append(title, actions);
+                            guidelineList.appendChild(li);
+                        });
+                    }
+                }
+
+                updateRecordingUi();
+            }
+
+            function renderPage() {
+                const page = getActivePage();
+                if (!page) return;
+                if (pageTitleEl) pageTitleEl.textContent = page.title || "Page";
+                if (promptCreate) promptCreate.value = page.scenario || "";
+                if (promptModify) promptModify.value = page.script || "";
+                if (transcribeInput) transcribeInput.value = page.transcript || "";
+                if (summaryTextarea) summaryTextarea.value = page.summary || "";
+                updateTranscriptMeta();
+                renderGuidelines();
+            }
+
+            function openPromptzilla() {
+                if (!promptzillaOverlay) return;
+                renderPromptzilla();
+                promptzillaOverlay.classList.add("open");
+            }
+
+            function closePromptzilla() {
+                promptzillaOverlay?.classList.remove("open");
+            }
+
+            function renderPromptzilla() {
+                if (!promptzillaList) return;
+                promptzillaList.innerHTML = "";
+                templateList.forEach(tpl => {
+                    const card = document.createElement("div");
+                    card.className = "promptzilla-card" + (tpl.id === selectedTemplateId ? " selected" : "");
+                    card.innerHTML = `<strong style="font-size:13px">${tpl.title}</strong><div style="font-size:12px;color:var(--muted);white-space:pre-wrap;word-break:break-word;margin-top:6px">${tpl.text}</div>`;
+                    card.addEventListener("click", () => {
+                        selectedTemplateId = tpl.id;
+                        Array.from(promptzillaList.children).forEach(c => c.classList.remove("selected"));
+                        card.classList.add("selected");
+                    });
+                    promptzillaList.appendChild(card);
+                });
+            }
+
+            function applySelectedTemplate() {
+                if (!selectedTemplateId || !promptCreate) return;
+                const tpl = templateList.find(t => t.id === selectedTemplateId);
+                if (!tpl) return;
+                selectedTemplateText = tpl.text || "";
+                promptTemplateMeta.textContent = `Modèle : ${tpl.title}`;
+                persistScenario();
+                closePromptzilla();
+            }
+
+            function persistScenario() {
+                const page = getActivePage();
+                if (!page) return;
+                page.scenario = promptCreate?.value || "";
+                persistState();
+            }
+
+            function getAudioDb() {
+                if (audioDbPromise) return audioDbPromise;
+                audioDbPromise = new Promise((resolve, reject) => {
+                    if (!("indexedDB" in window)) {
+                        resolve(null);
+                        return;
+                    }
+                    const request = indexedDB.open(AUDIO_DB.name, 1);
+                    request.onupgradeneeded = () => {
+                        const db = request.result;
+                        if (!db.objectStoreNames.contains(AUDIO_DB.store)) {
+                            db.createObjectStore(AUDIO_DB.store);
+                        }
+                    };
+                    request.onerror = () => reject(request.error || new Error("IndexedDB audio indisponible"));
+                    request.onsuccess = () => resolve(request.result);
+                });
+                return audioDbPromise;
+            }
+
+            async function saveAudioToDb(blob, key = AUDIO_DB.key) {
+                try {
+                    const db = await getAudioDb();
+                    if (!db || !blob) return;
+                    const tx = db.transaction(AUDIO_DB.store, "readwrite");
+                    const store = tx.objectStore(AUDIO_DB.store);
+                    const buffer = await blob.arrayBuffer();
+                    store.put({ type: blob.type || "audio/webm", data: buffer }, key);
+                } catch (err) {
+                    console.warn("Impossible de sauvegarder l'audio", err);
+                }
+            }
+
+            async function clearAudioDb(key) {
+                try {
+                    const db = await getAudioDb();
+                    if (!db) return;
+                    const tx = db.transaction(AUDIO_DB.store, "readwrite");
+                    const store = tx.objectStore(AUDIO_DB.store);
+                    if (key) {
+                        store.delete(key);
+                    } else {
+                        store.clear();
+                    }
+                } catch (err) {
+                    console.warn("Impossible de vider l'audio", err);
+                }
+            }
+
+            async function loadAudioFromDb(key = AUDIO_DB.key) {
+                try {
+                    const db = await getAudioDb();
+                    if (!db) return;
+                    const tx = db.transaction(AUDIO_DB.store, "readonly");
+                    const store = tx.objectStore(AUDIO_DB.store);
+                    const req = store.get(key);
+                    const result = await new Promise(resolve => {
+                        req.onsuccess = () => resolve(req.result);
+                        req.onerror = () => resolve(null);
+                    });
+                    if (result && result.data) {
+                        const blob = new Blob([result.data], { type: result.type || "audio/webm" });
+                        setAudioBlob(blob, { skipSave: true });
+                    }
+                } catch (err) {
+                    console.warn("Impossible de charger l'audio", err);
+                }
+            }
+
+            function setAudioBlob(blob, options = {}) {
+                const { skipSave } = options;
+                if (audioUrl) {
+                    try { URL.revokeObjectURL(audioUrl); } catch (e) { /* noop */ }
+                }
+                audioBlob = blob || null;
+                audioUrl = blob ? URL.createObjectURL(blob) : null;
+                audioPlayer.src = audioUrl || "";
+                audioPlayer.playbackRate = getAudioSpeed();
+                audioPlayer.currentTime = 0;
+                if (audioProgress) {
+                    audioProgress.disabled = !audioUrl;
+                    audioProgress.value = 0;
+                }
+                if (audioPlayBtn) {
+                    audioPlayBtn.disabled = !audioUrl;
+                    audioPlayBtn.textContent = "▶";
+                }
+                if (audioDownloadBtn) {
+                    audioDownloadBtn.disabled = !audioUrl;
+                }
+                if (blob && !skipSave) {
+                    saveAudioToDb(blob);
+                }
+            }
+
+            function updateAudioProgress() {
+                if (!audioProgress || !audioPlayer?.duration || Number.isNaN(audioPlayer.duration)) return;
+                const ratio = Math.min(1, Math.max(0, audioPlayer.currentTime / audioPlayer.duration));
+                audioProgress.value = ratio;
+            }
+
+            async function ensureAudioRecording() {
+                if (!navigator.mediaDevices?.getUserMedia) return false;
+                if (mediaRecorder && mediaRecorder.state === "recording") return true;
+                try {
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                } catch (err) {
+                    console.error("Micro indisponible", err);
+                    showToast("Micro indisponible pour l'enregistrement audio.", true);
+                    return false;
+                }
+                const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+                    ? "audio/webm;codecs=opus"
+                    : "audio/webm";
+                audioChunks = [];
+                try {
+                    mediaRecorder = new MediaRecorder(mediaStream, { mimeType: mime });
+                } catch (err) {
+                    console.error("MediaRecorder indisponible", err);
+                    showToast("Enregistrement local indisponible.", true);
+                    return false;
+                }
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data && e.data.size > 0) {
+                        audioChunks.push(e.data);
+                    }
+                };
+                mediaRecorder.onstop = () => {
+                    if (mediaStream) {
+                        mediaStream.getTracks().forEach(track => track.stop());
+                        mediaStream = null;
+                    }
+                    if (audioChunks.length) {
+                        const blob = new Blob(audioChunks, { type: mime });
+                        setAudioBlob(blob);
+                    }
+                    audioChunks = [];
+                    mediaRecorder = null;
+                };
+                mediaRecorder.start();
+                return true;
+            }
+
+            function stopAudioRecording() {
+                try {
+                    if (mediaRecorder && mediaRecorder.state === "recording") {
+                        mediaRecorder.stop();
+                    } else if (mediaStream) {
+                        mediaStream.getTracks().forEach(track => track.stop());
+                        mediaStream = null;
+                        mediaRecorder = null;
+                    }
+                } catch (err) {
+                    console.warn("Stop audio recording", err);
+                }
+            }
+
+            function toggleAudioPlayback() {
+                if (!audioUrl) return;
+                if (audioPlayer.paused) {
+                    audioPlayer.play();
+                    if (audioPlayBtn) audioPlayBtn.textContent = "⏸";
+                } else {
+                    audioPlayer.pause();
+                    if (audioPlayBtn) audioPlayBtn.textContent = "▶";
+                }
+            }
+
+            function getAudioSpeed() {
+                const val = parseFloat(audioSpeedSelect?.value || "1.2");
+                if (Number.isNaN(val)) return 1.2;
+                return Math.min(2, Math.max(0.5, val));
+            }
+
+            function populateAudioSpeedOptions() {
+                if (!audioSpeedSelect) return;
+                audioSpeedSelect.innerHTML = "";
+                for (let s = 0.5; s <= 2.001; s += 0.1) {
+                    const rounded = Math.round(s * 10) / 10;
+                    const opt = document.createElement("option");
+                    opt.value = String(rounded);
+                    opt.textContent = `${rounded.toFixed(1)}x`;
+                    audioSpeedSelect.appendChild(opt);
+                }
+                audioSpeedSelect.value = "1.2";
+            }
+
+            function downloadAudio() {
+                if (!audioBlob) return;
+                const url = audioUrl || URL.createObjectURL(audioBlob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "voice-recording.webm";
+                a.click();
+                if (!audioUrl) {
+                    URL.revokeObjectURL(url);
+                }
+            }
+
+            function startRespondCountdown(seconds = 30) {
+                if (!respondBtn) return;
+                let remaining = seconds;
+                const tick = () => {
+                    if (!activeRequestId) {
+                        stopRespondCountdown();
+                        return;
+                    }
+                    const label = remaining < 10 ? `0${remaining}` : `${remaining}`;
+                    respondBtn.textContent = `◴ ${label}s`;
+                    remaining -= 1;
+                    if (remaining < 0) remaining = seconds;
+                };
+                tick();
+                if (respondCountdownTimer) clearInterval(respondCountdownTimer);
+                respondCountdownTimer = setInterval(tick, 1000);
+            }
+
+            function stopRespondCountdown() {
+                if (respondCountdownTimer) clearInterval(respondCountdownTimer);
+                respondCountdownTimer = null;
+                if (respondBtn) respondBtn.textContent = respondDefaultLabel;
+            }
+
+            function clearActiveRequest() {
+                activeRequestId = null;
+                activeRequestController = null;
+                stopRespondCountdown();
+                respondBtn?.classList.remove("btn-primary");
+            }
+
+            function cancelActiveRequest(showToastMessage = true) {
+                if (!activeRequestId) return;
+                try { activeRequestController?.abort(); } catch (e) { /* noop */ }
+                clearActiveRequest();
+                if (showToastMessage) showToast("Requête IA annulée.");
+            }
+
+            async function runVoicePrompt() {
+                const page = getActivePage();
+                if (!page) return;
+                if (activeRequestId) {
+                    cancelActiveRequest();
+                    return;
+                }
+                const scenario = promptCreate?.value?.trim();
+                const transcript = transcribeInput?.value?.trim();
+                const basePrompt = promptState.system || promptDefaults.system;
+                const templateText = selectedTemplateText || "";
+                const systemPrompt = (basePrompt || promptDefaults.system || "")
+                    .replace(/{{scenario_prompt}}/gi, scenario || "")
+                    .replace(/{{template_text}}/gi, templateText || "");
+                if (!systemPrompt || !scenario) {
+                    showToast("Ajoute un scénario avant de lancer l'IA.", true);
+                    return;
+                }
+                const requestId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+                activeRequestId = requestId;
+                activeRequestController = typeof AbortController !== "undefined" ? new AbortController() : null;
+                respondBtn?.classList.add("btn-primary");
+                startRespondCountdown();
+                try {
+                    const model = (window.GoToolkitIAConfig && window.GoToolkitIAConfig.getOpenAiModel?.()) || "gpt-5-nano";
+                    const payload = {
+                        model,
+                        input: [
+                            {
+                                role: "system",
+                                content: systemPrompt
+                            },
+                            {
+                                role: "user",
+                                content:
+                                    `Contexte : ${scenario}` +
+                                    (templateText ? `\nModèle choisi : ${templateText}` : "") +
+                                    (transcript ? `\nTranscription actuelle :\n${transcript}` : "")
+                            }
+                        ],
+                        max_output_tokens: 1200
+                    };
+                    const messageText = await window.GoToolkitIA.chatCompletion({
+                        payload,
+                        signal: activeRequestController?.signal
+                    });
+                    if (requestId !== activeRequestId) return;
+                    if (promptModify) {
+                        promptModify.value = messageText;
+                    }
+                    page.lastIaResponse = messageText;
+                    applyScriptJson(messageText);
+                    persistState();
+                    showToast("Trame générée.");
+                } catch (err) {
+                    if (requestId !== activeRequestId) return;
+                    if (err?.name !== "AbortError") {
+                        console.error("Voice prompt failed", err);
+                        showToast("Impossible de générer la trame.", true);
+                    }
+                } finally {
+                    if (requestId !== activeRequestId) return;
+                    clearActiveRequest();
+                    if (respondBtn) respondBtn.textContent = respondDefaultLabel;
+                }
+            }
+
+            async function evaluateGuidelines() {
+                const page = getActivePage();
+                if (!page || !page.subjects.length) {
+                    showToast("Pas de sujets à évaluer.", true);
+                    return;
+                }
+                const transcript = transcribeInput?.value?.trim() || "";
+                if (!transcript) {
+                    showToast("Ajoute une transcription avant d'évaluer.", true);
+                    return;
+                }
+                evaluateBtn?.setAttribute("disabled", "true");
+                evaluateBtn.textContent = "Analyse...";
+                try {
+                    const evaluatePrompt = promptState.evaluate || promptDefaults.evaluate;
+                    const summary = page.subjects.map(s => {
+                        return {
+                            title: s.title,
+                            keySentences: s.keySentences.map(k => k.text)
+                        };
+                    });
+                    const payload = {
+                        model: (window.GoToolkitIAConfig && window.GoToolkitIAConfig.getOpenAiModel?.()) || "gpt-5-nano",
+                        input: [
+                            {
+                                role: "system",
+                                content: evaluatePrompt
+                            },
+                            {
+                                role: "user",
+                                content: `Transcription :\n${transcript}\nGuidelines : ${JSON.stringify(summary)}`
+                            }
+                        ],
+                        max_output_tokens: 900
+                    };
+                    const response = await window.GoToolkitIA.chatCompletion({ payload });
+                    const cleaned = response.trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "");
+                    const parsed = JSON.parse(cleaned);
+                    if (parsed && Array.isArray(parsed.subjects)) {
+                        parsed.subjects.forEach(subjectResult => {
+                            const target = page.subjects.find(s => s.title === subjectResult.title);
+                            if (!target) return;
+                            (subjectResult.keySentences || []).forEach(ks => {
+                                const found = target.keySentences.find(k => k.text === ks.text);
+                                if (found && ks.match) {
+                                    found.match = ks.match;
+                                }
+                            });
+                        });
+                        persistState();
+                        renderGuidelines();
+                        showToast("Évaluation terminée.");
+                    }
+                } catch (err) {
+                    console.error("Evaluation failed", err);
+                    showToast("Impossible d'évaluer via IA.", true);
+                } finally {
+                    evaluateBtn?.removeAttribute("disabled");
+                    evaluateBtn.textContent = "⌘ Évaluer";
+                }
+            }
+
+            async function summarizeTranscript() {
+                const page = getActivePage();
+                if (!page) return;
+                const transcript = (transcribeInput?.value || "").trim();
+                if (!transcript) {
+                    showToast("Ajoute une transcription avant de résumer.", true);
+                    return;
+                }
+                summarizeBtn?.setAttribute("disabled", "true");
+                if (summarizeBtn) summarizeBtn.textContent = "Résumé...";
+                try {
+                    const templateText = selectedTemplateText || "";
+                    const prompt = (promptState.summary || promptDefaults.summary || "")
+                        .replace(/{{transcript_content}}/gi, transcript)
+                        .replace(/{{template_text}}/gi, templateText);
+                    const payload = {
+                        model: (window.GoToolkitIAConfig && window.GoToolkitIAConfig.getOpenAiModel?.()) || "gpt-5-nano",
+                        input: [
+                            {
+                                role: "system",
+                                content: prompt
+                            }
+                        ],
+                        max_output_tokens: 800
+                    };
+                    const response = await window.GoToolkitIA.chatCompletion({ payload });
+                    const cleaned = response.trim().replace(/^```(?:[a-z]+)?/i, "").replace(/```$/i, "").trim();
+                    if (summaryTextarea) summaryTextarea.value = cleaned;
+                    page.summary = cleaned;
+                    persistState();
+                    showToast("Résumé généré.");
+                } catch (err) {
+                    console.error("Résumé IA impossible", err);
+                    showToast("Impossible de résumer via IA.", true);
+                } finally {
+                    summarizeBtn?.removeAttribute("disabled");
+                    if (summarizeBtn) summarizeBtn.textContent = "⌘ Résumer";
+                }
+            }
+
+            function toggleOptionsMenu() {
+                optionsMenu?.classList.toggle("open");
+            }
+
+            function toggleFileMenu() {
+                fileMenu?.classList.toggle("open");
+            }
+
+            function toggleShareMenu() {
+                shareMenu?.classList.toggle("open");
+            }
+
+            function closeMenus(except) {
+                if (optionsMenu && optionsMenu !== except) optionsMenu.classList.remove("open");
+                if (fileMenu && fileMenu !== except) fileMenu.classList.remove("open");
+                if (shareMenu && shareMenu !== except) shareMenu.classList.remove("open");
+                if (navSwitcherMenu && navSwitcherMenu !== except) navSwitcherMenu.classList.remove("open");
+            }
+
+            function persistCapsuleDraft() {
+                if (!capsuleDrafts || typeof capsuleDrafts.upsertRecord !== "function") return;
+                const page = getActivePage();
+                const payload = { ...state };
+                const draftId = state.activePageId || (capsuleDrafts.generateId ? capsuleDrafts.generateId() : null);
+                capsuleDrafts.upsertRecord({
+                    id: draftId,
+                    app: "voice",
+                    payload,
+                    title: page?.title || "Voice",
+                    description: (page?.scenario || "").slice(0, 120)
+                });
+                if (draftId && audioBlob) {
+                    saveAudioToDb(audioBlob, draftId);
+                }
+            }
+
+            function resetDocument() {
+                state = { pages: [defaultPage()], activePageId: null };
+                state.activePageId = state.pages[0].id;
+                persistState();
+                renderTabs();
+                renderPage();
+                clearAudioStoreAll();
+            }
+
+            function importFromFile(file) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    try {
+                        const payload = JSON.parse(reader.result);
+                        if (payload && Array.isArray(payload.pages)) {
+                            state = normalizeState(payload) || state;
+                            persistState();
+                            renderTabs();
+                            renderPage();
+                            showToast("Capsule chargée.");
+                        }
+                    } catch (err) {
+                        showToast("Fichier JSON invalide.", true);
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            async function exportJson() {
+                const payload = JSON.stringify(state, null, 2);
+                const blob = new Blob([payload], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "voice-capsule.json";
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast("Capsule téléchargée.");
+            }
+
+            async function copyCurrentShareLinkToClipboard() {
+                if (!currentShareToken) return false;
+                const link = buildShareUrl(currentShareToken);
+                if (!link) return false;
+                try {
+                    await navigator.clipboard.writeText(link);
+                    showToast("Lien privé copié");
+                    return true;
+                } catch (err) {
+                    console.error("Copie du lien privé impossible", err);
+                    return false;
+                }
+            }
+
+            async function saveSharePayload(token, payload) {
+                if (!shareWorkerService || !shareWorkerService.isReady) {
+                    throw new Error("Partage indisponible");
+                }
+                const meta = await shareWorkerService.saveSharePayload(FIRESTORE_COLLECTION, token, payload);
+                if (shareHistory && typeof shareHistory.upsertRecord === "function") {
+                    try {
+                        const firstPage = payload.pages?.[0];
+                        await shareHistory.upsertRecord("voice", {
+                            token,
+                            updatedAt: meta?.updatedAt || new Date().toISOString(),
+                            title: firstPage?.title || "Voice",
+                            description: (firstPage?.scenario || "").slice(0, 120)
+                        });
+                    } catch (err) {
+                        console.warn("share history voice", err);
+                    }
+                }
+                return meta;
+            }
+
+            async function createOrUpdateShare(isUpdate = false) {
+                if (!shareWorkerService?.isReady) {
+                    setShareStatus("Le partage privé nécessite le worker Cloudflare.", "error");
+                    updateShareMenuUI();
+                    return;
+                }
+                if (shareRequestInProgress) return;
+                shareRequestInProgress = true;
+                updateShareMenuUI();
+                try {
+                    const token = isUpdate && currentShareToken ? currentShareToken : (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+                    const payload = { ...state };
+                    const meta = await saveSharePayload(token, payload);
+                    currentShareToken = token;
+                    shareLoadedFromRemote = true;
+                    shareLastUpdatedAt = meta?.updatedAt || new Date().toISOString();
+                    setShareStatus(shareLastUpdatedAt);
+                    updateShareMenuUI();
+                    await copyCurrentShareLinkToClipboard();
+                    showToast(isUpdate ? "Lien mis à jour" : "Lien créé");
+                    persistState();
+                } catch (err) {
+                    console.error("Share voice failed", err);
+                    setShareStatus("Impossible de sauvegarder le partage.", "error");
+                } finally {
+                    shareRequestInProgress = false;
+                    updateShareMenuUI();
+                }
+            }
+
+            async function tryLoadSharedStateFromUrl() {
+                const params = new URLSearchParams(window.location.search);
+                const token = params.get(SHARE_QUERY_PARAM);
+                if (!token || !shareWorkerService?.isReady) return false;
+                try {
+                    const result = await shareWorkerService.fetchSharePayload(FIRESTORE_COLLECTION, token);
+                    if (result?.payload) {
+                        state = normalizeState(result.payload) || state;
+                        currentShareToken = token;
+                        shareLoadedFromRemote = true;
+                        shareLastUpdatedAt = result.meta?.updatedAt || new Date().toISOString();
+                        if (!state.activePageId && state.pages?.[0]) {
+                            state.activePageId = state.pages[0].id;
+                        }
+                        persistState();
+                        renderTabs();
+                        renderPage();
+                        updateShareMenuUI();
+                        showToast("Capsule chargée depuis Nexus.");
+                        return true;
+                    }
+                } catch (err) {
+                    console.error("Chargement share voice impossible", err);
+                }
+                return false;
+            }
+
+            function applyScriptFromTextarea(options = {}) {
+                const { silent } = options;
+                const text = promptModify?.value;
+                if (!text) {
+                    if (!silent) showToast("JSON vide.", true);
+                    return;
+                }
+                try {
+                    applyScriptJson(text);
+                    if (!silent) showToast("JSON appliqué.");
+                } catch (err) {
+                    console.error("Invalid JSON", err);
+                    if (!silent) showToast("JSON invalide.", true);
+                }
+            }
+
+            function restoreLastIaResponse() {
+                const page = getActivePage();
+                const fallback = page?.lastIaResponse || page?.script || "";
+                if (!fallback) {
+                    showToast("Aucune réponse IA à restaurer.", true);
+                    return;
+                }
+                if (promptModify) {
+                    promptModify.value = fallback;
+                }
+                applyScriptFromTextarea({ silent: true });
+                showToast("Dernière réponse IA restaurée.");
+            }
+
+            function setupSpeechRecognition() {
+                let engine = "web-speech";
+                try {
+                    const stored = localStorage.getItem(SPEECH_ENGINE_STORAGE_KEY) || window.GoToolkitSpeechEngine;
+                    engine = stored === "whisperer" ? "whisperer" : "web-speech";
+                    window.GoToolkitSpeechEngine = engine;
+                } catch (e) { /* noop */ }
+                if (recordStatus) {
+                    recordStatus.textContent = engine === "whisperer" ? "Whisperer" : "Web Speech";
+                }
+                if (engine === "whisperer") {
+                    showToast("Whisperer utilisera le micro mais reste en préparation.", false);
+                }
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    recordBtn?.setAttribute("disabled", "true");
+                    pauseBtn?.setAttribute("disabled", "true");
+                    speechToggleBtn?.setAttribute("disabled", "true");
+                    if (recordStatus) recordStatus.textContent = "Indispo";
+                    return;
+                }
+                speechRecognition = new SpeechRecognition();
+                speechRecognition.lang = "fr-FR";
+                speechRecognition.interimResults = true;
+                speechRecognition.continuous = true;
+                speechRecognition.onresult = event => {
+                    const prefix = transcriptPrefix || "";
+                    const now = Date.now();
+                    const elapsedSec = recordingStartedAt ? Math.max(0, Math.floor((now - recordingStartedAt) / 1000)) : 0;
+                    const formatTimestamp = secs => {
+                        const total = Math.max(0, Math.floor(secs));
+                        const m = String(Math.floor(total / 60)).padStart(2, "0");
+                        const s = String(total % 60).padStart(2, "0");
+                        return `${m}:${s}`;
+                    };
+                    let finals = [];
+                    let interim = "";
+                    for (let i = event.resultIndex || 0; i < event.results.length; i++) {
+                        const res = event.results[i];
+                        if (res.isFinal) {
+                            finals.push((res[0].transcript || "").trim());
+                        } else {
+                            interim = `${interim} ${res[0].transcript || ""}`.trim();
+                        }
+                    }
+                    const newLines = [];
+                    if (lastTimestampMinute === null && transcriptPrefix) {
+                        lastTimestampMinute = getLastTimestampMinuteFromTranscript(transcriptPrefix);
+                    }
+                    finals
+                        .filter(Boolean)
+                        .forEach(text => {
+                            const minuteBucket = Math.floor(elapsedSec / 60);
+                            let line = text.trim();
+                            if (minuteBucket > (lastTimestampMinute ?? -1)) {
+                                lastTimestampMinute = minuteBucket;
+                                line = `[${formatTimestamp(elapsedSec)}]\n${line}`;
+                            }
+                            newLines.push(line);
+                        });
+                    if (newLines.length) {
+                        transcriptPrefix = (prefix ? `${prefix}\n` : "") + newLines.join("\n");
+                        interim = "";
+                        recordingElapsedSec = elapsedSec;
+                    }
+                    const interimLine = interim ? interim : "";
+                    if (transcribeInput) {
+                        transcribeInput.value = (transcriptPrefix || "").trim();
+                        updateTranscriptMeta();
+                    }
+                    updateGhostOverlay(interimLine);
+                    const page = getActivePage();
+                    if (page && transcribeInput) {
+                        page.transcript = transcribeInput.value;
+                        persistState();
+                    }
+                    updateRecordingUi();
+                };
+                speechRecognition.onend = () => {
+                    if (recognitionActive && !recognitionPaused) {
+                        speechRecognition.start();
+                    } else {
+                        setSpeechButtonState(false);
+                    }
+                };
+            }
+
+            function startRecording() {
+                if (!speechRecognition) {
+                    setupSpeechRecognition();
+                }
+                if (!speechRecognition) return;
+                ensureAudioRecording();
+                transcriptPrefix = transcribeInput?.value || "";
+                recordingStartedAt = Date.now();
+                recordingElapsedSec = 0;
+                lastTimestampMinute = null;
+                if (recordingTimer) clearInterval(recordingTimer);
+                recordingTimer = setInterval(() => {
+                    if (!recordingStartedAt) return;
+                    recordingElapsedSec = Math.max(recordingElapsedSec, Math.floor((Date.now() - recordingStartedAt) / 1000));
+                    updateRecordingUi();
+                }, 1000);
+                if (transcribeGhost) {
+                    updateGhostOverlay("");
+                }
+                recognitionActive = true;
+                recognitionPaused = false;
+                speechRecognition.start();
+                recordBtn?.classList.add("btn-primary");
+                pauseBtn?.classList.remove("btn-primary");
+                setSpeechButtonState(true);
+                updateRecordingUi();
+            }
+
+            function pauseRecording() {
+                recognitionPaused = true;
+                recognitionActive = false;
+                try { speechRecognition?.stop(); } catch (e) { /* ignore */ }
+                stopAudioRecording();
+                recordingStartedAt = null;
+                if (recordingTimer) {
+                    clearInterval(recordingTimer);
+                    recordingTimer = null;
+                }
+                recordBtn?.classList.remove("btn-primary");
+                pauseBtn?.classList.add("btn-primary");
+                setSpeechButtonState(false);
+                transcriptPrefix = transcribeInput?.value || "";
+                updateGhostOverlay("");
+                updateRecordingUi();
+            }
+
+            function resetRecording() {
+                recognitionPaused = false;
+                recognitionActive = false;
+                try { speechRecognition?.stop(); } catch (e) { /* ignore */ }
+                stopAudioRecording();
+                recordingStartedAt = null;
+                recordingElapsedSec = 0;
+                lastTimestampMinute = null;
+                if (recordingTimer) {
+                    clearInterval(recordingTimer);
+                    recordingTimer = null;
+                }
+                setSpeechButtonState(false);
+                if (transcribeInput) {
+                    transcribeInput.value = "";
+                    const page = getActivePage();
+                    if (page) {
+                        page.transcript = "";
+                        persistState();
+                    }
+                }
+                setAudioBlob(null);
+                updateTranscriptMeta();
+                updateGhostOverlay("");
+                updateRecordingUi();
+            }
+
+            function toggleSpeechRecording() {
+                if (recognitionActive && !recognitionPaused) {
+                    pauseRecording();
+                } else {
+                    startRecording();
+                }
+            }
+
+            function toggleContextPanel(forceOpen) {
+                if (!contextPanel) return;
+                const willOpen = typeof forceOpen === "boolean" ? forceOpen : !contextPanel.classList.contains("open");
+                contextPanel.classList.toggle("open", willOpen);
+                contextPanel.setAttribute("aria-hidden", willOpen ? "false" : "true");
+                if (appMain) {
+                    appMain.classList.toggle("context-open", willOpen);
+                    appMain.classList.toggle("context-closed", !willOpen);
+                }
+            }
+
+            async function clearAudioStoreAll() {
+                await clearAudioDb();
+                setAudioBlob(null, { skipSave: true });
+            }
+
+            function clearCurrentAudioWithConfirm() {
+                const confirmed = window.confirm("Supprimer l'enregistrement audio ?");
+                if (!confirmed) return;
+                clearAudioStoreAll();
+                showToast("Enregistrement supprimé.");
+            }
+
+            function syncIaEditor(key) {
+                const nextKey = key || iaPromptSelect?.value || activeIaPrompt || "system";
+                activeIaPrompt = nextKey;
+                if (iaPromptSelect) iaPromptSelect.value = nextKey;
+                if (iaTemplateEditor) {
+                    iaTemplateEditor.value = promptState[nextKey] || promptDefaults[nextKey] || "";
+                }
+            }
+
+            function applyIaEditorValue() {
+                const key = iaPromptSelect?.value || activeIaPrompt || "system";
+                promptState[key] = iaTemplateEditor?.value || "";
+                showToast("Prompt appliqué.");
+                toggleIaModal(false);
+            }
+
+            function resetIaEditorValue() {
+                const key = iaPromptSelect?.value || activeIaPrompt || "system";
+                promptState[key] = promptDefaults[key] || "";
+                syncIaEditor(key);
+                showToast("Prompt réinitialisé.");
+            }
+
+            function toggleIaModal(open) {
+                const shouldOpen = typeof open === "boolean" ? open : !iaModalOverlay?.classList.contains("open");
+                if (!iaModalOverlay) return;
+                if (shouldOpen) {
+                    syncIaEditor(activeIaPrompt);
+                }
+                iaModalOverlay.classList.toggle("open", shouldOpen);
+                iaModalOverlay.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
+            }
+
+            function toggleNavMenu() {
+                navSwitcherMenu?.classList.toggle("open");
+            }
+
+            // Event binding
+            openPromptzillaBtn?.addEventListener("click", openPromptzilla);
+            promptzillaClose?.addEventListener("click", closePromptzilla);
+            promptzillaOverlay?.addEventListener("click", ev => { if (ev.target === promptzillaOverlay) closePromptzilla(); });
+            promptzillaValidate?.addEventListener("click", applySelectedTemplate);
+            promptCreate?.addEventListener("input", persistScenario);
+            promptModify?.addEventListener("blur", () => applyScriptFromTextarea({ silent: true }));
+            respondBtn?.addEventListener("click", runVoicePrompt);
+            clearScenarioBtn?.addEventListener("click", () => {
+                if (promptCreate) promptCreate.value = "";
+                persistScenario();
+                showToast("Scénario vidé.");
+            });
+            applyScriptBtn?.addEventListener("click", restoreLastIaResponse);
+            openContextModalBtn?.addEventListener("click", () => toggleContextPanel());
+            openIaModalBtn?.addEventListener("click", () => {
+                syncIaEditor(activeIaPrompt);
+                toggleIaModal(true);
+            });
+            iaModalClose?.addEventListener("click", () => toggleIaModal(false));
+            iaApplyBtn?.addEventListener("click", applyIaEditorValue);
+            iaResetBtn?.addEventListener("click", resetIaEditorValue);
+            iaPromptSelect?.addEventListener("change", () => syncIaEditor(iaPromptSelect.value));
+            evaluateBtn?.addEventListener("click", evaluateGuidelines);
+            summarizeBtn?.addEventListener("click", summarizeTranscript);
+            refreshFromScriptBtn?.addEventListener("click", applyScriptFromTextarea);
+            addSubjectBtn?.addEventListener("click", () => {
+                openSubjectModal(null);
+            });
+            document.getElementById("closeSubjectModal")?.addEventListener("click", () => {
+                subjectModalOverlay.classList.remove("open");
+                subjectModalOverlay.setAttribute("aria-hidden", "true");
+            });
+            document.getElementById("cancelSubjectModal")?.addEventListener("click", () => {
+                subjectModalOverlay.classList.remove("open");
+                subjectModalOverlay.setAttribute("aria-hidden", "true");
+            });
+            document.getElementById("confirmSubjectModal")?.addEventListener("click", () => {
+                const titleInput = document.getElementById("newSubjectTitle");
+                const durationInput = document.getElementById("newSubjectDuration");
+                const pointsInput = document.getElementById("newSubjectPoints");
+                const title = (titleInput?.value || "").trim() || `Sujet ${(getActivePage()?.subjects?.length || 0) + 1}`;
+                const duration = Math.min(MAX_SUBJECT_MINUTES, Math.max(MIN_SUBJECT_MINUTES, Number(durationInput?.value || DEFAULT_SUBJECT_DURATION)));
+                const points = (pointsInput?.value || "").split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                const page = getActivePage();
+                if (!page) return;
+                const existingId = document.getElementById("confirmSubjectModal")?.dataset?.subjectId || "";
+                if (existingId) {
+                    const target = page.subjects.find(s => s.id === existingId);
+                    if (target) {
+                        target.title = title;
+                        const start = target.timeframe?.start || 0;
+                        target.timeframe = { start, end: start + duration };
+                        target.keySentences = (points.length ? points : ["Point 1", "Point 2"]).map(text => ({ text, match: "pending" }));
+                    }
+                } else {
+                    const lastEnd = page.subjects?.[page.subjects.length - 1]?.timeframe?.end || 0;
+                    const newSubject = {
+                        id: `subject-${Date.now()}`,
+                        title,
+                        timeframe: { start: lastEnd, end: lastEnd + duration },
+                        keySentences: (points.length ? points : ["Point 1", "Point 2"]).map(text => ({ text, match: "pending" }))
+                    };
+                    page.subjects = page.subjects || [];
+                    page.subjects.push(newSubject);
+                }
+                persistState();
+                renderGuidelines();
+                subjectModalOverlay.classList.remove("open");
+                subjectModalOverlay.setAttribute("aria-hidden", "true");
+            });
+            transcribeInput?.addEventListener("input", () => {
+                const page = getActivePage();
+                if (!page) return;
+                page.transcript = transcribeInput.value;
+                persistState();
+                updateTranscriptMeta();
+                updateGhostOverlay("");
+            });
+            summaryTextarea?.addEventListener("input", () => {
+                const page = getActivePage();
+                if (!page) return;
+                page.summary = summaryTextarea.value;
+                persistState();
+            });
+            ["click", "keyup", "mouseup", "focus"].forEach(evt => {
+                transcribeInput?.addEventListener(evt, () => {
+                    updateGhostOverlay(transcribeGhost?.textContent || "");
+                });
+            });
+            speechToggleBtn?.addEventListener("click", toggleSpeechRecording);
+            recordBtn?.addEventListener("click", startRecording);
+            pauseBtn?.addEventListener("click", pauseRecording);
+            audioPlayBtn?.addEventListener("click", toggleAudioPlayback);
+            audioDownloadBtn?.addEventListener("click", downloadAudio);
+            audioClearBtn?.addEventListener("click", clearCurrentAudioWithConfirm);
+            populateAudioSpeedOptions();
+            audioSpeedSelect?.addEventListener("change", () => {
+                const speed = getAudioSpeed();
+                audioPlayer.playbackRate = speed;
+            });
+            audioProgress?.addEventListener("input", () => {
+                if (!audioPlayer || !audioPlayer.duration || Number.isNaN(audioPlayer.duration)) return;
+                const ratio = Number(audioProgress.value) || 0;
+                audioPlayer.currentTime = ratio * audioPlayer.duration;
+            });
+            audioPlayer.addEventListener("timeupdate", updateAudioProgress);
+            audioPlayer.addEventListener("loadedmetadata", updateAudioProgress);
+            audioPlayer.addEventListener("ended", () => {
+                if (audioPlayBtn) audioPlayBtn.textContent = "▶";
+                updateAudioProgress();
+            });
+            audioPlayer.addEventListener("timeupdate", updateTranscriptMeta);
+            audioPlayer.addEventListener("loadedmetadata", updateTranscriptMeta);
+            pageTitleEl?.addEventListener("input", () => {
+                const page = getActivePage();
+                if (!page) return;
+                page.title = pageTitleEl.textContent || "Page";
+                page.tabLabel = pageTitleEl.textContent || page.tabLabel || "Page";
+                renderTabs();
+                persistState();
+            });
+            fontSizeInput?.addEventListener("change", () => {
+                const size = Number(fontSizeInput.value) || 13;
+                document.documentElement.style.setProperty("--global-font-size", `${size}px`);
+                if (transcribeInput) transcribeInput.style.fontSize = `${size}px`;
+                if (guidelineList) guidelineList.style.fontSize = `${size - 1}px`;
+            });
+            layoutDensitySelect?.addEventListener("change", () => {
+                const density = layoutDensitySelect.value;
+                const padding = density === "compact" ? "6px" : density === "roomy" ? "14px" : "10px";
+                document.querySelectorAll(".panel").forEach(el => el.style.padding = padding);
+                document.querySelectorAll(".voice-card").forEach(el => el.style.padding = density === "compact" ? "10px" : "14px");
+            });
+            optionsBtn?.addEventListener("click", ev => { ev.stopPropagation(); toggleOptionsMenu(); });
+            fileMenuBtn?.addEventListener("click", ev => { ev.stopPropagation(); toggleFileMenu(); });
+            shareBtn?.addEventListener("click", ev => { ev.stopPropagation(); toggleShareMenu(); });
+            navSwitcherBtn?.addEventListener("click", ev => { ev.stopPropagation(); toggleNavMenu(); });
+            document.addEventListener("click", ev => {
+                if (optionsMenu?.contains(ev.target) || optionsBtn === ev.target) return;
+                if (fileMenu?.contains(ev.target) || fileMenuBtn === ev.target) return;
+                if (shareMenu?.contains(ev.target) || shareBtn === ev.target) return;
+                if (navSwitcherMenu?.contains(ev.target) || navSwitcherBtn === ev.target) return;
+                closeMenus();
+            });
+            newDocumentBtn?.addEventListener("click", () => {
+                resetDocument();
+                showToast("Nouvelle capsule.");
+            });
+            importJsonBtn?.addEventListener("click", () => {
+                importJsonInput?.click();
+                closeMenus();
+            });
+            importJsonInput?.addEventListener("change", event => {
+                const file = event.target.files?.[0];
+                if (file) importFromFile(file);
+                importJsonInput.value = "";
+            });
+            saveDocumentBtn?.addEventListener("click", () => {
+                persistCapsuleDraft();
+                showToast("Capsule enregistrée localement.");
+                closeMenus();
+            });
+            exportJsonBtn?.addEventListener("click", () => { exportJson(); closeMenus(); });
+            aboutVoiceBtn?.addEventListener("click", () => {
+                aboutVoiceModal?.classList.add("open");
+            });
+            aboutVoiceClose?.addEventListener("click", () => {
+                aboutVoiceModal?.classList.remove("open");
+            });
+            addViewBtn?.addEventListener("click", addPage);
+            deleteViewBtn?.addEventListener("click", deletePage);
+            shareCreateBtn?.addEventListener("click", ev => { ev.stopPropagation(); createOrUpdateShare(false); });
+            shareUpdateBtn?.addEventListener("click", ev => { ev.stopPropagation(); createOrUpdateShare(true); });
+            shareLinkField?.addEventListener("focus", ev => ev.target.select());
+            shareLinkField?.addEventListener("click", ev => ev.target.select());
+
+            window.addEventListener("keydown", ev => {
+                if (ev.key === "Escape") {
+                    closeMenus();
+                    toggleIaModal(false);
+                    toggleContextPanel(false);
+                }
+            });
+
+            // Init
+            syncIaEditor(activeIaPrompt);
+            renderTabs();
+            renderPage();
+            setupSpeechRecognition();
+            updateShareMenuUI();
+            tryLoadSharedStateFromUrl();
+            loadAudioFromDb();
+            toggleContextPanel(true);
+            populateAudioSpeedOptions();
+            audioPlayer.playbackRate = getAudioSpeed();
+        })();
+    </script>
+    <script>
+        (function removeVersionQueryParam() {
+            try {
+                const url = new URL(window.location.href);
+                if (!url.searchParams.has("v")) return;
+                url.searchParams.delete("v");
+                const search = url.searchParams.toString();
+                const newUrl = url.pathname + (search ? `?${search}` : "") + url.hash;
+                window.history.replaceState({}, "", newUrl);
+            } catch (err) {
+                /* noop */
+            }
+        })();
+    </script>
+</body>
+
+</html>
