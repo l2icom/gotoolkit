@@ -1055,7 +1055,7 @@
         <div id="requestsModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
             <div class="requests-modal">
                 <header style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                    <h3 style="margin:0;font-size:1.1rem;">📂 Demandes</h3>
+                    <h3 style="margin:0;font-size:1rem;">☄ Demandes</h3>
                     <button id="closeRequestsBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
                 </header>
                 <div class="requests-body">
@@ -1070,7 +1070,7 @@
                                     <option value="reportee">Reportées</option>
                                 </select>
                             </label>
-                            
+
                         </div>
                         <div id="requestsList" class="requests-list" aria-live="polite"></div>
                     </aside>
@@ -1361,6 +1361,13 @@
                                 <select id="webllmModelSelect"></select>
                             </label>
                         </div>
+                    </div>
+
+                    <div class="field-row" style="margin-top:8px;">
+                        <label style="width:100%">
+                            <span class="label-title">Token Admin</span>
+                            <input id="adminTokenInput" type="text" placeholder="Token pour l'Authorization Bearer" />
+                        </label>
                     </div>
 
                     <div class="feedback-actions">
@@ -2031,6 +2038,7 @@
         const requestShareUrl = document.getElementById("requestShareUrl");
         const saveRequestBtn = document.getElementById("saveRequestBtn");
         const feedbackWebsite = document.getElementById("feedbackWebsite");
+        const adminTokenInput = document.getElementById("adminTokenInput");
         const REQUEST_STATUS_LABELS = {
             recue: "Reçue",
             traitee: "Traitée",
@@ -2178,9 +2186,14 @@
                     type: (requestTypeField?.value || "").toLowerCase(),
                     name: current.name || null
                 };
+                const headers = { "Content-Type": "application/json" };
+                try {
+                    const token = (adminTokenInput?.value || localStorage.getItem("feedback-admin-token") || "").trim();
+                    if (token) headers["Authorization"] = "Bearer " + token;
+                } catch (e) { /* noop */ }
                 const response = await fetch(endpoint, {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json" },
+                    headers,
                     body: JSON.stringify(payload)
                 });
                 if (!response.ok) {
@@ -2963,6 +2976,10 @@
                     settingsSpeechModeSelect.value = storedSpeechMode === "auto" ? "auto" : "manual";
                 }
             } catch (e) { /* noop */ }
+            try {
+                const storedAdmin = localStorage.getItem("feedback-admin-token");
+                if (adminTokenInput && storedAdmin) adminTokenInput.value = storedAdmin;
+            } catch (e) { /* noop */ }
             settingsModal.classList.add("open");
             settingsModal.setAttribute("aria-hidden", "false");
             settingsReasoningSelect?.focus();
@@ -3040,6 +3057,14 @@
                 if (iaConfig && typeof iaConfig.setOllamaApiKey === "function") {
                     iaConfig.setOllamaApiKey(ollamaApiKeyValue);
                 }
+                const adminTokenValue = (adminTokenInput?.value || "").trim();
+                try {
+                    if (adminTokenValue) {
+                        localStorage.setItem("feedback-admin-token", adminTokenValue);
+                    } else {
+                        localStorage.removeItem("feedback-admin-token");
+                    }
+                } catch (e) { /* noop */ }
                 const ollamaModelValue = (settingsOllamaModelSelect?.value || "").trim();
                 if (iaConfig && typeof iaConfig.setOllamaModel === "function" && ollamaModelValue) {
                     iaConfig.setOllamaModel(ollamaModelValue);
