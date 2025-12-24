@@ -302,17 +302,38 @@
             min-height: 0;
         }
 
-        .transcribe-area::-webkit-scrollbar {
-            width: 4px;
+        textarea::-webkit-scrollbar,
+        .transcribe-area::-webkit-scrollbar,
+        .summary-area::-webkit-scrollbar,
+        .ia-prompt-field::-webkit-scrollbar,
+        #iaTemplateEditor::-webkit-scrollbar,
+        #promptCreate::-webkit-scrollbar,
+        #promptModify::-webkit-scrollbar,
+        #newSubjectPoints::-webkit-scrollbar {
+            width: 2px;
         }
 
-        .transcribe-area::-webkit-scrollbar-thumb {
-            background: rgba(156, 163, 175, 0.45); /* grey */
-            border-radius: 6px;
+        textarea::-webkit-scrollbar-thumb,
+        .transcribe-area::-webkit-scrollbar-thumb,
+        .summary-area::-webkit-scrollbar-thumb,
+        .ia-prompt-field::-webkit-scrollbar-thumb,
+        #iaTemplateEditor::-webkit-scrollbar-thumb,
+        #promptCreate::-webkit-scrollbar-thumb,
+        #promptModify::-webkit-scrollbar-thumb,
+        #newSubjectPoints::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.45);
+            border-radius: 4px;
         }
 
-        /* Firefox scrollbar color */
-        .transcribe-area {
+        /* Firefox scrollbar color for textarea-like fields */
+        textarea,
+        .transcribe-area,
+        .summary-area,
+        .ia-prompt-field,
+        #iaTemplateEditor,
+        #promptCreate,
+        #promptModify,
+        #newSubjectPoints {
             scrollbar-color: rgba(156, 163, 175, 0.45) transparent;
         }
 
@@ -331,7 +352,9 @@
         }
 
         /* Hide interim/ghost shadow text — show live text only in textarea */
-        .transcribe-ghost { display: none !important; }
+        .transcribe-ghost {
+            display: none !important;
+        }
 
         .transcribe-mirror {
             position: absolute;
@@ -2839,7 +2862,7 @@
                         const after = displayBase.slice(caretPos);
                         const display = interimLine ? (before + (before && !before.endsWith(" ") ? " " : "") + interimLine + after) : displayBase;
                         transcribeInput.value = display;
-                        try { transcribeInput.selectionStart = transcribeInput.selectionEnd = caretPos + (interimLine ? (interimLine.length + (before && !before.endsWith(" ") ? 1 : 0)) : 0); } catch (e) {}
+                        try { transcribeInput.selectionStart = transcribeInput.selectionEnd = caretPos + (interimLine ? (interimLine.length + (before && !before.endsWith(" ") ? 1 : 0)) : 0); } catch (e) { }
                         updateTranscriptMeta();
                         lastInterim = interimLine;
                     }
