@@ -57,10 +57,10 @@
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-soft);
-            padding: 14px;
+            padding: 8px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 6px;
             min-height: 0;
             width: 100%;
         }
@@ -463,12 +463,12 @@
 
         .guidelines-panel {
             background: #ffffff;
-            border: 1px solid var(--border);
+            border: none;
             border-radius: var(--radius-sm);
-            padding: 10px;
+            padding: 0px 10px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 6px;
             min-height: 0;
         }
 
@@ -523,7 +523,7 @@
         }
 
         .status-dot--none {
-            background: #dc2626;
+            background: #9ca3af;
         }
 
         .status-dot--partial {
@@ -829,7 +829,7 @@
         .ia-actions {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 0px;
             height: 100%;
         }
 
@@ -1034,8 +1034,9 @@
                     <div class="guidelines-panel">
                         <div id="guidelineProgress">
                             <div class="panel-header" style="align-items:flex-start;">
-                                <div style="display:flex;flex-direction:column;gap:4px;font-weight:600;">
+                                <div style="display:flex;align-items:center;gap:8px;font-weight:600;">
                                     <div>Sujets</div>
+                                    <span style="font-size:12px;color:var(--muted);">Durée prévue</span>
                                     <select id="guidelineDuration">
                                         <!-- options filled by JS -->
                                     </select>
@@ -1312,7 +1313,7 @@
             const DEFAULT_SUBJECT_DURATION = 15;
             const MIN_SUBJECT_MINUTES = 10;
             const MAX_SUBJECT_MINUTES = 90;
-            const MAX_PARTICIPANTS = 6;
+            const MAX_PARTICIPANTS = 8;
             const setSpeechButtonState = isActive => {
                 const btn = speechToggleBtn || recordBtn || pauseBtn;
                 if (btn) {
@@ -2021,7 +2022,7 @@
                                 renderGuidelines();
                             });
                             indirect.appendChild(indirectInput);
-                            indirect.appendChild(document.createTextNode("Partiel"));
+                            indirect.appendChild(document.createTextNode("Partiellement"));
                             actions.append(direct, indirect);
                             li.append(title, actions);
                             guidelineList.appendChild(li);
@@ -3072,7 +3073,6 @@
                 const page = getActivePage();
                 if (!page) return;
                 page.title = pageTitleEl.textContent || "Page";
-                page.tabLabel = pageTitleEl.textContent || page.tabLabel || "Page";
                 renderTabs();
                 persistState();
             });
