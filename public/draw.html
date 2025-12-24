@@ -960,9 +960,9 @@
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button">◇ Draw ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.23">◍ Canvas</a>
-                    <a class="nav-switch-link" href="grid.html?v=2025.12.23">▦ Grid</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.23">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.24">◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2025.12.24">▦ Grid</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.24">⇥ Timeline</a>
                 </div>
             </div>
 
@@ -1142,7 +1142,7 @@
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
-    <script src="js/prompt.js?v=2025.12.23"></script>
+    <script src="js/prompt.js?v=2025.12.24"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/template-criteria.js"></script>
@@ -1873,6 +1873,10 @@
                 const promptInputEl = document.getElementById("promptInput");
                 try { updateActivePageDrawType(bp.drawType); } catch (err) { }
                 closePromptzillaModal();
+                if (bp.defaultScript && mermaidOutput) {
+                    mermaidOutput.value = bp.defaultScript;
+                    mermaidOutput.dispatchEvent(new Event("input", { bubbles: true }));
+                }
                 if (promptInputEl) {
                     promptInputEl.focus();
                     refreshPromptSuggestion();
@@ -4112,6 +4116,7 @@
                 const cleanOptions = { ...options };
                 delete cleanOptions.startArrowhead;
                 delete cleanOptions.endArrowhead;
+                delete cleanOptions.strokeStyle;
                 return createBaseElement("arrow", {
                     x: startX,
                     y: startY,
@@ -4123,6 +4128,7 @@
                     ],
                     backgroundColor: "transparent",
                     strokeColor: options.strokeColor || "#1c2a55",
+                    strokeStyle: "solid",
                     startArrowhead: options.startArrowhead ?? null,
                     endArrowhead: options.endArrowhead ?? "arrow",
                     ...cleanOptions
@@ -4553,7 +4559,6 @@
                     );
                     const arrow = createArrowElement(arrowSpec.startX, arrowSpec.startY, arrowSpec.endX, arrowSpec.endY, {
                         strokeWidth: rel.marker.includes("..") ? 1 : 2,
-                        strokeStyle: rel.marker.includes("..") ? "dashed" : "solid",
                         startArrowhead: arrowSpec.startArrowhead,
                         endArrowhead: arrowSpec.endArrowhead
                     });
@@ -5162,6 +5167,20 @@
                     /* noop */
                 }
             });
+        })();
+    </script>
+    <script>
+        (function removeVersionQueryParam() {
+            try {
+                const url = new URL(window.location.href);
+                if (!url.searchParams.has("v")) return;
+                url.searchParams.delete("v");
+                const search = url.searchParams.toString();
+                const newUrl = url.pathname + (search ? `?${search}` : "") + url.hash;
+                window.history.replaceState({}, "", newUrl);
+            } catch (err) {
+                /* noop */
+            }
         })();
     </script>
 </body>

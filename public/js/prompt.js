@@ -792,7 +792,19 @@ Règles lignes :
                 "☐ Acteurs\n" +
                 "☐ User story\n" +
                 "☐ Événements",
-            drawType: "sequence"
+            drawType: "sequence",
+            defaultScript: `%% Title: Happy Path
+sequenceDiagram
+    participant Client
+    participant Conseiller
+    participant Service
+    Client->>Conseiller: Exprime un besoin
+    Conseiller->>Service: Analyse la demande
+    Service-->>Conseiller: Proposition validée
+    Conseiller-->>Client: Présente la solution
+    Client->>Conseiller: Accepte
+    Conseiller->>Service: Lance l’exécution
+    Service-->>Client: Livraison du service`
         },
         {
             id: "flow-bpmn",
@@ -803,7 +815,19 @@ Règles lignes :
                 "☐ Décisions\n" +
                 "☐ Événements\n" +
                 "☐ Swimlanes",
-            drawType: "flow"
+            drawType: "flow",
+            defaultScript: `%% Title: Processus métier — décisions clés
+flowchart TD
+    A[Démarrage] --> B[Réception demande]
+    B --> C{Demande complète ?}
+    C -- Oui --> D[Analyse métier]
+    C -- Non --> E[Demande de compléments]
+    E --> B
+    D --> F{Décision}
+    F -- Acceptée --> G[Mise en œuvre]
+    F -- Refusée --> H[Clôture]
+    G --> I[Fin]
+    H --> I`
         },
         {
             id: "class-domaine",
@@ -814,7 +838,28 @@ Règles lignes :
                 "☐ Attributs\n" +
                 "☐ Relations\n" +
                 "☐ Agrégats",
-            drawType: "class"
+            drawType: "class",
+            defaultScript: `%% Title: Modèle métier
+classDiagram
+    class Client {
+        nom
+        besoin
+    }
+    class Conseiller {
+        nom
+        spécialité
+    }
+    class Service {
+        libellé
+        durée
+    }
+    class RendezVous {
+        date
+        lieu
+    }
+    Client "1" --> "0..*" RendezVous : demande
+    Conseiller "1" --> "0..*" RendezVous : anime
+    RendezVous "1" --> "1" Service : concerne`
         },
         {
             id: "class-api",
@@ -825,7 +870,32 @@ Règles lignes :
                 "☐ Payloads\n" +
                 "☐ Relations\n" +
                 "☐ Webhooks",
-            drawType: "class"
+            drawType: "class",
+            defaultScript: `%% Title: Objets API
+classDiagram
+    class User {
+        id
+        email
+        status
+    }
+    class Order {
+        id
+        date
+        total
+    }
+    class Product {
+        id
+        name
+        price
+    }
+    class Payment {
+        id
+        method
+        state
+    }
+    User "1" --> "0..*" Order : places
+    Order "1" --> "1..*" Product : contains
+    Order "1" --> "0..1" Payment : paidBy`
         },
         {
             id: "sequence-communication",
@@ -836,7 +906,19 @@ Règles lignes :
                 "☐ Permissions\n" +
                 "☐ Validation\n" +
                 "☐ Erreurs",
-            drawType: "sequence"
+            drawType: "sequence",
+            defaultScript: `%% Title: Communication inter-services
+sequenceDiagram
+    participant Frontend
+    participant API
+    participant ServiceA
+    participant ServiceB
+    Frontend->>API: Requête utilisateur
+    API->>ServiceA: Validation des données
+    ServiceA-->>API: OK
+    API->>ServiceB: Traitement métier
+    ServiceB-->>API: Résultat
+    API-->>Frontend: Réponse consolidée`
         },
         {
             id: "flow-data",
@@ -847,7 +929,18 @@ Règles lignes :
                 "☐ Traitements\n" +
                 "☐ Stockages\n" +
                 "☐ Consommateurs",
-            drawType: "flow"
+            drawType: "flow",
+            defaultScript: `%% Title: Parcours des données — flux non linéaire
+flowchart LR
+    A[Sources données] --> B[Collecte]
+    B --> C[Contrôle qualité]
+    C -->|Valide| D[Transformation]
+    C -->|Anomalie| E[Correction]
+    E --> C
+    D --> F[Stockage]
+    F --> G[Exploitation]
+    G -->|Analyse| D
+    G -->|Diffusion| H[Restitution]`
         },
         {
             id: "class-events",
@@ -858,7 +951,17 @@ Règles lignes :
                 "☐ Producteurs\n" +
                 "☐ Consommateurs\n" +
                 "☐ Payloads",
-            drawType: "class"
+            drawType: "flow",
+            defaultScript: `%% Title: Événements métiers
+flowchart TD
+    E1[Événement déclencheur] --> A[Action métier]
+    A --> E2[Événement intermédiaire]
+    E2 --> B[Décision métier]
+    B -->|Ajustement| A
+    B -->|Validation| C[Exécution]
+    C --> E3[Événement de sortie]
+    E3 --> D[Notification]
+    D --> B`
         },
         {
             id: "sequence-role",
@@ -869,7 +972,17 @@ Règles lignes :
                 "☐ SLA\n" +
                 "☐ Décisions\n" +
                 "☐ Notifications",
-            drawType: "sequence"
+            drawType: "sequence",
+            defaultScript: `%% Title: Rôles et responsabilités
+sequenceDiagram
+    participant Collaborateur
+    participant Responsable
+    participant Direction
+    Collaborateur->>Responsable: Formule une demande
+    Responsable->>Responsable: Analyse et arbitrage
+    Responsable->>Direction: Soumet la décision
+    Direction-->>Responsable: Validation formelle
+    Responsable-->>Collaborateur: Notification de la décision`
         },
         {
             id: "class-resources",
@@ -880,7 +993,29 @@ Règles lignes :
                 "☐ Permissions\n" +
                 "☐ Groupes\n" +
                 "☐ Liens",
-            drawType: "class"
+            drawType: "class",
+            defaultScript: `%% Title: Modèle de ressources
+classDiagram
+    class Utilisateur {
+        id
+        type
+    }
+    class Ressource {
+        nom
+        état
+    }
+
+    class Admin
+    class UtilisateurSaisie
+    class Systeme BI
+
+    Utilisateur <|-- Admin
+    Utilisateur <|-- UtilisateurSaisie
+    Utilisateur <|-- SystemeBI
+
+    Admin --> Ressource : valide
+    UtilisateurSaisie --> Ressource : saisit
+    Systeme BI --> Ressource : consulte`
         }
     ];
 

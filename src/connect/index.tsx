@@ -18,6 +18,7 @@ const MERMAID_ELEMENT_STYLE_DEFAULTS = {
     roughness: 0,
     roundness: null as const
 };
+const EXCALIDRAW_DEFAULT_SCROLL_X = 150;
 const EDGE_HOST_CLASS = "go-excalidraw-edge";
 const EDGE_STYLE_ID = "go-excalidraw-edge-style";
 const EDGE_STYLE_CONTENT = `.${EDGE_HOST_CLASS} .excalidraw .App-bottom-bar {
@@ -68,13 +69,18 @@ const createInitialData = () => ({
 });
 
 const applyMermaidDefaults = (elements: readonly ExcalidrawElement[]): ExcalidrawElement[] =>
-    elements.map(element => ({
-        ...element,
-        strokeWidth: element.strokeWidth ?? MERMAID_ELEMENT_STYLE_DEFAULTS.strokeWidth,
-        strokeStyle: element.strokeStyle ?? MERMAID_ELEMENT_STYLE_DEFAULTS.strokeStyle,
-        roughness: MERMAID_ELEMENT_STYLE_DEFAULTS.roughness,
-        roundness: MERMAID_ELEMENT_STYLE_DEFAULTS.roundness
-    }));
+    elements.map(element => {
+        const mustForceSolidStroke = element.type === "arrow";
+        return {
+            ...element,
+            strokeWidth: element.strokeWidth ?? MERMAID_ELEMENT_STYLE_DEFAULTS.strokeWidth,
+            strokeStyle: mustForceSolidStroke
+                ? "solid"
+                : element.strokeStyle ?? MERMAID_ELEMENT_STYLE_DEFAULTS.strokeStyle,
+            roughness: MERMAID_ELEMENT_STYLE_DEFAULTS.roughness,
+            roundness: MERMAID_ELEMENT_STYLE_DEFAULTS.roundness
+        };
+    });
 
 class ExcalidrawBridge {
     private api: ExcalidrawImperativeAPI | null = null;
@@ -171,6 +177,10 @@ class ExcalidrawBridge {
             elements: scene.elements.slice(),
             appState: {
                 ...(api.getAppState() as any),
+                scrollX:
+                    typeof scene?.appState?.scrollX === "number"
+                        ? scene.appState.scrollX
+                        : EXCALIDRAW_DEFAULT_SCROLL_X,
                 viewBackgroundColor: "#fdfdfd",
                 gridModeEnabled: false,
                 isLoading: false,
