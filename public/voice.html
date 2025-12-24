@@ -303,12 +303,17 @@
         }
 
         .transcribe-area::-webkit-scrollbar {
-            width: 6px;
+            width: 4px;
         }
 
         .transcribe-area::-webkit-scrollbar-thumb {
-            background: rgba(42, 122, 87, 0.35);
-            border-radius: 999px;
+            background: rgba(156, 163, 175, 0.45); /* grey */
+            border-radius: 6px;
+        }
+
+        /* Firefox scrollbar color */
+        .transcribe-area {
+            scrollbar-color: rgba(156, 163, 175, 0.45) transparent;
         }
 
         .transcribe-ghost {
@@ -324,6 +329,9 @@
             font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
             z-index: 3;
         }
+
+        /* Hide interim/ghost shadow text — show live text only in textarea */
+        .transcribe-ghost { display: none !important; }
 
         .transcribe-mirror {
             position: absolute;
@@ -1028,7 +1036,7 @@
                                     <select id="audioSpeedSelect" class="audio-speed" title="Vitesse de lecture"
                                         aria-label="Vitesse de lecture"></select>
                                     <button id="audioDownloadBtn" type="button" class="audio-download-btn"
-                                        title="Télécharger l'enregistrement" aria-label="Télécharger">♬</button>
+                                        title="Télécharger l'enregistrement" aria-label="Télécharger">🡇</button>
                                     <button id="audioClearBtn" type="button" class="audio-download-btn"
                                         title="Supprimer l'enregistrement"
                                         aria-label="Supprimer l'enregistrement">⊘</button>
@@ -1289,6 +1297,7 @@
             const refreshFromScriptBtn = document.getElementById("refreshFromScriptBtn");
             const fileMenuBtn = document.getElementById("fileMenuBtn");
             const fileMenu = document.getElementById("fileMenu");
+            const optionsMenu = document.getElementById("optionsMenu");
             const newDocumentBtn = document.getElementById("newDocumentBtn");
             const importJsonBtn = document.getElementById("importJsonBtn");
             const importJsonInput = document.getElementById("importJsonInput");
@@ -1324,7 +1333,10 @@
             let transcriptPrefix = "";
             let recordingStartedAt = null;
             let recordingTimer = null;
+            let recordingBaseElapsedSec = 0;
             let recordingElapsedSec = 0;
+            let lastInterim = "";
+            let lastCaret = 0;
             let lastTimestampMinute = null;
             let currentShareToken = null;
             let shareLoadedFromRemote = false;
@@ -2760,57 +2772,85 @@
                 speechRecognition.lang = "fr-FR";
                 speechRecognition.interimResults = true;
                 speechRecognition.continuous = true;
+                speechRecognition.onstart = () => {
+                    console.debug("speechRecognition started");
+                    setSpeechButtonState(true);
+                };
+                speechRecognition.onerror = e => {
+                    console.warn("speechRecognition error", e);
+                };
                 speechRecognition.onresult = event => {
-                    const prefix = transcriptPrefix || "";
+                    console.debug("speechRecognition.onresult", { index: event.resultIndex, results: event.results?.length });
                     const now = Date.now();
-                    const elapsedSec = recordingStartedAt ? Math.max(0, Math.floor((now - recordingStartedAt) / 1000)) : 0;
+                    const sessionElapsed = recordingStartedAt ? Math.max(0, Math.floor((now - recordingStartedAt) / 1000)) : 0;
+                    const elapsedSec = recordingBaseElapsedSec + sessionElapsed;
+                    recordingElapsedSec = elapsedSec;
+
                     const formatTimestamp = secs => {
                         const total = Math.max(0, Math.floor(secs));
                         const m = String(Math.floor(total / 60)).padStart(2, "0");
                         const s = String(total % 60).padStart(2, "0");
                         return `${m}:${s}`;
                     };
+
                     let finals = [];
                     let interim = "";
                     for (let i = event.resultIndex || 0; i < event.results.length; i++) {
                         const res = event.results[i];
-                        if (res.isFinal) {
-                            finals.push((res[0].transcript || "").trim());
-                        } else {
-                            interim = `${interim} ${res[0].transcript || ""}`.trim();
-                        }
+                        if (res.isFinal) finals.push((res[0].transcript || "").trim());
+                        else interim = `${interim} ${res[0].transcript || ""}`.trim();
                     }
-                    const newLines = [];
-                    if (lastTimestampMinute === null && transcriptPrefix) {
-                        lastTimestampMinute = getLastTimestampMinuteFromTranscript(transcriptPrefix);
+
+                    // Determine base text (strip any previously-displayed interim)
+                    const base = getBaseWithoutInterim();
+                    if (lastTimestampMinute === null && base) {
+                        lastTimestampMinute = getLastTimestampMinuteFromTranscript(base);
                     }
-                    finals
-                        .filter(Boolean)
-                        .forEach(text => {
+
+                    // Insert finals at the caret position (do not force a newline)
+                    if (finals.length) {
+                        const parts = [];
+                        finals.filter(Boolean).forEach(text => {
                             const minuteBucket = Math.floor(elapsedSec / 60);
-                            let line = text.trim();
+                            let part = text.trim();
                             if (minuteBucket > (lastTimestampMinute ?? -1)) {
                                 lastTimestampMinute = minuteBucket;
-                                line = `[${formatTimestamp(elapsedSec)}]\n${line}`;
+                                // insert a newline before the timestamp so it starts a new line
+                                part = `\n[${formatTimestamp(elapsedSec)}] ${part}`;
                             }
-                            newLines.push(line);
+                            parts.push(part);
                         });
-                    if (newLines.length) {
-                        transcriptPrefix = (prefix ? `${prefix}\n` : "") + newLines.join("\n");
-                        interim = "";
-                        recordingElapsedSec = elapsedSec;
+                        const inserted = parts.join(" ");
+                        const caret = Math.min(lastCaret || 0, base.length);
+                        const defaultSep = base && !base.endsWith(" ") ? " " : "";
+                        const sep = inserted.startsWith("\n") ? "" : defaultSep;
+                        const newBase = base.slice(0, caret) + sep + inserted + base.slice(caret);
+                        transcriptPrefix = newBase.replace(/\s+$/g, "");
+                        // move caret after inserted text
+                        lastCaret = Math.min(transcriptPrefix.length, caret + sep.length + inserted.length);
                     }
-                    const interimLine = interim ? interim : "";
+
+                    const interimLine = interim || "";
+                    // Show finalized base + interim inline at caret for live feedback
                     if (transcribeInput) {
-                        transcribeInput.value = (transcriptPrefix || "").trim();
+                        const displayBase = transcriptPrefix || base || "";
+                        const caretPos = Math.min(lastCaret || 0, displayBase.length);
+                        const before = displayBase.slice(0, caretPos);
+                        const after = displayBase.slice(caretPos);
+                        const display = interimLine ? (before + (before && !before.endsWith(" ") ? " " : "") + interimLine + after) : displayBase;
+                        transcribeInput.value = display;
+                        try { transcribeInput.selectionStart = transcribeInput.selectionEnd = caretPos + (interimLine ? (interimLine.length + (before && !before.endsWith(" ") ? 1 : 0)) : 0); } catch (e) {}
                         updateTranscriptMeta();
+                        lastInterim = interimLine;
                     }
-                    updateGhostOverlay(interimLine);
+
+                    // persist the finalized transcript (no interim)
                     const page = getActivePage();
-                    if (page && transcribeInput) {
-                        page.transcript = transcribeInput.value;
+                    if (page) {
+                        page.transcript = transcriptPrefix || getBaseWithoutInterim() || "";
                         persistState();
                     }
+
                     updateRecordingUi();
                 };
                 speechRecognition.onend = () => {
@@ -3069,10 +3109,30 @@
                 subjectModalOverlay.classList.remove("open");
                 subjectModalOverlay.setAttribute("aria-hidden", "true");
             });
+            const escapeRegExp = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            function getBaseWithoutInterim() {
+                const val = transcribeInput?.value || "";
+                if (lastInterim && val.endsWith(lastInterim)) {
+                    return val.slice(0, val.length - lastInterim.length);
+                }
+                return val;
+            }
+            function updateCaretPos() {
+                try { lastCaret = transcribeInput?.selectionStart || 0; } catch (e) { lastCaret = 0; }
+            }
             transcribeInput?.addEventListener("input", () => {
+                updateCaretPos();
                 const page = getActivePage();
                 if (!page) return;
-                page.transcript = transcribeInput.value;
+                // If user types while recognition active, mark manual edit and capture base
+                if (recognitionActive && !recognitionPaused) {
+                    userEditedDuringRecognition = true;
+                    // update transcriptPrefix to user's base text (strip any interim)
+                    transcriptPrefix = getBaseWithoutInterim();
+                    lastInterim = "";
+                    lastCaret = Math.min(lastCaret, transcriptPrefix.length);
+                }
+                page.transcript = getBaseWithoutInterim();
                 persistState();
                 updateTranscriptMeta();
                 updateGhostOverlay("");
@@ -3083,8 +3143,9 @@
                 page.summary = summaryTextarea.value;
                 persistState();
             });
-            ["click", "keyup", "mouseup", "focus"].forEach(evt => {
+            ["click", "keyup", "mouseup", "focus", "select"].forEach(evt => {
                 transcribeInput?.addEventListener(evt, () => {
+                    updateCaretPos();
                     updateGhostOverlay(transcribeGhost?.textContent || "");
                 });
             });
