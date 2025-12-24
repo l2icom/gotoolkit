@@ -1593,10 +1593,10 @@
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                         aria-expanded="false">⇥ Timeline ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                        <a class="nav-switch-link" href="canvas.html?v=2025.12.24.5" role="menuitem"> ◍ Canvas</a>
-                        <a class="nav-switch-link" href="grid.html?v=2025.12.24.5" role="menuitem">▦ Grid</a>
-                        <a class="nav-switch-link" href="draw.html?v=2025.12.24.5" role="menuitem">◇ Draw</a>
-                        <a class="nav-switch-link" href="voice.html?v=2025.12.24.5" role="menuitem">▷ Voice</a>
+                        <a class="nav-switch-link" href="canvas.html?v=2025.12.25" role="menuitem"> ◍ Canvas</a>
+                        <a class="nav-switch-link" href="grid.html?v=2025.12.25" role="menuitem">▦ Grid</a>
+                        <a class="nav-switch-link" href="draw.html?v=2025.12.25" role="menuitem">◇ Draw</a>
+                        <a class="nav-switch-link" href="voice.html?v=2025.12.25" role="menuitem">▷ Voice</a>
                     </div>
                 </div>
 
@@ -1959,7 +1959,7 @@
         <script src="js/share-worker-client.js"></script>
         <script src="js/share-history.js"></script>
         <script src="js/capsule-drafts.js"></script>
-        <script src="js/prompt.js?v=2025.12.24.5"></script>
+        <script src="js/prompt.js?v=2025.12.25"></script>
         <script src="js/ia-client.js"></script>
         <script src="js/ia-config.js"></script>
         <script src="js/template-criteria.js"></script>
@@ -5096,11 +5096,22 @@
                 }
 
                 function clearTimelineStorageAndReload() {
-                    try {
-                        localStorage.clear();
-                    } catch (err) {
-                        console.warn("Impossible de vider localStorage", err);
-                    }
+                        try {
+                            // Preserve admin token and OpenAI key across reset
+                            var __preservedOpenAiKey = null;
+                            var __preservedAdminToken = null;
+                            try { __preservedOpenAiKey = localStorage.getItem('go-toolkit-api-key'); } catch (e) { }
+                            try { __preservedAdminToken = localStorage.getItem('feedback-admin-token'); } catch (e) { }
+                            localStorage.clear();
+                            if (__preservedOpenAiKey) {
+                                try { localStorage.setItem('go-toolkit-api-key', __preservedOpenAiKey); } catch (e) { }
+                            }
+                            if (__preservedAdminToken) {
+                                try { localStorage.setItem('feedback-admin-token', __preservedAdminToken); } catch (e) { }
+                            }
+                        } catch (err) {
+                            console.warn("Impossible de vider localStorage", err);
+                        }
                     try {
                         sessionStorage.clear();
                     } catch (err) {

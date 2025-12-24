@@ -954,10 +954,10 @@
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button">◇ Draw ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.24.5">◍ Canvas</a>
-                    <a class="nav-switch-link" href="grid.html?v=2025.12.24.5">▦ Grid</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.24.5">⇥ Timeline</a>
-                    <a class="nav-switch-link" href="voice.html?v=2025.12.24.5">▷ Voice</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.25">◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2025.12.25">▦ Grid</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.25">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="voice.html?v=2025.12.25">▷ Voice</a>
                 </div>
             </div>
 
@@ -1137,7 +1137,7 @@
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
-    <script src="js/prompt.js?v=2025.12.24.5"></script>
+    <script src="js/prompt.js?v=2025.12.25"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/ia-config.js"></script>
     <script src="js/template-criteria.js"></script>
@@ -2779,15 +2779,22 @@
             }
 
             function clearAppCacheAndReload() {
-                // Preserve the OpenAI key across reset
+                // Preserve the OpenAI key and admin token across reset
                 var _preservedOpenAiKey = null;
+                var _preservedAdminToken = null;
                 try {
                     _preservedOpenAiKey = localStorage.getItem('go-toolkit-api-key');
+                } catch (err) { /* noop */ }
+                try {
+                    _preservedAdminToken = localStorage.getItem('feedback-admin-token');
                 } catch (err) { /* noop */ }
                 try {
                     localStorage.clear();
                     if (_preservedOpenAiKey) {
                         try { localStorage.setItem('go-toolkit-api-key', _preservedOpenAiKey); } catch (e) { }
+                    }
+                    if (_preservedAdminToken) {
+                        try { localStorage.setItem('feedback-admin-token', _preservedAdminToken); } catch (e) { }
                     }
                 } catch (err) {
                     console.warn("Impossible de vider localStorage", err);
