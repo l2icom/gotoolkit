@@ -205,10 +205,11 @@ function validateUpdatePayload(payload) {
     if (!payload || typeof payload !== "object") return "Payload invalide";
     const status = String(payload.status || "").trim() || "recue";
     const message = String(payload.message || "").trim();
-    const type = payload.type ? String(payload.type).trim() : "bug";
+    const rawType = String(payload.type || "").trim().toLowerCase();
+    const type = rawType || "bug-general";
     if (!message) return "Message requis";
     if (!["recue", "traitee", "planifiee", "reportee"].includes(status)) return "Statut invalide";
-    if (!["bug", "suggestion"].includes(type)) return "Type invalide";
+    if (!FEEDBACK_TYPES.has(type)) return "Type invalide";
     if (message.length > 4e3) return "Message trop long";
     return null;
 }

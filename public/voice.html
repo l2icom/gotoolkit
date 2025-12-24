@@ -1512,6 +1512,30 @@
                 shareStatusType = type || "";
             }
 
+            function formatRelativeTime(value) {
+                if (!value) return "";
+                try {
+                    const timestamp = new Date(value).getTime();
+                    if (Number.isNaN(timestamp)) return "";
+                    const deltaSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+                    if (deltaSeconds < 60) {
+                        return "Mis à jour à l'instant";
+                    }
+                    const deltaMinutes = Math.floor(deltaSeconds / 60);
+                    if (deltaMinutes < 60) {
+                        return `Mis à jour il y a ${deltaMinutes} minute${deltaMinutes > 1 ? "s" : ""}`;
+                    }
+                    const deltaHours = Math.floor(deltaMinutes / 60);
+                    if (deltaHours < 24) {
+                        return `Mis à jour il y a ${deltaHours} heure${deltaHours > 1 ? "s" : ""}`;
+                    }
+                    const deltaDays = Math.floor(deltaHours / 24);
+                    return `Mis à jour il y a ${deltaDays} jour${deltaDays > 1 ? "s" : ""}`;
+                } catch (err) {
+                    return "";
+                }
+            }
+
             function buildShareUrl(token) {
                 if (!token || !shareWorkerService) return "";
                 return `${shareWorkerService.baseUrl}/${shareWorkerService.version}/shares/${FIRESTORE_COLLECTION}/${token}`;
@@ -1540,7 +1564,7 @@
                         (!shareWorkerService?.isReady
                             ? "Le partage privé nécessite le worker Cloudflare."
                             : shareLastUpdatedAt
-                                ? `Mis à jour ${new Date(shareLastUpdatedAt).toLocaleString()}`
+                                ? formatRelativeTime(shareLastUpdatedAt)
                                 : "Seules les personnes disposant du lien peuvent y accéder.");
                     shareMenuStatus.textContent = text;
                     const isError =
