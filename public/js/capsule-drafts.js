@@ -1,26 +1,69 @@
 (() => {
     const STORAGE_KEY = "go-toolkit-capsule-drafts";
-    const STORE = window.goToolkitDocStore?.createStore("capsule-drafts");
-    const MEMORY_STORE = {};
-    let cachedRecords = null;
-    let loadPromise = null;
+    const storageService = window.goToolkitStorageService;
 
-    async function migrateFromLocalStorage() {
-        if (!STORE || typeof localStorage === "undefined") return null;
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (!raw) return null;
-            const parsed = JSON.parse(raw);
-            if (parsed && typeof parsed === "object") {
-                await STORE.set("records", parsed);
-                localStorage.removeItem(STORAGE_KEY);
-                return parsed;
+    const fallbackStore = (() => {
+        let cached = null;
+
+        async function read() {
+            if (cached) {
+                return cached;
             }
-        } catch (err) {
-            console.warn("Migration des capsules locales échouée", err);
+            if (typeof localStorage === "undefined") {
+                cached = {};
+                return cached;
+            }
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && typeof parsed === "object") {
+                        cached = parsed;
+                        return cached;
+                    }
+                }
+            } catch (err) {
+                console.warn("goToolkitCapsuleDrafts: fallback read failed", err);
+            }
+            cached = {};
+            return cached;
         }
-        return null;
-    }
+
+        async function write(records) {
+            const next = records && typeof records === "object" ? records : {};
+            cached = next;
+            if (typeof localStorage === "undefined") {
+                return next;
+            }
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+            } catch (err) {
+                console.warn("goToolkitCapsuleDrafts: fallback write failed", err);
+            }
+            return next;
+        }
+
+        async function refresh() {
+            cached = null;
+            return read();
+        }
+
+        return {
+            STORAGE_KEY,
+            read,
+            write,
+            refresh
+        };
+    })();
+
+    const store =
+        storageService?.createStore({
+            storeName: "capsule-drafts",
+            localStorageKey: STORAGE_KEY,
+            defaultValue: () => ({}),
+            normalize: value => (value && typeof value === "object" ? value : null),
+            logPrefix: "goToolkitCapsuleDrafts"
+        }) || fallbackStore;
 
     function normalizeRecord(value) {
         if (!value || typeof value !== "object") {
@@ -46,61 +89,11 @@
     }
 
     async function readRecords() {
-        if (cachedRecords) return cachedRecords;
-        if (loadPromise) return loadPromise;
-        loadPromise = (async () => {
-            try {
-                if (STORE) {
-                    const migrated = await migrateFromLocalStorage();
-                    const stored = migrated || await STORE.get("records");
-                    if (stored && typeof stored === "object") {
-                        cachedRecords = stored;
-                        return stored;
-                    }
-                    console.warn("capsule-drafts: no stored records found in IndexedDB, using fallback");
-                }
-                if (typeof localStorage !== "undefined") {
-                    try {
-                        const rawLocal = localStorage.getItem(STORAGE_KEY);
-                        if (rawLocal) {
-                            const parsedLocal = JSON.parse(rawLocal);
-                            if (parsedLocal && typeof parsedLocal === "object") {
-                                cachedRecords = parsedLocal;
-                                return cachedRecords;
-                            }
-                        }
-                    } catch (err) {
-                        console.warn("capsule-drafts: lecture fallback localStorage échouée", err);
-                    }
-                }
-                const raw = MEMORY_STORE.records;
-                cachedRecords = raw && typeof raw === "object" ? raw : {};
-                return cachedRecords;
-            } catch (err) {
-                console.warn("Impossible de lire les capsules locales", err);
-                cachedRecords = {};
-                return cachedRecords;
-            }
-        })().finally(() => { loadPromise = null; });
-        return loadPromise;
+        return store.read();
     }
 
     async function writeRecords(records) {
-        cachedRecords = records || {};
-        MEMORY_STORE.records = cachedRecords;
-        try {
-            if (typeof localStorage !== "undefined") {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(cachedRecords));
-            }
-        } catch (err) {
-            console.warn("Impossible de sauvegarder la sauvegarde locale des capsules", err);
-        }
-        if (!STORE) return;
-        try {
-            await STORE.set("records", cachedRecords);
-        } catch (err) {
-            console.warn("Impossible de sauvegarder les capsules locales", err);
-        }
+        return store.write(records || {});
     }
 
     async function getAllRecords() {

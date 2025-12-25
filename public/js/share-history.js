@@ -1,72 +1,84 @@
 (function () {
     const STORAGE_KEY = "go-toolkit-share-records";
-    const STORE = window.goToolkitDocStore?.createStore("share-history");
-    const MEMORY_STORE = {};
-    let cachedRecords = null;
-    let loadPromise = null;
+    const storageService = window.goToolkitStorageService;
+    const fallbackStore = (() => {
+        let cached = null;
 
-    async function migrateFromLocalStorage() {
-        if (!STORE || typeof localStorage === "undefined") return null;
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (!raw) return null;
-            const parsed = JSON.parse(raw);
-            if (parsed && typeof parsed === "object") {
-                await STORE.set("records", parsed);
-                localStorage.removeItem(STORAGE_KEY);
-                return parsed;
+        async function read() {
+            if (cached) {
+                return cached;
             }
-        } catch (err) {
-            console.warn("Migration de l'historique de partage échouée", err);
-        }
-        return null;
-    }
-
-    async function readRecords() {
-        if (cachedRecords) return cachedRecords;
-        if (loadPromise) return loadPromise;
-        loadPromise = (async () => {
+            if (typeof localStorage === "undefined") {
+                cached = {};
+                return cached;
+            }
             try {
-                if (STORE) {
-                    const migrated = await migrateFromLocalStorage();
-                    const stored = migrated || await STORE.get("records");
-                    if (stored && typeof stored === "object") {
-                        cachedRecords = stored;
-                        return stored;
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && typeof parsed === "object") {
+                        cached = parsed;
+                        return cached;
                     }
                 }
-                const raw = MEMORY_STORE.records;
-                cachedRecords = raw && typeof raw === "object" ? raw : {};
-                return cachedRecords;
             } catch (err) {
-                console.warn("Impossible de lire l'historique des partages", err);
-                cachedRecords = {};
-                return cachedRecords;
+                console.warn("goToolkitShareHistory: fallback read failed", err);
             }
-        })().finally(() => { loadPromise = null; });
-        return loadPromise;
+            cached = {};
+            return cached;
+        }
+
+        async function write(records) {
+            const next = records && typeof records === "object" ? records : {};
+            cached = next;
+            if (typeof localStorage === "undefined") {
+                return next;
+            }
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+            } catch (err) {
+                console.warn("goToolkitShareHistory: fallback write failed", err);
+            }
+            return next;
+        }
+
+        async function refresh() {
+            cached = null;
+            return read();
+        }
+
+        return {
+            STORAGE_KEY,
+            read,
+            write,
+            refresh
+        };
+    })();
+
+    const store =
+        storageService?.createStore({
+            storeName: "share-history",
+            localStorageKey: STORAGE_KEY,
+            defaultValue: () => ({}),
+            normalize: value => (value && typeof value === "object" ? value : null),
+            logPrefix: "goToolkitShareHistory"
+        }) || fallbackStore;
+
+    async function readRecords() {
+        return store.read();
     }
 
     async function writeRecords(records) {
-        cachedRecords = records || {};
-        MEMORY_STORE.records = cachedRecords;
-        if (!STORE) return;
-        try {
-            await STORE.set("records", cachedRecords);
-        } catch (err) {
-            console.warn("Impossible de sauvegarder l'historique des partages", err);
-        }
+        return store.write(records || {});
     }
 
     async function refreshFromStore() {
-        cachedRecords = null;
-        loadPromise = null;
+        await store.refresh();
         return readRecords();
     }
 
     async function getRecords() {
-        const records = await readRecords();
-        return records;
+        return readRecords();
     }
 
     async function upsertRecord(app, record) {
