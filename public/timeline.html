@@ -642,14 +642,14 @@
             pointer-events: none;
             white-space: pre-wrap;
             opacity: 0;
-            transform-origin: center right;
-            transform: translateX(8px);
+            transform-origin: top left;
+            transform: translateY(8px);
             transition: opacity 0.12s ease, transform 0.12s ease;
         }
 
         .scenario-template-tooltip.visible {
             opacity: 1;
-            transform: translateX(0);
+            transform: translateY(0);
         }
 
         .header-buttons {
@@ -1503,30 +1503,30 @@
                     </div>
                 </div>
 
-                <!-- Promptzilla modal (6 choices) -->
-                <div class="modal-overlay" id="promptzillaOverlay" role="dialog" aria-modal="true"
-                    aria-labelledby="promptzillaTitle">
-                    <div class="modal promptzilla-modal">
+                <!-- Template modal (6 choices) -->
+                <div class="modal-overlay gt-template-modal" id="gtTemplateModal" role="dialog" aria-modal="true"
+                    aria-labelledby="gtTemplateModalTitle">
+                    <div class="modal gt-template-modal__dialog">
                         <div class="modal-header">
-                            <h3 id="promptzillaTitle" title="⊞ Petit Robert Downey Jr">⊞ Modèle</h3>
-                            <button class="modal-close" id="promptzillaClose" type="button"
+                            <h3 id="gtTemplateModalTitle" title="⊞ Petit Robert Downey Jr">⊞ Modèle</h3>
+                            <button class="modal-close" id="gtTemplateModalClose" type="button"
                                 aria-label="Fermer ⊞ Modèle">×</button>
                         </div>
-                        <div class="promptzilla-grid" id="promptzillaList">
+                        <div class="gt-template-modal__list" id="gtTemplateModalList">
                             <!-- cards rendered by JS -->
                         </div>
                         <div class="modal-actions">
-                            <button id="promptzillaValidateBtn" class="btn-primary">Appliquer</button>
+                            <button id="gtTemplateModalApply" class="btn-primary">Appliquer</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="global-actions">
-                    <button class="btn" id="openPromptzillaBtn" aria-label="Ouvrir ⊞ Modèle"
+                    <button class="btn" id="gtTemplateModalTrigger" aria-label="Ouvrir ⊞ Modèle"
                         title="⊞ Petit Robert Downey Jr">⊞ Modèle</button>
-                    <button class="btn" id="openContextModal" aria-label="Ouvrir Contexte" title="⸙ Gutenberg">⸙
+                    <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir Contexte" title="⸙ Gutenberg">⸙
                         Contexte</button>
-                    <button class="btn" id="openIaModal" aria-label="Ouvrir Prompt" title="⌘ Promptzilla">⌘
+                    <button class="btn" id="gtPromptModalTrigger" aria-label="Ouvrir Prompt" title="⌘ Prompt">⌘
                         Prompt</button>
 
                     <div class="menu-trigger">
@@ -1699,8 +1699,8 @@
                 </div>
             </div>
 
-            <div class="gutenberg-card" id="contextModalOverlay" role="complementary"
-                aria-labelledby="contextModalTitle" aria-hidden="true">
+            <div class="gutenberg-card" id="gtContextModal" role="complementary"
+                aria-label="Contexte" aria-hidden="true">
 
                 <div class="ia-actions">
                     <div class="header-row ia-header-actions gutenberg-recette">
@@ -1740,11 +1740,11 @@
             </div>
         </div>
 
-        <div class="modal-overlay" id="iaModalOverlay" role="dialog" aria-modal="true" aria-labelledby="iaModalTitle">
+        <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true" aria-labelledby="gtPromptModalTitle">
             <div class="modal">
                 <div class="modal-header">
-                    <h3 id="iaModalTitle" title="⌘ Promptzilla">⌘ Prompt</h3>
-                    <button class="modal-close" id="iaModalClose" type="button" aria-label="Fermer l'IA">×</button>
+                    <h3 id="gtPromptModalTitle" title="⌘ Prompt">⌘ Prompt</h3>
+                    <button class="modal-close" id="gtPromptModalClose" type="button" aria-label="Fermer l'IA">×</button>
                 </div>
                 <div class="ia-actions">
                     <div class="header-row ia-header-actions">
@@ -1983,7 +1983,7 @@
                 var lastTimelineGenerationAt = 0;
                 var AUTO_CONTEXT_SUPPRESSION_MS = 15000;
                 var shouldOpenContextOnFirstLoad = false;
-                var initialPromptzillaOpened = false;
+                var initialPromptModalOpened = false;
                 var GUTENBERG_SEEN_KEY = "nuances-gutenberg-opened-timeline";
                 var GUTENBERG_OPEN_STATE_KEY = "nuances-gutenberg-open-state-timeline";
                 var DEFAULT_CONTEXT_STATE = {
@@ -2387,7 +2387,7 @@
                 function buildTimelineStatePayload() {
                     var primaryView = views[0] || {};
                     var primaryCtx = normalizeContextState(primaryView.context);
-                    var tplMeta = getTemplateById(primaryCtx.templateId || selectedPromptzillaId || "");
+                    var tplMeta = getTemplateById(primaryCtx.templateId || selectedRoadmapPromptId || "");
                     return {
                         views: views.map(function (view) {
                             return {
@@ -2403,7 +2403,7 @@
                         templates: {
                             create: customSystemTemplates.create
                         },
-                        templateId: primaryCtx.templateId || selectedPromptzillaId || null,
+                        templateId: primaryCtx.templateId || selectedRoadmapPromptId || null,
                         templateName: primaryCtx.templateName || tplMeta?.title || tplMeta?.label || null,
                         brief: getTimelineBrief()
                     };
@@ -3040,11 +3040,11 @@
 
                 // No automatic seeding of timeline content. Show overlay when empty.
 
-                var contextModalOverlay = document.getElementById("contextModalOverlay");
-                var contextModalButton = document.getElementById("openContextModal");
-                var iaModalOverlay = document.getElementById("iaModalOverlay");
-                var iaModalButton = document.getElementById("openIaModal");
-                var iaModalClose = document.getElementById("iaModalClose");
+                var contextModalOverlay = document.getElementById("gtContextModal");
+                var contextModalButton = document.getElementById("gtContextModalTrigger");
+                var iaModalOverlay = document.getElementById("gtPromptModal");
+                var iaModalButton = document.getElementById("gtPromptModalTrigger");
+                var iaModalClose = document.getElementById("gtPromptModalClose");
 
                 function openContextModal(options) {
                     ensureModifyPrompt({ refreshModify: true });
@@ -3105,7 +3105,7 @@
                             if (!contextModalOverlay || !contextModalOverlay.classList.contains('open')) return;
                             var t = ev.target;
                             // if click occurred inside the gutenberg card or on the open button, ignore
-                            if (t && t.closest && (t.closest('.gutenberg-card') || t.closest('#openContextModal'))) return;
+                            if (t && t.closest && (t.closest('.gutenberg-card') || t.closest('#gtContextModalTrigger'))) return;
                             closeContextModal();
                         } catch (err) {
                             /* noop */
@@ -3172,12 +3172,12 @@
                     });
                 }
 
-                /* Roadmap Promptzilla: 6 templates + selection/validate flow */
-                var roadmapPromptzillaOverlay = document.getElementById("promptzillaOverlay");
-                var roadmapPromptzillaList = document.getElementById("promptzillaList");
-                var roadmapPromptzillaClose = document.getElementById("promptzillaClose");
-                var roadmapPromptzillaValidate = document.getElementById("promptzillaValidateBtn");
-                var openPromptzillaBtn = document.getElementById("openPromptzillaBtn");
+                /* Roadmap Prompt modal: 6 templates + selection/validate flow */
+                var roadmapPromptOverlay = document.getElementById("gtTemplateModal");
+                var roadmapPromptList = document.getElementById("gtTemplateModalList");
+                var roadmapPromptClose = document.getElementById("gtTemplateModalClose");
+                var roadmapPromptValidate = document.getElementById("gtTemplateModalApply");
+                var openRoadmapPromptBtn = document.getElementById("gtTemplateModalTrigger");
                 var iaApplyBtn = document.getElementById("iaApplyBtn");
                 if (iaApplyBtn) {
                     iaApplyBtn.addEventListener("click", function () {
@@ -3194,74 +3194,74 @@
                         }
                     });
                 }
-                var selectedPromptzillaId = "default";
+                var selectedRoadmapPromptId = "default";
 
-                var ROADMAP_PROMPTZILLA =
-                    (window.GoPrompts && Array.isArray(window.GoPrompts.timelinePromptzilla) && window.GoPrompts.timelinePromptzilla.length
-                        ? window.GoPrompts.timelinePromptzilla
+                var ROADMAP_PROMPTS =
+                    (window.GoPrompts && Array.isArray(window.GoPrompts.timelinePrompts) && window.GoPrompts.timelinePrompts.length
+                        ? window.GoPrompts.timelinePrompts
                         : []);
 
 
-                function renderRoadmapPromptzilla() {
-                    if (!roadmapPromptzillaList) return;
-                    roadmapPromptzillaList.innerHTML = "";
-                    ROADMAP_PROMPTZILLA.forEach(function (tpl) {
+                function renderRoadmapPromptList() {
+                    if (!roadmapPromptList) return;
+                    roadmapPromptList.innerHTML = "";
+                    ROADMAP_PROMPTS.forEach(function (tpl) {
                         var card = document.createElement("div");
-                        card.className = "promptzilla-card";
+                        card.className = "gt-template-card";
                         card.setAttribute("role", "button");
                         card.dataset.id = tpl.id;
-                        if (tpl.id === selectedPromptzillaId) {
-                            card.classList.add("selected");
+                        if (tpl.id === selectedRoadmapPromptId) {
+                            card.classList.add("gt-template-card--selected");
                         }
                         card.innerHTML = `<strong style="font-size:13px">${tpl.title}</strong><div style="font-size:12px;color:var(--muted);white-space:pre-wrap;word-break:break-word;margin-top:6px">${tpl.text}</div>`;
                         card.addEventListener("click", function () {
                             setSelectedTemplateId(tpl.id, { skipPersist: true });
                             // update visuals
-                            Array.from(roadmapPromptzillaList.children).forEach(function (c) { c.classList.remove("selected"); });
-                            card.classList.add("selected");
+                            Array.from(roadmapPromptList.children).forEach(function (c) { c.classList.remove("gt-template-card--selected"); });
+                            card.classList.add("gt-template-card--selected");
                             // focus validate
-                            if (roadmapPromptzillaValidate) roadmapPromptzillaValidate.focus();
+                            if (roadmapPromptValidate) roadmapPromptValidate.focus();
                         });
-                        roadmapPromptzillaList.appendChild(card);
+                        roadmapPromptList.appendChild(card);
                     });
                 }
 
-                function openRoadmapPromptzilla() {
-                    if (!roadmapPromptzillaOverlay) return;
+                function openRoadmapPromptModal() {
+                    if (!roadmapPromptOverlay) return;
                     if (timelineTourOverlay && timelineTourOverlay.classList.contains("visible")) return;
-                    if (!selectedPromptzillaId) {
+                    if (!selectedRoadmapPromptId) {
                         var ctx = getActiveViewContext();
                         if (ctx && ctx.templateId) {
                             setSelectedTemplateId(ctx.templateId, { skipPersist: true });
-                        } else if (ROADMAP_PROMPTZILLA.length) {
-                            setSelectedTemplateId(ROADMAP_PROMPTZILLA[0].id, { skipPersist: true });
+                        } else if (ROADMAP_PROMPTS.length) {
+                            setSelectedTemplateId(ROADMAP_PROMPTS[0].id, { skipPersist: true });
                         }
                     }
-                    renderRoadmapPromptzilla();
-                    roadmapPromptzillaOverlay.classList.add("open");
+                    renderRoadmapPromptList();
+                    roadmapPromptOverlay.classList.add("open");
                 }
 
-                function closeRoadmapPromptzilla() {
-                    if (!roadmapPromptzillaOverlay) return;
-                    roadmapPromptzillaOverlay.classList.remove("open");
+                function closeRoadmapPromptModal() {
+                    if (!roadmapPromptOverlay) return;
+                    roadmapPromptOverlay.classList.remove("open");
                 }
 
-                if (openPromptzillaBtn) {
-                    openPromptzillaBtn.addEventListener("click", function (e) {
+                if (openRoadmapPromptBtn) {
+                    openRoadmapPromptBtn.addEventListener("click", function (e) {
                         e.preventDefault();
-                        openRoadmapPromptzilla();
+                        openRoadmapPromptModal();
                     });
                 }
-                if (roadmapPromptzillaClose) roadmapPromptzillaClose.addEventListener("click", closeRoadmapPromptzilla);
-                if (roadmapPromptzillaOverlay) {
-                    roadmapPromptzillaOverlay.addEventListener("click", function (ev) {
-                        if (ev.target === roadmapPromptzillaOverlay) closeRoadmapPromptzilla();
+                if (roadmapPromptClose) roadmapPromptClose.addEventListener("click", closeRoadmapPromptModal);
+                if (roadmapPromptOverlay) {
+                    roadmapPromptOverlay.addEventListener("click", function (ev) {
+                        if (ev.target === roadmapPromptOverlay) closeRoadmapPromptModal();
                     });
                 }
-                if (roadmapPromptzillaValidate) {
-                    roadmapPromptzillaValidate.addEventListener("click", function () {
-                        if (!selectedPromptzillaId) return;
-                        var tpl = ROADMAP_PROMPTZILLA.find(function (t) { return t.id === selectedPromptzillaId; });
+                if (roadmapPromptValidate) {
+                    roadmapPromptValidate.addEventListener("click", function () {
+                        if (!selectedRoadmapPromptId) return;
+                        var tpl = ROADMAP_PROMPTS.find(function (t) { return t.id === selectedRoadmapPromptId; });
                         if (tpl) {
                             // Persist into active view context so opening the Gutenberg modal won't overwrite values
                             if (typeof persistActiveContext === "function") {
@@ -3272,7 +3272,7 @@
                                 });
                             }
                             setSelectedTemplateId(tpl.id, { skipPersist: true });
-                            closeRoadmapPromptzilla();
+                            closeRoadmapPromptModal();
                             // open Gutenberg/context modal in 'create' mode to avoid refresh-overwrite of modify
                             if (typeof openContextModal === "function") {
                                 openContextModal({ mode: "create" });
@@ -3662,7 +3662,7 @@
                         if (typeof closeIaModal === "function") try { closeIaModal(); } catch (e) { }
                         if (typeof closeContextModal === "function") try { closeContextModal(); } catch (e) { }
                         if (typeof closeColorModal === "function") try { closeColorModal(); } catch (e) { }
-                        if (typeof closeRoadmapPromptzilla === "function") try { closeRoadmapPromptzilla(); } catch (e) { }
+                        if (typeof closeRoadmapPromptModal === "function") try { closeRoadmapPromptModal(); } catch (e) { }
                         if (typeof closeTimelineInfoPopup === "function") try { closeTimelineInfoPopup(); } catch (e) { }
                         if (typeof closeTimelineTour === "function") try { closeTimelineTour(true); } catch (e) { }
                     }
@@ -5352,7 +5352,7 @@
                         resetTimelineForEmptyView();
                     }
                     ensureViewContext(view);
-                    selectedPromptzillaId = view && view.context ? (view.context.templateId || null) : null;
+                    selectedRoadmapPromptId = view && view.context ? (view.context.templateId || null) : null;
                     refreshHeaderText();
                     renderViewTabs();
                     updateEmptyViewMessage();
@@ -5372,7 +5372,7 @@
                     }
                     ctx.prompts.modify = "";
                     ctx.templateId = null;
-                    selectedPromptzillaId = null;
+                    selectedRoadmapPromptId = null;
                     if (txtPromptModify) txtPromptModify.value = "";
                     view.context = ctx;
                     view.planning = null;
@@ -5399,7 +5399,7 @@
                     if (ctx) {
                         ctx.templateId = null;
                     }
-                    selectedPromptzillaId = null;
+                    selectedRoadmapPromptId = null;
                     if (txtPromptCreate) txtPromptCreate.value = "";
                     if (txtPromptModify) txtPromptModify.value = "";
                     updatePromptTemplateMeta();
@@ -6627,13 +6627,13 @@
 
                 function getTemplateById(id) {
                     if (!id) return null;
-                    return ROADMAP_PROMPTZILLA.find(function (tpl) { return tpl.id === id; }) || null;
+                    return ROADMAP_PROMPTS.find(function (tpl) { return tpl.id === id; }) || null;
                 }
 
                 function updatePromptTemplateMeta() {
                     if (!promptTemplateMeta) return;
                     var ctx = getActiveViewContext();
-                    var currentId = (ctx && typeof ctx.templateId === "string" && ctx.templateId.trim()) ? ctx.templateId.trim() : (selectedPromptzillaId || "");
+                    var currentId = (ctx && typeof ctx.templateId === "string" && ctx.templateId.trim()) ? ctx.templateId.trim() : (selectedRoadmapPromptId || "");
                     var tpl = getTemplateById(currentId);
                     var label = tpl ? tpl.title : "—";
                     promptTemplateMeta.textContent = "Modèle : " + label;
@@ -6673,14 +6673,15 @@
                         var baseTop = parseFloat(scenarioTooltip.dataset.targetTop || '0') || 0;
                         var targetHeight = parseFloat(scenarioTooltip.dataset.targetHeight || '0') || 0;
                         var gap = 10;
-                        var left = Math.max(8, baseLeft - tipRect.width - gap);
-                        var topCandidate = baseTop + (targetHeight - tipRect.height) / 2;
-                        var maxTop = window.innerHeight - tipRect.height - 8;
-                        var top = Math.min(maxTop, Math.max(8, topCandidate));
+                        var maxLeft = Math.max(gap, window.innerWidth - tipRect.width - gap);
+                        var left = Math.min(maxLeft, Math.max(gap, baseLeft));
+                        var maxTop = Math.max(gap, window.innerHeight - tipRect.height - gap);
+                        var topCandidate = baseTop + targetHeight + gap;
+                        var top = Math.min(maxTop, Math.max(gap, topCandidate));
                         scenarioTooltip.style.left = left + 'px';
                         scenarioTooltip.style.top = top + 'px';
                         scenarioTooltip.classList.add('visible');
-                        scenarioTooltip.style.transform = 'translateX(0)';
+                        scenarioTooltip.style.transform = 'translateY(0)';
                     });
                     // reset timer
                     if (scenarioTooltipTimer) {
@@ -6749,7 +6750,7 @@
 
                 function triggerScenarioCriteriaAnalysis(options) {
                     var force = options && options.force;
-                    var template = getTemplateById(selectedPromptzillaId || "");
+                    var template = getTemplateById(selectedRoadmapPromptId || "");
                     var templateId = template?.id || null;
                     if (templateId && !templateCriteriaStatus[templateId]) {
                         templateCriteriaStatus[templateId] = {};
@@ -6785,12 +6786,12 @@
                 }
 
                 function setSelectedTemplateId(id, options) {
-                    selectedPromptzillaId = id || null;
+                    selectedRoadmapPromptId = id || null;
                     var ctx = getActiveViewContext();
                     if (ctx) {
-                        ctx.templateId = selectedPromptzillaId;
-                        var tplMeta = getTemplateById(selectedPromptzillaId || "");
-                        ctx.templateName = tplMeta?.title || tplMeta?.label || selectedPromptzillaId || null;
+                        ctx.templateId = selectedRoadmapPromptId;
+                        var tplMeta = getTemplateById(selectedRoadmapPromptId || "");
+                        ctx.templateName = tplMeta?.title || tplMeta?.label || selectedRoadmapPromptId || null;
                     }
                     updatePromptTemplateMeta();
                     if (!options || !options.skipPersist) {
@@ -6828,7 +6829,7 @@
                 // Show tooltip under the Scénario textarea on focus; hide after 5s inactivity.
                 if (txtPromptCreate) {
                     txtPromptCreate.addEventListener('focus', function () {
-                        var tpl = getTemplateById(selectedPromptzillaId || "");
+                        var tpl = getTemplateById(selectedRoadmapPromptId || "");
                         renderScenarioTooltip(tpl, tpl && tpl.id ? templateCriteriaStatus[tpl.id] : null);
                         showScenarioTooltip(txtPromptCreate);
                     });
@@ -6848,7 +6849,7 @@
                 function syncContextFieldsFromState(options) {
                     var context = getActiveViewContext();
                     if (context && typeof context.templateId === "string") {
-                        selectedPromptzillaId = context.templateId || null;
+                        selectedRoadmapPromptId = context.templateId || null;
                     }
                     var isEmptyTimeline = !hasTimelineData();
                     if (isEmptyTimeline) {
@@ -6890,7 +6891,7 @@
                 contextUiReady = true;
 
                 (function ensureGutenbergDefaultVisibility() {
-                    var el = document.getElementById("contextModalOverlay");
+                    var el = document.getElementById("gtContextModal");
                     if (!el) return;
                     var isDrawer = false;
                     try {
@@ -6904,17 +6905,17 @@
                 })();
 
                 if (shouldOpenContextOnFirstLoad && !hasTimelineData()) {
-                    // Do not auto-open Gutenberg at first load — open Promptzilla instead
-                    if (typeof openRoadmapPromptzilla === "function") {
-                        openRoadmapPromptzilla();
-                        initialPromptzillaOpened = true;
+                    // Do not auto-open Gutenberg at first load — open the Prompt modal instead
+                    if (typeof openRoadmapPromptModal === "function") {
+                        openRoadmapPromptModal();
+                        initialPromptModalOpened = true;
                     } else if (typeof openContextModal === "function") {
                         // fallback
                         openContextModal({ mode: "create" });
                     }
                 }
 
-                if (!initialPromptzillaOpened) {
+                if (!initialPromptModalOpened) {
                     maybeAutoOpenContextModal();
                 }
 
@@ -7883,7 +7884,7 @@
                 function openTimelineTour(startIndex) {
                     hideTimelineAbout();
                     if (!timelineTourOverlay) return;
-                    closeRoadmapPromptzilla();
+                    closeRoadmapPromptModal();
                     timelineCurrentTourIndex = typeof startIndex === "number" ? startIndex : 0;
                     timelineTourOverlay.classList.add("visible");
                     timelineTourOverlay.setAttribute("aria-hidden", "false");

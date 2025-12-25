@@ -725,6 +725,9 @@
             line-height: 1.3;
             backdrop-filter: blur(2px);
             pointer-events: none;
+            transform-origin: bottom left;
+            transform: translateY(-8px);
+            transition: opacity 0.12s ease, transform 0.12s ease;
         }
 
         .template-tooltip[aria-hidden="false"]:not(:empty) {
@@ -1868,11 +1871,11 @@
 
 
                 <div class="menu-trigger" id="settingsMenuTrigger">
-                    <button id="templateBtn" class="btn" type="button" aria-label="Choisir un modèle"
+                    <button id="gtTemplateModalTrigger" class="btn" type="button" aria-label="Choisir un modèle"
                         title="⊞ Petit Robert Downey Jr">⊞ Modèle</button>
-                    <button id="contextEditorBtn" class="btn" type="button" aria-label="Ouvrir Contexte"
+                    <button id="gtContextModalTrigger" class="btn" type="button" aria-label="Ouvrir Contexte"
                         title="⸙ Gutenberg">⸙ Contexte</button>
-                    <button id="contextBtn" class="btn" type="button" aria-label="Prompt" title="⌘ Promptzilla">⌘
+                    <button id="gtPromptModalTrigger" class="btn" type="button" aria-label="Prompt" title="⌘ Prompt">⌘
                         Prompt</button>
 
                     <button id="textStyleBtn" class="btn" type="button" aria-label="Affichage" title="Affichage">◯
@@ -1955,7 +1958,7 @@
                 </div>
                 <div id="slides" class="slide-wrapper"></div>
             </div>
-            <aside class="gutenberg-card" id="gutenbergCard" aria-label="Gutenberg" aria-hidden="true">
+            <aside class="gutenberg-card gt-context-modal" id="gtContextModal" aria-label="Gutenberg" aria-hidden="true">
                 <div class="gutenberg-card-header">
                     <div class="gutenberg-card-actions">
                         <!-- header left intentionally minimal; status and actions placed below -->
@@ -2006,7 +2009,7 @@
             </aside>
         </div>
 
-        <div id="gutenbergBackdrop" class="gutenberg-backdrop"></div>
+        <div id="gtContextModalBackdrop" class="gutenberg-backdrop"></div>
 
         <div id="tourOverlay" class="tour-overlay" aria-hidden="true">
             <div class="tour-highlight hidden" aria-hidden="true"></div>
@@ -2026,11 +2029,11 @@
         <div id="errorToast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
     </div>
 
-    <div class="modal-overlay" id="contextModal">
-        <div class="modal promptzilla-modal">
+    <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true" aria-labelledby="gtPromptModalTitle">
+        <div class="modal">
             <div class="modal-header">
-                <h3 title="⌘ Promptzilla">⌘ Prompt</h3>
-                <button class="modal-close" data-close="contextModal">×</button>
+                <h3 id="gtPromptModalTitle" title="⌘ Prompt">⌘ Prompt</h3>
+                <button class="modal-close" data-close="gtPromptModal">×</button>
             </div>
             <div class="modal-panel hide" data-panel="settings">
                 <!-- API key and reasoning settings moved to global Settings (index.html) -->
@@ -2065,18 +2068,18 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="templateModal">
-        <div class="modal">
+    <div class="modal-overlay gt-template-modal" id="gtTemplateModal" role="dialog" aria-modal="true" aria-labelledby="gtTemplateModalTitle">
+        <div class="modal gt-template-modal__dialog">
             <div class="modal-header">
-                <h3 title="⊞ Petit Robert Downey Jr">⊞ Modèle</h3>
-                <button class="modal-close" data-close="templateModal">×</button>
+                <h3 id="gtTemplateModalTitle" title="⊞ Petit Robert Downey Jr">⊞ Modèle</h3>
+                <button class="modal-close" data-close="gtTemplateModal">×</button>
             </div>
             <div class="modal-panel">
-                <div id="templateList" class="promptzilla-grid" role="radiogroup" aria-label="Modèles disponibles">
+                <div class="gt-template-modal__list" id="gtTemplateModalList" role="radiogroup" aria-label="Modèles disponibles">
                 </div>
             </div>
             <div class="modal-footer">
-                <button id="templateApplyBtn" type="button" class="btn primary">Appliquer</button>
+                <button id="gtTemplateModalApply" type="button" class="btn primary">Appliquer</button>
             </div>
         </div>
     </div>
@@ -2123,7 +2126,7 @@
             }
 
             function updateGutenbergVisibility() {
-                var card = document.getElementById("gutenbergCard");
+                var card = document.getElementById("gtContextModal");
                 var appMain = document.querySelector(".app-main");
                 if (!card || !appMain) return;
                 var stored = readAutoOpenState();
@@ -2379,26 +2382,26 @@
         const fileMenuBtn = document.getElementById("fileMenuBtn");
         const newDocumentBtn = document.getElementById("newDocumentBtn");
         const saveDocumentBtn = document.getElementById("saveDocumentBtn");
-        const templateBtn = document.getElementById("templateBtn");
+        const templateTriggerBtn = document.getElementById("gtTemplateModalTrigger");
         const importJsonBtn = document.getElementById("importJsonBtn");
         const exportJsonBtn = document.getElementById("exportJsonBtn");
-        const contextBtn = document.getElementById("contextBtn");
-        const contextEditorBtn = document.getElementById("contextEditorBtn");
+        const contextBtn = document.getElementById("gtPromptModalTrigger");
+        const contextEditorBtn = document.getElementById("gtContextModalTrigger");
         const selectedTemplateLabelEl = document.getElementById("canvasSelectedTemplateLabel");
         const canvasTemplateTooltip = document.getElementById("canvasTemplateTooltip");
-        const contextModal = document.getElementById("contextModal");
+        const promptModal = document.getElementById("gtPromptModal");
         const appMain = document.querySelector(".app-main");
-        const gutenbergCard = document.getElementById("gutenbergCard");
-        const gutenbergBackdrop = document.getElementById("gutenbergBackdrop");
-        const templateModal = document.getElementById("templateModal");
-        const templateList = document.getElementById("templateList");
-        const templateApplyBtn = document.getElementById("templateApplyBtn");
+        const contextPanel = document.getElementById("gtContextModal");
+        const contextBackdrop = document.getElementById("gtContextModalBackdrop");
+        const templateModal = document.getElementById("gtTemplateModal");
+        const templateList = document.getElementById("gtTemplateModalList");
+        const templateApplyBtn = document.getElementById("gtTemplateModalApply");
         let selectedTemplateId = null;
-        let hasPromptzillaOpenedForNewSlide = false;
+        let hasPromptModalOpenedForNewSlide = false;
         const globalContextField = document.getElementById("globalContextField");
         const pageContextField = document.getElementById("pageContextField");
-        const contextModalTabs = contextModal?.querySelectorAll(".modal-tab") ?? [];
-        const contextModalPanels = contextModal?.querySelectorAll(".modal-panel") ?? [];
+        const promptModalTabs = promptModal?.querySelectorAll(".modal-tab") ?? [];
+        const promptModalPanels = promptModal?.querySelectorAll(".modal-panel") ?? [];
         const settingsMenu = document.getElementById("settingsMenu");
         const fileMenu = document.getElementById("fileMenu");
         const shareMenu = document.getElementById("shareMenu");
@@ -2758,7 +2761,7 @@
         }
 
         function isGutenbergOpen() {
-            return Boolean(gutenbergCard?.classList.contains("open"));
+            return Boolean(contextPanel?.classList.contains("open"));
         }
 
         function markGutenbergSeen() {
@@ -2794,14 +2797,14 @@
             const open = isGutenbergOpen();
             const desktop = isDesktopGutenberg();
             appMain?.classList.toggle("gutenberg-open", open && desktop);
-            gutenbergBackdrop?.classList.toggle("visible", open && !desktop);
+            contextBackdrop?.classList.toggle("visible", open && !desktop);
         }
 
         function setGutenbergOpen(open, { auto = false } = {}) {
-            if (!gutenbergCard || !appMain) return;
+            if (!contextPanel || !appMain) return;
             const shouldOpen = Boolean(open);
-            gutenbergCard.classList.toggle("open", shouldOpen);
-            gutenbergCard.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
+            contextPanel.classList.toggle("open", shouldOpen);
+            contextPanel.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
             persistGutenbergOpenState(shouldOpen);
             syncGutenbergLayoutState();
             contextEditorBtn?.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
@@ -2824,7 +2827,7 @@
 
         function maybeAutoOpenGutenberg() {
             // Auto-open Gutenberg on desktop the first time the user opens this view.
-            if (!gutenbergCard || !appMain) return;
+            if (!contextPanel || !appMain) return;
             if (!isDesktopGutenberg()) return;
             try {
                 const storedState = readGutenbergOpenState();
@@ -3768,12 +3771,16 @@
                 return;
             }
             const gap = CANVAS_TEMPLATE_TOOLTIP_MARGIN;
-            const left = Math.max(gap, rect.left - tooltipRect.width - gap);
-            const maxTop = Math.max(gap, window.innerHeight - tooltipRect.height - gap);
-            const topCandidate = rect.top + (rect.height - tooltipRect.height) / 2;
-            const top = Math.min(maxTop, Math.max(gap, topCandidate));
+            const safeLeftBound = Math.max(gap, window.innerWidth - tooltipRect.width - gap);
+            const left = Math.min(safeLeftBound, Math.max(gap, rect.left));
+            const preferredTop = rect.top - tooltipRect.height - gap;
+            let top = Math.max(gap, preferredTop);
+            if (preferredTop < gap) {
+                top = Math.min(Math.max(gap, window.innerHeight - tooltipRect.height - gap), rect.bottom + gap);
+            }
             canvasTemplateTooltip.style.left = `${left}px`;
             canvasTemplateTooltip.style.top = `${top}px`;
+            canvasTemplateTooltip.style.transform = 'translateY(0)';
         }
 
         function scheduleCanvasTemplateTooltipPosition(target) {
@@ -3797,6 +3804,9 @@
             if (canvasTemplateTooltipPositionRaf !== null) {
                 cancelAnimationFrame(canvasTemplateTooltipPositionRaf);
                 canvasTemplateTooltipPositionRaf = null;
+            }
+            if (canvasTemplateTooltip) {
+                canvasTemplateTooltip.style.transform = 'translateY(-8px)';
             }
         }
 
@@ -5509,8 +5519,8 @@
                 /* noop */
             }
             schedulePersist();
-            if (!hasPromptzillaOpenedForNewSlide) {
-                hasPromptzillaOpenedForNewSlide = true;
+            if (!hasPromptModalOpenedForNewSlide) {
+                hasPromptModalOpenedForNewSlide = true;
                 openTemplateModal();
             }
         }
@@ -5533,7 +5543,7 @@
             clearSectionsInActiveSlide();
         });
 
-        templateBtn?.addEventListener("click", () => {
+        templateTriggerBtn?.addEventListener("click", () => {
             closeContextMenus();
             openTemplateModal();
         });
@@ -5830,10 +5840,10 @@
 
         function handleTemplateSelection(templateId) {
             selectedTemplateId = templateId || templates[0].id;
-            templateList?.querySelectorAll(".promptzilla-card").forEach(row => {
+            templateList?.querySelectorAll(".gt-template-card").forEach(row => {
                 const isActive = row.dataset.templateId === selectedTemplateId;
                 row.setAttribute("aria-checked", isActive ? "true" : "false");
-                row.classList.toggle("selected", isActive);
+                row.classList.toggle("gt-template-card--selected", isActive);
             });
         }
 
@@ -5843,7 +5853,7 @@
             templateList.innerHTML = "";
             templates.forEach(template => {
                 const row = document.createElement("div");
-                row.className = "promptzilla-card";
+                row.className = "gt-template-card";
                 row.dataset.templateId = template.id;
                 row.setAttribute("role", "radio");
                 row.setAttribute("aria-checked", template.id === selectedTemplateId ? "true" : "false");
@@ -6319,15 +6329,15 @@
 
         function switchModalTab(tabName) {
             activeModalTab = tabName;
-            contextModalTabs.forEach(tab => {
+            promptModalTabs.forEach(tab => {
                 tab.classList.toggle("active", tab.dataset.tab === tabName);
             });
-            contextModalPanels.forEach(panel => {
+            promptModalPanels.forEach(panel => {
                 panel.classList.toggle("hide", panel.dataset.panel !== tabName);
             });
         }
 
-        contextModalTabs.forEach(tab => {
+        promptModalTabs.forEach(tab => {
             tab.addEventListener("click", () => {
                 switchModalTab(tab.dataset.tab);
             });
@@ -6341,7 +6351,7 @@
 
         function handleSettingsSave() {
             schedulePersist();
-            closeModal(contextModal);
+            closeModal(promptModal);
         }
         ;
 
@@ -6676,26 +6686,26 @@
             activePromptTemplateId = currentTemplateId;
             setPromptFieldsForTemplate(activePromptTemplateId);
             switchModalTab("settings");
-            openModal(contextModal);
+            openModal(promptModal);
         });
         contextApplyBtn?.addEventListener("click", () => {
             flushPromptFieldsToLibrary();
             persistState();
-            closeModal(contextModal);
+            closeModal(promptModal);
         });
         contextEditorBtn?.addEventListener("click", () => {
             toggleGutenberg();
         });
-        gutenbergBackdrop?.addEventListener("click", () => {
+        contextBackdrop?.addEventListener("click", () => {
             setGutenbergOpen(false);
         });
         // Close gutenberg drawer when clicking outside in drawer mode (<900px)
         document.addEventListener("click", (ev) => {
             try {
                 if ((window.innerWidth || 0) >= 900) return; // desktop - do nothing
-                if (!gutenbergCard || !gutenbergCard.classList.contains('open')) return;
+                if (!contextPanel || !contextPanel.classList.contains('open')) return;
                 var t = ev.target;
-                if (t && t.closest && (t.closest('.gutenberg-card') || t.closest('#contextEditorBtn') || t.closest('#contextBtn'))) return;
+                if (t && t.closest && (t.closest('.gutenberg-card') || t.closest('#gtContextModalTrigger') || t.closest('#gtPromptModalTrigger'))) return;
                 // clicking outside should close the drawer
                 setGutenbergOpen(false);
             } catch (e) {
@@ -7093,7 +7103,7 @@
             {
                 title: "Choisis un modèle",
                 description: "Ouvre ⊞ Modèle pour parcourir et appliquer différents modèles de canvas.",
-                selector: "#promptzillaBtn"
+                selector: "#gtTemplateModalTrigger"
             },
             {
                 title: "Structure entièrement personnalisable",
@@ -7223,11 +7233,11 @@
         }
 
         function handleTourModal(step) {
-            if (!contextModal) return;
+            if (!promptModal) return;
             if (step?.openContextModal) {
-                openModal(contextModal);
+                openModal(promptModal);
             } else {
-                closeModal(contextModal);
+                closeModal(promptModal);
             }
         }
 

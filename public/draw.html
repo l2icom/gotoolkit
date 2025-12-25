@@ -774,19 +774,20 @@
                 </div>
             </div>
 
-            <!-- Promptzilla modal: 9 diagram choices -->
-            <div class="modal-overlay" id="promptzillaModal" aria-hidden="true">
-                <div class="modal promptzilla-modal">
+            <!-- Prompt modal: 9 diagram choices -->
+            <div class="modal-overlay gt-template-modal" id="gtTemplateModal" role="dialog" aria-modal="true"
+                aria-labelledby="gtTemplateModalTitle">
+                <div class="modal gt-template-modal__dialog">
                     <header class="modal-header">
-                        <h3 title="⊞ Petit Robert Downey Jr">⊞ Modèle</h3>
-                        <button id="closePromptzillaModal" class="btn-secondary" type="button">✕</button>
+                        <h3 id="gtTemplateModalTitle" title="⊞ Petit Robert Downey Jr">⊞ Modèle</h3>
+                        <button id="gtTemplateModalClose" class="btn-secondary" type="button">✕</button>
                     </header>
-                    <div class="blueprint-grid" id="promptzillaList" role="listbox"
-                        aria-label="Promptzilla de diagrammes">
+                    <div class="blueprint-grid gt-template-modal__list" id="gtTemplateModalList" role="listbox"
+                        aria-label="Prompt de diagrammes">
                         <!-- cards rendered by JS -->
                     </div>
                     <div class="modal-actions">
-                        <button id="promptzillaApplyBtn" class="btn-primary" type="button">Appliquer</button>
+                        <button id="gtTemplateModalApply" class="btn-primary" type="button">Appliquer</button>
                     </div>
                 </div>
             </div>
@@ -796,11 +797,11 @@
                 <button id="deletePageBtn" class="tab-action" title="Supprimer la page">×</button>
             </div>
             <div class="global-actions">
-                <button id="promptzillaBtn" class="btn drawer-toggle-btn" type="button"
+                <button id="gtTemplateModalTrigger" class="btn drawer-toggle-btn" type="button"
                     title="⊞ Petit Robert Downey Jr">⊞ Modèle</button>
-                <button id="toggleDrawerBtn" class="btn drawer-toggle-btn" type="button" title="⸙ Gutenberg">⸙
+                <button id="gtContextModalTrigger" class="btn drawer-toggle-btn" type="button" title="⸙ Gutenberg">⸙
                     Contexte</button>
-                <button id="aiSettingsBtn" class="btn ai-button" type="button" title="⌘ Promptzilla">⌘ Prompt</button>
+                <button id="gtPromptModalTrigger" class="btn ai-button" type="button" title="⌘ Prompt">⌘ Prompt</button>
                 <div class="menu-trigger" id="capsuleMenuTrigger">
                     <button id="capsuleMenuBtn" class="btn" type="button" title="Capsule">⬠ Capsule</button>
                     <div class="context-menu" id="capsuleMenu">
@@ -823,7 +824,7 @@
             </div>
         </header>
 
-        <div id="drawerOverlay" class="drawer-overlay" aria-hidden="true"></div>
+            <div id="gtContextModalBackdrop" class="drawer-overlay" aria-hidden="true"></div>
 
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
@@ -910,11 +911,11 @@
         <button id="tourSkipBtn" class="tour-skip" type="button" aria-label="Fermer">×</button>
     </div>
 
-    <div class="modal-overlay" id="aiModal">
+    <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true" aria-labelledby="gtPromptModalTitle">
         <div class="modal">
             <header class="modal-header">
-                <h3 title="⌘ Promptzilla">⌘ Prompt</h3>
-                <button id="closeAiModal" class="btn-secondary" type="button">✕</button>
+                <h3 id="gtPromptModalTitle" title="⌘ Prompt">⌘ Prompt</h3>
+                <button id="gtPromptModalClose" class="btn-secondary" type="button" data-close="gtPromptModal">✕</button>
             </header>
             <!-- API key and reasoning settings are global (Réglages) and moved to index.html -->
             <label>
@@ -1469,16 +1470,16 @@
             let lastAnalyzedTemplateId = null;
             let criteriaAnalysisAbortController = null;
 
-            const DIAGRAM_PROMPTZILLA =
-                (window.GoPrompts && Array.isArray(window.GoPrompts.drawPromptzilla) && window.GoPrompts.drawPromptzilla.length
-                    ? window.GoPrompts.drawPromptzilla
+            const DIAGRAM_PROMPTS =
+                (window.GoPrompts && Array.isArray(window.GoPrompts.drawPrompts) && window.GoPrompts.drawPrompts.length
+                    ? window.GoPrompts.drawPrompts
                     : []);
 
-            let selectedPromptzillaId = null;
+            let selectedPromptId = null;
 
-            function getSelectedPromptzilla() {
-                if (!selectedPromptzillaId) return null;
-                return DIAGRAM_PROMPTZILLA.find(b => b.id === selectedPromptzillaId) || null;
+            function getSelectedPrompt() {
+                if (!selectedPromptId) return null;
+                return DIAGRAM_PROMPTS.find(b => b.id === selectedPromptId) || null;
             }
 
             function getTemplateCriteria(template) {
@@ -1559,7 +1560,7 @@
 
             function updateSelectedTemplateLabelDisplay() {
                 if (!selectedTemplateLabel) return;
-                const sel = getSelectedPromptzilla();
+                const sel = getSelectedPrompt();
                 const labelText = sel?.label || "";
                 selectedTemplateLabel.textContent = labelText ? `: ${labelText}` : "";
                 // update template tooltip content if present
@@ -1569,17 +1570,17 @@
                 } catch (e) { /* noop */ }
             }
 
-            function renderPromptzillaList(selectedId) {
-                const list = document.getElementById("promptzillaList");
+            function renderPromptList(selectedId) {
+                const list = document.getElementById("gtTemplateModalList");
                 if (!list) return;
                 list.innerHTML = "";
-                const sel = selectedId || selectedPromptzillaId;
-                DIAGRAM_PROMPTZILLA.forEach(bp => {
+                const sel = selectedId || selectedPromptId;
+                DIAGRAM_PROMPTS.forEach(bp => {
                     const card = document.createElement("div");
-                    card.className = "promptzilla-card";
+                    card.className = "gt-template-card";
                     card.dataset.bpId = bp.id;
                     card.tabIndex = 0;
-                    if (bp.id === sel) card.classList.add("selected");
+                    if (bp.id === sel) card.classList.add("gt-template-card--selected");
                     const drawTypeMeta = DRAW_TYPES.find(option => option.id === bp.drawType) || DRAW_TYPES[0];
                     const drawTypeIcon = drawTypeMeta?.icon || drawTypeMeta?.emoji || "";
                     const title = document.createElement("h4");
@@ -1597,9 +1598,9 @@
                     card.appendChild(desc);
                     card.addEventListener("click", () => {
                         // visual selection only; apply on explicit action
-                        list.querySelectorAll(".promptzilla-card").forEach(c => c.classList.remove("selected"));
-                        card.classList.add("selected");
-                        selectedPromptzillaId = bp.id;
+                        list.querySelectorAll(".gt-template-card").forEach(c => c.classList.remove("gt-template-card--selected"));
+                        card.classList.add("gt-template-card--selected");
+                        selectedPromptId = bp.id;
                     });
                     card.addEventListener("keydown", (ev) => {
                         if (ev.key === "Enter" || ev.key === " ") {
@@ -1611,16 +1612,16 @@
                 });
             }
 
-            function openPromptzillaModal() {
-                const overlay = document.getElementById("promptzillaModal");
+            function openPromptModal() {
+                const overlay = document.getElementById("gtTemplateModal");
                 if (!overlay) return;
-                renderPromptzillaList(selectedPromptzillaId);
+                renderPromptList(selectedPromptId);
                 overlay.classList.add("open");
                 overlay.setAttribute("aria-hidden", "false");
             }
 
-            function closePromptzillaModal() {
-                const overlay = document.getElementById("promptzillaModal");
+            function closePromptModal() {
+                const overlay = document.getElementById("gtTemplateModal");
                 if (!overlay) return;
                 overlay.classList.remove("open");
                 overlay.setAttribute("aria-hidden", "true");
@@ -1629,47 +1630,47 @@
             document.addEventListener("click", (ev) => {
                 const target = ev.target;
                 // open button
-                if (target && target.id === "promptzillaBtn") {
-                    openPromptzillaModal();
+                if (target && target.id === "gtTemplateModalTrigger") {
+                    openPromptModal();
                     return;
                 }
                 // overlay click -> close
-                if (target && target.id === "promptzillaModal") {
-                    closePromptzillaModal();
+                if (target && target.id === "gtTemplateModal") {
+                    closePromptModal();
                     return;
                 }
             });
 
             document.addEventListener("keydown", (ev) => {
-                if (ev.key === "Escape") closePromptzillaModal();
+                if (ev.key === "Escape") closePromptModal();
             });
 
             // close / apply buttons
             document.addEventListener("DOMContentLoaded", () => {
-                const closeBtn = document.getElementById("closePromptzillaModal");
-                const applyBtn = document.getElementById("promptzillaApplyBtn");
-                if (closeBtn) closeBtn.addEventListener("click", closePromptzillaModal);
+                const closeBtn = document.getElementById("gtTemplateModalClose");
+                const applyBtn = document.getElementById("gtTemplateModalApply");
+                if (closeBtn) closeBtn.addEventListener("click", closePromptModal);
                 if (applyBtn) applyBtn.addEventListener("click", () => {
-                    applyPromptzillaSelection();
+                    applyPromptSelection();
                 });
             });
 
-            function applyPromptzillaSelection() {
-                if (!selectedPromptzillaId) {
-                    closePromptzillaModal();
+            function applyPromptSelection() {
+                if (!selectedPromptId) {
+                    closePromptModal();
                     return;
                 }
-                const bp = DIAGRAM_PROMPTZILLA.find(b => b.id === selectedPromptzillaId);
+                const bp = DIAGRAM_PROMPTS.find(b => b.id === selectedPromptId);
                 if (!bp) {
-                    closePromptzillaModal();
+                    closePromptModal();
                     return;
                 }
-                state.templateId = selectedPromptzillaId;
+                state.templateId = selectedPromptId;
                 updateSelectedTemplateLabelDisplay();
                 try { saveState(); } catch (e) { /* noop */ }
                 const promptInputEl = document.getElementById("promptInput");
                 try { updateActivePageDrawType(bp.drawType); } catch (err) { }
-                closePromptzillaModal();
+                closePromptModal();
                 if (bp.defaultScript && mermaidOutput) {
                     mermaidOutput.value = bp.defaultScript;
                     mermaidOutput.dispatchEvent(new Event("input", { bubbles: true }));
@@ -1703,9 +1704,9 @@
             const tourNextBtn = document.getElementById("tourNextBtn");
             const tourCloseBtn = document.getElementById("tourCloseBtn");
             const tourSkipBtn = document.getElementById("tourSkipBtn");
-            const aiModal = document.getElementById("aiModal");
-            const aiSettingsBtn = document.getElementById("aiSettingsBtn");
-            const closeAiModalBtn = document.getElementById("closeAiModal");
+            const promptModal = document.getElementById("gtPromptModal");
+            const aiSettingsBtn = document.getElementById("gtPromptModalTrigger");
+            const closePromptModalBtn = document.getElementById("gtPromptModalClose");
             // API key and reasoning controls moved to global settings (index.html)
             const promptTemplateField = document.getElementById("promptTemplateField");
             const systemPromptField = document.getElementById("systemPromptField");
@@ -1751,7 +1752,7 @@
                     promptTooltipRenderAllowed = true;
                     focusClickPending = false;
                     wrapper.classList.add('is-focused');
-                    const sel = getSelectedPromptzilla();
+                    const sel = getSelectedPrompt();
                     const status = sel?.id ? templateCriteriaStatus[sel.id] : null;
                     renderTemplateTooltip(sel, status);
                     startInactivityTimer();
@@ -1789,12 +1790,12 @@
                 });
 
                 // update tooltip when selection is applied
-                const origApply = window.applyPromptzillaSelection;
+                const origApply = window.applyPromptSelection;
                 if (typeof origApply === 'function') {
-                    window.applyPromptzillaSelection = function () {
+                    window.applyPromptSelection = function () {
                         try { origApply.apply(this, arguments); } catch (e) { }
                         try {
-                            const sel = getSelectedPromptzilla();
+                            const sel = getSelectedPrompt();
                             const status = sel?.id ? templateCriteriaStatus[sel.id] : null;
                             renderTemplateTooltip(sel, status);
                             if (document.activeElement === promptEl && tooltip.getAttribute('aria-hidden') === 'false') {
@@ -1821,8 +1822,8 @@
             })();
             const capsuleOpenBtn = document.getElementById("capsuleOpenBtn");
             const capsuleSaveBtn = document.getElementById("capsuleSaveBtn");
-            const toggleDrawerBtn = document.getElementById("toggleDrawerBtn");
-            const drawerOverlay = document.getElementById("drawerOverlay");
+            const toggleDrawerBtn = document.getElementById("gtContextModalTrigger");
+            const drawerOverlay = document.getElementById("gtContextModalBackdrop");
             const connectLeft = document.querySelector(".connect-left");
             const connectRight = document.querySelector(".connect-right");
             const drawerMediaQuery = window.matchMedia("(max-width: 1200px)");
@@ -1852,7 +1853,7 @@
                 {
                     title: "Choisir un cas métier",
                     description: "Ouvre ⊞ Modèle pour sélectionner le modèle de diagramme le plus adapté à ton contexte.",
-                    selector: "#promptzillaBtn"
+                    selector: "#gtTemplateModalTrigger"
                 },
                 {
                     title: "Décris et choisis",
@@ -2018,7 +2019,7 @@
                 try {
                     const persistable = {
                         ...state,
-                        templateId: selectedPromptzillaId || state.templateId || null,
+                        templateId: selectedPromptId || state.templateId || null,
                         pages: state.pages.map((page, index) => normalizePage(page, index))
                     };
                     state.templateId = persistable.templateId;
@@ -2075,7 +2076,7 @@
 
             async function buildSharePayload() {
                 const scene = await captureExcalidrawScene();
-                const selectedTemplate = getSelectedPromptzilla();
+                const selectedTemplate = getSelectedPrompt();
                 return {
                     pages: state.pages.map((page, index) => normalizePage(page, index)),
                     activeIndex: state.activeIndex,
@@ -2083,7 +2084,7 @@
                     promptTemplate: state.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
                     systemPrompt: state.systemPrompt || DEFAULT_SYSTEM_PROMPT,
                     reasoningEffort: state.reasoningEffort || "low",
-                    templateId: selectedPromptzillaId || state.templateId || null,
+                    templateId: selectedPromptId || state.templateId || null,
                     templateName: selectedTemplate?.label || selectedTemplate?.title || null,
                     scene
                 };
@@ -2103,7 +2104,7 @@
                 state.systemPrompt = payload.systemPrompt || DEFAULT_SYSTEM_PROMPT;
                 state.reasoningEffort = payload.reasoningEffort || payload.reasoning?.effort || "low";
                 state.templateId = payload.templateId || null;
-                selectedPromptzillaId = state.templateId;
+                selectedPromptId = state.templateId;
                 if (payload.scene) {
                     sharedScenePayload = sanitizeScene(payload.scene);
                 }
@@ -2176,8 +2177,8 @@
                     promptTemplate: state.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
                     systemPrompt: state.systemPrompt || DEFAULT_SYSTEM_PROMPT,
                     reasoningEffort: state.reasoningEffort || "low",
-                    templateId: selectedPromptzillaId || state.templateId || null,
-                    templateName: getSelectedPromptzilla()?.label || getSelectedPromptzilla()?.title || null
+                    templateId: selectedPromptId || state.templateId || null,
+                    templateName: getSelectedPrompt()?.label || getSelectedPrompt()?.title || null
                 };
             }
 
@@ -2197,7 +2198,7 @@
                 state.promptTemplate = payload.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
                 state.reasoningEffort = payload.reasoningEffort || payload.reasoning?.effort || "low";
                 state.templateId = payload.templateId || null;
-                selectedPromptzillaId = state.templateId;
+                selectedPromptId = state.templateId;
                 sharedScenePayload = null;
                 currentShareToken = null;
                 shareLoadedFromRemote = false;
@@ -2978,7 +2979,7 @@
 
             function triggerCriteriaAnalysis(options = {}) {
                 const force = options.force || false;
-                const template = getSelectedPromptzilla();
+                const template = getSelectedPrompt();
                 const templateId = template?.id || null;
                 if (templateId && !templateCriteriaStatus[templateId]) {
                     templateCriteriaStatus[templateId] = {};
@@ -3250,7 +3251,7 @@
                 const page = getActivePage();
                 const drawType = page?.drawType || DEFAULT_DRAW_TYPE;
                 const placeholder = drawTypePlaceholders[drawType] || promptInput.placeholder || "";
-                const templateMeta = getSelectedPromptzilla();
+                const templateMeta = getSelectedPrompt();
                 const templateDescription = templateMeta?.description || "";
                 const requestId = ++promptSuggestRequestId;
                 stopPromptSuggestionRequest();
@@ -3621,14 +3622,14 @@
             }
 
             function openModal() {
-                aiModal.classList.add("open");
+                promptModal?.classList.add("open");
                 promptTemplateField.value = state.promptTemplate || DEFAULT_PROMPT_TEMPLATE;
                 if (systemPromptField) systemPromptField.value = state.systemPrompt || DEFAULT_SYSTEM_PROMPT;
                 // API key and reasoning settings are now managed globally in the Settings modal
             }
 
             function closeModal() {
-                aiModal.classList.remove("open");
+                promptModal?.classList.remove("open");
             }
 
             function resetPrompt() {
@@ -4768,7 +4769,7 @@
                 tourCloseBtn?.addEventListener("click", closeTour);
                 tourSkipBtn?.addEventListener("click", closeTour);
                 aiSettingsBtn.addEventListener("click", openModal);
-                closeAiModalBtn.addEventListener("click", closeModal);
+                closePromptModalBtn.addEventListener("click", closeModal);
                 const applyAiSettingsBtn = document.getElementById("applyAiSettingsBtn");
                 applyAiSettingsBtn?.addEventListener("click", () => {
                     state.promptTemplate = promptTemplateField?.value.trim() || DEFAULT_PROMPT_TEMPLATE;
@@ -4780,7 +4781,7 @@
                 resetPromptBtn.addEventListener("click", resetPrompt);
                 window.addEventListener("keydown", event => {
                     const isEscape = event.key === "Escape";
-                    if (isEscape && aiModal.classList.contains("open")) {
+                    if (isEscape && promptModal?.classList.contains("open")) {
                         closeModal();
                     }
                     if (isEscape && isDrawerOpen && drawerMediaQuery.matches) {
@@ -4935,8 +4936,8 @@
                 } catch (e) {
                     /* noop */
                 }
-                if (state.templateId && !selectedPromptzillaId) {
-                    selectedPromptzillaId = state.templateId;
+                if (state.templateId && !selectedPromptId) {
+                    selectedPromptId = state.templateId;
                 }
                 renderTabs();
                 syncFormWithPage();

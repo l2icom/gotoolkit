@@ -97,23 +97,23 @@ test.describe.skip("Grid templates", () => {
     await page.goto(gridUrl, { waitUntil: "load" });
     await page.waitForSelector("#gridScript");
 
-    await page.waitForSelector("#templateModal.open");
-    await page.locator("#templateCardList .template-card:has-text('Structure de données')").click();
-    await page.click("#templateApplyBtn");
-    await page.waitForSelector("#templateModal.open", { state: "detached" });
+    await page.waitForSelector("#gtTemplateModal.open");
+    await page.locator("#gtTemplateModalList .gt-template-card:has-text('Structure de données')").click();
+    await page.click("#gtTemplateModalApply");
+    await page.waitForSelector("#gtTemplateModal.open", { state: "detached" });
     await page.evaluate(() => {
-      const modal = document.getElementById("templateModal");
+      const modal = document.getElementById("gtTemplateModal");
       if (modal) modal.style.pointerEvents = "none";
     });
     await page.click("#addPageBtn");
     await page.evaluate(() => {
-      const modal = document.getElementById("templateModal");
+      const modal = document.getElementById("gtTemplateModal");
       if (modal) modal.style.pointerEvents = "";
     });
-    await page.waitForSelector("#templateModal.open");
-    await page.locator("#templateCardList .template-card:has-text('Structure de données')").click();
-    await page.click("#templateApplyBtn");
-    await page.waitForSelector("#templateModal.open", { state: "detached" });
+    await page.waitForSelector("#gtTemplateModal.open");
+    await page.locator("#gtTemplateModalList .gt-template-card:has-text('Structure de données')").click();
+    await page.click("#gtTemplateModalApply");
+    await page.waitForSelector("#gtTemplateModal.open", { state: "detached" });
     await page.fill("#gridScript", treeScript);
     await page.locator("#gridScript").blur();
     await expect(page.locator(".ag-center-cols-container .ag-row")).toHaveCount(7);
@@ -121,10 +121,10 @@ test.describe.skip("Grid templates", () => {
 
     await page.click("#addPageBtn");
     await page.click("#addPageBtn", { force: true });
-    await page.waitForSelector("#templateModal.open");
-    await page.locator("#templateCardList .template-card:has-text('Données fictives')").click();
-    await page.click("#templateApplyBtn");
-    await page.waitForSelector("#templateModal.open", { state: "detached" });
+    await page.waitForSelector("#gtTemplateModal.open");
+    await page.locator("#gtTemplateModalList .gt-template-card:has-text('Données fictives')").click();
+    await page.click("#gtTemplateModalApply");
+    await page.waitForSelector("#gtTemplateModal.open", { state: "detached" });
     await page.fill("#gridScript", mockScript);
     await page.locator("#gridScript").blur();
     await expect(page.locator(".ag-center-cols-container .ag-row")).toHaveCount(3);

@@ -782,7 +782,7 @@ Règles lignes :
 - Réponds uniquement sans autre texte ni émoji avec moins de 15 mots par point
 `;
 
-    const drawPromptzilla = [
+    const drawPrompts = [
         {
             id: "sequence-service",
             label: "🚶‍♂️ Happy path",
@@ -1019,7 +1019,7 @@ classDiagram
         }
     ];
 
-    const voicePromptzilla = [
+    const voicePrompts = [
         {
             id: "backlog-grooming",
             title: "🧹 Backlog Grooming",
@@ -1199,7 +1199,7 @@ Transcription à résumer :
 
 Réponds en texte brut, sans JSON ni balisage.`;
 
-    const timelinePromptzilla = [
+    const timelinePrompts = [
         {
             id: "product",
             title: "🎯 Roadmap Produit",
@@ -1327,7 +1327,7 @@ Contraintes de nommage et quantités :
     global.GoPrompts = {
         canvasTemplates,
         canvasExamples,
-        drawPromptzilla,
+        drawPrompts,
         drawDefaultPromptTemplate,
         gridTemplates: GRID_TEMPLATES,
         gridSystemPrompt,
@@ -1337,11 +1337,11 @@ Contraintes de nommage et quantités :
         canvasDefaultPromptTemplate,
         canvasBottomPromptTemplate,
         canvasSuggestionsPromptTemplate,
-        voicePromptzilla,
+        voicePrompts,
         voiceCreateSystemTemplate,
         voiceEvaluatePrompt,
         voiceSummaryPrompt,
-        timelinePromptzilla,
+        timelinePrompts,
         timelineCreateSystemTemplate
     };
 })(window);

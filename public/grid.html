@@ -314,19 +314,19 @@
             z-index: 60;
         }
 
-        .template-modal {
+        .gt-template-modal__dialog {
             max-width: 620px;
             width: 90vw;
         }
 
-        .template-card-grid {
+        .gt-template-modal__list {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 10px;
             margin: 10px 0 0;
         }
 
-        .template-card {
+        .gt-template-card {
             border: 1px solid #dfe3f5;
             border-radius: 12px;
             padding: 10px;
@@ -335,25 +335,25 @@
             transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
         }
 
-        .template-card:hover,
-        .template-card:focus-visible {
+        .gt-template-card:hover,
+        .gt-template-card:focus-visible {
             border-color: #2a7a57;
             box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
             outline: none;
         }
 
-        .template-card.selected {
+        .gt-template-card.gt-template-card--selected {
             border-color: #2a7a57;
             background: #f1f8f4;
         }
 
-        .template-card strong {
+        .gt-template-card strong {
             display: block;
             font-size: 13px;
             margin-bottom: 6px;
         }
 
-        .template-card p {
+        .gt-template-card p {
             margin: 0;
             font-size: 12px;
             color: #566188;
@@ -1094,10 +1094,10 @@
                 <button id="deletePageBtn" class="tab-action" title="Supprimer la page">×</button>
             </div>
             <div class="global-actions">
-                <button id="toggleDrawerBtn" class="btn drawer-toggle-btn" type="button" title="⸙ Gutenberg">⸙
+                <button id="gtContextModalTrigger" class="btn drawer-toggle-btn" type="button" title="⸙ Gutenberg">⸙
                     Contexte</button>
-                <button id="aiSettingsBtn" class="btn ai-button" type="button" title="⌘ Promptzilla">⌘ Prompt</button>
-                <button id="templateModalBtn" class="btn" type="button" title="⊞ Modèle" style="display: none;">⊞
+                <button id="gtPromptModalTrigger" class="btn ai-button" type="button" title="⌘ Prompt">⌘ Prompt</button>
+                <button id="gtTemplateModalTrigger" class="btn" type="button" title="⊞ Modèle" style="display: none;">⊞
                     Modèle</button>
                 <div class="menu-trigger">
                     <button id="affichageBtn" class="btn" type="button" aria-label="Affichage" title="Affichage">◯
@@ -1136,7 +1136,7 @@
             </div>
         </header>
 
-        <div id="drawerOverlay" class="drawer-overlay" aria-hidden="true"></div>
+        <div id="gtContextModalBackdrop" class="drawer-overlay" aria-hidden="true"></div>
 
         <main class="connect-layout">
             <section class="connect-right">
@@ -1208,24 +1208,24 @@
         <button id="closeInfoPopup" type="button" class="btn-primary">Réinitialiser</button>
     </div>
 
-    <div class="modal-overlay" id="templateModal">
-        <div class="modal template-modal">
+    <div class="modal-overlay gt-template-modal" id="gtTemplateModal" role="dialog" aria-modal="true" aria-labelledby="gtTemplateModalTitle">
+        <div class="modal gt-template-modal__dialog">
             <header class="modal-header">
-                <h3 title="⊞ Modèle">⊞ Modèle</h3>
-                <button id="closeTemplateModal" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
+                <h3 id="gtTemplateModalTitle" title="⊞ Petit Robert Downey Jr">⊞ Modèle</h3>
+                <button class="modal-close btn-secondary" id="gtTemplateModalClose" type="button" aria-label="Fermer">✕</button>
             </header>
-            <div class="template-card-grid" id="templateCardList"></div>
+            <div class="gt-template-modal__list" id="gtTemplateModalList"></div>
             <div class="modal-actions template-actions">
-                <button id="templateApplyBtn" class="btn-primary" type="button">Appliquer</button>
+                <button id="gtTemplateModalApply" class="btn-primary" type="button">Appliquer</button>
             </div>
         </div>
     </div>
 
-    <div class="modal-overlay" id="aiModal">
+    <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true" aria-labelledby="gtPromptModalTitle">
         <div class="modal">
             <header class="modal-header">
-                <h3 title="⌘ Promptzilla">⌘ Prompt</h3>
-                <button id="closeAiModal" class="btn-secondary" type="button">✕</button>
+                <h3 id="gtPromptModalTitle" title="⌘ Prompt">⌘ Prompt</h3>
+                <button id="gtPromptModalClose" class="btn-secondary" type="button">✕</button>
             </header>
             <div class="template-modal-label" aria-live="polite">
                 <span>Modèle</span>
@@ -1337,15 +1337,15 @@
                 const promptInput = document.getElementById("promptInput");
                 const promptTemplateField = document.getElementById("promptTemplateField");
                 const systemPromptField = document.getElementById("systemPromptField");
-                const aiModal = document.getElementById("aiModal");
-                const aiSettingsBtn = document.getElementById("aiSettingsBtn");
-                const closeAiModal = document.getElementById("closeAiModal");
+                const promptModal = document.getElementById("gtPromptModal");
+                const promptModalTrigger = document.getElementById("gtPromptModalTrigger");
+                const closePromptModal = document.getElementById("gtPromptModalClose");
                 const aiTemplateLabel = document.getElementById("aiTemplateLabel");
-                const templateModal = document.getElementById("templateModal");
-                const templateModalBtn = document.getElementById("templateModalBtn");
-                const templateApplyBtn = document.getElementById("templateApplyBtn");
-                const templateCardList = document.getElementById("templateCardList");
-                const closeTemplateModal = document.getElementById("closeTemplateModal");
+                const templateModal = document.getElementById("gtTemplateModal");
+                const templateModalTrigger = document.getElementById("gtTemplateModalTrigger");
+                const templateApplyBtn = document.getElementById("gtTemplateModalApply");
+                const templateCardList = document.getElementById("gtTemplateModalList");
+                const closeTemplateModal = document.getElementById("gtTemplateModalClose");
                 const treeSourceModal = document.getElementById("treeSourceModal");
                 const treeSourceListInput = document.getElementById("treeSourceListInput");
                 const saveTreeSourceModal = document.getElementById("saveTreeSourceModal");
@@ -1374,8 +1374,8 @@
                 const pageTabs = document.getElementById("pageTabs");
                 const addPageBtn = document.getElementById("addPageBtn");
                 const deletePageBtn = document.getElementById("deletePageBtn");
-                const drawerOverlay = document.getElementById("drawerOverlay");
-                const drawerBtn = document.getElementById("toggleDrawerBtn");
+                const drawerOverlay = document.getElementById("gtContextModalBackdrop");
+                const drawerBtn = document.getElementById("gtContextModalTrigger");
                 const sidebar = document.querySelector(".connect-left");
                 const connectRight = document.querySelector(".connect-right");
                 const promptSpeechSuggestion = document.querySelector('[data-speech-suggestion="promptInput"]');
@@ -3150,7 +3150,7 @@
                     if (aiTemplateLabel) {
                         aiTemplateLabel.textContent = `${icon} ${tpl.label}`;
                     }
-                    if (aiModal?.classList.contains("open")) {
+                    if (promptModal?.classList.contains("open")) {
                         applyActivePageStateToUI();
                     }
                 }
@@ -3160,9 +3160,9 @@
                     templateCardList.innerHTML = "";
                     GRID_TEMPLATES.forEach(tpl => {
                         const card = document.createElement("div");
-                        card.className = "template-card";
+                        card.className = "gt-template-card";
                         if (tpl.id === selectedId) {
-                            card.classList.add("selected");
+                            card.classList.add("gt-template-card--selected");
                         }
                         card.tabIndex = 0;
                         card.dataset.id = tpl.id;
@@ -5322,12 +5322,12 @@
                 }
 
                 function openModal() {
-                    aiModal?.classList.add("open");
+                    promptModal?.classList.add("open");
                     applyActivePageStateToUI();
                 }
 
                 function closeModal() {
-                    aiModal?.classList.remove("open");
+                    promptModal?.classList.remove("open");
                     const pageTplId = getPageTemplateId() || DEFAULT_TEMPLATE_ID;
                     setActiveTemplate(pageTplId, { skipApplyScript: true, skipPersist: true });
                 }
@@ -5459,9 +5459,9 @@
                     }
                     generateCooldownEndTime = 0;
                     updateGenerateLabel(generateDefaultLabel);
-                    if (toggleDrawerBtn) {
-                        toggleDrawerBtn.disabled = false;
-                        toggleDrawerBtn.textContent = drawerDefaultLabel;
+                    if (drawerBtn) {
+                        drawerBtn.disabled = false;
+                        drawerBtn.textContent = drawerDefaultLabel;
                     }
                 }
 
@@ -5470,8 +5470,8 @@
                     clearGenerateCooldown();
                     const duration = Math.max(1, seconds);
                     generateCooldownEndTime = Date.now() + duration * 1000;
-                    if (toggleDrawerBtn) {
-                        toggleDrawerBtn.disabled = true;
+                    if (drawerBtn) {
+                        drawerBtn.disabled = true;
                     }
                     const frames = ["◴", "◷", "◶", "◵"];
                     const updateLabel = () => {
@@ -8376,8 +8376,8 @@
                     });
                     shareMenu.addEventListener("click", event => event.stopPropagation());
                 }
-                if (templateModalBtn) {
-                    templateModalBtn.addEventListener("click", event => {
+                if (templateModalTrigger) {
+                    templateModalTrigger.addEventListener("click", event => {
                         event.preventDefault();
                         openTemplateModalUi();
                     });
@@ -8655,8 +8655,8 @@
 
                     if (addPageBtn) addPageBtn.addEventListener("click", addPage);
                     if (deletePageBtn) deletePageBtn.addEventListener("click", deleteActivePage);
-                    if (aiSettingsBtn) aiSettingsBtn.addEventListener("click", openModal);
-                    if (closeAiModal) closeAiModal.addEventListener("click", closeModal);
+                    if (promptModalTrigger) promptModalTrigger.addEventListener("click", openModal);
+                    if (closePromptModal) closePromptModal.addEventListener("click", closeModal);
                     if (resetPromptBtn) resetPromptBtn.addEventListener("click", resetPrompt);
                     if (applyAiSettingsBtn) applyAiSettingsBtn.addEventListener("click", applyPromptSettings);
                     if (generateBtn) generateBtn.addEventListener("click", handleGenerateClick);
