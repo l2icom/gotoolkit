@@ -1,6 +1,7 @@
 {
   "rules": {
     "block-no-empty": true,
-    "color-no-invalid-hex": true
+    "color-no-invalid-hex": true,
+    "indentation": 2
   }
 }
