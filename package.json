@@ -31,6 +31,9 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "esbuild": "^0.27.1",
-    "playwright": "^1.57.0"
+    "playwright": "^1.57.0",
+    "stylelint": "^14.16.1",
+    "stylelint-config-prettier": "^9.0.5",
+    "stylelint-config-standard": "^39.0.1"
   }
 }
