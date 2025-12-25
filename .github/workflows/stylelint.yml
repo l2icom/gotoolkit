@@ -1,0 +1,4 @@
+name: stylelint (disabled)
+
+# This workflow was added as part of a temporary style migration.
+# Clearing contents to disable; remove file to delete permanently.

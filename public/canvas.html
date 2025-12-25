@@ -645,6 +645,24 @@
             z-index: 3;
         }
 
+        /* Hide speech buttons inside slides by default to reduce visual clutter;
+           reveal the button when the user hovers the containing text row. */
+        .slide-body .speech-button {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.15s ease, visibility 0.15s ease;
+        }
+
+        .slide-body .section-text-row:hover .speech-button,
+        .slide-body .section-text-row:focus-within .speech-button,
+        .slide-body .textarea-wrapper:hover .speech-button,
+        .slide-body .speech-field-wrapper:hover .speech-button {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
         .speech-button--active,
         .speech-button:active {
             color: #B11226;
