@@ -56,6 +56,20 @@ function resolveAssemblyKey(request, env) {
 }
 
 const ASSEMBLY_API_BASE_URL = "https://api.assemblyai.com/v2";
+const STREAMING_TOKEN_URL = "https://streaming.assemblyai.com/v3/token";
+
+async function wrapAssemblyResponse(upstreamResponse, corsHeaders) {
+  const body = await upstreamResponse.text();
+  const responseHeaders = new Headers(corsHeaders);
+  const responseContentType = upstreamResponse.headers.get("Content-Type");
+  if (responseContentType) {
+    responseHeaders.set("Content-Type", responseContentType);
+  }
+  return new Response(body, {
+    status: upstreamResponse.status,
+    headers: responseHeaders
+  });
+}
 
 async function proxyAssemblyRequest(request, corsMeta, env, path) {
   const assemblyKey = resolveAssemblyKey(request, env);
@@ -66,8 +80,7 @@ async function proxyAssemblyRequest(request, corsMeta, env, path) {
     });
   }
 
-  const upstreamUrl = new URL(ASSEMBLY_API_BASE_URL);
-  upstreamUrl.pathname = path;
+  const upstreamUrl = new URL(`${ASSEMBLY_API_BASE_URL}${path}`);
   upstreamUrl.search = new URL(request.url).search;
 
   const headers = {
@@ -92,16 +105,7 @@ async function proxyAssemblyRequest(request, corsMeta, env, path) {
     });
   }
 
-  const body = await upstreamResponse.text();
-  const responseHeaders = new Headers(corsMeta.headers);
-  const responseContentType = upstreamResponse.headers.get("Content-Type");
-  if (responseContentType) {
-    responseHeaders.set("Content-Type", responseContentType);
-  }
-  return new Response(body, {
-    status: upstreamResponse.status,
-    headers: responseHeaders
-  });
+  return wrapAssemblyResponse(upstreamResponse, corsMeta.headers);
 }
 
 async function proxyTokenRequest(request, corsMeta, env) {
@@ -113,7 +117,7 @@ async function proxyTokenRequest(request, corsMeta, env) {
     });
   }
 
-  const upstreamUrl = new URL("https://streaming.assemblyai.com/v3/token");
+  const upstreamUrl = new URL(STREAMING_TOKEN_URL);
   const incomingUrl = new URL(request.url);
   upstreamUrl.search = incomingUrl.search;
 
@@ -131,14 +135,7 @@ async function proxyTokenRequest(request, corsMeta, env) {
     });
   }
 
-  const body = await upstreamResponse.text();
-  const responseHeaders = new Headers(corsMeta.headers);
-  const contentType = upstreamResponse.headers.get("Content-Type") || "application/json; charset=utf-8";
-  responseHeaders.set("Content-Type", contentType);
-  return new Response(body, {
-    status: upstreamResponse.status,
-    headers: responseHeaders
-  });
+  return wrapAssemblyResponse(upstreamResponse, corsMeta.headers);
 }
 
 export default {
@@ -156,6 +153,7 @@ export default {
         headers: corsMeta.headers
       });
     }
+
     const url = new URL(request.url);
     const pathname = url.pathname.replace(/\/$/, "");
     const segments = pathname.split("/").filter(Boolean);
@@ -164,13 +162,12 @@ export default {
       return proxyAssemblyRequest(request, corsMeta, env, "/upload");
     }
 
-    if (request.method === "POST" && segments.length === 1 && segments[0] === "transcript") {
+    if (request.method === "POST" && pathname.endsWith("/transcript")) {
       return proxyAssemblyRequest(request, corsMeta, env, "/transcript");
     }
 
     if (request.method === "GET" && segments.length === 2 && segments[0] === "transcript") {
-      const transcriptId = segments[1];
-      return proxyAssemblyRequest(request, corsMeta, env, `/transcript/${transcriptId}`);
+      return proxyAssemblyRequest(request, corsMeta, env, `/transcript/${segments[1]}`);
     }
 
     if (request.method === "GET" && pathname.endsWith("/token")) {

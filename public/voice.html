@@ -811,7 +811,7 @@
             pointer-events: none;
             transition: opacity 0.2s ease, transform 0.2s ease;
             transform: translateY(10px);
-            z-index: 200;
+            z-index: 9900;
         }
 
         .toast.visible {
@@ -1240,6 +1240,10 @@
             const FIRESTORE_COLLECTION = "voices";
             const SHARE_QUERY_PARAM = "share";
             const SPEECH_ENGINE_STORAGE_KEY = "go-toolkit-speech-engine";
+            const VOICE_TRANSCRIPTION_MODE_STORAGE = "go-toolkit-voice-transcription-mode";
+            const ASSEMBLY_AI_KEY_STORAGE = "go-toolkit-assemblyai-key";
+            const ASSEMBLY_PROXY_TOKEN_URL = (window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai-token.gotoolkit.workers.dev/token").replace(/\/$/, "");
+            const ASSEMBLY_PROXY_BASE_URL = ASSEMBLY_PROXY_TOKEN_URL.replace(/\/token\/?$/i, "").replace(/\/$/, "") || ASSEMBLY_PROXY_TOKEN_URL;
             const templateList = (window.GoPrompts && window.GoPrompts.voicePrompts) || [];
             const defaultSystemPrompt =
                 (window.GoPrompts && window.GoPrompts.voiceCreateSystemTemplate) ||
@@ -1398,6 +1402,8 @@
             let shareStatusType = "";
             let shareRequestInProgress = false;
             let shareLastUpdatedAt = null;
+            let pendingAssemblyTranscription = false;
+            let assemblyRequestInProgress = false;
             const SELF_PARTICIPANT_KEY = "go-toolkit-voice-self";
             const DEFAULT_SUBJECT_DURATION = 15;
             const MIN_SUBJECT_MINUTES = 10;
@@ -2373,6 +2379,235 @@
                 if (blob && !skipSave) {
                     saveAudioToDb(blob);
                 }
+                maybeProcessAssemblyRecording(blob);
+            }
+
+            function getVoiceTranscriptionMode() {
+                try {
+                    const stored = (localStorage.getItem(VOICE_TRANSCRIPTION_MODE_STORAGE) || "").trim();
+                    if (stored) return stored;
+                } catch (err) { /* noop */ }
+                return (window.GoToolkitVoiceTranscriptionMode || "web");
+            }
+
+            function getAssemblyApiKey() {
+                try {
+                    const stored = (localStorage.getItem(ASSEMBLY_AI_KEY_STORAGE) || "").trim();
+                    if (stored) return stored;
+                } catch (err) { /* noop */ }
+                return (window.GoToolkitAssemblyAiKey || "").trim();
+            }
+
+            function shouldUseAssemblyTranscriptionMode() {
+                return getVoiceTranscriptionMode() === "assembly";
+            }
+
+            function getAssemblyProxyUrl(path = "") {
+                if (!ASSEMBLY_PROXY_BASE_URL) return "";
+                const normalized = (path || "").replace(/^\/+/, "");
+                if (!normalized) return ASSEMBLY_PROXY_BASE_URL;
+                return `${ASSEMBLY_PROXY_BASE_URL}/${normalized}`;
+            }
+
+            function getAssemblyKnownValues(page) {
+                if (!page) return [];
+                const values = [];
+                (page.participants || []).forEach(participant => {
+                    const name = (participant?.name || "").trim();
+                    if (!name) return;
+                    const role = (participant?.role || "").trim();
+                    values.push(role ? `${name} (${role})` : name);
+                });
+                return values;
+            }
+
+            function buildAssemblyTranscriptPayload(uploadUrl, knownValues, speakersExpected) {
+                const payload = {
+                    audio_url: uploadUrl,
+                    speaker_labels: true,
+                    language_detection: true,
+                    language_detection_options: {
+                        expected_languages: ["en", "fr"],
+                        fallback_language: "auto",
+                    }
+                };
+                if (speakersExpected > 0) {
+                    payload.speakers_expected = speakersExpected;
+                }
+                if (knownValues.length) {
+                    payload.speech_understanding = {
+                        request: {
+                            speaker_identification: {
+                                speaker_type: "name",
+                                known_values: knownValues
+                            }
+                        }
+                    };
+                }
+                return payload;
+            }
+
+            function formatAssemblyTimestamp(ms = 0) {
+                const totalSeconds = Math.max(0, Math.floor(Number(ms) / 1000));
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                if (hours > 0) {
+                    return `[${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}]`;
+                }
+                return `[${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}]`;
+            }
+
+            function buildTranscriptFromUtterances(result) {
+                const utterances = Array.isArray(result?.utterances) ? result.utterances : [];
+                if (!utterances.length) {
+                    return (result?.text || "").trim();
+                }
+                return utterances
+                    .map(utterance => {
+                        const speaker = (utterance?.speaker || "Participant").trim();
+                        const text = (utterance?.text || "").trim();
+                        if (!text) return null;
+                        const timestamp = formatAssemblyTimestamp(utterance?.start);
+                        return `${timestamp} ${speaker}\n${text}`;
+                    })
+                    .filter(Boolean)
+                    .join("\n\n");
+            }
+
+            function delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            async function uploadAudioToAssembly(blob, key) {
+                if (!blob) throw new Error("Audio absent");
+                const url = getAssemblyProxyUrl("upload");
+                if (!url) throw new Error("Proxy AssemblyAI indisponible");
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "X-AssemblyAI-Key": key,
+                        "Content-Type": blob.type || "audio/webm"
+                    },
+                    body: blob
+                });
+                if (!response.ok) {
+                    throw new Error(`Envoi audio échoué (${response.status})`);
+                }
+                const data = await response.json();
+                if (!data?.upload_url) {
+                    throw new Error("URL audio manquante");
+                }
+                return data.upload_url;
+            }
+
+            async function requestAssemblyTranscript(payload, key) {
+                const url = getAssemblyProxyUrl("transcript");
+                if (!url) throw new Error("Proxy AssemblyAI indisponible");
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "X-AssemblyAI-Key": key,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    throw new Error(`Requête transcription échouée (${response.status})`);
+                }
+                const data = await response.json();
+                if (!data?.id) {
+                    throw new Error("ID de transcription manquante");
+                }
+                return data.id;
+            }
+
+            async function pollAssemblyTranscript(transcriptId, key) {
+                const url = getAssemblyProxyUrl(`transcript/${transcriptId}`);
+                if (!url) throw new Error("Proxy AssemblyAI indisponible");
+                for (let attempt = 0; attempt < 40; attempt++) {
+                    const response = await fetch(url, {
+                        headers: {
+                            "X-AssemblyAI-Key": key
+                        }
+                    });
+                    if (!response.ok) {
+                        throw new Error(`Échec du suivi (${response.status})`);
+                    }
+                    const data = await response.json();
+                    if (!data) {
+                        throw new Error("Réponse AssemblyAI invalide");
+                    }
+                    if (data.status === "completed") {
+                        return data;
+                    }
+                    if (data.status === "error") {
+                        throw new Error(data.error || "Erreur AssemblyAI");
+                    }
+                    await delay(1200);
+                }
+                throw new Error("Timeout AssemblyAI");
+            }
+
+            async function processAssemblyRecording(blob) {
+                if (!blob) return;
+                if (!shouldUseAssemblyTranscriptionMode()) return;
+                if (assemblyRequestInProgress) return;
+                const assemblyKey = getAssemblyApiKey();
+                if (!assemblyKey) {
+                    showToast("Clé AssemblyAI manquante.", true);
+                    return;
+                }
+                const baseUrl = ASSEMBLY_PROXY_BASE_URL;
+                if (!baseUrl) {
+                    showToast("Proxy AssemblyAI indisponible.", true);
+                    return;
+                }
+                assemblyRequestInProgress = true;
+                showToast("Transcription AssemblyAI en cours...");
+                try {
+                    console.debug("AssemblyAI upload request, blob", blob);
+                    const uploadUrl = await uploadAudioToAssembly(blob, assemblyKey);
+                    console.debug("AssemblyAI upload response url", uploadUrl);
+                    const page = getActivePage();
+                    const participantsWithNames = (page?.participants || []).filter(participant => (participant?.name || "").trim());
+                    const knownValues = getAssemblyKnownValues(page);
+                    const payload = buildAssemblyTranscriptPayload(uploadUrl, knownValues, participantsWithNames.length);
+                    console.debug("AssemblyAI request payload", payload);
+                    const transcriptId = await requestAssemblyTranscript(payload, assemblyKey);
+                    console.debug("AssemblyAI transcript id", transcriptId);
+                    const result = await pollAssemblyTranscript(transcriptId, assemblyKey);
+                    console.debug("AssemblyAI poll result", result);
+                    const finalText = buildTranscriptFromUtterances(result);
+                    if (!finalText) {
+                        throw new Error("Transcription vide");
+                    }
+                    transcriptPrefix = finalText;
+                    lastCaret = finalText.length;
+                    if (transcribeInput) {
+                        transcribeInput.value = finalText;
+                    }
+                    const activePage = getActivePage();
+                    if (activePage) {
+                        activePage.transcript = finalText;
+                        persistState();
+                    }
+                    updateGhostOverlay("");
+                    updateTranscriptMeta();
+                    showToast("Transcription AssemblyAI terminée.");
+                } catch (err) {
+                    console.error("AssemblyAI transcription failed", err);
+                    showToast("Transcription AssemblyAI impossible.", true);
+                } finally {
+                    assemblyRequestInProgress = false;
+                }
+            }
+
+            function maybeProcessAssemblyRecording(blob) {
+                if (!pendingAssemblyTranscription) return;
+                pendingAssemblyTranscription = false;
+                if (!blob) return;
+                processAssemblyRecording(blob);
             }
 
             function updateAudioProgress() {
@@ -2415,6 +2650,8 @@
                     if (audioChunks.length) {
                         const blob = new Blob(audioChunks, { type: mime });
                         setAudioBlob(blob);
+                    } else {
+                        pendingAssemblyTranscription = false;
                     }
                     audioChunks = [];
                     mediaRecorder = null;
@@ -3006,6 +3243,7 @@
                 }
                 if (!speechRecognition) return;
                 ensureAudioRecording();
+                pendingAssemblyTranscription = false;
                 transcriptPrefix = transcribeInput?.value || "";
                 recordingStartedAt = Date.now();
                 recordingElapsedSec = 0;
@@ -3043,6 +3281,7 @@
                 setSpeechButtonState(false);
                 transcriptPrefix = transcribeInput?.value || "";
                 insertPauseSpacing();
+                pendingAssemblyTranscription = shouldUseAssemblyTranscriptionMode() && Boolean(getAssemblyApiKey()) && Boolean(ASSEMBLY_PROXY_BASE_URL);
                 updateGhostOverlay("");
                 updateRecordingUi();
             }
@@ -3050,6 +3289,7 @@
             function resetRecording() {
                 recognitionPaused = false;
                 recognitionActive = false;
+                pendingAssemblyTranscription = false;
                 try { speechRecognition?.stop(); } catch (e) { /* ignore */ }
                 stopAudioRecording();
                 recordingStartedAt = null;
