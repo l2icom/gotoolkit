@@ -54,26 +54,6 @@
             display: block;
         }
 
-        .context-menu.share-menu {
-            right: 0;
-            left: auto;
-            min-width: 260px;
-        }
-
-        .context-menu.share-menu .menu-panel {
-            padding: 12px;
-            gap: 8px;
-        }
-
-        .context-menu.share-menu button {
-            border-radius: 10px;
-        }
-
-        .context-menu.share-menu button:hover,
-        .context-menu.share-menu button:focus {
-            border-radius: 10px;
-        }
-
         .menu-panel {
             display: flex;
             max-width: 300px;
@@ -175,40 +155,6 @@
             transform: translateY(0);
         }
 
-
-        .share-link-field {
-            width: 100%;
-            border-radius: 8px;
-            border: 1px solid #d0c3ad;
-            padding: 8px;
-            font-size: 13px;
-            font-family: inherit;
-            background: #fbf8f2;
-        }
-
-        .share-link-line {
-            display: flex;
-        }
-
-        .share-menu-status {
-            font-size: 12px;
-            color: var(--muted);
-            margin: 0;
-        }
-
-        .share-menu-status.error {
-            color: #b00020;
-        }
-
-        .share-actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-            gap: 6px;
-        }
-
-        .share-actions .menu-panel-btn {
-            width: 100%;
-        }
 
         .prompt-mode-line {
             display: flex;
@@ -1101,51 +1047,6 @@
 
 
 
-        .nav-switch {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .nav-switch-menu {
-            position: absolute;
-            top: calc(100% + 6px);
-            left: 0;
-            min-width: 180px;
-            background: #ffffff;
-            border-radius: 14px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            padding: 6px;
-            display: none;
-            z-index: 60;
-        }
-
-        .nav-switch-menu.open {
-            display: block;
-        }
-
-        .nav-switch-link {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            width: 100%;
-            border: none;
-            background: transparent;
-            border-radius: 10px;
-            padding: 8px 12px;
-            font-size: 12px;
-            cursor: pointer;
-            text-decoration: none;
-            color: #1f2a56;
-        }
-
-        .nav-switch-link:hover,
-        .nav-switch-link:focus-visible {
-            background: rgba(42, 122, 87, 0.08);
-        }
-
-
-
         .slides-container {
             position: relative;
             flex: 1;
@@ -2027,21 +1928,7 @@
                 <div class="menu-trigger" id="shareMenuTrigger">
                     <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
                         title="Lien de partage">☍ Nexus</button>
-                    <div class="context-menu share-menu" id="shareMenu">
-                        <div class="menu-panel">
-                            <div class="menu-header">Lien de la capsule</div>
-                            <div class="share-link-line">
-                                <input id="shareLinkField" class="share-link-field" type="text" readonly
-                                    placeholder="Créer un lien ">
-                            </div>
-                            <div class="share-actions">
-                                <button id="shareUpdateBtn" type="button" class="btn-primary">⟳ Actualiser</button>
-                                <button id="shareCreateBtn" type="button" class="btn">☍
-                                    Créer</button>
-                            </div>
-                            <p class="share-menu-status" id="shareMenuStatus"></p>
-                        </div>
-                    </div>
+                    <div data-share-menu-slot></div>
                 </div>
             </div>
         </div>
@@ -2256,6 +2143,7 @@
     </script>
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
+    <script src="js/shared-ui.js"></script>
     <script src="js/prompt.js?v=2025.12.25.1"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>

@@ -770,52 +770,6 @@
             flex-wrap: wrap;
         }
 
-        .nav-switch {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            margin-right: 6px;
-        }
-
-        .nav-switch-menu {
-            position: absolute;
-            top: calc(100% + 6px);
-            left: 0;
-            min-width: 180px;
-            background: #ffffff;
-            border-radius: 14px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            padding: 6px;
-            display: none;
-            z-index: 50;
-            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif) !important;
-        }
-
-        .nav-switch-menu.open {
-            display: block;
-        }
-
-        .nav-switch-link {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            width: 100%;
-            border: none;
-            background: transparent;
-            border-radius: 10px;
-            padding: 8px 12px;
-            font-size: 12px;
-            font-family: inherit;
-            cursor: pointer;
-            text-decoration: none;
-            color: #1f2a56;
-        }
-
-        .nav-switch-link:hover,
-        .nav-switch-link:focus-visible {
-            background: rgba(42, 122, 87, 0.08);
-        }
-
         .menu-trigger {
             position: relative;
             display: inline-flex;
@@ -851,33 +805,6 @@
             width: 100%;
             justify-content: flex-end;
             align-items: flex-start;
-        }
-
-        .share-menu {
-            min-width: 260px;
-        }
-
-        .share-link-line {
-            display: flex;
-            padding: 0 12px 8px;
-        }
-
-        .share-link-field {
-            width: 100%;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border);
-            padding: 8px 10px;
-            background: var(--surface);
-            font-size: 13px;
-            font-family: inherit;
-            color: var(--text);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .share-link-field:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 1px rgba(42, 122, 87, 0.35);
         }
 
         .ia-actions {
@@ -998,22 +925,7 @@
                 <div class="menu-trigger">
                     <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
                         title="Lien de la capsule">☍ Nexus</button>
-                    <div class="context-menu share-menu" id="shareMenu">
-                        <div class="menu-panel">
-                            <div class="menu-header" style="padding:8px 12px;font-weight:600;">Lien de la capsule
-                            </div>
-                            <div class="share-link-line" style="padding:0 12px 8px 12px;">
-                                <input id="shareLinkField" class="share-link-field" type="text" readonly
-                                    placeholder="Appuie sur Créer pour générer un lien privé.">
-                            </div>
-                            <div class="share-actions" style="display:flex;gap:8px;padding:0 12px 8px 12px;">
-                                <button id="shareUpdateBtn" type="button" class="btn" hidden>⟳ Actualiser</button>
-                                <button id="shareCreateBtn" type="button" class="btn-primary">☍ Créer</button>
-                            </div>
-                            <p class="share-menu-status" id="shareMenuStatus"
-                                style="padding:0 12px 10px 12px;font-size:12px;color:var(--muted);margin:0;"></p>
-                        </div>
-                    </div>
+                    <div data-share-menu-slot></div>
                 </div>
             </div>
         </div>
@@ -1186,7 +1098,7 @@
             </div>
         </div>
 
-        <div id="copyToast" class="toast" aria-live="polite" aria-atomic="true"></div>
+        <div data-toast-slot="copyToast" data-toast-class="toast" data-toast-aria-live="polite" data-toast-aria-atomic="true"></div>
     </div>
 
     <input id="importJsonInput" type="file" accept="application/json" hidden />
@@ -1197,6 +1109,7 @@
     </script>
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
+    <script src="js/shared-ui.js"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>

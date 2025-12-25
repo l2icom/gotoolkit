@@ -87,129 +87,6 @@
             flex-wrap: nowrap;
         }
 
-        .nav-switch {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .nav-switch-menu {
-            position: absolute;
-            top: calc(100% + 6px);
-            left: 0;
-            min-width: 180px;
-            background: #ffffff;
-            border-radius: 14px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            padding: 6px;
-            display: none;
-            z-index: 50;
-        }
-
-        .nav-switch-menu.open {
-            display: block;
-        }
-
-        .nav-switch-link {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            width: 100%;
-            border: none;
-            background: transparent;
-            border-radius: 10px;
-            padding: 8px 12px;
-            font-size: 12px;
-            cursor: pointer;
-            text-decoration: none;
-            color: #1f2a56;
-        }
-
-        .nav-switch-link:hover,
-        .nav-switch-link:focus-visible {
-            background: rgba(42, 122, 87, 0.08);
-        }
-
-        .connect-layout {
-            flex: 1;
-            padding: 0px 0px;
-            display: flex;
-            gap: 4px;
-        }
-
-        .connect-left {
-            background: #ffffff;
-            border-radius: 8px;
-            padding: 10px;
-            border: 1px solid #dfe3f5;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-
-        .connect-left.collapsed {
-            display: none;
-        }
-
-        .connect-right.full-width {
-            flex: 1 1 100%;
-            width: 100%;
-        }
-
-
-        .connect-right {
-            background: #ffffff;
-            border-radius: 8px;
-            padding: 0px;
-            border: 1px solid #dfe3f5;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-
-        .connect-left,
-        .connect-right {
-            flex: 1;
-        }
-
-        .connect-left textarea {
-            font-size: 12px;
-            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
-        }
-
-        .connect-left {
-            flex: 0 0 350px;
-            max-width: 350px;
-            width: 100%;
-        }
-
-        .prompt-input-wrapper {
-            position: relative;
-        }
-
-        .prompt-input-wrapper textarea {
-            position: relative;
-            background: #fbfbff;
-            z-index: 1;
-            padding: 8px;
-            margin: 0;
-            border: 1px solid #d6dbf2;
-            border-radius: 4px;
-            color: #101428;
-            box-sizing: border-box;
-        }
-
-        .speech-field-wrapper {
-            position: relative;
-            height: 100%;
-        }
-
-        .speech-field-wrapper textarea {
-            padding-right: 40px;
-            padding-bottom: 42px;
-            position: relative;
-            z-index: 2;
-        }
 
         .prompt-file-row {
             display: none;
@@ -1075,65 +952,6 @@
             gap: 12px;
         }
 
-        .share-menu-wrapper {
-            position: relative;
-            display: inline-flex;
-        }
-
-        .share-menu {
-            position: absolute;
-            top: calc(100% + 6px);
-            right: 0;
-            width: 260px;
-            background: #ffffff;
-            border-radius: 16px;
-            border: 1px solid rgba(15, 23, 42, 0.1);
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.15);
-            display: none;
-            z-index: 120;
-        }
-
-        .share-menu.open {
-            display: block;
-        }
-
-        .share-menu-header {
-            font-size: 12px;
-            font-weight: 500;
-            padding: 10px 12px 6px;
-            color: #65748a;
-        }
-
-        .share-link-line {
-            padding: 0 12px;
-        }
-
-        .share-link-field {
-            width: 100%;
-            border: 1px solid #dfe3f5;
-            border-radius: 8px;
-            padding: 6px 8px;
-            font-size: 12px;
-            background: #f7f8ff;
-            color: #101428;
-        }
-
-        .share-actions {
-            display: flex;
-            gap: 8px;
-            padding: 8px 8px 0px;
-        }
-
-        .share-menu-status {
-            padding: 0px 12px 0px;
-            font-size: 11px;
-            color: #566188;
-            min-height: 18px;
-        }
-
-        .share-menu-status.error {
-            color: #b42318;
-        }
 
         .info-popup {
             position: absolute;
@@ -1312,22 +1130,7 @@
                 <div class="share-menu-wrapper">
                     <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
                         title="Lien de la capsule">☍ Nexus</button>
-                    <div id="shareMenu" class="share-menu" role="dialog" aria-live="polite">
-                        <div class="menu-panel">
-                            <div class="share-menu-header">Lien de la capsule</div>
-                            <div class="share-link-line">
-                                <input id="shareLinkField" class="share-link-field" type="text" readonly
-                                    placeholder="Créer un lien privé">
-                            </div>
-                            <div class="share-actions">
-                                <button id="shareUpdateBtn" type="button" class="btn-primary" hidden>🔄
-                                    Actualiser</button>
-                                <button id="shareCreateBtn" type="button" class="btn-primary">☍
-                                    Créer</button>
-                            </div>
-                            <p class="share-menu-status" id="shareMenuStatus"></p>
-                        </div>
-                    </div>
+                    <div data-share-menu-slot></div>
                 </div>
 
             </div>
@@ -1396,7 +1199,7 @@
         </main>
     </div>
 
-    <div id="statusToast" class="status-toast" role="status"></div>
+    <div data-toast-slot="statusToast" data-toast-class="status-toast" data-toast-role="status"></div>
     <div id="infoPopup" class="context-menu info-popup" role="dialog" aria-live="polite">
         <img src="logo.gif" alt="Logo Go-Toolkit">
         <strong>Module Grid (Le Cardinal)</strong>
@@ -1482,6 +1285,7 @@
     <script src="js/ia-client.js"></script>
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
+    <script src="js/shared-ui.js"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>

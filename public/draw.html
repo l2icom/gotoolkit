@@ -55,198 +55,11 @@
             flex-wrap: nowrap;
         }
 
-        .share-menu-wrapper {
-            position: relative;
-        }
-
-        .share-menu {
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            min-width: 240px;
-            padding: 14px;
-            border-radius: 12px;
-            border: 1px solid #dfe3f5;
-            background: #ffffff;
-            box-shadow: 0 18px 32px rgba(16, 20, 40, 0.18);
-            display: none;
-            z-index: 20;
-        }
-
-        #promptTemplateField {
-            min-height: 200px;
-        }
-
+        #promptTemplateField,
         #systemPromptField {
             min-height: 200px;
         }
 
-        .share-menu.open {
-            display: block;
-        }
-
-        .menu-trigger {
-            position: relative;
-            display: inline-flex;
-            align-items: stretch;
-            gap: 4px;
-        }
-
-        .context-menu {
-            position: absolute;
-            top: calc(100% + 6px);
-            right: 0;
-            background: #fff;
-            border-radius: 14px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            padding: 0;
-            min-width: 150px;
-            max-width: 320px;
-            display: none;
-            z-index: 40;
-            transform: translateX(2px);
-        }
-
-        .context-menu.open {
-            display: block;
-        }
-
-        .menu-panel {
-            display: flex;
-            max-width: 300px;
-            flex-direction: column;
-            gap: 5px;
-            padding: 0;
-        }
-
-        .menu-panel-btn {
-            border-radius: 0;
-            border: 1px solid #fff;
-            background: transparent;
-            text-align: left;
-            padding: 8px 12px;
-            width: 100%;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-
-        .menu-panel-btn:hover,
-        .menu-panel-btn:focus {
-            background: rgba(16, 20, 40, 0.06);
-            outline: none;
-        }
-
-        .share-menu-header {
-            font-size: 12px;
-            font-weight: 600;
-            color: #1f2a56;
-            margin-bottom: 8px;
-        }
-
-        .share-link-line {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
-        .share-link-field {
-            flex: 1;
-            border-radius: 6px;
-            border: 1px solid #d6dbf2;
-            padding: 8px 10px;
-            font-size: 12px;
-            background: #fbfbff;
-            color: #101428;
-        }
-
-        .share-actions {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 6px;
-        }
-
-        .share-action-btn {
-            flex: 1;
-            border-radius: 10px;
-            border: 1px solid #ebe0d1;
-            background: #ffffff;
-            font-size: 12px;
-            padding: 6px 10px;
-            cursor: pointer;
-        }
-
-        .share-action-btn.primary {
-            border: 1px solid #2a7a57;
-            background: #2a7a57;
-            color: #ffffff;
-        }
-
-
-        #clearMermaidBtn {
-            margin-left: auto;
-            margin-right: 6px;
-        }
-
-        .share-action-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .share-menu-status {
-            font-size: 11px;
-            color: #566188;
-            min-height: 16px;
-            margin: 0;
-        }
-
-        .share-menu-status.error {
-            color: #b42318;
-        }
-
-        .nav-switch {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .nav-switch-menu {
-            position: absolute;
-            top: calc(100% + 6px);
-            left: 0;
-            min-width: 180px;
-            background: #ffffff;
-            border-radius: 14px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            padding: 6px;
-            display: none;
-            z-index: 50;
-        }
-
-        .nav-switch-menu.open {
-            display: block;
-        }
-
-        .nav-switch-link {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            width: 100%;
-            border: none;
-            background: transparent;
-            border-radius: 10px;
-            padding: 8px 12px;
-            font-size: 12px;
-            cursor: pointer;
-            text-decoration: none;
-            color: #1f2a56;
-        }
-
-        .nav-switch-link:hover,
-        .nav-switch-link:focus-visible {
-            background: rgba(42, 122, 87, 0.08);
-        }
 
         .connect-layout {
             flex: 1;
@@ -1004,20 +817,7 @@
                 <div class="share-menu-wrapper">
                     <button id="shareBtn" class="btn btn-secondary" type="button" title="Lien de la capsule">☍
                         Nexus</button>
-                    <div id="shareMenu" class="share-menu" role="dialog" aria-live="polite">
-                        <div class="share-menu-header">Lien de la capsule</div>
-                        <div class="share-link-line">
-                            <input id="shareLinkField" class="share-link-field" type="text" readonly
-                                placeholder="Créer un lien privé">
-                        </div>
-                        <div class="share-actions">
-                            <button id="shareUpdateBtn" type="button" class="share-action-btn primary">🔄
-                                Actualiser</button>
-                            <button id="shareCreateBtn" type="button" class="share-action-btn primary">☍
-                                Créer</button>
-                        </div>
-                        <p class="share-menu-status" id="shareMenuStatus"></p>
-                    </div>
+                    <div data-share-menu-slot></div>
                 </div>
 
             </div>
@@ -1093,7 +893,7 @@
         </main>
     </div>
 
-    <div id="statusToast" class="status-toast" role="status"></div>
+    <div data-toast-slot="statusToast" data-toast-class="status-toast" data-toast-role="status"></div>
 
     <div id="tourOverlay" class="tour-overlay" aria-hidden="true">
         <div class="tour-highlight" aria-hidden="true"></div>
@@ -1135,6 +935,7 @@
     </script>
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
+    <script src="js/shared-ui.js"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
