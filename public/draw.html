@@ -137,7 +137,6 @@
         }
 
         .speech-field-wrapper textarea {
-            padding-right: 40px;
             position: relative;
             z-index: 2;
         }
@@ -797,8 +796,8 @@
                 <button id="deletePageBtn" class="tab-action" title="Supprimer la page">×</button>
             </div>
             <div class="global-actions">
-                <button id="gtTemplateModalTrigger" class="btn drawer-toggle-btn" type="button"
-                    title="⊞ Modèle">⊞ Modèle</button>
+                <button id="gtTemplateModalTrigger" class="btn drawer-toggle-btn" type="button" title="⊞ Modèle">⊞
+                    Modèle</button>
                 <button id="gtContextModalTrigger" class="btn drawer-toggle-btn" type="button" title="⸙ Gutenberg">⸙
                     Contexte</button>
                 <button id="gtPromptModalTrigger" class="btn ai-button" type="button" title="⌘ Prompt">⌘ Prompt</button>
@@ -810,7 +809,7 @@
                             <button id="capsuleDraftSaveBtn" type="button" class="menu-panel-btn">🖫
                                 Enregistrer</button>
                             <button id="capsuleOpenBtn" type="button" class="menu-panel-btn">⤷ Ouvrir</button>
-                            <button id="capsuleSaveBtn" type="button" class="menu-panel-btn">⭳ Télécharger</button>
+                            <button id="capsuleSaveBtn" type="button" class="menu-panel-btn">🡇 Télécharger</button>
                             <button id="infoButton" type="button" class="menu-panel-btn">⎉ Vaisseau</button>
                         </div>
                     </div>
@@ -824,7 +823,7 @@
             </div>
         </header>
 
-            <div id="gtContextModalBackdrop" class="drawer-overlay" aria-hidden="true"></div>
+        <div id="gtContextModalBackdrop" class="drawer-overlay" aria-hidden="true"></div>
 
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
@@ -911,11 +910,13 @@
         <button id="tourSkipBtn" class="tour-skip" type="button" aria-label="Fermer">×</button>
     </div>
 
-    <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true" aria-labelledby="gtPromptModalTitle">
+    <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true"
+        aria-labelledby="gtPromptModalTitle">
         <div class="modal">
             <header class="modal-header">
                 <h3 id="gtPromptModalTitle" title="⌘ Prompt">⌘ Prompt</h3>
-                <button id="gtPromptModalClose" class="btn-secondary" type="button" data-close="gtPromptModal">✕</button>
+                <button id="gtPromptModalClose" class="btn-secondary" type="button"
+                    data-close="gtPromptModal">✕</button>
             </header>
             <!-- API key and reasoning settings are global (Réglages) and moved to index.html -->
             <label>

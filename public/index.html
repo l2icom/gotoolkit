@@ -1254,22 +1254,20 @@
                 <form class="feedback-form" onsubmit="return false;">
                     <div class="field-row">
                         <label style="width:100%">
-                            <span class="label-title">Moteur vocal</span>
-                            <select id="speechEngineSelect">
-                                <option value="web-speech">Web Speech (natif)</option>
-                                <option value="whisperer">Whisperer (dev)</option>
+                            <span class="label-title">Commande vocale</span>
+                            <select id="speechModeSelect">
+                                <option value="manual">Manuel</option>
+                                <option value="auto">Auto</option>
                             </select>
                         </label>
                     </div>
                     <div class="field-row">
                         <label style="width:100%">
-                            <span class="label-title">Commande vocale</span>
-                            <select id="speechModeSelect">
-                                <option value="manual">Manuel (par défaut)</option>
-                                <option value="auto">Auto (au lancement)</option>
-                            </select>
+                            <a class="label-title" href="https://www.assemblyai.com/dashboard/api-keys" target="_blank"
+                                rel="noopener noreferrer">Clé AssemblyAI</a>
+                            <input id="assemblyAiKeyInput" type="password" placeholder="sk-..." />
                             <span class="label-subtitle">
-                                Désactive l'activation automatique dans chaque module (Grid, Canvas, Draw, Timeline)
+                                Retranscription plus précise avec diarisation pour Voice (~0.15ct/h)
                             </span>
                         </label>
                     </div>
@@ -1305,8 +1303,8 @@
                                             class="btn-secondary">Vérifier</button>
                                     </div>
                                 </div>
-                                <span class="label-subtitle">Réponse plus rapide et retranscription avancée (<2€ /mois
-                                        en usage normal)</span>
+                                <span class="label-subtitle">Réponse plus rapide et retranscription avancée (<1
+                                        ct/jour)</span>
                                         <input id="iaApiKeyInput" type="password" placeholder="sk-..." />
                             </label>
                         </div>
@@ -1391,10 +1389,10 @@
                         Aucun compte n’est requis pour utiliser l'outil. Vous êtes responsable du contenu que
                         vous saisissez, notamment s’il contient des données personnelles ou confidentielles.</p>
 
-                    <p><strong>⚲ Données personnelles</strong><br>
-                        Go-Toolkit ne collecte aucune donnée personnelle automatiquement. Les seules informations
-                        personnelles pouvant être traitées le sont uniquement à des fins d'amélioration du produit
-                        (feedback).</p>
+                    <p><strong>⚲ Données dans le cloud</strong><br>
+                        Go-Toolkit ne collecte aucune donnée personnelle en ligne. Les seules informations
+                        personnelles pouvant être traitées le sont uniquement à des fins de partage en ligne (Nexus) et
+                        d'amélioration du produit (Feedback).</p>
 
                     <p><strong>⌘ Intelligence Artificielle (OpenAI)</strong><br>
                         Vos données restent dans votre navigateur sauf lorsque vous déclenchez un appel IA. Dans ce cas,
@@ -1402,9 +1400,16 @@
                         données
                         sensibles.</p>
 
+                    <p><strong>◉ Reconnaissance vocale (Web Speech API)</strong><br>
+                        La dictée repose sur l’API Web Speech / SpeechRecognition du navigateur. L’audio est envoyé
+                        vers les serveurs de Google (Chrome) ou d’Apple (Safari) pour la transcription, ce qui constitue
+                        un traitement de données personnelles. En tant que responsable de traitement, vous devez
+                        informer les participants, collecter leur consentement et respecter les principes du RGPD.
+                        Go-Toolkit n’héberge ni n’efface ces flux côté fournisseur et ne conserve aucune copie.</p>
+
                     <p><strong>⟐ Accès privé ou partagé</strong><br>
                         Vous pouvez utiliser votre propre clé OpenAI (accès privé) ou l’accès partagé par défaut (avec
-                        quotas). Dans les deux cas, seules les informations isolées et utiles sont transmises.</p>
+                        quotas). Dans les deux cas, seules les informations isolées sont transmises aux serveurs IA.</p>
 
                     <p><strong>⧉ Données dans le cloud</strong><br>
                         Vous pouvez partager vos capsules via des liens URL uniques. Les capsules sont alors
@@ -1414,15 +1419,14 @@
 
                     <p><strong>⚠ Risques de perte de données</strong><br>
                         Les capsules locales peuvent être perdues en cas de nettoyage de navigateur, navigation privée
-                        ou
-                        crash. Firestore ou le proxy public OpenAI peuvent connaître des indisponibilités. Go-Live ne
-                        peut être tenu
-                        responsable des pertes ou interruptions liées à ces services tiers.</p>
+                        ou crash. L'hébergement cloud Firestore ou le proxy OpenAI peuvent connaître des
+                        indisponibilités. Go-Live ne
+                        peut être tenu responsable des pertes ou interruptions liées à ces services tiers.</p>
 
-                    <p><strong>⇧ Exportation et réutilisation</strong><br>
+                    <p><strong>🡇 Exportation et réutilisation</strong><br>
                         Vos données peuvent être exportées librement pour archivage, partage ou intégration dans
-                        d’autres outils métiers.
-                        Cela renforce l’usage professionnel : traçabilité, capitalisation, documentation.</p>
+                        d’autres outils métiers. Cela renforce l’usage professionnel : traçabilité, capitalisation,
+                        documentation.</p>
 
 
                 </div>
@@ -2248,7 +2252,7 @@
             const parts = [];
             if (meta?.features?.length) parts.push(meta.features.join(","));
             const suffix = parts.length ? ` (${parts.join(" · ")})` : "";
-            const icon = installed === false ? "⭳ " : "";
+            const icon = installed === false ? "🡇 " : "";
             return icon + base + suffix;
         }
 
@@ -2345,12 +2349,12 @@
                         const installed = await hasModelInCacheFn(opt.value);
                         opt.dataset.installed = installed ? "1" : "0";
                         opt.textContent = formatWebllmOptionLabel(
-                            { id: opt.value, label: opt.textContent.replace(/^⭳\s*/, "") },
+                            { id: opt.value, label: opt.textContent.replace(/^🡇\s*/, "") },
                             installed === true ? true : false,
                             {
                                 features: opt.dataset.metaFeatures ? opt.dataset.metaFeatures.split(",").filter(Boolean) : []
                             },
-                            opt.textContent.replace(/^⭳\s*/, "")
+                            opt.textContent.replace(/^🡇\s*/, "")
                         );
                     } catch (err) {
                         /* ignore per option */
@@ -2784,7 +2788,6 @@
         const settingsApiKeyInput = document.getElementById("iaApiKeyInput");
         const settingsReasoningSelect = document.getElementById("reasoningEffortSelect");
         const settingsOpenAiModelSelect = document.getElementById("openaiModelSelect");
-        const settingsSpeechEngineSelect = document.getElementById("speechEngineSelect");
         const settingsSpeechModeSelect = document.getElementById("speechModeSelect");
         const settingsOllamaUrlInput = document.getElementById("ollamaUrlInput");
         const settingsOllamaApiKeyInput = document.getElementById("ollamaApiKeyInput");
@@ -2805,16 +2808,15 @@
         const ollamaSettingsEl = document.getElementById("ollamaSettings");
         const webllmSettingsEl = document.getElementById("webllmSettings");
         const webllmModelSelect = document.getElementById("webllmModelSelect");
-        const SPEECH_ENGINE_STORAGE_KEY = "go-toolkit-speech-engine";
+        const assemblyAiKeyInput = document.getElementById("assemblyAiKeyInput");
+        const ASSEMBLY_AI_KEY_STORAGE = "go-toolkit-assemblyai-key";
         const VOICE_AUDIO_DB = { name: "go-toolkit-voice-audio", store: "recordings" };
 
         try {
-            const storedSpeechEngine = localStorage.getItem(SPEECH_ENGINE_STORAGE_KEY) || "web-speech";
-            const hasApiKey = typeof config?.getApiKey === "function" ? Boolean(config.getApiKey()) : Boolean(localStorage.getItem("go-toolkit-api-key") || "");
-            const speechEngine = storedSpeechEngine === "whisperer" && hasApiKey ? "whisperer" : "web-speech";
-            window.GoToolkitSpeechEngine = speechEngine;
+            const storedKey = (localStorage.getItem(ASSEMBLY_AI_KEY_STORAGE) || "").trim();
+            window.GoToolkitAssemblyAiKey = storedKey;
         } catch (e) {
-            window.GoToolkitSpeechEngine = "web-speech";
+            window.GoToolkitAssemblyAiKey = "";
         }
 
         function updateBackendVisibility() {
@@ -2958,18 +2960,10 @@
                 updateBackendVisibility();
                 const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("nuances-reasoning-effort") || "low";
                 if (settingsReasoningSelect) settingsReasoningSelect.value = storedReasoning;
-                const storedSpeechEngine = localStorage.getItem(SPEECH_ENGINE_STORAGE_KEY) || "web-speech";
-                const hasApiKey = (config && typeof config.getApiKey === "function" ? config.getApiKey() : localStorage.getItem("go-toolkit-api-key")) || "";
-                const canUseWhisperer = Boolean(hasApiKey);
-                if (settingsSpeechEngineSelect) {
-                    settingsSpeechEngineSelect.value = canUseWhisperer && storedSpeechEngine === "whisperer" ? "whisperer" : "web-speech";
-                    settingsSpeechEngineSelect.querySelectorAll('option[value="whisperer"]').forEach(opt => {
-                        opt.disabled = !canUseWhisperer;
-                    });
+                const storedAssemblyKey = ((localStorage.getItem(ASSEMBLY_AI_KEY_STORAGE) || "").trim() || (window.GoToolkitAssemblyAiKey || "").trim()) || "";
+                if (assemblyAiKeyInput) {
+                    assemblyAiKeyInput.value = storedAssemblyKey;
                 }
-                try {
-                    window.GoToolkitSpeechEngine = settingsSpeechEngineSelect?.value || "web-speech";
-                } catch (e) { /* noop */ }
                 const storedSpeechMode = localStorage.getItem("go-toolkit-speech-mode") || "manual";
                 if (settingsSpeechModeSelect) {
                     settingsSpeechModeSelect.value = storedSpeechMode === "auto" ? "auto" : "manual";
@@ -3040,12 +3034,15 @@
                 try {
                     localStorage.setItem("go-toolkit-speech-mode", speechModeValue);
                 } catch (e) { }
-                const speechEngineValue =
-                    (settingsSpeechEngineSelect?.value === "whisperer" && Boolean(apiKey)) ? "whisperer" : "web-speech";
+                const assemblyKeyValue = (assemblyAiKeyInput?.value || "").trim();
                 try {
-                    localStorage.setItem(SPEECH_ENGINE_STORAGE_KEY, speechEngineValue);
+                    if (assemblyKeyValue) {
+                        localStorage.setItem(ASSEMBLY_AI_KEY_STORAGE, assemblyKeyValue);
+                    } else {
+                        localStorage.removeItem(ASSEMBLY_AI_KEY_STORAGE);
+                    }
                 } catch (e) { /* noop */ }
-                try { window.GoToolkitSpeechEngine = speechEngineValue; } catch (e) { /* noop */ }
+                try { window.GoToolkitAssemblyAiKey = assemblyKeyValue; } catch (e) { /* noop */ }
                 // expose immediate selection to runtime
                 try { window.GoToolkitSelectedAIBackend = selectedBackend; } catch (e) { }
                 const ollamaUrlValue = (settingsOllamaUrlInput?.value || "").trim();
