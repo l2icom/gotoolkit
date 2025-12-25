@@ -1,0 +1,189 @@
+const ALLOWED_ORIGINS = [
+  "https://gotoolkit.web.app",
+  "https://gotoolkit.workers.dev",
+  "https://sherpa-5938b.firebaseapp.com"
+];
+
+function normalizeOrigin(origin) {
+  if (!origin) return "";
+  return origin.trim();
+}
+
+function isLocalOrigin(origin) {
+  if (!origin) return true;
+  return (
+    origin.startsWith("http://localhost") ||
+    origin.startsWith("http://127.") ||
+    origin.startsWith("http://192.168.")
+  );
+}
+
+function computeCorsHeaders(request) {
+  const rawOrigin = normalizeOrigin(request.headers.get("Origin"));
+  const allowLocal = isLocalOrigin(rawOrigin);
+  const defaultOrigin = ALLOWED_ORIGINS[0];
+  const corsOrigin = allowLocal
+    ? rawOrigin || "*"
+    : ALLOWED_ORIGINS.includes(rawOrigin)
+      ? rawOrigin
+      : defaultOrigin;
+  const headers = {
+    "Access-Control-Allow-Origin": corsOrigin,
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Headers": "Authorization,X-AssemblyAI-Key,Content-Type"
+  };
+  if (!allowLocal) {
+    headers["Vary"] = "Origin";
+  }
+  return {
+    origin: rawOrigin,
+    allowLocal,
+    corsOrigin,
+    headers
+  };
+}
+
+function resolveAssemblyKey(request, env) {
+  const explicitKey = request.headers.get("X-AssemblyAI-Key")?.trim();
+  if (explicitKey) {
+    return explicitKey;
+  }
+  const authHeader = request.headers.get("Authorization")?.trim();
+  if (authHeader) {
+    return authHeader;
+  }
+  return env?.ASSEMBLY_KEY?.trim() || "";
+}
+
+const ASSEMBLY_API_BASE_URL = "https://api.assemblyai.com/v2";
+
+async function proxyAssemblyRequest(request, corsMeta, env, path) {
+  const assemblyKey = resolveAssemblyKey(request, env);
+  if (!assemblyKey) {
+    return new Response("AssemblyAI key missing", {
+      status: 400,
+      headers: corsMeta.headers
+    });
+  }
+
+  const upstreamUrl = new URL(ASSEMBLY_API_BASE_URL);
+  upstreamUrl.pathname = path;
+  upstreamUrl.search = new URL(request.url).search;
+
+  const headers = {
+    Authorization: assemblyKey
+  };
+  const contentType = request.headers.get("Content-Type");
+  if (contentType) {
+    headers["Content-Type"] = contentType;
+  }
+
+  let upstreamResponse;
+  try {
+    upstreamResponse = await fetch(upstreamUrl.toString(), {
+      method: request.method,
+      headers,
+      body: request.method === "GET" ? null : request.body
+    });
+  } catch (error) {
+    return new Response("AssemblyAI proxy fetch failed", {
+      status: 502,
+      headers: corsMeta.headers
+    });
+  }
+
+  const body = await upstreamResponse.text();
+  const responseHeaders = new Headers(corsMeta.headers);
+  const responseContentType = upstreamResponse.headers.get("Content-Type");
+  if (responseContentType) {
+    responseHeaders.set("Content-Type", responseContentType);
+  }
+  return new Response(body, {
+    status: upstreamResponse.status,
+    headers: responseHeaders
+  });
+}
+
+async function proxyTokenRequest(request, corsMeta, env) {
+  const assemblyKey = resolveAssemblyKey(request, env);
+  if (!assemblyKey) {
+    return new Response("AssemblyAI key missing", {
+      status: 400,
+      headers: corsMeta.headers
+    });
+  }
+
+  const upstreamUrl = new URL("https://streaming.assemblyai.com/v3/token");
+  const incomingUrl = new URL(request.url);
+  upstreamUrl.search = incomingUrl.search;
+
+  let upstreamResponse;
+  try {
+    upstreamResponse = await fetch(upstreamUrl.toString(), {
+      headers: {
+        Authorization: assemblyKey
+      }
+    });
+  } catch (error) {
+    return new Response("AssemblyAI token fetch failed", {
+      status: 502,
+      headers: corsMeta.headers
+    });
+  }
+
+  const body = await upstreamResponse.text();
+  const responseHeaders = new Headers(corsMeta.headers);
+  const contentType = upstreamResponse.headers.get("Content-Type") || "application/json; charset=utf-8";
+  responseHeaders.set("Content-Type", contentType);
+  return new Response(body, {
+    status: upstreamResponse.status,
+    headers: responseHeaders
+  });
+}
+
+export default {
+  async fetch(request, env) {
+    const corsMeta = computeCorsHeaders(request);
+    if (!corsMeta.allowLocal && !ALLOWED_ORIGINS.includes(corsMeta.origin)) {
+      return new Response("Forbidden origin", {
+        status: 403,
+        headers: corsMeta.headers
+      });
+    }
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        headers: corsMeta.headers
+      });
+    }
+    const url = new URL(request.url);
+    const pathname = url.pathname.replace(/\/$/, "");
+    const segments = pathname.split("/").filter(Boolean);
+
+    if (request.method === "POST" && pathname.endsWith("/upload")) {
+      return proxyAssemblyRequest(request, corsMeta, env, "/upload");
+    }
+
+    if (request.method === "POST" && segments.length === 1 && segments[0] === "transcript") {
+      return proxyAssemblyRequest(request, corsMeta, env, "/transcript");
+    }
+
+    if (request.method === "GET" && segments.length === 2 && segments[0] === "transcript") {
+      const transcriptId = segments[1];
+      return proxyAssemblyRequest(request, corsMeta, env, `/transcript/${transcriptId}`);
+    }
+
+    if (request.method === "GET" && pathname.endsWith("/token")) {
+      return proxyTokenRequest(request, corsMeta, env);
+    }
+
+    const headers = {
+      ...corsMeta.headers,
+      Allow: "GET,POST,OPTIONS"
+    };
+    return new Response("Not found", {
+      status: 404,
+      headers
+    });
+  }
+};

@@ -9,12 +9,12 @@ Boîte à outils 100 % navigateur pour produire vite des livrables partageables 
 - Test de fumée Playwright dans `tests/` (`grid-mock.spec.ts`).
 
 ## Modules
-- **Launcher** (`public/index.html`) : page d’entrée vers les modules avec le cache-buster `?v=2025.12.25.1` et une URL de partage par défaut.
+- **Launcher** (`public/index.html`) : page d’entrée vers les modules avec le cache-buster `?v=2025.12.25.2` et une URL de partage par défaut.
 - **Canvas** (`public/canvas.html`) : planches multi-slides alimentées par les templates de `public/js/prompt.js`. Exports PNG, PPTX, capsule JSON, brouillons locaux et lien de partage (collection Firestore `slides`).
 - **Grid** (`public/grid.html`) : générateur de tableaux AG Grid avec modal de templates + bulles de critères (`prompt.js`, `public/js/template-criteria.js`). Pages multiples, export CSV/JSON, brouillons locaux, partage (`grids`). Couvert par le test Playwright.
 - **Draw** (`public/draw.html`) : hôte Excalidraw branché sur `window.GoToolkitExcalidraw` (Mermaid → Excalidraw, application de scènes, accès API brut). Templates `prompt.js`, capsules, partage (`diagrams`), prompts IA pour générer un schéma.
 - **Timeline** (`public/timeline.html`) : planning vis-timeline avec exports XLSX/PNG/JSON, capsule + partage (`timelines`) et IA pour rédiger un plan.
-- **Voice** (`public/voice.html`) : enregistreur + dictée (Web Speech, transcription AssemblyAI via clé), éditeur de transcript, sujets temporisés, participants, résumés par page. Brouillons locaux, menu de partage (collection `voices` autorisée sur le worker Cloudflare), connectée à `GoToolkitIA`.
+- **Voice** (`public/voice.html`) : enregistreur + dictée (Web Speech, transcription AssemblyAI via clé), éditeur de transcript, sujets temporisés, participants, résumés par page. Chaque enregistrement génère automatiquement une transcription AssemblyAI avec diarisation qui utilise la liste des participants pour afficher les étiquettes d’intervenants. Brouillons locaux, menu de partage (collection `voices` autorisée sur le worker Cloudflare), connectée à `GoToolkitIA`.
 
 ## IA et backends
 - Config dans `public/js/ia-config.js` : OpenAI (direct ou proxy `https://openai.gotoolkit.workers.dev`), Ollama (URL/API key), WebLLM (liste de modèles) et fenêtre de contexte, stockés en `localStorage`.
@@ -35,11 +35,12 @@ Boîte à outils 100 % navigateur pour produire vite des livrables partageables 
 
 ## Déploiement
 - Déployer le dossier `public/` sur n’importe quel hébergeur statique. `firebase.json` est prêt (assets immuables, `index.html` no-cache).
-- Anti-cache : requiert le `?v=2025.12.25.1` sur les liens du launcher et the scripts (ex. `js/prompt.js?v=...`) ; à incrémenter partout quand les assets changent.
+- Anti-cache : requiert le `?v=2025.12.25.2` sur les liens du launcher et the scripts (ex. `js/prompt.js?v=...`) ; à incrémenter partout quand les assets changent.
 - Workers Cloudflare :
   - `workers/openai-proxy` : CORS + quotas + garde-fous payload ; secrets `OPENAI_API_KEY` et KV `RATE_LIMIT`.
   - `workers/share-proxy` : partage Firestore ; `FIREBASE_SERVICE_ACCOUNT` (JSON), `FIREBASE_PROJECT_ID` optionnel, `SHARE_ALLOWED_ORIGINS`, KV `RATE_LIMIT`.
   - `workers/feedback-proxy` : collecte feedback ; mêmes secrets + KV.
+  - `workers/assemblyai-token` : proxy du jeton AssemblyAI (requiert `X-AssemblyAI-Key`) pour contourner le CORS du token streaming et alimenter `voice.html`.
 
 ## Repères utiles
 - Templates et métadonnées : `public/js/prompt.js`, `public/js/template-criteria.js`.

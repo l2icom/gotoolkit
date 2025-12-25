@@ -1153,9 +1153,10 @@ STRUCTURE ATTENDUE :
     {
       "label": "string (nom court du sujet, max 5 mots)",
       "keySentences": [
-        "string (phrase clé 1, action ou décision attendue)",
-        "string (phrase clé 2)",
-        "string (phrase clé 3)"
+        {
+          "text": "string (phrase clé 1, action ou décision attendue)",
+          "match": "missing" // "direct", "indirect" ou "missing" (default)
+        }
       ],
       "timeframe": {
         "start": number (minute de début, >= 0), // 0 pour le premier sujet

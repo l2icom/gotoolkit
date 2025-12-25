@@ -3,6 +3,10 @@
 
 <head>
     <script>window.GO_TOOLKIT_SHARE_API_URL = 'https://gotoolkit.workers.dev'</script>
+    <script>
+        window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
+            window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai-token.gotoolkit.workers.dev/token";
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Go-Toolkit</title>
@@ -404,6 +408,15 @@
             gap: 12px;
         }
 
+        .feedback-modal.settings-modal {
+            padding: 12px;
+            gap: 8px;
+        }
+
+        .feedback-modal.settings-modal header {
+            gap: 6px;
+        }
+
         .feedback-modal header {
             display: flex;
             align-items: center;
@@ -414,6 +427,10 @@
         .feedback-modal h3 {
             margin: 0;
             font-size: 1.05rem;
+        }
+
+        .feedback-modal.settings-modal h3 {
+            font-size: 0.95rem;
         }
 
         .superpower-modal {
@@ -604,6 +621,26 @@
             min-height: 160px;
         }
 
+        .feedback-modal.settings-modal .feedback-form {
+            gap: 8px;
+        }
+
+        .feedback-modal.settings-modal .feedback-form label {
+            gap: 4px;
+            font-size: 0.65rem;
+        }
+
+        .feedback-modal.settings-modal .feedback-form input,
+        .feedback-modal.settings-modal .feedback-form select,
+        .feedback-modal.settings-modal .feedback-form textarea {
+            padding: 8px 10px;
+            font-size: 0.72rem;
+        }
+
+        .feedback-modal.settings-modal .feedback-form textarea {
+            min-height: 120px;
+        }
+
         input:focus,
         textarea:focus {
             outline: none;
@@ -619,6 +656,10 @@
 
         .feedback-form .field-row label {
             flex: 1 1 220px;
+        }
+
+        .feedback-modal.settings-modal .feedback-form .field-row {
+            gap: 6px;
         }
 
         .feedback-helper {
@@ -925,7 +966,7 @@
             </div>
             <h1>Go-Toolkit</h1>
             <p>Le vaisseau spatial des super-POs</p>
-            <span class="hero-version">v2025.12.25.1</span>
+            <span class="hero-version">v2025.12.25.2</span>
 
             <div class="hero-meta">
                 <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Feedback</button>
@@ -938,35 +979,35 @@
                 <p class="section-label superpower-label label-link" id="superpowerToggle">⚡︎ Super-pouvoirs</p>
             </div>
             <div class="launcher-grid">
-                <a class="launcher" href="canvas.html?v=2025.12.25.1">
+                <a class="launcher" href="canvas.html?v=2025.12.25.2">
                     <span class="launcher-emoji">◍</span>
                     <span class="launcher-name">
                         Canvas (50 Nuances)
                         <div class="launcher-desc">Varie ton vocabulaire</div>
                     </span>
                 </a>
-                <a class="launcher" href="timeline.html?v=2025.12.25.1">
+                <a class="launcher" href="timeline.html?v=2025.12.25.2">
                     <span class="launcher-emoji">⇥</span>
                     <span class="launcher-name">
                         Timeline (Goal Digger)
                         <div class="launcher-desc">Trace ta feuille de route</div>
                     </span>
                 </a>
-                <a class="launcher" href="draw.html?v=2025.12.25.1">
+                <a class="launcher" href="draw.html?v=2025.12.25.2">
                     <span class="launcher-emoji">◇</span>
                     <span class="launcher-name">
                         Draw (Indélébile)
                         <div class="launcher-desc">Modélise tes idées</div>
                     </span>
                 </a>
-                <a class="launcher" href="voice.html?v=2025.12.25.1">
+                <a class="launcher" href="voice.html?v=2025.12.25.2">
                     <span class="launcher-emoji">▷</span>
                     <span class="launcher-name">
                         Voice (Goal Digger)
                         <div class="launcher-desc">Pilote tes réunions</div>
                     </span>
                 </a>
-                <a class="launcher" href="grid.html?v=2025.12.25.1">
+                <a class="launcher" href="grid.html?v=2025.12.25.2">
                     <span class="launcher-emoji">▦</span>
                     <span class="launcher-name">
                         Grid (Le Cardinal)
@@ -1246,7 +1287,7 @@
         </div>
 
         <div id="settingsModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
-            <div class="feedback-modal">
+            <div class="feedback-modal settings-modal">
                 <header>
                     <h3>⌘ Paramètres</h3>
                     <button id="closeSettingsBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
@@ -1267,7 +1308,19 @@
                                 rel="noopener noreferrer">Clé AssemblyAI</a>
                             <input id="assemblyAiKeyInput" type="password" placeholder="sk-..." />
                             <span class="label-subtitle">
-                                Retranscription plus précise avec diarisation pour Voice (~0.15ct/h)
+                                Retranscription plus précise avec diarisation pour Voice (~0.15ct/h. 50$ offerts)
+                            </span>
+                        </label>
+                    </div>
+                    <div class="field-row">
+                        <label style="width:100%">
+                            <span class="label-title">Transcription Voice</span>
+                            <select id="voiceTranscriptionSelect">
+                                <option value="web">Web Speech API</option>
+                                <option value="assembly">AssemblyAI</option>
+                            </select>
+                            <span class="label-subtitle">
+                                Choisir entre la dictée navigateur ou la retranscription AssemblyAI.
                             </span>
                         </label>
                     </div>
@@ -1303,8 +1356,7 @@
                                             class="btn-secondary">Vérifier</button>
                                     </div>
                                 </div>
-                                <span class="label-subtitle">Réponse plus rapide et retranscription avancée (<1
-                                        ct/jour)</span>
+                                <span class="label-subtitle">Réponse plus rapide (<1 ct/jour)</span>
                                         <input id="iaApiKeyInput" type="password" placeholder="sk-..." />
                             </label>
                         </div>
@@ -1439,6 +1491,8 @@
     <script>
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
+        window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
+            window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai-token.gotoolkit.workers.dev/token";
     </script>
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
@@ -1532,11 +1586,11 @@
             const capsuleDrafts = window.goToolkitCapsuleDrafts;
 
             const APP_DEFINITIONS = {
-                nuances: { emoji: "◍", name: "Canvas", page: "canvas.html?v=2025.12.25.1", collection: "slides" },
-                plan: { emoji: "⇥", name: "Timeline", page: "timeline.html?v=2025.12.25.1", collection: "timelines" },
-                draw: { emoji: "◇", name: "Draw", page: "draw.html?v=2025.12.25.1", collection: "diagrams" },
-                grid: { emoji: "▦", name: "Grid", page: "grid.html?v=2025.12.25.1", collection: "grids" },
-                voice: { emoji: "▷", name: "Voice", page: "voice.html?v=2025.12.25.1", collection: "voices" }
+                nuances: { emoji: "◍", name: "Canvas", page: "canvas.html?v=2025.12.25.2", collection: "slides" },
+                plan: { emoji: "⇥", name: "Timeline", page: "timeline.html?v=2025.12.25.2", collection: "timelines" },
+                draw: { emoji: "◇", name: "Draw", page: "draw.html?v=2025.12.25.2", collection: "diagrams" },
+                grid: { emoji: "▦", name: "Grid", page: "grid.html?v=2025.12.25.2", collection: "grids" },
+                voice: { emoji: "▷", name: "Voice", page: "voice.html?v=2025.12.25.2", collection: "voices" }
             };
             const GRID_TEMPLATE_LABELS = {
                 "tree-structure": "Structure de données",
@@ -2809,7 +2863,9 @@
         const webllmSettingsEl = document.getElementById("webllmSettings");
         const webllmModelSelect = document.getElementById("webllmModelSelect");
         const assemblyAiKeyInput = document.getElementById("assemblyAiKeyInput");
+        const voiceTranscriptionSelect = document.getElementById("voiceTranscriptionSelect");
         const ASSEMBLY_AI_KEY_STORAGE = "go-toolkit-assemblyai-key";
+        const VOICE_TRANSCRIPTION_MODE_STORAGE = "go-toolkit-voice-transcription-mode";
         const VOICE_AUDIO_DB = { name: "go-toolkit-voice-audio", store: "recordings" };
 
         try {
@@ -2817,6 +2873,12 @@
             window.GoToolkitAssemblyAiKey = storedKey;
         } catch (e) {
             window.GoToolkitAssemblyAiKey = "";
+        }
+        try {
+            const storedMode = ((localStorage.getItem(VOICE_TRANSCRIPTION_MODE_STORAGE) || "").trim() || "web");
+            window.GoToolkitVoiceTranscriptionMode = storedMode;
+        } catch (e) {
+            window.GoToolkitVoiceTranscriptionMode = "web";
         }
 
         function updateBackendVisibility() {
@@ -2968,6 +3030,10 @@
                 if (settingsSpeechModeSelect) {
                     settingsSpeechModeSelect.value = storedSpeechMode === "auto" ? "auto" : "manual";
                 }
+                const storedVoiceTranscription = ((localStorage.getItem(VOICE_TRANSCRIPTION_MODE_STORAGE) || "").trim() || "web");
+                if (voiceTranscriptionSelect) {
+                    voiceTranscriptionSelect.value = storedVoiceTranscription;
+                }
             } catch (e) { /* noop */ }
             try {
                 const storedAdmin = localStorage.getItem("feedback-admin-token");
@@ -3043,6 +3109,11 @@
                     }
                 } catch (e) { /* noop */ }
                 try { window.GoToolkitAssemblyAiKey = assemblyKeyValue; } catch (e) { /* noop */ }
+                const voiceTranscriptionValue = (voiceTranscriptionSelect?.value || "web");
+                try {
+                    localStorage.setItem(VOICE_TRANSCRIPTION_MODE_STORAGE, voiceTranscriptionValue);
+                } catch (e) { /* noop */ }
+                try { window.GoToolkitVoiceTranscriptionMode = voiceTranscriptionValue; } catch (e) { /* noop */ }
                 // expose immediate selection to runtime
                 try { window.GoToolkitSelectedAIBackend = selectedBackend; } catch (e) { }
                 const ollamaUrlValue = (settingsOllamaUrlInput?.value || "").trim();
