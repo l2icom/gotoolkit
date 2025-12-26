@@ -1200,6 +1200,58 @@ Transcription à résumer :
 
 Réponds en texte brut, sans JSON ni balisage.`;
 
+    const voiceCompletePrompt = `Analyse {{transcript_content}} et produis un résumé structuré de la discussion.
+
+### Objectifs
+- Identifier 3 sujets clés
+- Pour chaque sujet :
+  - Extraire 2 à 3 phrases clés
+  - Marquer chaque phrase comme :
+    - "direct" → discutée clairement / longuement
+    - "indirect" → abordée brièvement
+- Identifier les participants (nom + rôle déduit)
+- Calculer les timestamps en secondes :
+  - start du premier sujet = 0**
+  - end d’un sujet = start du sujet suivant
+  - end du dernier sujet = timestamp du dernier message − premier message
+
+### Contraintes
+- Répondre en JSON strict uniquement
+- Aucune explication, aucun commentaire, aucun texte hors JSON
+
+### Format attendu
+\`\`\`json
+{
+  "title": "resume en 3-6 mots",
+  "duration": "en minutes estimé à partir des timestamps",
+  "participants": [
+    {
+      "name": "nom deduit du timestamp",
+      "role": "role deduit"
+    }
+  ],
+  "subjects": [
+    {
+      "title": "sujet en 1-2 mots",
+      "timeframe": {
+        "start": 0,
+        "end": 15
+      },
+      "keySentences": [
+        {
+          "text": "point cle de 3-7 mots discute longuement",
+          "match": "direct"
+        },
+        {
+          "text": "point cle de 3-7 mots aborde brievement",
+          "match": "indirect"
+        }
+      ]
+    }
+  ]
+}
+\`\`\``;
+
     const timelinePrompts = [
         {
             id: "product",
@@ -1342,6 +1394,7 @@ Contraintes de nommage et quantités :
         voiceCreateSystemTemplate,
         voiceEvaluatePrompt,
         voiceSummaryPrompt,
+        voiceCompletePrompt,
         timelinePrompts,
         timelineCreateSystemTemplate
     };

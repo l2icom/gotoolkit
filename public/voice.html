@@ -93,7 +93,7 @@
         .voice-main-body {
             display: grid;
             grid-template-columns: 1.1fr 0.9fr;
-            gap: 12px;
+            gap: 8px;
             min-height: 0;
             flex: 1 1 auto;
         }
@@ -562,6 +562,7 @@
             display: flex;
             gap: 8px;
             align-items: center;
+            justify-content: space-between;
             width: 100%;
         }
 
@@ -710,20 +711,13 @@
             font-size: 12px;
         }
 
-        .participant-add-btn {
-            align-self: flex-start;
-            border-radius: 10px;
-            border: 1px dashed var(--border-strong);
-            background: var(--surface-soft);
-            padding: 6px 10px;
-            font-size: 12px;
-            cursor: pointer;
-        }
+
 
         .participants-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            padding-top: 8px;
             padding-bottom: 8px;
         }
 
@@ -950,6 +944,7 @@
 
         .ia-prompt-fields textarea {
             width: 100%;
+            min-height: 250px;
         }
 
         #clearScenarioBtn {
@@ -1001,10 +996,10 @@
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                     aria-expanded="false">▷ Voice ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.25.1" role="menuitem"> ◍ Canvas</a>
-                    <a class="nav-switch-link" href="grid.html?v=2025.12.25.1" role="menuitem">▦ Grid</a>
-                    <a class="nav-switch-link" href="draw.html?v=2025.12.25.1" role="menuitem">◇ Draw</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.25.1" role="menuitem">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.2" role="menuitem"> ◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2025.12.26.2" role="menuitem">▦ Grid</a>
+                    <a class="nav-switch-link" href="draw.html?v=2025.12.26.2" role="menuitem">◇ Draw</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.2" role="menuitem">⇥ Timeline</a>
                 </div>
             </div>
 
@@ -1112,7 +1107,7 @@
                                     <button class="speech-button" id="audioImportBtn" type="button"
                                         title="Importer un fichier audio"
                                         aria-label="Importer un fichier audio">♪</button>
-                                    <input id="audioImportInput" type="file" accept="audio/*" hidden>
+                                    <input id="audioImportInput" type="file" accept="audio/*" hidden />
                                 </div>
                             </div>
                             <div class="summary-column">
@@ -1139,13 +1134,13 @@
                                     </select>
                                 </div>
                                 <div class="guideline-actions guideline-ai-btn">
-                                    <button id="completeBtn" type="button" class="btn">⌘ Compléter</button>
-                                    <button id="evaluateBtn" type="button" class="btn">⌘ Évaluer</button>
+                                    <button id="completeBtn" type="button" class="btn">⌘ Remplir</button>
                                     <button id="addSubjectBtn" type="button" class="btn">+ Sujet</button>
                                 </div>
                             </div>
                             <div class="subject-tabs" id="subjectTabs"></div>
                             <div id="subjectRanges" class="subject-ranges"></div>
+                            <button id="evaluateBtn" type="button" class="btn" style="display:none;">⌘ Évaluer</button>
                             <ul class="guideline-list" id="guidelineList">
                                 <li style="color:var(--muted);font-size:13px;">Ajoute un scénario et clique sur ⌘
                                     Répondre
@@ -1205,10 +1200,10 @@
                         <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;">
                             <label for="iaTemplateEditor" style="margin:0;">Prompt</label>
                             <select id="iaPromptSelect" style="min-width:160px;">
-                                <option value="system">Trame</option>
-                                <option value="evaluate">Évaluation</option>
-                                <option value="summary">Résumé</option>
-                                <option value="complete">Compléter</option>
+                                <option value="system">Répondre</option>
+                                <option value="evaluate">Évaluer</option>
+                                <option value="summary">Résumer</option>
+                                <option value="complete">Remplir</option>
                             </select>
                         </div>
                         <textarea id="iaTemplateEditor" rows="14"
@@ -1225,7 +1220,7 @@
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
             <strong>Module Voice (Goal Digger)</strong>
-            <span>Version 2025.12.25.1</span>
+            <span>Version 2025.12.26.2</span>
             <span>Développé par Quang TRAN.</span>
             <span>Usage réservé à Savane Consulting.</span>
             <div class="info-actions">
@@ -1251,7 +1246,7 @@
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
     <script src="js/ia-config.js"></script>
-    <script src="js/prompt.js?v=2025.12.25.1"></script>
+    <script src="js/prompt.js?v=2025.12.26.2"></script>
     <script src="js/ia-client.js"></script>
 
     <script>
@@ -1267,72 +1262,11 @@
             const NOTE_MODE_TRANSCRIPT_AUTO = "transcript-auto";
             const NOTE_MODE_TRANSCRIPT_IA = "transcript-ia";
             const templateList = (window.GoPrompts && window.GoPrompts.voicePrompts) || [];
-            const defaultSystemPrompt =
-                (window.GoPrompts && window.GoPrompts.voiceCreateSystemTemplate) ||
-                (document.getElementById("iaTemplateEditor")?.value || "");
-            const defaultEvaluatePrompt =
-                (window.GoPrompts && window.GoPrompts.voiceEvaluatePrompt) ||
-                `Analyse la transcription et indique si chaque phrase clé est exprimée directement, partiellement ou absente. Réponds en JSON: { subjects: [{ title, keySentences: [{ text, match: "direct"|"partiel"|"missing" }] }]}.`;
-            const defaultSummaryPrompt =
-                (window.GoPrompts && window.GoPrompts.voiceSummaryPrompt) ||
-                `En t'appuyant sur le modèle "{{template_text}}", produis un résumé bref en français du contenu suivant : {{transcript_content}}. Mets en avant les décisions, actions et points ouverts en 5 phrases maximum.`;
-            const defaultCompletePrompt = `
-Analyse {{transcript_content}} et produis un résumé structuré de la discussion.
-
-### Objectifs
-- Identifier 3 sujets clés 
-- Pour chaque sujet :
-  - Extraire 2 à 3 phrases clés 
-  - Marquer chaque phrase comme :
-    - "direct" → discutée clairement / longuement  
-    - "indirect" → abordée brièvement
-- Identifier les participants (nom + rôle déduit) 
-- Calculer les timestamps en secondes : 
-  - start du premier sujet = 0** 
-  - end d’un sujet = start du sujet suivant
-  - end du dernier sujet = timestamp du dernier message − premier message 
-
-### Contraintes
-- Répondre en JSON strict uniquement
-- Aucune explication, aucun commentaire, aucun texte hors JSON
-
-### Format attendu
-\`\`\`json
-{
-  "title": "resume en 3-6 mots",
-  "duration": "estime a partir des timestamps",
-  "participants": [
-    {
-      "name": "nom deduit du timestamp",
-      "role": "role deduit"
-    }
-  ],
-  "subjects": [
-    {
-      "title": "sujet en 1-2 mots",
-      "timeframe": {
-        "start": 0,
-        "end": 15
-      },
-      "keySentences": [
-        {
-          "text": "point cle de 3-7 mots discute longuement",
-          "match": "direct"
-        },
-        {
-          "text": "point cle de 3-7 mots aborde brievement",
-          "match": "indirect"
-        }
-      ]
-    }
-  ]
-}
-\`\`\``;
             const promptDefaults = {
-                system: defaultSystemPrompt || "",
-                evaluate: defaultEvaluatePrompt,
-                summary: defaultSummaryPrompt,
-                complete: defaultCompletePrompt
+                system: (window.GoPrompts && window.GoPrompts.voiceCreateSystemTemplate) || "",
+                evaluate: (window.GoPrompts && window.GoPrompts.voiceEvaluatePrompt) || "",
+                summary: (window.GoPrompts && window.GoPrompts.voiceSummaryPrompt) || "",
+                complete: (window.GoPrompts && window.GoPrompts.voiceCompletePrompt) || ""
             };
             const promptState = { ...promptDefaults };
             let activeIaPrompt = "system";
@@ -1406,7 +1340,7 @@ Analyse {{transcript_content}} et produis un résumé structuré de la discussio
             const respondBtn = document.getElementById("respondBtn");
             const respondDefaultLabel = respondBtn?.textContent || "⌘ Répondre";
             const completeBtn = document.getElementById("completeBtn");
-            const completeDefaultLabel = completeBtn?.textContent || "⌘ Compléter";
+            const completeDefaultLabel = completeBtn?.textContent || "⌘ Remplir";
             const clearScenarioBtn = document.getElementById("clearScenarioBtn");
             const applyScriptBtn = document.getElementById("applyScriptBtn");
             const transcribeInput = document.getElementById("transcribeInput");
@@ -2079,7 +2013,7 @@ Analyse {{transcript_content}} et produis un résumé structuré de la discussio
                     title.textContent = "Participants";
                     const addBtn = document.createElement("button");
                     addBtn.type = "button";
-                    addBtn.className = "participant-add-btn";
+                    addBtn.className = "btn";
                     addBtn.textContent = "+ Participant";
                     addBtn.addEventListener("click", () => {
                         if (page.participants.length >= MAX_PARTICIPANTS) {
@@ -2261,7 +2195,16 @@ Analyse {{transcript_content}} et produis un résumé structuré de la discussio
                         durationLabel.textContent = isNaN(initialDuration) ? "" : `${initialDuration} mn`;
                         rangeContainer.append(durationLabel, rangeInput, meta);
                         row.append(rangeContainer);
+                        if (evaluateBtn) {
+                            row.append(evaluateBtn);
+                            evaluateBtn.style.display = "";
+                            evaluateBtn.style.marginLeft = "auto";
+                        }
                         subjectRanges.appendChild(row);
+                    } else {
+                        if (evaluateBtn) {
+                            evaluateBtn.style.display = "none";
+                        }
                     }
                 }
 
@@ -2565,6 +2508,38 @@ Analyse {{transcript_content}} et produis un résumé structuré de la discussio
                 return `${ASSEMBLY_PROXY_BASE_URL}/${normalized}`;
             }
 
+            function getVoiceContextData() {
+                const page = getActivePage();
+                const participants = Array.isArray(page?.participants)
+                    ? page.participants.map(participant => ({
+                        name: participant?.name || "",
+                        role: participant?.role || ""
+                    })).filter(p => p.name || p.role)
+                    : [];
+                const subjects = Array.isArray(page?.subjects)
+                    ? page.subjects.map(subject => ({
+                        title: subject.title || "",
+                        keySentences: (subject.keySentences || []).map(ks => ks?.text || "").filter(Boolean)
+                    }))
+                    : [];
+                const voiceContextStrings = [
+                    page?.title,
+                    promptCreate?.value,
+                    ...participants.map(p => [p.name, p.role].filter(Boolean).join(" ")),
+                    ...subjects.flatMap(subject => [
+                        subject.title,
+                        ...subject.keySentences
+                    ])
+                ].filter(Boolean);
+                return {
+                    pageTitle: page?.title || "",
+                    promptValue: promptCreate?.value || "",
+                    participants,
+                    subjects,
+                    voiceContextStrings
+                };
+            }
+
             function getAssemblyKnownValues(page) {
                 if (!page) return [];
                 const values = [];
@@ -2577,15 +2552,28 @@ Analyse {{transcript_content}} et produis un résumé structuré de la discussio
                 return values;
             }
 
-            function buildAssemblyTranscriptPayload(uploadUrl, knownValues, speakersExpected) {
+            function buildAssemblyTranscriptPayload(uploadUrl, speakersExpected, knownValues = []) {
+                const {
+                    participants,
+                    subjects,
+                    voiceContextStrings
+                } = getVoiceContextData();
+                const contextPhrases = [...participants.map(p => [p.name, p.role].filter(Boolean).join(" ")), ...voiceContextStrings]
+                    .map(value => String(value || "").trim())
+                    .filter(Boolean);
                 const payload = {
                     audio_url: uploadUrl,
+                    filter_profanity: true,
                     speaker_labels: true,
                     language_detection: true,
                     language_detection_options: {
                         expected_languages: ["en", "fr"],
-                        fallback_language: "auto",
-                    }
+                        fallback_language: "fr",
+                    },
+                    punctuate: true,
+                    format_text: true,
+                    ...(voiceContextStrings.length ? { keyterms_prompt: voiceContextStrings } : {}),
+                    ...(contextPhrases.length ? { word_boost: Array.from(new Set(contextPhrases)).slice(0, 100) } : {})
                 };
                 if (speakersExpected > 0) {
                     payload.speakers_expected = speakersExpected;
@@ -2737,10 +2725,21 @@ Analyse {{transcript_content}} et produis un résumé structuré de la discussio
                     },
                     body: JSON.stringify(payload)
                 });
+                const responseText = await response.text();
                 if (!response.ok) {
-                    throw new Error(`Requête transcription échouée (${response.status})`);
+                    const detail = responseText ? `: ${responseText.replace(/\s+/g, " ").trim()}` : "";
+                    const err = new Error(`Requête transcription échouée (${response.status})${detail}`);
+                    err.status = response.status;
+                    err.responseText = responseText;
+                    throw err;
                 }
-                const data = await response.json();
+                let data;
+                try {
+                    data = responseText ? JSON.parse(responseText) : null;
+                } catch (err) {
+                    console.warn("AssemblyAI transcript response parse failed", err);
+                    data = null;
+                }
                 if (!data?.id) {
                     throw new Error("ID de transcription manquante");
                 }
@@ -2790,10 +2789,33 @@ Analyse {{transcript_content}} et produis un résumé structuré de la discussio
                     const page = getActivePage();
                     const participantsWithNames = (page?.participants || []).filter(participant => (participant?.name || "").trim());
                     const knownValues = getAssemblyKnownValues(page);
-                    const payload = buildAssemblyTranscriptPayload(uploadUrl, knownValues, participantsWithNames.length);
+                    const payload = buildAssemblyTranscriptPayload(uploadUrl, participantsWithNames.length, knownValues);
                     console.debug("AssemblyAI request payload", payload);
                     console.log("AssemblyAI request payload", payload);
-                    const transcriptId = await requestAssemblyTranscript(payload, assemblyKey);
+                    let transcriptId;
+                    try {
+                        transcriptId = await requestAssemblyTranscript(payload, assemblyKey);
+                    } catch (err) {
+                        const responseText = String(err?.responseText || "");
+                        const schemaError = responseText.includes("Invalid endpoint schema");
+                        if (err?.status === 400 && schemaError) {
+                            const fallbackPayload = {
+                                audio_url: uploadUrl,
+                                speaker_labels: true,
+                                language_detection: true,
+                                punctuate: true,
+                                format_text: true,
+                                ...(participantsWithNames.length > 0 ? { speakers_expected: participantsWithNames.length } : {})
+                            };
+                            console.warn("AssemblyAI payload rejected, retrying with fallback schema", {
+                                error: responseText,
+                                fallbackPayload
+                            });
+                            transcriptId = await requestAssemblyTranscript(fallbackPayload, assemblyKey);
+                        } else {
+                            throw err;
+                        }
+                    }
                     console.debug("AssemblyAI transcript id", transcriptId);
                     const result = await pollAssemblyTranscript(transcriptId, assemblyKey);
                     console.debug("AssemblyAI poll result", result);
@@ -3066,7 +3088,7 @@ Analyse {{transcript_content}} et produis un résumé structuré de la discussio
                 completeBtn?.setAttribute("disabled", "true");
                 startActionCountdown(completeBtn, completeCountdownState, completeDefaultLabel);
                 try {
-                    const promptTemplate = promptState.complete || promptDefaults.complete || defaultCompletePrompt;
+                    const promptTemplate = promptState.complete || promptDefaults.complete || "";
                     const prompt = promptTemplate.replace(/{{transcript_content}}/gi, transcript);
                     const payload = {
                         model: (window.GoToolkitIAConfig && window.GoToolkitIAConfig.getOpenAiModel?.()) || "gpt-5-nano",
