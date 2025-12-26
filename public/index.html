@@ -5,19 +5,19 @@
     <script>window.GO_TOOLKIT_SHARE_API_URL = 'https://gotoolkit.workers.dev'</script>
     <script>
         window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
-            window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai-token.gotoolkit.workers.dev/token";
+            window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Go-Toolkit</title>
-	    <link rel="preconnect" href="https://fonts.googleapis.com">
-	    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	    <link
-	        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
-	        rel="stylesheet">
-	    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.3">
-	    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.3">
-	    <style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.4">
+    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.4">
+    <style>
         :root {
             --bg: #f5f2eb;
             --surface: #ffffff;
@@ -60,6 +60,28 @@
             height: 100%;
             max-height: 100%;
             overflow-y: auto;
+        }
+
+        .legal-footer {
+            margin-top: auto;
+            padding: 4px 2px;
+            font-size: 0.65rem;
+            line-height: 1.2;
+            color: var(--muted);
+            opacity: 0.8;
+            text-align: center;
+            background: transparent;
+        }
+
+        .legal-footer a {
+            color: inherit;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .legal-footer a:hover,
+        .legal-footer a:focus-visible {
+            color: var(--text);
         }
 
         .hero,
@@ -660,7 +682,7 @@
 
         .requests-body {
             display: grid;
-            grid-template-columns: 350px 1fr;
+            grid-template-columns: 450px 1fr;
             gap: 10px;
             min-height: 480px;
             max-height: 80vh;
@@ -681,7 +703,8 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            justify-content: space-between;
+            justify-content: flex-start;
+            flex-wrap: wrap;
         }
 
         .requests-filter select {
@@ -928,12 +951,10 @@
                 <img src="logo.gif" alt="Logo Go-Toolkit">
             </div>
             <h1>Go-Toolkit</h1>
-            <p>Le vaisseau spatial des super-POs</p>
-            <span class="hero-version">v2025.12.26.3</span>
+            <p>Le vaisseau spatial des super Product Owners</p>
+            <span class="hero-version">v2025.12.26.4</span>
 
             <div class="hero-meta">
-                <button class="feedback-button" type="button" data-open-nexus-modal>⌬ CGU</button>
-
                 <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Feedback</button>
                 <button id="openSettingsBtn" class="feedback-button" type="button">⌘ Paramètres</button>
             </div>
@@ -944,35 +965,35 @@
                 <p class="section-label superpower-label label-link" id="superpowerToggle">⚡︎ Super-pouvoirs</p>
             </div>
             <div class="launcher-grid">
-                <a class="launcher" href="canvas.html?v=2025.12.26.3">
+                <a class="launcher" href="canvas.html?v=2025.12.26.4">
                     <span class="launcher-emoji">◍</span>
                     <span class="launcher-name">
                         Canvas (50 Nuances)
                         <div class="launcher-desc">Varie ton vocabulaire</div>
                     </span>
                 </a>
-                <a class="launcher" href="timeline.html?v=2025.12.26.3">
+                <a class="launcher" href="timeline.html?v=2025.12.26.4">
                     <span class="launcher-emoji">⇥</span>
                     <span class="launcher-name">
                         Timeline (Goal Digger)
                         <div class="launcher-desc">Trace ta feuille de route</div>
                     </span>
                 </a>
-                <a class="launcher" href="draw.html?v=2025.12.26.3">
+                <a class="launcher" href="draw.html?v=2025.12.26.4">
                     <span class="launcher-emoji">◇</span>
                     <span class="launcher-name">
                         Draw (Indélébile)
                         <div class="launcher-desc">Modélise tes idées</div>
                     </span>
                 </a>
-                <a class="launcher" href="voice.html?v=2025.12.26.3">
+                <a class="launcher" href="voice.html?v=2025.12.26.4">
                     <span class="launcher-emoji">▷</span>
                     <span class="launcher-name">
                         Voice (Goal Digger)
                         <div class="launcher-desc">Pilote tes réunions</div>
                     </span>
                 </a>
-                <a class="launcher" href="grid.html?v=2025.12.26.3">
+                <a class="launcher" href="grid.html?v=2025.12.26.4">
                     <span class="launcher-emoji">▦</span>
                     <span class="launcher-name">
                         Grid (Le Cardinal)
@@ -1004,7 +1025,7 @@
             <p id="savedEmpty" class="share-helper" hidden>Aucune capsule enregistrée localement.</p>
         </section>
 
-        <button id="openRequestsBtn" class="requests-button" type="button">☄ Demandes (<span
+        <button id="openRequestsBtn" class="requests-button" type="button">☄ Feedback (<span
                 id="requestsCount">0</span>)</button>
 
         <div id="feedbackModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
@@ -1016,7 +1037,8 @@
                 <form id="feedbackForm" class="feedback-form">
                     <div class="field-row">
                         <label>
-                            <span class="label-title">Nom</span>
+                            <span class="label-title">Nom<span class="required-asterisk"
+                                    aria-hidden="true">*</span></span>
                             <input id="feedbackName" name="name" type="text" autocomplete="name"
                                 placeholder="Ton nom" />
                         </label>
@@ -1038,7 +1060,8 @@
                         style="position:absolute;left:-9999px;opacity:0;" tabindex="-1" aria-hidden="true"
                         autocomplete="off">
                     <label>
-                        <span class="label-title">Sujet</span>
+                        <span class="label-title">Sujet<span class="required-asterisk"
+                                aria-hidden="true">*</span></span>
                         <input id="feedbackSubject" name="subject" type="text" placeholder="Titre de la demande"
                             required />
                     </label>
@@ -1048,7 +1071,8 @@
                         <textarea id="feedbackMessage" name="message" rows="10" required
                             placeholder="Décris ton retour"></textarea>
                         <p class="feedback-helper">Pour toute demande de partenariat ou autre, veuillez envoyer un mail
-                            à <a href="mailto:quang.tran@savane-group.com">quang.tran@savane-group.com</a>.</p>
+                            à <a href="mailto:oliver.tholance@savane-group.com">oliver.tholance@savane-group.com</a>.
+                        </p>
                     </label>
                     <div class="feedback-actions">
                         <button type="button" id="cancelFeedbackBtn" class="btn-secondary">Annuler</button>
@@ -1061,7 +1085,7 @@
         <div id="requestsModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
             <div class="requests-modal">
                 <header style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                    <h3 style="margin:0;font-size:1rem;">☄ Demandes</h3>
+                    <h3 style="margin:0;font-size:1rem;">☄ Liste des feedback</h3>
                     <button id="closeRequestsBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
                 </header>
                 <div class="requests-body">
@@ -1069,11 +1093,25 @@
                         <div class="requests-filter">
                             <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
                                 Statut
-                                <select id="requestsFilter">
+                                <select id="requestsStatusFilter">
+                                    <option value="tous" selected>Tous</option>
                                     <option value="recue">Reçues</option>
                                     <option value="traitee">Traitées</option>
                                     <option value="planifiee">Planifiées</option>
                                     <option value="reportee">Reportées</option>
+                                </select>
+                            </label>
+                            <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
+                                Type
+                                <select id="requestsTypeFilter">
+                                    <option value="tous" selected>Tous</option>
+                                    <option value="bug-general">Bug Général</option>
+                                    <option value="bug-canvas">Bug Canvas</option>
+                                    <option value="bug-draw">Bug Draw</option>
+                                    <option value="bug-grid">Bug Grid</option>
+                                    <option value="bug-timeline">Bug Timeline</option>
+                                    <option value="bug-voice">Bug Voice</option>
+                                    <option value="suggestion">Suggestion</option>
                                 </select>
                             </label>
 
@@ -1088,7 +1126,15 @@
                             </label>
                             <label>
                                 Type
-                                <input id="requestType" type="text" readonly />
+                                <select id="requestType" disabled>
+                                    <option value="bug-general">Bug Général</option>
+                                    <option value="bug-canvas">Bug Canvas</option>
+                                    <option value="bug-draw">Bug Draw</option>
+                                    <option value="bug-grid">Bug Grid</option>
+                                    <option value="bug-timeline">Bug Timeline</option>
+                                    <option value="bug-voice">Bug Voice</option>
+                                    <option value="suggestion">Suggestion</option>
+                                </select>
                             </label>
                             <label id="requestStatusWrapper">
                                 Statut
@@ -1110,6 +1156,8 @@
                         </div>
                         <div class="requests-actions">
                             <button id="saveRequestBtn" class="btn-primary" type="button" disabled>Sauvegarder</button>
+                            <button id="deleteRequestBtn" class="btn-secondary" type="button"
+                                disabled>Supprimer</button>
                         </div>
                     </section>
                 </div>
@@ -1269,11 +1317,21 @@
                     </div>
                     <div class="field-row">
                         <label style="width:100%">
-                            <a class="label-title" href="https://www.assemblyai.com/dashboard/api-keys" target="_blank"
-                                rel="noopener noreferrer">Clé AssemblyAI</a>
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+                                <div>
+                                    <a class="label-title dashed-link"
+                                        href="https://www.assemblyai.com/dashboard/api-keys" target="_blank"
+                                        rel="noopener noreferrer">Clé AssemblyAI</a>
+                                    <span class="ia-status" id="assemblyAiStatus" aria-hidden="true"></span>
+                                </div>
+                                <div style="display:flex; gap:0.35rem;">
+                                    <button id="assemblyAiVerifyBtn" type="button"
+                                        class="btn-secondary">Vérifier</button>
+                                </div>
+                            </div>
                             <input id="assemblyAiKeyInput" type="password" placeholder="sk-..." />
                             <span class="label-subtitle">
-                                Retranscription plus précise avec diarisation pour Voice (~0.15ct/h. 50$ offerts)
+                                Retranscription plus précise avec diarisation pour Voice (~15ct/h. 50€ de crédit offert)
                             </span>
                         </label>
                     </div>
@@ -1300,7 +1358,7 @@
                                         <a href="https://platform.openai.com/settings/organization/api-keys"
                                             class="label-title dashed-link" target="_blank"
                                             rel="noopener noreferrer">Clé
-                                            API
+
                                             OpenAI</a>
                                         <span class="ia-status" id="openaiStatus" aria-hidden="true"></span>
                                     </div>
@@ -1309,8 +1367,8 @@
                                             class="btn-secondary">Vérifier</button>
                                     </div>
                                 </div>
-                                <span class="label-subtitle">Réponse plus rapide (<1 ct/jour)</span>
-                                        <input id="iaApiKeyInput" type="password" placeholder="sk-..." />
+                                <span class="label-subtitle">Réponse plus rapide (1 ct/jour. Recharge minimum 5€)</span>
+                                <input id="iaApiKeyInput" type="password" placeholder="sk-..." />
                             </label>
                         </div>
 
@@ -1366,7 +1424,7 @@
                     <div class="field-row" style="margin-top:8px;">
                         <label style="width:100%">
                             <span class="label-title">Token Admin</span>
-                            <input id="adminTokenInput" type="text" placeholder="Token pour l'Authorization Bearer" />
+                            <input id="adminTokenInput" type="text" />
                         </label>
                     </div>
 
@@ -1379,18 +1437,22 @@
         </div>
 
         <div id="feedbackToast" class="toast" role="status" aria-live="polite"></div>
+        <div class="legal-footer">
+            Savane Go Live © 2025
+            <a href="#" data-open-nexus-modal>Mentions légales</a>
+        </div>
     </div>
 
     <script>
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
         window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL =
-            window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai-token.gotoolkit.workers.dev/token";
+            window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token";
     </script>
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2025.12.26.3"></script>
+    <script src="js/cgu.js?v=2025.12.26.4"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
@@ -1450,11 +1512,11 @@
             const capsuleDrafts = window.goToolkitCapsuleDrafts;
 
             const APP_DEFINITIONS = {
-                nuances: { emoji: "◍", name: "Canvas", page: "canvas.html?v=2025.12.26.3", collection: "slides" },
-                plan: { emoji: "⇥", name: "Timeline", page: "timeline.html?v=2025.12.26.3", collection: "timelines" },
-                draw: { emoji: "◇", name: "Draw", page: "draw.html?v=2025.12.26.3", collection: "diagrams" },
-                grid: { emoji: "▦", name: "Grid", page: "grid.html?v=2025.12.26.3", collection: "grids" },
-                voice: { emoji: "▷", name: "Voice", page: "voice.html?v=2025.12.26.3", collection: "voices" }
+                nuances: { emoji: "◍", name: "Canvas", page: "canvas.html?v=2025.12.26.4", collection: "slides" },
+                plan: { emoji: "⇥", name: "Timeline", page: "timeline.html?v=2025.12.26.4", collection: "timelines" },
+                draw: { emoji: "◇", name: "Draw", page: "draw.html?v=2025.12.26.4", collection: "diagrams" },
+                grid: { emoji: "▦", name: "Grid", page: "grid.html?v=2025.12.26.4", collection: "grids" },
+                voice: { emoji: "▷", name: "Voice", page: "voice.html?v=2025.12.26.4", collection: "voices" }
             };
             const GRID_TEMPLATE_LABELS = {
                 "tree-structure": "Structure de données",
@@ -1949,7 +2011,8 @@
         const requestsModal = document.getElementById("requestsModal");
         const closeRequestsBtn = document.getElementById("closeRequestsBtn");
         const requestsList = document.getElementById("requestsList");
-        const requestsFilter = document.getElementById("requestsFilter");
+        const requestsStatusFilter = document.getElementById("requestsStatusFilter");
+        const requestsTypeFilter = document.getElementById("requestsTypeFilter");
         const requestsCountLabel = document.getElementById("requestsCount");
         const requestSubject = document.getElementById("requestSubject");
         const requestTypeField = document.getElementById("requestType");
@@ -1958,8 +2021,13 @@
         const requestMessageField = document.getElementById("requestMessage");
         const requestShareUrl = document.getElementById("requestShareUrl");
         const saveRequestBtn = document.getElementById("saveRequestBtn");
+        const deleteRequestBtn = document.getElementById("deleteRequestBtn");
         const feedbackWebsite = document.getElementById("feedbackWebsite");
         const adminTokenInput = document.getElementById("adminTokenInput");
+        try {
+            const storedAdmin = localStorage.getItem("feedback-admin-token");
+            if (adminTokenInput && !adminTokenInput.value && storedAdmin) adminTokenInput.value = storedAdmin;
+        } catch (e) { /* noop */ }
         const REQUEST_STATUS_LABELS = {
             recue: "Reçue",
             traitee: "Traitée",
@@ -1968,6 +2036,42 @@
         };
         let requestsState = { items: [], canEdit: false };
         let activeRequestId = null;
+
+        function updateRequestsButtonVisibility() {
+            const token = (adminTokenInput?.value || localStorage.getItem("feedback-admin-token") || "").trim();
+            const hasToken = Boolean(token);
+            if (requestsBtn) requestsBtn.hidden = !hasToken;
+            if (!hasToken) {
+                activeRequestId = null;
+                closeRequestsModal();
+            }
+            return hasToken;
+        }
+
+        function formatFriendlyDate(isoString) {
+            if (!isoString) return "Mis à jour";
+            try {
+                const value = new Date(isoString).getTime();
+                if (Number.isNaN(value)) return "Mis à jour";
+                const deltaSeconds = Math.max(0, Math.floor((Date.now() - value) / 1000));
+                if (deltaSeconds < 60) return "À l'instant";
+                const deltaMinutes = Math.floor(deltaSeconds / 60);
+                if (deltaMinutes < 60) return `Il y a ${deltaMinutes} min`;
+                const deltaHours = Math.floor(deltaMinutes / 60);
+                if (deltaHours < 24) return `Il y a ${deltaHours} h`;
+                const deltaDays = Math.floor(deltaHours / 24);
+                if (deltaDays < 30) return `Il y a ${deltaDays} j`;
+                const formatter = new Intl.DateTimeFormat("fr-FR", {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+                return formatter.format(new Date(value));
+            } catch (err) {
+                return "Mis à jour";
+            }
+        }
 
         function showToast(message, isError = false) {
             if (!toastEl) return;
@@ -1994,25 +2098,43 @@
                 requestSubject?.removeAttribute("readonly");
                 requestMessageField?.removeAttribute("readonly");
                 requestStatusSelect?.removeAttribute("disabled");
+                requestTypeField?.removeAttribute("disabled");
                 saveRequestBtn.disabled = false;
+                if (deleteRequestBtn) deleteRequestBtn.disabled = false;
             } else {
                 requestSubject?.setAttribute("readonly", "true");
                 requestMessageField?.setAttribute("readonly", "true");
                 requestStatusSelect?.setAttribute("disabled", "true");
+                requestTypeField?.setAttribute("disabled", "true");
                 saveRequestBtn.disabled = true;
+                if (deleteRequestBtn) deleteRequestBtn.disabled = true;
             }
+        }
+
+        function ensureSelectBaseLabels(selectEl) {
+            if (!selectEl) return;
+            Array.from(selectEl.options).forEach(opt => {
+                if (!opt.dataset.baseLabel) opt.dataset.baseLabel = opt.textContent || "";
+            });
         }
 
         function renderRequestsList() {
             if (!requestsList) return;
             requestsList.innerHTML = "";
-            const filter = requestsFilter?.value || "recue";
+            const statusFilter = requestsStatusFilter?.value || "tous";
+            const typeFilter = (requestsTypeFilter?.value || "tous").toLowerCase();
             const items = requestsState.items
-                .filter(item => item.status === filter)
+                .filter(item => {
+                    const normalizedStatus = item.status || "recue";
+                    const normalizedType = (item.type || "").toLowerCase();
+                    const statusMatches = statusFilter === "tous" ? true : normalizedStatus === statusFilter;
+                    const typeMatches = typeFilter === "tous" ? true : normalizedType === typeFilter;
+                    return statusMatches && typeMatches;
+                })
                 .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
             if (!items.length) {
                 const empty = document.createElement("p");
-                empty.textContent = "Aucune demande pour ce statut.";
+                empty.textContent = "Aucune demande pour ces filtres.";
                 empty.className = "share-helper";
                 requestsList.appendChild(empty);
                 return;
@@ -2026,7 +2148,7 @@
                 title.textContent = item.subject || "(sans sujet)";
                 const meta = document.createElement("p");
                 meta.className = "requests-item-meta";
-                meta.textContent = `${REQUEST_STATUS_LABELS[item.status] || "Reçue"} · ${(item.type || "").toUpperCase()} · ${item.name || "Anonyme"}`;
+                meta.textContent = `${REQUEST_STATUS_LABELS[item.status] || "Reçue"} · ${(item.type || "").toUpperCase()} · ${item.name || "Anonyme"} · ${formatFriendlyDate(item.createdAt)}`;
                 const msg = document.createElement("p");
                 el.appendChild(title);
                 el.appendChild(meta);
@@ -2040,19 +2162,52 @@
         }
 
         function updateRequestCounters() {
-            const total = requestsState.items.length;
-            const filter = requestsFilter?.value || "recue";
-            const statusCounts = requestsState.items.reduce((acc, item) => {
+            const statusFilter = requestsStatusFilter?.value || "tous";
+            const typeFilter = (requestsTypeFilter?.value || "tous").toLowerCase();
+
+            ensureSelectBaseLabels(requestsStatusFilter);
+            ensureSelectBaseLabels(requestsTypeFilter);
+
+            const itemsForStatusCounts = requestsState.items.filter(item => {
+                const normalizedType = (item.type || "").toLowerCase();
+                return typeFilter === "tous" ? true : normalizedType === typeFilter;
+            });
+            const statusCounts = itemsForStatusCounts.reduce((acc, item) => {
                 const key = item.status || "recue";
                 acc[key] = (acc[key] || 0) + 1;
                 return acc;
             }, {});
-            if (requestsCountLabel) requestsCountLabel.textContent = statusCounts.recue || 0;
-            if (requestsFilter) {
-                Array.from(requestsFilter.options).forEach(opt => {
+
+            const receivedCount = requestsState.items.reduce((acc, item) => acc + ((item.status || "recue") === "recue" ? 1 : 0), 0);
+            if (requestsCountLabel) requestsCountLabel.textContent = receivedCount;
+
+            if (requestsStatusFilter) {
+                const statusTotal = itemsForStatusCounts.length;
+                Array.from(requestsStatusFilter.options).forEach(opt => {
                     const key = opt.value;
-                    const count = statusCounts[key] || 0;
-                    opt.textContent = `${REQUEST_STATUS_LABELS[key] || key} (${count})`;
+                    const count = key === "tous" ? statusTotal : (statusCounts[key] || 0);
+                    const label = opt.dataset.baseLabel || (key === "tous" ? "Tous" : (REQUEST_STATUS_LABELS[key] || key));
+                    opt.textContent = `${label} (${count})`;
+                });
+            }
+
+            const itemsForTypeCounts = requestsState.items.filter(item => {
+                const normalizedStatus = item.status || "recue";
+                return statusFilter === "tous" ? true : normalizedStatus === statusFilter;
+            });
+            const typeCounts = itemsForTypeCounts.reduce((acc, item) => {
+                const key = (item.type || "").toLowerCase() || "inconnu";
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+
+            if (requestsTypeFilter) {
+                const typeTotal = itemsForTypeCounts.length;
+                Array.from(requestsTypeFilter.options).forEach(opt => {
+                    const key = (opt.value || "").toLowerCase();
+                    const count = key === "tous" ? typeTotal : (typeCounts[key] || 0);
+                    const label = opt.dataset.baseLabel || (key === "tous" ? "Tous" : key);
+                    opt.textContent = `${label} (${count})`;
                 });
             }
         }
@@ -2119,6 +2274,10 @@
                 });
                 if (!response.ok) {
                     const text = await response.text().catch(() => "");
+                    if (response.status === 401 || response.status === 403 || /token invalide/i.test(text || "")) {
+                        showToast("Accès non autorisé. Token invalide", true);
+                        return;
+                    }
                     throw new Error(text || "Sauvegarde impossible");
                 }
                 await fetchRequests();
@@ -2129,6 +2288,45 @@
             } finally {
                 saveRequestBtn.disabled = false;
                 saveRequestBtn.textContent = "Sauvegarder";
+            }
+        }
+
+        async function deleteCurrentRequest() {
+            if (!requestsState.canEdit || !activeRequestId) return;
+            const confirmed = window.confirm("Supprimer définitivement cette demande ?");
+            if (!confirmed) return;
+
+            if (deleteRequestBtn) {
+                deleteRequestBtn.disabled = true;
+                deleteRequestBtn.textContent = "Suppression...";
+            }
+            try {
+                const endpoint = (window.GO_TOOLKIT_FEEDBACK_API_URL || "https://feedback.gotoolkit.workers.dev/v1/feedback") + "/" + encodeURIComponent(activeRequestId);
+                const headers = {};
+                try {
+                    const token = (adminTokenInput?.value || localStorage.getItem("feedback-admin-token") || "").trim();
+                    if (token) headers["Authorization"] = "Bearer " + token;
+                } catch (e) { /* noop */ }
+                const response = await fetch(endpoint, { method: "DELETE", headers });
+                if (!response.ok) {
+                    const text = await response.text().catch(() => "");
+                    if (response.status === 401 || response.status === 403 || /token invalide/i.test(text || "")) {
+                        showToast("Accès non autorisé. Token invalide", true);
+                        return;
+                    }
+                    throw new Error(text || "Suppression impossible");
+                }
+                activeRequestId = null;
+                await fetchRequests();
+                showToast("Demande supprimée.");
+            } catch (err) {
+                console.error("Suppression demande impossible", err);
+                showToast("Suppression impossible", true);
+            } finally {
+                if (deleteRequestBtn) {
+                    deleteRequestBtn.disabled = !requestsState.canEdit || !activeRequestId;
+                    deleteRequestBtn.textContent = "Supprimer";
+                }
             }
         }
         function updateStatusIcon(el, state) {
@@ -2598,6 +2796,42 @@
             }
         }
 
+        async function testAssemblyAiConnection({ showToasts = true } = {}) {
+            var apiKey = (assemblyAiKeyInput?.value || "").trim();
+            if (!apiKey) {
+                updateStatusIcon(assemblyAiStatusEl, "error");
+                if (showToasts) {
+                    showToast("Clé AssemblyAI requise pour tester la connexion.", true);
+                }
+                return false;
+            }
+            updateStatusIcon(assemblyAiStatusEl, "verifying");
+            try {
+                var response = await fetch("https://api.assemblyai.com/v2/transcript", {
+                    method: "GET",
+                    headers: {
+                        Authorization: apiKey
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
+                }
+                if (showToasts) {
+                    showToast("Connexion AssemblyAI prête");
+                }
+                updateStatusIcon(assemblyAiStatusEl, "ready");
+                return true;
+            } catch (err) {
+                console.warn("AssemblyAI test failed", err);
+                var message = (err && err.message) || String(err) || "erreur inconnue";
+                if (showToasts) {
+                    showToast("Échec de la connexion AssemblyAI (" + message + ")", true);
+                }
+                updateStatusIcon(assemblyAiStatusEl, "error");
+                return false;
+            }
+        }
+
         async function testOllamaConnection({ showToasts = true } = {}) {
             var config = window.GoToolkitIAConfig;
             var url = config && typeof config.getOllamaUrl === "function" ? config.getOllamaUrl() : "";
@@ -2716,8 +2950,10 @@
         const openaiStatusEl = document.getElementById("openaiStatus");
         const ollamaStatusEl = document.getElementById("ollamaStatus");
         const webllmStatusEl = document.getElementById("webllmStatus");
+        const assemblyAiStatusEl = document.getElementById("assemblyAiStatus");
         const openaiVerifyBtn = document.getElementById("openaiVerifyBtn");
         const ollamaVerifyBtn = document.getElementById("ollamaVerifyBtn");
+        const assemblyAiVerifyBtn = document.getElementById("assemblyAiVerifyBtn");
         const webllmInstallBtn = document.getElementById("webllmInstallBtn");
         const webllmClearBtn = document.getElementById("webllmClearBtn");
         const webllmVerifyBtn = document.getElementById("webllmVerifyBtn");
@@ -2890,6 +3126,7 @@
                 const storedAdmin = localStorage.getItem("feedback-admin-token");
                 if (adminTokenInput && storedAdmin) adminTokenInput.value = storedAdmin;
             } catch (e) { /* noop */ }
+            updateRequestsButtonVisibility();
             settingsModal.classList.add("open");
             settingsModal.setAttribute("aria-hidden", "false");
             settingsReasoningSelect?.focus();
@@ -3042,7 +3279,16 @@
         }
 
         async function saveSettings() {
-            await persistSettings({ skipClose: false, showSavedToast: true });
+            const result = await persistSettings({ skipClose: false, showSavedToast: true });
+            if (result?.success) {
+                const assemblyKey = (assemblyAiKeyInput?.value || "").trim();
+                if (assemblyKey) {
+                    testAssemblyAiConnection({ showToasts: true }).catch(() => { /* noop */ });
+                }
+            }
+            if (updateRequestsButtonVisibility()) {
+                fetchRequests().catch(() => { /* noop */ });
+            }
         }
 
         if (openSettingsBtn) openSettingsBtn.addEventListener("click", openSettings);
@@ -3053,6 +3299,12 @@
             const result = await persistSettings({ skipClose: true, showSavedToast: true });
             if (result?.success) {
                 testOpenAiConnection({ showToasts: true }).catch(() => { /* noop */ });
+            }
+        });
+        if (assemblyAiVerifyBtn) assemblyAiVerifyBtn.addEventListener("click", async () => {
+            const result = await persistSettings({ skipClose: true, showSavedToast: true });
+            if (result?.success) {
+                testAssemblyAiConnection({ showToasts: true }).catch(() => { /* noop */ });
             }
         });
         if (ollamaVerifyBtn) ollamaVerifyBtn.addEventListener("click", async () => {
@@ -3071,7 +3323,16 @@
             }
         });
         document.addEventListener("keydown", event => {
-            if (event.key === "Escape" || event.key === "Esc") {
+            if (event.key !== "Escape" && event.key !== "Esc") return;
+            if (settingsModal?.classList?.contains("open")) {
+                closeSettings();
+                return;
+            }
+            if (requestsModal?.classList?.contains("open")) {
+                closeRequestsModal();
+                return;
+            }
+            if (feedbackModal?.classList?.contains("open")) {
                 closeModal();
             }
         });
@@ -3085,16 +3346,30 @@
         requestsModal?.addEventListener("click", event => {
             if (event.target === requestsModal) closeRequestsModal();
         });
-        requestsFilter?.addEventListener("change", () => {
+        requestsStatusFilter?.addEventListener("change", () => {
+            renderRequestsList();
+            updateRequestCounters();
+        });
+        requestsTypeFilter?.addEventListener("change", () => {
             renderRequestsList();
             updateRequestCounters();
         });
         saveRequestBtn?.addEventListener("click", () => {
             saveCurrentRequest();
         });
+        deleteRequestBtn?.addEventListener("click", () => {
+            deleteCurrentRequest();
+        });
+        adminTokenInput?.addEventListener("input", () => {
+            if (updateRequestsButtonVisibility()) {
+                fetchRequests().catch(() => { /* noop */ });
+            }
+        });
 
         updateMessagePlaceholder("bug");
-        fetchRequests().catch(() => { /* noop */ });
+        if (updateRequestsButtonVisibility()) {
+            fetchRequests().catch(() => { /* noop */ });
+        }
 
         function setIaStatus(backend) {
             if (openaiStatusEl) {

@@ -88,10 +88,26 @@ var index_default = {
                 return jsonResponse({ status: "ok", id: stored2?.name || id }, 200, request, env);
             }
 
+            // DELETE: admin-only via Bearer token
+            if (request.method === "DELETE") {
+                const id = normalizedPath.split("/").filter(Boolean).pop();
+                if (!id) {
+                    return jsonResponse({ error: "ID manquant" }, 400, request, env);
+                }
+
+                const authError = requireAdmin(request, env);
+                if (authError) {
+                    return jsonResponse({ error: authError }, 403, request, env);
+                }
+
+                await deleteFeedback(env, id);
+                return jsonResponse({ status: "ok", id }, 200, request, env);
+            }
+
             // POST: public + rate limit KV
             if (request.method !== "POST") {
                 return jsonResponse({ error: "Méthode non autorisée" }, 405, request, env, {
-                    Allow: "GET,POST,PUT,OPTIONS"
+                    Allow: "GET,POST,PUT,DELETE,OPTIONS"
                 });
             }
 
@@ -126,7 +142,7 @@ function corsHeaders(request, env) {
     const isLocalhost = origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
 
     const headers = {
-        "Access-Control-Allow-Methods": "GET,POST,PUT,OPTIONS",
+        "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
         "Access-Control-Allow-Origin":
             isLocalhost ? origin : allowedOrigins && origin && allowedOrigins.includes(origin) ? origin : "*"
@@ -542,6 +558,26 @@ async function updateFeedback(env, id, payload) {
     return response.json();
 }
 __name(updateFeedback, "updateFeedback");
+
+async function deleteFeedback(env, id) {
+    const accessToken = await getAccessToken(env);
+    const base = getFirestoreBaseUrl(env);
+    const url = `${base}/${COLLECTION}/${encodeURIComponent(id)}`;
+
+    const response = await fetch(url, {
+        method: "DELETE",
+        headers: {
+            Authorization: `Bearer ${accessToken}`
+        }
+    });
+
+    if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(`Firestore delete error ${response.status}: ${text}`);
+    }
+    return true;
+}
+__name(deleteFeedback, "deleteFeedback");
 
 export { index_default as default };
 //# sourceMappingURL=index.js.map

@@ -21,7 +21,6 @@
     container.innerHTML = `
         <div class="feedback-app-launcher-row">
             <button id="${prefix}-openBtn" class="${prefix}-open-btn feedback-app-button" type="button">☄ Feedback</button>
-            <button class="feedback-app-button" type="button" data-open-nexus-modal>⌬ CGU</button>
         </div>
         <div id="${prefix}-backdrop" class="${prefix}-backdrop feedback-app-backdrop" aria-hidden="true" role="dialog">
             <div class="${prefix}-dialog feedback-app-dialog">
@@ -32,7 +31,7 @@
                 <form id="${prefix}-form" class="${prefix}-form feedback-app-form">
                     <label class="feedback-app-label">
                         <span>Nom</span>
-                        <input id="${prefix}-name" name="name" type="text" placeholder="Ton nom (optionnel)" class="feedback-app-input" />
+                        <input id="${prefix}-name" name="name" type="text" placeholder="Ton nom" required class="feedback-app-input" />
                     </label>
                     <label class="feedback-app-label">
                         <span>Type <span aria-hidden="true">*</span></span>
@@ -42,7 +41,7 @@
                     </label>
                     <label class="feedback-app-label">
                         <span>Sujet <span aria-hidden="true">*</span></span>
-                        <input id="${prefix}-subject" name="subject" type="text" placeholder="Titre de la demande" class="feedback-app-input" required />
+                        <input id="${prefix}-subject" name="subject" type="text" placeholder="Titre de la demande" required class="feedback-app-input"  />
                     </label>
                     <label class="feedback-app-label">
                         <span>Message <span aria-hidden="true">*</span></span>

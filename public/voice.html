@@ -9,8 +9,8 @@
 	    <link rel="preconnect" href="https://fonts.googleapis.com">
 	    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-	    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.3">
-	    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.3">
+	    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.4">
+	    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.4">
 	    <style>
         :root {
             --bg: #f3f4f6;
@@ -997,10 +997,10 @@
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                     aria-expanded="false">▷ Voice ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-	                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.3" role="menuitem"> ◍ Canvas</a>
-	                    <a class="nav-switch-link" href="grid.html?v=2025.12.26.3" role="menuitem">▦ Grid</a>
-	                    <a class="nav-switch-link" href="draw.html?v=2025.12.26.3" role="menuitem">◇ Draw</a>
-	                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.3" role="menuitem">⇥ Timeline</a>
+	                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.4" role="menuitem"> ◍ Canvas</a>
+	                    <a class="nav-switch-link" href="grid.html?v=2025.12.26.4" role="menuitem">▦ Grid</a>
+	                    <a class="nav-switch-link" href="draw.html?v=2025.12.26.4" role="menuitem">◇ Draw</a>
+	                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.4" role="menuitem">⇥ Timeline</a>
                 </div>
             </div>
 
@@ -1223,12 +1223,11 @@
 	        <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
 	            <img src="logo.gif" alt="Logo Go-Toolkit">
 	            <strong>Module Voice (Goal Digger)</strong>
-	            <span>Version 2025.12.26.3</span>
-	            <span>Développé par Quang TRAN.</span>
+	            <span>Version 2025.12.26.4</span>
 	            <span>Usage réservé à Savane Consulting.</span>
 	            <div class="info-actions">
 	                <button id="updateAppBtn" type="button" class="update-btn">Réinitialiser</button>
-	                <button type="button" class="secondary" data-open-nexus-modal>CGU</button>
+	                <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
 	                <button id="tourReplayBtn" type="button" class="secondary">Tour guidé</button>
 	            </div>
 	        </div>
@@ -1246,12 +1245,12 @@
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2025.12.26.3"></script>
+    <script src="js/cgu.js?v=2025.12.26.4"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
     <script src="js/ia-config.js"></script>
-    <script src="js/prompt.js?v=2025.12.26.3"></script>
+    <script src="js/prompt.js?v=2025.12.26.4"></script>
     <script src="js/ia-client.js"></script>
 
     <script>
@@ -1261,7 +1260,7 @@
             const SHARE_QUERY_PARAM = "share";
             const SPEECH_ENGINE_STORAGE_KEY = "go-toolkit-speech-engine";
             const ASSEMBLY_AI_KEY_STORAGE = "go-toolkit-assemblyai-key";
-            const ASSEMBLY_PROXY_TOKEN_URL = (window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai-token.gotoolkit.workers.dev/token").replace(/\/$/, "");
+            const ASSEMBLY_PROXY_TOKEN_URL = (window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai.gotoolkit.workers.dev/token").replace(/\/$/, "");
             const ASSEMBLY_PROXY_BASE_URL = ASSEMBLY_PROXY_TOKEN_URL.replace(/\/token\/?$/i, "").replace(/\/$/, "") || ASSEMBLY_PROXY_TOKEN_URL;
             const NOTE_MODE_NOTE = "note";
             const NOTE_MODE_TRANSCRIPT_AUTO = "transcript-auto";
@@ -1541,12 +1540,14 @@
                 return raw;
             }
 
+            let loadedFromStorage = false;
             let state = (() => {
                 try {
                     const stored = localStorage.getItem(STORAGE_KEY);
                     if (stored) {
                         const parsed = JSON.parse(stored);
                         if (parsed && Array.isArray(parsed.pages) && parsed.pages.length) {
+                            loadedFromStorage = true;
                             return normalizeState(parsed);
                         }
                     }
@@ -1665,8 +1666,31 @@
             }
 
             function deletePage() {
-                if (state.pages.length <= 1) return;
+                if (state.pages.length <= 1) {
+                    const page = defaultPage();
+                    page.title = "Page 1";
+                    page.tabLabel = page.title;
+                    state.pages = [page];
+                    state.activePageId = page.id;
+                    persistState();
+                    renderTabs();
+                    renderPage();
+                    openTemplateModal();
+                    return;
+                }
                 state.pages = state.pages.filter(p => p.id !== state.activePageId);
+                if (!state.pages.length) {
+                    const page = defaultPage();
+                    page.title = "Page 1";
+                    page.tabLabel = page.title;
+                    state.pages = [page];
+                    state.activePageId = page.id;
+                    persistState();
+                    renderTabs();
+                    renderPage();
+                    openTemplateModal();
+                    return;
+                }
                 state.activePageId = state.pages[0]?.id || null;
                 persistState();
                 renderTabs();
@@ -3838,6 +3862,8 @@
             promptModify?.addEventListener("blur", () => applyScriptFromTextarea({ silent: true }));
             respondBtn?.addEventListener("click", runVoicePrompt);
             clearScenarioBtn?.addEventListener("click", () => {
+                const ok = confirm("Supprimer le scénario ? Cette action est irréversible.");
+                if (!ok) return;
                 if (promptCreate) promptCreate.value = "";
                 persistScenario();
                 clearGuidelineData();
@@ -4077,6 +4103,14 @@
                 closeMenus();
             });
             newDocumentBtn?.addEventListener("click", () => {
+                closeMenus();
+                try {
+                    const shouldSave = confirm("Sauvegarder la capsule actuelle avant d'ouvrir un nouveau document ?");
+                    if (shouldSave) {
+                        persistCapsuleDraft();
+                        showToast("Capsule enregistrée localement.");
+                    }
+                } catch (err) { /* ignore */ }
                 resetDocument();
                 showToast("Nouvelle capsule.");
             });
@@ -4109,7 +4143,13 @@
                 showToast("Tour guidé indisponible pour le moment.");
             });
             addViewBtn?.addEventListener("click", addPage);
-            deleteViewBtn?.addEventListener("click", deletePage);
+            deleteViewBtn?.addEventListener("click", () => {
+                const page = getActivePage();
+                const label = page?.tabLabel || page?.title || "Page";
+                const ok = confirm(`Supprimer la vue '${label}' ? Cette action est irréversible.`);
+                if (!ok) return;
+                deletePage();
+            });
             shareCreateBtn?.addEventListener("click", ev => { ev.stopPropagation(); createOrUpdateShare(false); });
             shareUpdateBtn?.addEventListener("click", ev => { ev.stopPropagation(); createOrUpdateShare(true); });
             shareLinkField?.addEventListener("focus", ev => ev.target.select());
@@ -4142,6 +4182,12 @@
             toggleContextPanel(true);
             populateAudioSpeedOptions();
             audioPlayer.playbackRate = getAudioSpeed();
+            try {
+                const params = new URLSearchParams(window.location.search);
+                if (!loadedFromStorage && !params.get(SHARE_QUERY_PARAM)) {
+                    openTemplateModal();
+                }
+            } catch (err) { /* ignore */ }
             document.addEventListener("click", ev => {
                 if (infoPopup && !infoPopup.contains(ev.target) && ev.target !== infoButton) {
                     closeInfoPopup();

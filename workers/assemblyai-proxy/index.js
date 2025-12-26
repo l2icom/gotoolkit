@@ -98,8 +98,8 @@ async function enforceRateLimitForToken(request, corsMeta, env) {
   const today = new Date(now).toISOString().slice(0, 10);
 
   const minuteBucket = Math.floor(now / minuteWindowMs);
-  const quotaKey = `assemblyai-token:quota:${clientIp}:${today}`;
-  const rlKey = `assemblyai-token:rl:${clientIp}:${minuteBucket}`;
+  const quotaKey = `assemblyai:quota:${clientIp}:${today}`;
+  const rlKey = `assemblyai:rl:${clientIp}:${minuteBucket}`;
 
   const [storedDaily, storedMinute] = await Promise.all([
     env.RATE_LIMIT.get(quotaKey),

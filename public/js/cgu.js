@@ -13,21 +13,20 @@
             </header>
             <div class="nexus-content">
                 <p><strong>⌬ Présentation</strong><br>
-Go-Toolkit est un outil professionnel développé par la filiale "Go-Live" de Savane Consulting destiné à l’animation d’ateliers, au cadrage et à la documentation produit,
+Go-Toolkit est un outil professionnel développé par Savane Go Live destiné à l’animation d’ateliers, au cadrage et à la documentation produit,
 ainsi qu’à la collaboration entre équipes métier et techniques.</p>
 
 <p><strong>⛒ Utilisation, responsabilité et légalité</strong><br>
 Aucun compte n’est requis. Vous restez responsable des contenus saisis.
 N’y saisissez pas de données personnelles ou sensibles et n’utilisez pas l’outil à des fins illégales.</p>
 
-<p><strong>⚲ Données et stockage</strong><br>
+<p><strong>⚲ Données, stockage et cookies</strong><br>
 Par défaut, les données restent dans votre navigateur et sont utilisées uniquement
-au fonctionnement du service. Elles peuvent être perdues en cas de nettoyage ou de panne de l'appareil</p>
+au fonctionnement du service. Elles peuvent être perdues en cas de nettoyage ou de panne de l'appareil. Aucun cookie ou traceur tiers n’est déposé sur votre navigateur.</p>
 
 <p><strong>⌘ Services tiers et intelligence artificielle</strong><br>
 Certaines fonctionnalités reposent sur des API tierces (ex. IA, transcription, reconnaissance vocale).
 Lorsque vous les déclenchez, seules les données strictement nécessaires sont transmises aux prestataires concernés.
-Aucun cookie ou traceur tiers n’est déposé sur votre navigateur.
 Ne transmettez jamais de données sensibles.</p>
 
 <p><strong>◉ Reconnaissance et transcription vocale</strong><br>
@@ -45,6 +44,12 @@ Aucune sauvegarde n’est garantie.</p>
 
 <p><strong>🡇 Exportation</strong><br>
 Les données peuvent être exportées librement pour archivage, partage ou intégration dans d’autres outils.</p>
+                <p style="margin-top:14px;font-size:0.85em;opacity:0.85;">
+                   
+                    Responsable de la publication : Savane Go Live (909 865 214)
+                    – Contact : Oliver THOLANCE - oliver.tholance@savane-group.com
+                    – Hébergement : Google (France/UE)<br>
+                </p>
             </div>
             <div class="nexus-actions">
                 <button type="button" class="btn-primary" ${CLOSE_ATTR}>J'ai compris</button>
