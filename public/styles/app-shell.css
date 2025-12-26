@@ -70,6 +70,7 @@ body.app-body {
   outline: none;
 }
 
+
 .tabs {
   display: flex;
   flex-wrap: wrap;
@@ -450,11 +451,17 @@ button.btn-primary {
   pointer-events: auto;
 }
 
-.feedback-app-button {
+.feedback-app-launcher-row {
   position: fixed;
   right: 16px;
   bottom: 16px;
   z-index: 220;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feedback-app-button {
   border: 1px solid rgba(15, 23, 42, 0.1);
   background: var(--app-surface);
   color: var(--app-text);
@@ -590,6 +597,10 @@ button.btn-primary {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+}
+
+.feedback-app-cgu-btn {
+  margin-right: auto;
 }
 
 .feedback-app-actions .btn {

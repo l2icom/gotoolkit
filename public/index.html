@@ -10,12 +10,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Go-Toolkit</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
-        rel="stylesheet">
-    <style>
+	    <link rel="preconnect" href="https://fonts.googleapis.com">
+	    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	    <link
+	        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
+	        rel="stylesheet">
+	    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.3">
+	    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.3">
+	    <style>
         :root {
             --bg: #f5f2eb;
             --surface: #ffffff;
@@ -550,45 +552,6 @@
             line-height: 1.4;
         }
 
-        .nexus-modal {
-            width: min(900px, 90vw);
-            background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 22px 45px rgba(15, 23, 42, 0.25);
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            max-height: 75vh;
-            overflow-y: auto;
-            font-size: 0.9rem;
-        }
-
-        .nexus-modal header {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 12px;
-            position: relative;
-        }
-
-        .nexus-modal header button {
-            position: absolute;
-            top: 0;
-            right: 0;
-        }
-
-        .nexus-content {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .nexus-content p {
-            margin: 0;
-            line-height: 1.4;
-        }
-
         .feedback-form {
             display: flex;
             flex-direction: column;
@@ -966,9 +929,11 @@
             </div>
             <h1>Go-Toolkit</h1>
             <p>Le vaisseau spatial des super-POs</p>
-            <span class="hero-version">v2025.12.26.2</span>
+            <span class="hero-version">v2025.12.26.3</span>
 
             <div class="hero-meta">
+                <button class="feedback-button" type="button" data-open-nexus-modal>⌬ CGU</button>
+
                 <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Feedback</button>
                 <button id="openSettingsBtn" class="feedback-button" type="button">⌘ Paramètres</button>
             </div>
@@ -979,35 +944,35 @@
                 <p class="section-label superpower-label label-link" id="superpowerToggle">⚡︎ Super-pouvoirs</p>
             </div>
             <div class="launcher-grid">
-                <a class="launcher" href="canvas.html?v=2025.12.26.2">
+                <a class="launcher" href="canvas.html?v=2025.12.26.3">
                     <span class="launcher-emoji">◍</span>
                     <span class="launcher-name">
                         Canvas (50 Nuances)
                         <div class="launcher-desc">Varie ton vocabulaire</div>
                     </span>
                 </a>
-                <a class="launcher" href="timeline.html?v=2025.12.26.2">
+                <a class="launcher" href="timeline.html?v=2025.12.26.3">
                     <span class="launcher-emoji">⇥</span>
                     <span class="launcher-name">
                         Timeline (Goal Digger)
                         <div class="launcher-desc">Trace ta feuille de route</div>
                     </span>
                 </a>
-                <a class="launcher" href="draw.html?v=2025.12.26.2">
+                <a class="launcher" href="draw.html?v=2025.12.26.3">
                     <span class="launcher-emoji">◇</span>
                     <span class="launcher-name">
                         Draw (Indélébile)
                         <div class="launcher-desc">Modélise tes idées</div>
                     </span>
                 </a>
-                <a class="launcher" href="voice.html?v=2025.12.26.2">
+                <a class="launcher" href="voice.html?v=2025.12.26.3">
                     <span class="launcher-emoji">▷</span>
                     <span class="launcher-name">
                         Voice (Goal Digger)
                         <div class="launcher-desc">Pilote tes réunions</div>
                     </span>
                 </a>
-                <a class="launcher" href="grid.html?v=2025.12.26.2">
+                <a class="launcher" href="grid.html?v=2025.12.26.3">
                     <span class="launcher-emoji">▦</span>
                     <span class="launcher-name">
                         Grid (Le Cardinal)
@@ -1025,7 +990,7 @@
                 <div id="pinnedGallery" class="share-gallery" aria-live="polite"></div>
             </div>
             <div class="section-title-row">
-                <p class="section-label nexus-label label-link" id="nexusToggle" tabindex="0">☍ Station Nexus</p>
+                <p class="section-label nexus-label">☍ Station Nexus</p>
             </div>
 
             <div id="shareGallery" class="share-gallery" aria-live="polite"></div>
@@ -1413,66 +1378,6 @@
             </div>
         </div>
 
-        <div id="nexusModal" class="feedback-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
-            <div class="nexus-modal">
-                <header>
-                    <h2> ☍ Fonctionnement de la Station Nexus</h2>
-                    <button id="closeNexusBtn" class="btn-secondary" type="button" aria-label="Fermer">✕</button>
-                </header>
-                <div class="nexus-content">
-
-                    <p><strong>⌬ Cas d'usages </strong><br>
-                        Go-Toolkit est conçu pour un usage professionnel : animation d’ateliers, cadrages, documentation
-                        produit et collaboration avec la technique ou le métier</p>
-
-                    <p><strong>⛒ Anonymité et confidentialité</strong><br>
-                        Aucun compte n’est requis pour utiliser l'outil. Vous êtes responsable du contenu que
-                        vous saisissez, notamment s’il contient des données personnelles ou confidentielles.</p>
-
-                    <p><strong>⚲ Données dans le cloud</strong><br>
-                        Go-Toolkit ne collecte aucune donnée personnelle en ligne. Les seules informations
-                        personnelles pouvant être traitées le sont uniquement à des fins de partage en ligne (Nexus) et
-                        d'amélioration du produit (Feedback).</p>
-
-                    <p><strong>⌘ Intelligence Artificielle (OpenAI)</strong><br>
-                        Vos données restent dans votre navigateur sauf lorsque vous déclenchez un appel IA. Dans ce cas,
-                        seules les informations strictement nécessaires sont envoyées à OpenAI. Ne transmettez jamais de
-                        données
-                        sensibles.</p>
-
-                    <p><strong>◉ Reconnaissance vocale (Web Speech API)</strong><br>
-                        La dictée repose sur l’API Web Speech / SpeechRecognition du navigateur. L’audio est envoyé
-                        vers les serveurs de Google (Chrome) ou d’Apple (Safari) pour la transcription, ce qui constitue
-                        un traitement de données personnelles. En tant que responsable de traitement, vous devez
-                        informer les participants, collecter leur consentement et respecter les principes du RGPD.
-                        Go-Toolkit n’héberge ni n’efface ces flux côté fournisseur et ne conserve aucune copie.</p>
-
-                    <p><strong>⟐ Accès privé ou partagé</strong><br>
-                        Vous pouvez utiliser votre propre clé OpenAI (accès privé) ou l’accès partagé par défaut (avec
-                        quotas). Dans les deux cas, seules les informations isolées sont transmises aux serveurs IA.</p>
-
-                    <p><strong>⧉ Données dans le cloud</strong><br>
-                        Vous pouvez partager vos capsules via des liens URL uniques. Les capsules sont alors
-                        stockées dans le cloud et modifiables par les personnes disposant du lien. Elles peuvent
-                        également être supprimés par son créateur depuis sa station Nexus. Aucun backup n’est
-                        réalisée.</p>
-
-                    <p><strong>⚠ Risques de perte de données</strong><br>
-                        Les capsules locales peuvent être perdues en cas de nettoyage de navigateur, navigation privée
-                        ou crash. L'hébergement cloud Firestore ou le proxy OpenAI peuvent connaître des
-                        indisponibilités. Go-Live ne
-                        peut être tenu responsable des pertes ou interruptions liées à ces services tiers.</p>
-
-                    <p><strong>🡇 Exportation et réutilisation</strong><br>
-                        Vos données peuvent être exportées librement pour archivage, partage ou intégration dans
-                        d’autres outils métiers. Cela renforce l’usage professionnel : traçabilité, capitalisation,
-                        documentation.</p>
-
-
-                </div>
-            </div>
-        </div>
-
         <div id="feedbackToast" class="toast" role="status" aria-live="polite"></div>
     </div>
 
@@ -1485,6 +1390,7 @@
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
+    <script src="js/cgu.js?v=2025.12.26.3"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
@@ -1515,36 +1421,6 @@
     </script>
     <script>
         (function () {
-            const modal = document.getElementById("nexusModal");
-            const openBtn = document.getElementById("nexusToggle");
-            const closeBtn = document.getElementById("closeNexusBtn");
-            function close() {
-                if (!modal) return;
-                modal.classList.remove("open");
-                modal.setAttribute("aria-hidden", "true");
-            }
-            function open() {
-                if (!modal) return;
-                modal.classList.add("open");
-                modal.setAttribute("aria-hidden", "false");
-            }
-            openBtn?.addEventListener("click", open);
-            openBtn?.addEventListener("keypress", event => {
-                if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    open();
-                }
-            });
-            closeBtn?.addEventListener("click", close);
-            modal?.addEventListener("click", event => {
-                if (event.target === modal) {
-                    close();
-                }
-            });
-        })();
-    </script>
-    <script>
-        (function () {
             function closeModalById(id) {
                 const el = document.getElementById(id);
                 if (!el) return;
@@ -1554,7 +1430,7 @@
             document.addEventListener("keydown", event => {
                 if (event.key !== "Escape" && event.key !== "Esc") return;
                 closeModalById("superpowerModal");
-                closeModalById("nexusModal");
+                window.goToolkitNexusModal?.close?.();
             });
         })();
     </script>
@@ -1574,11 +1450,11 @@
             const capsuleDrafts = window.goToolkitCapsuleDrafts;
 
             const APP_DEFINITIONS = {
-                nuances: { emoji: "◍", name: "Canvas", page: "canvas.html?v=2025.12.26.2", collection: "slides" },
-                plan: { emoji: "⇥", name: "Timeline", page: "timeline.html?v=2025.12.26.2", collection: "timelines" },
-                draw: { emoji: "◇", name: "Draw", page: "draw.html?v=2025.12.26.2", collection: "diagrams" },
-                grid: { emoji: "▦", name: "Grid", page: "grid.html?v=2025.12.26.2", collection: "grids" },
-                voice: { emoji: "▷", name: "Voice", page: "voice.html?v=2025.12.26.2", collection: "voices" }
+                nuances: { emoji: "◍", name: "Canvas", page: "canvas.html?v=2025.12.26.3", collection: "slides" },
+                plan: { emoji: "⇥", name: "Timeline", page: "timeline.html?v=2025.12.26.3", collection: "timelines" },
+                draw: { emoji: "◇", name: "Draw", page: "draw.html?v=2025.12.26.3", collection: "diagrams" },
+                grid: { emoji: "▦", name: "Grid", page: "grid.html?v=2025.12.26.3", collection: "grids" },
+                voice: { emoji: "▷", name: "Voice", page: "voice.html?v=2025.12.26.3", collection: "voices" }
             };
             const GRID_TEMPLATE_LABELS = {
                 "tree-structure": "Structure de données",

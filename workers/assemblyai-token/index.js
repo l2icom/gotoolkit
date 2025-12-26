@@ -4,6 +4,18 @@ const ALLOWED_ORIGINS = [
   "https://sherpa-5938b.firebaseapp.com"
 ];
 
+function normalizeClientIp(request) {
+  const raw =
+    request.headers.get("CF-Connecting-IP") ||
+    request.headers.get("X-Forwarded-For") ||
+    "";
+  const first = raw.split(",")[0].trim();
+  if (!first) return "unknown";
+  const withoutBrackets = first.replace(/^\[/, "").replace(/]$/, "");
+  const [hostPart] = withoutBrackets.split(":");
+  return hostPart || "unknown";
+}
+
 function normalizeOrigin(origin) {
   if (!origin) return "";
   return origin.trim();
@@ -57,6 +69,74 @@ function resolveAssemblyKey(request, env) {
 
 const ASSEMBLY_API_BASE_URL = "https://api.assemblyai.com/v2";
 const STREAMING_TOKEN_URL = "https://streaming.assemblyai.com/v3/token";
+
+function jsonError(corsHeaders, status, code, message) {
+  return new Response(JSON.stringify({ error: { code, message } }), {
+    status,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json"
+    }
+  });
+}
+
+async function enforceRateLimitForToken(request, corsMeta, env) {
+  if (corsMeta.allowLocal) {
+    return null;
+  }
+
+  if (!env?.RATE_LIMIT) {
+    return null;
+  }
+
+  const now = Date.now();
+  const clientIp = normalizeClientIp(request);
+
+  const minuteWindowMs = 60_000;
+  const perMinuteLimit = 3;
+  const dailyLimit = 30;
+  const today = new Date(now).toISOString().slice(0, 10);
+
+  const minuteBucket = Math.floor(now / minuteWindowMs);
+  const quotaKey = `assemblyai-token:quota:${clientIp}:${today}`;
+  const rlKey = `assemblyai-token:rl:${clientIp}:${minuteBucket}`;
+
+  const [storedDaily, storedMinute] = await Promise.all([
+    env.RATE_LIMIT.get(quotaKey),
+    env.RATE_LIMIT.get(rlKey)
+  ]);
+
+  const dailyCount = storedDaily ? parseInt(storedDaily, 10) || 0 : 0;
+  if (dailyCount >= dailyLimit) {
+    return jsonError(
+      corsMeta.headers,
+      429,
+      "DAILY_QUOTA_EXCEEDED",
+      `Daily quota exceeded (${dailyLimit} requests per day).`
+    );
+  }
+
+  const minuteCount = storedMinute ? parseInt(storedMinute, 10) || 0 : 0;
+  if (minuteCount >= perMinuteLimit) {
+    return jsonError(
+      corsMeta.headers,
+      429,
+      "RATE_LIMIT_EXCEEDED",
+      "Too many requests, please wait a bit."
+    );
+  }
+
+  await Promise.all([
+    env.RATE_LIMIT.put(quotaKey, String(dailyCount + 1), {
+      expirationTtl: 27 * 60 * 60
+    }),
+    env.RATE_LIMIT.put(rlKey, String(minuteCount + 1), {
+      expirationTtl: 70
+    })
+  ]);
+
+  return null;
+}
 
 async function wrapAssemblyResponse(upstreamResponse, corsHeaders) {
   const body = await upstreamResponse.text();
@@ -157,6 +237,13 @@ export default {
     const url = new URL(request.url);
     const pathname = url.pathname.replace(/\/$/, "");
     const segments = pathname.split("/").filter(Boolean);
+
+    if (request.method === "GET" && pathname.endsWith("/token")) {
+      const limitResponse = await enforceRateLimitForToken(request, corsMeta, env);
+      if (limitResponse) {
+        return limitResponse;
+      }
+    }
 
     if (request.method === "POST" && pathname.endsWith("/upload")) {
       return proxyAssemblyRequest(request, corsMeta, env, "/upload");

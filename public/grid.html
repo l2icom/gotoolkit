@@ -9,7 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/app-shell.css">
+    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.3">
+    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.3">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
     <script
@@ -990,14 +991,23 @@
             font-weight: 600;
         }
 
-        .info-popup button {
-            border-radius: 8px;
-            padding: 6px 12px;
-            font-size: 12px;
-            background: var(--app-primary, #2a7a57);
-            border-color: var(--app-primary, #2a7a57);
-            cursor: pointer;
-        }
+	        .info-popup button {
+	            border-radius: 8px;
+	            padding: 6px 12px;
+	            font-size: 12px;
+	            background: var(--app-primary, #2a7a57);
+	            border-color: var(--app-primary, #2a7a57);
+	            cursor: pointer;
+	        }
+
+	        .info-popup .info-actions {
+	            display: flex;
+	            gap: 8px;
+	        }
+
+	        .info-popup .info-actions button {
+	            flex: 1;
+	        }
 
         #gridContainer {
             flex: 1;
@@ -1081,10 +1091,10 @@
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button">▦ Grid ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.2">◍ Canvas</a>
-                    <a class="nav-switch-link" href="draw.html?v=2025.12.26.2">◇ Draw</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.2">⇥ Timeline</a>
-                    <a class="nav-switch-link" href="voice.html?v=2025.12.26.2">▷ Voice</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.3">◍ Canvas</a>
+                    <a class="nav-switch-link" href="draw.html?v=2025.12.26.3">◇ Draw</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.3">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="voice.html?v=2025.12.26.3">▷ Voice</a>
                 </div>
             </div>
 
@@ -1204,8 +1214,11 @@
         <img src="logo.gif" alt="Logo Go-Toolkit">
         <strong>Module Grid (Le Cardinal)</strong>
         <p>Les tableaux générés ici peuvent être partagés et exportés pour enrichir vos capsules métier.</p>
-        <span>Version 2025.12.26.2</span>
-        <button id="closeInfoPopup" type="button" class="btn-primary">Réinitialiser</button>
+        <span>Version 2025.12.26.3</span>
+        <div class="info-actions">
+            <button id="closeInfoPopup" type="button" class="btn-primary">Réinitialiser</button>
+            <button type="button" data-open-nexus-modal>CGU</button>
+        </div>
     </div>
 
     <div class="modal-overlay gt-template-modal" id="gtTemplateModal" role="dialog" aria-modal="true" aria-labelledby="gtTemplateModalTitle">
@@ -1280,15 +1293,16 @@
         </div>
     </div>
 
-	    <script src="js/prompt.js?v=2025.12.26.2"></script>
-    <script src="js/ia-config.js"></script>
-    <script src="js/ia-client.js"></script>
-    <script src="js/idb-doc-store.js"></script>
-    <script src="js/storage-service.js"></script>
-    <script src="js/shared-ui.js"></script>
-    <script src="js/share-worker-client.js"></script>
-    <script src="js/share-history.js"></script>
-    <script src="js/capsule-drafts.js"></script>
+		    <script src="js/prompt.js?v=2025.12.26.3"></script>
+	    <script src="js/ia-config.js"></script>
+	    <script src="js/ia-client.js"></script>
+	    <script src="js/idb-doc-store.js"></script>
+	    <script src="js/storage-service.js"></script>
+	    <script src="js/shared-ui.js"></script>
+	    <script src="js/cgu.js?v=2025.12.26.3"></script>
+	    <script src="js/share-worker-client.js"></script>
+	    <script src="js/share-history.js"></script>
+	    <script src="js/capsule-drafts.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.noStyle.js"></script>
     <script>
             (() => {
@@ -8910,7 +8924,7 @@
             })
         };
     </script>
-    <script src="js/feedback-app.js"></script>
+    <script src="js/feedback.js"></script>
 </body>
 
 </html>

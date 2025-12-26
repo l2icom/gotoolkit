@@ -6,11 +6,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voice | Go-Toolkit</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/app-shell.css">
-    <style>
+	    <link rel="preconnect" href="https://fonts.googleapis.com">
+	    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+	    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.3">
+	    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.3">
+	    <style>
         :root {
             --bg: #f3f4f6;
             --surface: #ffffff;
@@ -996,10 +997,10 @@
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                     aria-expanded="false">▷ Voice ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.2" role="menuitem"> ◍ Canvas</a>
-                    <a class="nav-switch-link" href="grid.html?v=2025.12.26.2" role="menuitem">▦ Grid</a>
-                    <a class="nav-switch-link" href="draw.html?v=2025.12.26.2" role="menuitem">◇ Draw</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.2" role="menuitem">⇥ Timeline</a>
+	                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.3" role="menuitem"> ◍ Canvas</a>
+	                    <a class="nav-switch-link" href="grid.html?v=2025.12.26.3" role="menuitem">▦ Grid</a>
+	                    <a class="nav-switch-link" href="draw.html?v=2025.12.26.3" role="menuitem">◇ Draw</a>
+	                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.3" role="menuitem">⇥ Timeline</a>
                 </div>
             </div>
 
@@ -1219,17 +1220,18 @@
             </div>
         </div>
 
-        <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
-            <img src="logo.gif" alt="Logo Go-Toolkit">
-            <strong>Module Voice (Goal Digger)</strong>
-            <span>Version 2025.12.26.2</span>
-            <span>Développé par Quang TRAN.</span>
-            <span>Usage réservé à Savane Consulting.</span>
-            <div class="info-actions">
-                <button id="updateAppBtn" type="button" class="update-btn">Réinitialiser</button>
-                <button id="tourReplayBtn" type="button" class="secondary">Tour guidé</button>
-            </div>
-        </div>
+	        <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
+	            <img src="logo.gif" alt="Logo Go-Toolkit">
+	            <strong>Module Voice (Goal Digger)</strong>
+	            <span>Version 2025.12.26.3</span>
+	            <span>Développé par Quang TRAN.</span>
+	            <span>Usage réservé à Savane Consulting.</span>
+	            <div class="info-actions">
+	                <button id="updateAppBtn" type="button" class="update-btn">Réinitialiser</button>
+	                <button type="button" class="secondary" data-open-nexus-modal>CGU</button>
+	                <button id="tourReplayBtn" type="button" class="secondary">Tour guidé</button>
+	            </div>
+	        </div>
 
         <div data-toast-slot="copyToast" data-toast-class="toast" data-toast-aria-live="polite"
             data-toast-aria-atomic="true"></div>
@@ -1244,11 +1246,12 @@
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
+    <script src="js/cgu.js?v=2025.12.26.3"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
     <script src="js/ia-config.js"></script>
-    <script src="js/prompt.js?v=2025.12.26.2"></script>
+    <script src="js/prompt.js?v=2025.12.26.3"></script>
     <script src="js/ia-client.js"></script>
 
     <script>
@@ -4171,7 +4174,7 @@
             }
         })();
     </script>
-    <script src="js/feedback-app.js"></script>
+    <script src="js/feedback.js"></script>
 </body>
 
 </html>

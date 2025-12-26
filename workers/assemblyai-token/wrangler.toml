@@ -3,6 +3,11 @@ main = "index.js"
 compatibility_date = "2024-12-01"
 workers_dev = true
 
+# Required for IP rate limiting (bind an existing KV namespace named RATE_LIMIT).
+# kv_namespaces = [
+#   { binding = "RATE_LIMIT", id = "<YOUR_KV_NAMESPACE_ID>" }
+# ]
+
 # Configure account_id, zone_id, and routes before deploying.
 # account_id = ""
 # route = ""
