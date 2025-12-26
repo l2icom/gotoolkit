@@ -1720,6 +1720,7 @@
                 persistState();
                 renderTabs();
                 renderPage();
+                void hydrateMediaFromDb();
             }
 
             function addPage() {
@@ -2466,8 +2467,8 @@
                     if (!db || !blob) return;
                     const tx = db.transaction(AUDIO_DB.store, "readwrite");
                     const store = tx.objectStore(AUDIO_DB.store);
-                    const buffer = await blob.arrayBuffer();
-                    store.put({ type: blob.type || "audio/webm", data: buffer }, key);
+                    store.put({ type: blob.type || "audio/webm", data: blob }, key);
+                    console.log("Audio saved to IDB", { key, type: blob.type, size: blob.size });
                 } catch (err) {
                     console.warn("Impossible de sauvegarder l'audio", err);
                 }
@@ -2502,9 +2503,13 @@
                         req.onerror = () => resolve(null);
                     });
                     if (result && result.data) {
-                        const blob = new Blob([result.data], { type: result.type || "audio/webm" });
+                        const blobData = result.data;
+                        const blob = blobData instanceof Blob
+                            ? blobData
+                            : new Blob([blobData], { type: result.type || "audio/webm" });
                         recordingSegments = blob ? [blob] : [];
                         setAudioBlob(blob, { skipSave: true });
+                        console.log("Audio loaded from IDB", { key, type: blob.type, size: blob.size });
                         return true;
                     }
                     recordingSegments = [];
@@ -2540,8 +2545,8 @@
                     if (!db || !blob) return;
                     const tx = db.transaction(VIDEO_DB.store, "readwrite");
                     const store = tx.objectStore(VIDEO_DB.store);
-                    const buffer = await blob.arrayBuffer();
-                    store.put({ type: blob.type || "video/webm", data: buffer }, key);
+                    store.put({ type: blob.type || "video/webm", data: blob }, key);
+                    console.log("Video saved to IDB", { key, type: blob.type, size: blob.size });
                 } catch (err) {
                     console.warn("Impossible de sauvegarder la vidéo", err);
                 }
@@ -2576,8 +2581,12 @@
                         req.onerror = () => resolve(null);
                     });
                     if (result && result.data) {
-                        const blob = new Blob([result.data], { type: result.type || "video/webm" });
+                        const blobData = result.data;
+                        const blob = blobData instanceof Blob
+                            ? blobData
+                            : new Blob([blobData], { type: result.type || "video/webm" });
                         setVideoBlob(blob, { skipSave: true });
+                        console.log("Video loaded from IDB", { key, type: blob.type, size: blob.size });
                         return true;
                     }
                 } catch (err) {
@@ -2586,29 +2595,33 @@
                 return false;
             }
 
-            async function hydrateMediaFromDb() {
-                const activeKey = getMediaStorageKey();
+            async function hydrateMediaFromDb(targetKey = "") {
+                const key = targetKey || getMediaStorageKey();
                 const audioKeys = [];
-                if (activeKey) {
-                    audioKeys.push(activeKey);
+                if (key) {
+                    audioKeys.push(key);
                 }
                 if (!audioKeys.includes(AUDIO_DB.key)) {
                     audioKeys.push(AUDIO_DB.key);
                 }
-                for (const key of audioKeys) {
-                    if (await loadAudioFromDb(key)) {
+                for (const k of audioKeys) {
+                    const loaded = await loadAudioFromDb(k);
+                    if (loaded) {
+                        console.log("Hydrated audio", { key: k });
                         break;
                     }
                 }
                 const videoKeys = [];
-                if (activeKey) {
-                    videoKeys.push(activeKey);
+                if (key) {
+                    videoKeys.push(key);
                 }
                 if (!videoKeys.includes(VIDEO_DB.key)) {
                     videoKeys.push(VIDEO_DB.key);
                 }
-                for (const key of videoKeys) {
-                    if (await loadVideoFromDb(key)) {
+                for (const k of videoKeys) {
+                    const loaded = await loadVideoFromDb(k);
+                    if (loaded) {
+                        console.log("Hydrated video", { key: k });
                         break;
                     }
                 }
