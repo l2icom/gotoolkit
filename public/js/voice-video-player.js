@@ -284,6 +284,7 @@
             this._activeSentenceIndex = -1;
             this._handleKeydown = this._handleKeydown.bind(this);
             this.videoBlobUrl = "";
+            this._textTrackUrl = "";
             ensureStyles();
             this._buildDom();
             this._bindEvents();
@@ -325,6 +326,14 @@
             this.timeLabel = this.overlay.querySelector(".voice-video-player-time");
             this.transcriptList = this.overlay.querySelector(".voice-video-player-transcript-list");
             this.saveButton = this.overlay.querySelector(".voice-video-player-transcript-save");
+            if (this.videoEl) {
+                this.textTrackEl = document.createElement("track");
+                this.textTrackEl.kind = "subtitles";
+                this.textTrackEl.srclang = "fr";
+                this.textTrackEl.label = "Sous-titres";
+                this.textTrackEl.default = true;
+                this.videoEl.appendChild(this.textTrackEl);
+            }
         }
 
         _bindEvents() {
@@ -447,8 +456,8 @@
                 endInput.type = "text";
                 endInput.className = "voice-video-player-transcript-time";
                 endInput.value = formatVttTime(sentence.end);
-                startInput.addEventListener("blur", () => this._handleTimeEdit(index, startInput.value, endInput.value));
-                endInput.addEventListener("blur", () => this._handleTimeEdit(index, startInput.value, endInput.value));
+                startInput.addEventListener("blur", () => this._handleTimeEdit(index, startInput.value, endInput.value, "start"));
+                endInput.addEventListener("blur", () => this._handleTimeEdit(index, startInput.value, endInput.value, "end"));
                 timesRow.append(startInput, arrow, endInput);
                 const contentEl = document.createElement("div");
                 contentEl.className = "voice-video-player-transcript-item__content";
@@ -466,6 +475,7 @@
                 this.sentenceEntries.push({ container, contentEl, startInput, endInput });
             });
             this._refreshActiveNode();
+            this._updateTextTrack();
         }
 
         _handleTextEdit(index, value) {
@@ -475,7 +485,7 @@
             this._notifyTranscriptChange();
         }
 
-        _handleTimeEdit(index, startValue, endValue) {
+        _handleTimeEdit(index, startValue, endValue, editedField) {
             const sentence = this.sentences[index];
             if (!sentence) return;
             const parsedStart = parseVttTime(startValue);
@@ -489,12 +499,27 @@
             sentence.end = end;
             this.sentenceEntries[index]?.startInput && (this.sentenceEntries[index].startInput.value = formatVttTime(start));
             this.sentenceEntries[index]?.endInput && (this.sentenceEntries[index].endInput.value = formatVttTime(end));
+            if (editedField === "start") {
+                this.sentences.forEach((other, otherIdx) => {
+                    if (otherIdx === index) return;
+                    const otherStart = Number.isFinite(other.start) ? other.start : 0;
+                    const otherEnd = Number.isFinite(other.end) ? other.end : otherStart;
+                    if (otherStart < start && otherEnd > start) {
+                        other.end = start;
+                        const entry = this.sentenceEntries[otherIdx];
+                        if (entry?.endInput) {
+                            entry.endInput.value = formatVttTime(start);
+                        }
+                    }
+                });
+            }
             this._notifyTranscriptChange();
         }
 
         _notifyTranscriptChange() {
-            if (!this.onTranscriptChange) return;
             const snapshot = this.sentences.map(sentence => ({ ...sentence }));
+            this._updateTextTrack();
+            if (!this.onTranscriptChange) return;
             this.onTranscriptChange(snapshot);
         }
 
@@ -527,6 +552,41 @@
                 normalized.push({ id: "sentence-0", text: "", start: 0, end: 3 });
             }
             this.sentences = normalized;
+            this._updateTextTrack();
+        }
+
+        _buildVttFromSentences() {
+            if (!Array.isArray(this.sentences) || !this.sentences.length) return "";
+            const entries = this.sentences.map(sentence => {
+                const start = formatVttTime(sentence.start);
+                const end = formatVttTime(sentence.end);
+                const content = (sentence.text || "").replace(/\r?\n/g, "\n").trim();
+                return `${start} --> ${end}\n${content}`;
+            });
+            return `WEBVTT\n\n${entries.join("\n\n")}`;
+        }
+
+        _revokeTextTrackUrl() {
+            if (this._textTrackUrl) {
+                try { URL.revokeObjectURL(this._textTrackUrl); } catch (e) { /* noop */ }
+                this._textTrackUrl = "";
+            }
+        }
+
+        _updateTextTrack() {
+            if (!this.textTrackEl) return;
+            const vtt = this._buildVttFromSentences();
+            this._revokeTextTrackUrl();
+            if (!vtt) {
+                this.textTrackEl.removeAttribute("src");
+                try { if (this.textTrackEl.track) this.textTrackEl.track.mode = "hidden"; } catch (e) { /* noop */ }
+                return;
+            }
+            const blob = new Blob([vtt], { type: "text/vtt" });
+            this._textTrackUrl = URL.createObjectURL(blob);
+            this.textTrackEl.src = this._textTrackUrl;
+            this.textTrackEl.default = true;
+            try { if (this.textTrackEl.track) this.textTrackEl.track.mode = "showing"; } catch (e) { /* noop */ }
         }
 
         _applyVideoBlob(blob) {
@@ -573,6 +633,7 @@
                 URL.revokeObjectURL(this.videoBlobUrl);
                 this.videoBlobUrl = "";
             }
+            this._revokeTextTrackUrl();
         }
     }
 

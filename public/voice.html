@@ -6,12 +6,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voice | Go-Toolkit</title>
-	    <link rel="preconnect" href="https://fonts.googleapis.com">
-	    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-	    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.4">
-	    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.4">
-	    <style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.6">
+    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.6">
+    <style>
         :root {
             --bg: #f3f4f6;
             --surface: #ffffff;
@@ -243,6 +243,50 @@
             align-items: center;
             gap: 4px;
             min-width: 170px;
+        }
+
+        .audio-download {
+            position: relative;
+            display: inline-flex;
+        }
+
+        .audio-download-menu {
+            position: absolute;
+            top: 110%;
+            right: 0;
+            background: #fff;
+            border: 1px solid var(--border-strong);
+            border-radius: 10px;
+            box-shadow: var(--shadow-soft);
+            display: none;
+            flex-direction: column;
+            min-width: 180px;
+            z-index: 20;
+            padding: 6px 0;
+        }
+
+        .audio-download-menu.open {
+            display: flex;
+        }
+
+        .audio-download-option {
+            border: none;
+            background: transparent;
+            text-align: left;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text);
+            width: 100%;
+        }
+
+        .audio-download-option:hover:not(:disabled) {
+            background: var(--surface-soft);
+        }
+
+        .audio-download-option:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .audio-play-btn,
@@ -1017,10 +1061,10 @@
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                     aria-expanded="false">▷ Voice ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-	                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.4" role="menuitem"> ◍ Canvas</a>
-	                    <a class="nav-switch-link" href="grid.html?v=2025.12.26.4" role="menuitem">▦ Grid</a>
-	                    <a class="nav-switch-link" href="draw.html?v=2025.12.26.4" role="menuitem">◇ Draw</a>
-	                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.4" role="menuitem">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.6" role="menuitem"> ◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2025.12.26.6" role="menuitem">▦ Grid</a>
+                    <a class="nav-switch-link" href="draw.html?v=2025.12.26.6" role="menuitem">◇ Draw</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.6" role="menuitem">⇥ Timeline</a>
                 </div>
             </div>
 
@@ -1109,9 +1153,18 @@
                                                 max="1" step="0.01" value="0" aria-label="Progression audio" disabled>
                                             <select id="audioSpeedSelect" class="audio-speed" title="Vitesse de lecture"
                                                 aria-label="Vitesse de lecture"></select>
-                                            <button id="audioDownloadBtn" type="button" class="audio-download-btn"
-                                                title="Télécharger l'enregistrement"
-                                                aria-label="Télécharger">🡇</button>
+                                            <div class="audio-download">
+                                                <button id="audioDownloadBtn" type="button" class="audio-download-btn"
+                                                    title="Télécharger l'enregistrement"
+                                                    aria-label="Télécharger">🡇</button>
+                                                <div id="audioDownloadMenu" class="audio-download-menu"
+                                                    aria-hidden="true">
+                                                    <button type="button" id="audioDownloadAudio"
+                                                        class="audio-download-option">Fichier Audio .webm</button>
+                                                    <button type="button" id="audioDownloadVideo"
+                                                        class="audio-download-option">Fichier Vidéo .webm</button>
+                                                </div>
+                                            </div>
                                             <button id="audioClearBtn" type="button" class="audio-download-btn"
                                                 title="Supprimer l'enregistrement"
                                                 aria-label="Supprimer l'enregistrement">⊘</button>
@@ -1244,17 +1297,17 @@
             </div>
         </div>
 
-	        <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
-	            <img src="logo.gif" alt="Logo Go-Toolkit">
-	            <strong>Module Voice (Goal Digger)</strong>
-	            <span>Version 2025.12.26.4</span>
-	            <span>Usage réservé à Savane Consulting.</span>
-	            <div class="info-actions">
-	                <button id="updateAppBtn" type="button" class="update-btn">Réinitialiser</button>
-	                <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
-	                <button id="tourReplayBtn" type="button" class="secondary">Tour guidé</button>
-	            </div>
-	        </div>
+        <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
+            <img src="logo.gif" alt="Logo Go-Toolkit">
+            <strong>Module Voice (Goal Digger)</strong>
+            <span>Version 2025.12.26.6</span>
+            <span>Usage réservé à Savane Consulting.</span>
+            <div class="info-actions">
+                <button id="updateAppBtn" type="button" class="update-btn">Réinitialiser</button>
+                <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
+                <button id="tourReplayBtn" type="button" class="secondary">Tour guidé</button>
+            </div>
+        </div>
 
         <div data-toast-slot="copyToast" data-toast-class="toast" data-toast-aria-live="polite"
             data-toast-aria-atomic="true"></div>
@@ -1269,12 +1322,12 @@
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2025.12.26.4"></script>
+    <script src="js/cgu.js?v=2025.12.26.6"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
     <script src="js/ia-config.js"></script>
-    <script src="js/prompt.js?v=2025.12.26.4"></script>
+    <script src="js/prompt.js?v=2025.12.26.6"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/voice-video-player.js"></script>
 
@@ -1389,6 +1442,9 @@
             const audioProgress = document.getElementById("audioProgress");
             const audioSpeedSelect = document.getElementById("audioSpeedSelect");
             const audioDownloadBtn = document.getElementById("audioDownloadBtn");
+            const audioDownloadMenu = document.getElementById("audioDownloadMenu");
+            const audioDownloadAudio = document.getElementById("audioDownloadAudio");
+            const audioDownloadVideo = document.getElementById("audioDownloadVideo");
             const audioClearBtn = document.getElementById("audioClearBtn");
             const screenCaptureToggleBtn = document.getElementById("screenCaptureToggleBtn");
             const recordBtn = document.getElementById("recordBtn");
@@ -2663,9 +2719,6 @@
                     audioPlayBtn.disabled = !audioUrl;
                     audioPlayBtn.textContent = "▶";
                 }
-                if (audioDownloadBtn) {
-                    audioDownloadBtn.disabled = !audioUrl;
-                }
                 if (blob && !skipSave) {
                     const mediaKey = getMediaStorageKey();
                     saveAudioToDb(blob);
@@ -2687,6 +2740,7 @@
                     }
                 }
                 updateNoteModeOptions();
+                updateDownloadMenu();
             }
 
             function setVideoBlob(blob, options = {}) {
@@ -2704,6 +2758,7 @@
                     }
                 }
                 updateNoteModeOptions();
+                updateDownloadMenu();
             }
 
             function hasAudioRecording() {
@@ -2734,14 +2789,11 @@
                     }
                 }
                 if (videoModeOption) {
-                    const showVideo = screenCaptureEnabled && hasRecording;
-                    videoModeOption.hidden = !showVideo;
+                    const showVideo = hasRecording;
+                    videoModeOption.hidden = false;
                     videoModeOption.disabled = !showVideo || audioRecordingActive;
                     if (!showVideo && activeNoteMode === NOTE_MODE_TRANSCRIPT_VIDEO) {
-                        const reason = !hasRecording
-                            ? "La transcription vidéo nécessite un enregistrement audio."
-                            : "La transcription vidéo nécessite une capture d'écran.";
-                        showToast(reason, true);
+                        showToast("La transcription vidéo nécessite un enregistrement audio.", true);
                         applyNoteMode(NOTE_MODE_NOTE);
                     }
                 }
@@ -3307,9 +3359,19 @@
                     subjects,
                     voiceContextStrings
                 } = getVoiceContextData();
-                const contextPhrases = [...participants.map(p => [p.name, p.role].filter(Boolean).join(" ")), ...voiceContextStrings]
-                    .map(value => String(value || "").trim())
-                    .filter(Boolean);
+                const keyterms = [];
+                const seenKeyterms = new Set();
+                voiceContextStrings.forEach(entry => {
+                    const tokens = String(entry || "")
+                        .split(/[^A-Za-zÀ-ÿ0-9'-]+/)
+                        .filter(Boolean);
+                    tokens.forEach(token => {
+                        const lowered = token.toLowerCase();
+                        if (seenKeyterms.has(lowered) || keyterms.length >= 14) return;
+                        seenKeyterms.add(lowered);
+                        keyterms.push(token);
+                    });
+                });
                 const payload = {
                     audio_url: uploadUrl,
                     filter_profanity: true,
@@ -3321,8 +3383,7 @@
                     },
                     punctuate: true,
                     format_text: true,
-                    ...(voiceContextStrings.length ? { keyterms_prompt: voiceContextStrings } : {}),
-                    ...(contextPhrases.length ? { word_boost: Array.from(new Set(contextPhrases)).slice(0, 100) } : {})
+                    ...(keyterms.length ? { keyterms_prompt: keyterms } : {})
                 };
                 if (speakersExpected > 0) {
                     payload.speakers_expected = speakersExpected;
@@ -3858,16 +3919,72 @@
                 audioSpeedSelect.value = "1.2";
             }
 
-            function downloadAudio() {
-                if (!audioBlob) return;
-                const url = audioUrl || URL.createObjectURL(audioBlob);
+            function formatBlobSize(blob) {
+                if (!blob?.size) return "";
+                const mb = blob.size / (1024 * 1024);
+                if (mb >= 10) return `${Math.round(mb)} MB`;
+                const rounded = Math.max(0.1, Math.round(mb * 10) / 10);
+                return `${rounded.toFixed(1)} MB`;
+            }
+
+            function updateDownloadMenu() {
+                const hasAudio = Boolean(audioBlob);
+                const hasVideo = Boolean(videoBlob);
+                const canDownload = hasAudio || hasVideo;
+                if (audioDownloadBtn) {
+                    audioDownloadBtn.disabled = !canDownload;
+                }
+                if (audioDownloadMenu && !canDownload) {
+                    audioDownloadMenu.classList.remove("open");
+                    audioDownloadMenu.setAttribute("aria-hidden", "true");
+                }
+                if (audioDownloadAudio) {
+                    audioDownloadAudio.disabled = !hasAudio;
+                    audioDownloadAudio.textContent = hasAudio
+                        ? `Audio (${formatBlobSize(audioBlob)})`
+                        : "Audio";
+                }
+                if (audioDownloadVideo) {
+                    if (hasVideo) {
+                        audioDownloadVideo.style.display = "block";
+                        audioDownloadVideo.disabled = false;
+                        audioDownloadVideo.textContent = `Vidéo (${formatBlobSize(videoBlob)})`;
+                    } else {
+                        audioDownloadVideo.style.display = "none";
+                        audioDownloadVideo.disabled = true;
+                    }
+                }
+            }
+
+            function toggleDownloadMenu(forceOpen) {
+                if (!audioDownloadMenu || audioDownloadBtn?.disabled) return;
+                const shouldOpen = typeof forceOpen === "boolean"
+                    ? forceOpen
+                    : !audioDownloadMenu.classList.contains("open");
+                audioDownloadMenu.classList.toggle("open", shouldOpen);
+                audioDownloadMenu.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
+            }
+
+            function downloadBlob(blob, filename) {
+                if (!blob) return;
+                const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = "voice-recording.webm";
+                a.download = filename;
                 a.click();
-                if (!audioUrl) {
-                    URL.revokeObjectURL(url);
-                }
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+
+            function handleDownloadAudio() {
+                if (!audioBlob) return;
+                downloadBlob(audioBlob, "voice-recording.webm");
+                toggleDownloadMenu(false);
+            }
+
+            function handleDownloadVideo() {
+                if (!videoBlob) return;
+                downloadBlob(videoBlob, "voice-video.webm");
+                toggleDownloadMenu(false);
             }
 
             function startRespondCountdown(seconds = 30) {
@@ -4999,7 +5116,17 @@
             recordBtn?.addEventListener("click", startRecording);
             pauseBtn?.addEventListener("click", pauseRecording);
             audioPlayBtn?.addEventListener("click", handleAudioPlayClick);
-            audioDownloadBtn?.addEventListener("click", downloadAudio);
+            audioDownloadBtn?.addEventListener("click", ev => {
+                ev.stopPropagation();
+                toggleDownloadMenu();
+            });
+            audioDownloadAudio?.addEventListener("click", handleDownloadAudio);
+            audioDownloadVideo?.addEventListener("click", handleDownloadVideo);
+            document.addEventListener("click", ev => {
+                if (!audioDownloadMenu?.classList.contains("open")) return;
+                if (audioDownloadMenu.contains(ev.target) || audioDownloadBtn?.contains(ev.target)) return;
+                toggleDownloadMenu(false);
+            });
             audioClearBtn?.addEventListener("click", clearCurrentAudioWithConfirm);
             screenCaptureToggleBtn?.addEventListener("click", async () => {
                 const willEnable = !screenCaptureEnabled;
@@ -5020,6 +5147,7 @@
             audioImportInput?.addEventListener("change", handleAudioImportChange);
             populateAudioSpeedOptions();
             updateScreenToggleVisual();
+            updateDownloadMenu();
             audioSpeedSelect?.addEventListener("change", () => {
                 const speed = getAudioSpeed();
                 audioPlayer.playbackRate = speed;
