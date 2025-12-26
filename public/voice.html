@@ -461,11 +461,6 @@
             z-index: 3;
         }
 
-        /* Hide interim/ghost shadow text — show live text only in textarea */
-        .transcribe-ghost {
-            display: none !important;
-        }
-
         .transcribe-mirror {
             position: absolute;
             visibility: hidden;
@@ -3377,7 +3372,7 @@
                         flushPendingTimestampIfReady(combinedText);
 
                         const caret = Math.min(lastCaret || 0, base.length);
-                        const defaultSep = base && !base.endsWith(" ") ? " " : "";
+                        const defaultSep = base && !/\s$/.test(base) ? " " : "";
                         const sep = inserted.startsWith("\n") ? "" : defaultSep;
                         const newBase = base.slice(0, caret) + sep + inserted + base.slice(caret);
                         transcriptPrefix = newBase;
@@ -3386,17 +3381,15 @@
                     }
 
                     const interimLine = interim || "";
-                    // Show finalized base + interim inline at caret for live feedback
+                    // Show finalized base and overlay interim at caret for live feedback
                     if (transcribeInput) {
                         const displayBase = transcriptPrefix || base || "";
                         const caretPos = recognitionActive
                             ? displayBase.length
                             : Math.min(lastCaret || 0, displayBase.length);
-                        const before = displayBase.slice(0, caretPos);
-                        const after = displayBase.slice(caretPos);
-                        const display = interimLine ? (before + (before && !before.endsWith(" ") ? " " : "") + interimLine + after) : displayBase;
-                        transcribeInput.value = display;
-                        try { transcribeInput.selectionStart = transcribeInput.selectionEnd = caretPos + (interimLine ? (interimLine.length + (before && !before.endsWith(" ") ? 1 : 0)) : 0); } catch (e) { }
+                        transcribeInput.value = displayBase;
+                        try { transcribeInput.selectionStart = transcribeInput.selectionEnd = caretPos; } catch (e) { }
+                        updateGhostOverlay(interimLine);
                         updateTranscriptMeta();
                         lastInterim = interimLine;
                     }
@@ -3742,10 +3735,16 @@
                 if (!transcribeInput) return;
                 const base = getBaseWithoutInterim();
                 if (!base) return;
-                const spaced = ensureTrailingPauseSpacing(base);
-                if (spaced === base) return;
+                const needsBreak = !base.endsWith("\n");
+                if (!needsBreak) return;
+                const spaced = `${base}\n`;
                 transcriptPrefix = spaced;
                 transcribeInput.value = spaced;
+                const caretPos = spaced.length;
+                try {
+                    transcribeInput.selectionStart = transcribeInput.selectionEnd = caretPos;
+                } catch (e) { /* ignore */ }
+                lastCaret = caretPos;
                 const page = getActivePage();
                 if (page) {
                     page.transcript = spaced;
