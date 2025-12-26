@@ -1313,18 +1313,6 @@
                         </label>
                     </div>
                     <div class="field-row">
-                        <label style="width:100%">
-                            <span class="label-title">Transcription Voice</span>
-                            <select id="voiceTranscriptionSelect">
-                                <option value="web">Web Speech API</option>
-                                <option value="assembly">AssemblyAI</option>
-                            </select>
-                            <span class="label-subtitle">
-                                Choisir entre la dictée navigateur ou la retranscription AssemblyAI.
-                            </span>
-                        </label>
-                    </div>
-                    <div class="field-row">
                         <label>
                             <span class="label-title">Moteur IA</span>
                             <select id="aiBackendSelect">
@@ -2863,9 +2851,7 @@
         const webllmSettingsEl = document.getElementById("webllmSettings");
         const webllmModelSelect = document.getElementById("webllmModelSelect");
         const assemblyAiKeyInput = document.getElementById("assemblyAiKeyInput");
-        const voiceTranscriptionSelect = document.getElementById("voiceTranscriptionSelect");
         const ASSEMBLY_AI_KEY_STORAGE = "go-toolkit-assemblyai-key";
-        const VOICE_TRANSCRIPTION_MODE_STORAGE = "go-toolkit-voice-transcription-mode";
         const VOICE_AUDIO_DB = { name: "go-toolkit-voice-audio", store: "recordings" };
 
         try {
@@ -2874,13 +2860,6 @@
         } catch (e) {
             window.GoToolkitAssemblyAiKey = "";
         }
-        try {
-            const storedMode = ((localStorage.getItem(VOICE_TRANSCRIPTION_MODE_STORAGE) || "").trim() || "web");
-            window.GoToolkitVoiceTranscriptionMode = storedMode;
-        } catch (e) {
-            window.GoToolkitVoiceTranscriptionMode = "web";
-        }
-
         function updateBackendVisibility() {
             const val = (aiBackendSelect && aiBackendSelect.value) || "openai";
             if (openaiSettingsEl) openaiSettingsEl.style.display = val === "openai" ? "" : "none";
@@ -3030,10 +3009,6 @@
                 if (settingsSpeechModeSelect) {
                     settingsSpeechModeSelect.value = storedSpeechMode === "auto" ? "auto" : "manual";
                 }
-                const storedVoiceTranscription = ((localStorage.getItem(VOICE_TRANSCRIPTION_MODE_STORAGE) || "").trim() || "web");
-                if (voiceTranscriptionSelect) {
-                    voiceTranscriptionSelect.value = storedVoiceTranscription;
-                }
             } catch (e) { /* noop */ }
             try {
                 const storedAdmin = localStorage.getItem("feedback-admin-token");
@@ -3109,11 +3084,6 @@
                     }
                 } catch (e) { /* noop */ }
                 try { window.GoToolkitAssemblyAiKey = assemblyKeyValue; } catch (e) { /* noop */ }
-                const voiceTranscriptionValue = (voiceTranscriptionSelect?.value || "web");
-                try {
-                    localStorage.setItem(VOICE_TRANSCRIPTION_MODE_STORAGE, voiceTranscriptionValue);
-                } catch (e) { /* noop */ }
-                try { window.GoToolkitVoiceTranscriptionMode = voiceTranscriptionValue; } catch (e) { /* noop */ }
                 // expose immediate selection to runtime
                 try { window.GoToolkitSelectedAIBackend = selectedBackend; } catch (e) { }
                 const ollamaUrlValue = (settingsOllamaUrlInput?.value || "").trim();

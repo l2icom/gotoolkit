@@ -1258,7 +1258,6 @@
             const FIRESTORE_COLLECTION = "voices";
             const SHARE_QUERY_PARAM = "share";
             const SPEECH_ENGINE_STORAGE_KEY = "go-toolkit-speech-engine";
-            const VOICE_TRANSCRIPTION_MODE_STORAGE = "go-toolkit-voice-transcription-mode";
             const ASSEMBLY_AI_KEY_STORAGE = "go-toolkit-assemblyai-key";
             const ASSEMBLY_PROXY_TOKEN_URL = (window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai-token.gotoolkit.workers.dev/token").replace(/\/$/, "");
             const ASSEMBLY_PROXY_BASE_URL = ASSEMBLY_PROXY_TOKEN_URL.replace(/\/token\/?$/i, "").replace(/\/$/, "") || ASSEMBLY_PROXY_TOKEN_URL;
@@ -1285,6 +1284,8 @@
             let activeRequestId = null;
             let activeRequestController = null;
             let respondCountdownTimer = null;
+            const summarizeCountdownState = { timer: null };
+            const evaluateCountdownState = { timer: null };
             const subjectModal = document.createElement("div");
             subjectModal.className = "modal-overlay";
             subjectModal.setAttribute("role", "dialog");
@@ -1358,6 +1359,7 @@
             const audioImportInput = document.getElementById("audioImportInput");
             const summarizeBtn = document.getElementById("summarizeBtn");
             const summaryTextarea = document.getElementById("summaryTextarea");
+            const summarizeDefaultLabel = summarizeBtn?.textContent || "⌘ Résumer";
             const noteModeSelect = document.getElementById("noteModeSelect");
             const audioPlayBtn = document.getElementById("audioPlayBtn");
             const audioProgress = document.getElementById("audioProgress");
@@ -1376,6 +1378,7 @@
             let guidelineDuration = document.getElementById("guidelineDuration");
             const addSubjectBtn = document.getElementById("addSubjectBtn");
             const evaluateBtn = document.getElementById("evaluateBtn");
+            const evaluateDefaultLabel = evaluateBtn?.textContent || "⌘ Évaluer";
             const refreshFromScriptBtn = document.getElementById("refreshFromScriptBtn");
             const fileMenuBtn = document.getElementById("fileMenuBtn");
             const fileMenu = document.getElementById("fileMenu");
@@ -2221,7 +2224,7 @@
                                 renderGuidelines();
                             });
                             direct.appendChild(directInput);
-                            direct.appendChild(document.createTextNode("Oui"));
+                            direct.appendChild(document.createTextNode("Discuté"));
                             const indirect = document.createElement("label");
                             const indirectInput = document.createElement("input");
                             indirectInput.type = "checkbox";
@@ -2236,7 +2239,7 @@
                                 renderGuidelines();
                             });
                             indirect.appendChild(indirectInput);
-                            indirect.appendChild(document.createTextNode("Partiellement"));
+                            indirect.appendChild(document.createTextNode("Abordé"));
                             actions.append(direct, indirect);
                             li.append(title, actions);
                             guidelineList.appendChild(li);
@@ -2478,24 +2481,12 @@
                 await processAssemblyRecording(file);
             }
 
-            function getVoiceTranscriptionMode() {
-                try {
-                    const stored = (localStorage.getItem(VOICE_TRANSCRIPTION_MODE_STORAGE) || "").trim();
-                    if (stored) return stored;
-                } catch (err) { /* noop */ }
-                return (window.GoToolkitVoiceTranscriptionMode || "web");
-            }
-
             function getAssemblyApiKey() {
                 try {
                     const stored = (localStorage.getItem(ASSEMBLY_AI_KEY_STORAGE) || "").trim();
                     if (stored) return stored;
                 } catch (err) { /* noop */ }
                 return (window.GoToolkitAssemblyAiKey || "").trim();
-            }
-
-            function shouldUseAssemblyTranscriptionMode() {
-                return getVoiceTranscriptionMode() === "assembly";
             }
 
             function getAssemblyProxyUrl(path = "") {
@@ -2651,7 +2642,7 @@
                 const response = await fetch(url, {
                     method: "POST",
                     headers: {
-                        "X-AssemblyAI-Key": key,
+                        ...(key ? { "X-AssemblyAI-Key": key } : {}),
                         "Content-Type": blob.type || "audio/webm"
                     },
                     body: blob
@@ -2672,7 +2663,7 @@
                 const response = await fetch(url, {
                     method: "POST",
                     headers: {
-                        "X-AssemblyAI-Key": key,
+                        ...(key ? { "X-AssemblyAI-Key": key } : {}),
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify(payload)
@@ -2692,9 +2683,7 @@
                 if (!url) throw new Error("Proxy AssemblyAI indisponible");
                 for (let attempt = 0; attempt < 40; attempt++) {
                     const response = await fetch(url, {
-                        headers: {
-                            "X-AssemblyAI-Key": key
-                        }
+                        headers: key ? { "X-AssemblyAI-Key": key } : {}
                     });
                     if (!response.ok) {
                         throw new Error(`Échec du suivi (${response.status})`);
@@ -2716,20 +2705,15 @@
 
             async function processAssemblyRecording(blob) {
                 if (!blob) return;
-                if (!shouldUseAssemblyTranscriptionMode()) return;
                 if (assemblyRequestInProgress) return;
                 const assemblyKey = getAssemblyApiKey();
-                if (!assemblyKey) {
-                    showToast("Clé AssemblyAI manquante.", true);
-                    return;
-                }
                 const baseUrl = ASSEMBLY_PROXY_BASE_URL;
                 if (!baseUrl) {
                     showToast("Proxy AssemblyAI indisponible.", true);
                     return;
                 }
                 assemblyRequestInProgress = true;
-                showToast("Transcription AssemblyAI en cours...");
+                showToast("Transcription IA en cours...");
                 try {
                     console.debug("AssemblyAI upload request, blob", blob);
                     const uploadUrl = await uploadAudioToAssembly(blob, assemblyKey);
@@ -2756,7 +2740,7 @@
                         activePage.assemblyTranscript = finalText;
                         applyNoteMode(NOTE_MODE_TRANSCRIPT_IA);
                     }
-                    showToast("Transcription AssemblyAI terminée.");
+                    showToast("Transcription IA terminée.");
                 } catch (err) {
                     console.error("AssemblyAI transcription failed", err);
                     showToast("Transcription AssemblyAI impossible.", true);
@@ -2890,6 +2874,28 @@
                 if (respondBtn) respondBtn.textContent = respondDefaultLabel;
             }
 
+            const ACTION_COUNTDOWN_PREFIX = "◴";
+
+            function startActionCountdown(button, state, defaultLabel, seconds = 30) {
+                if (!button) return;
+                let remaining = seconds;
+                const tick = () => {
+                    const label = remaining < 10 ? `0${remaining}` : `${remaining}`;
+                    button.textContent = `${ACTION_COUNTDOWN_PREFIX} ${label}s`;
+                    remaining -= 1;
+                    if (remaining < 0) remaining = seconds;
+                };
+                tick();
+                if (state.timer) clearInterval(state.timer);
+                state.timer = setInterval(tick, 1000);
+            }
+
+            function stopActionCountdown(button, state, defaultLabel) {
+                if (state.timer) clearInterval(state.timer);
+                state.timer = null;
+                if (button) button.textContent = defaultLabel;
+            }
+
             function clearActiveRequest() {
                 activeRequestId = null;
                 activeRequestController = null;
@@ -2983,7 +2989,7 @@
                     return;
                 }
                 evaluateBtn?.setAttribute("disabled", "true");
-                evaluateBtn.textContent = "Analyse...";
+                startActionCountdown(evaluateBtn, evaluateCountdownState, evaluateDefaultLabel);
                 try {
                     const evaluatePrompt = promptState.evaluate || promptDefaults.evaluate;
                     const summary = page.subjects.map(s => {
@@ -3029,7 +3035,7 @@
                     showToast("Impossible d'évaluer via IA.", true);
                 } finally {
                     evaluateBtn?.removeAttribute("disabled");
-                    evaluateBtn.textContent = "⌘ Évaluer";
+                    stopActionCountdown(evaluateBtn, evaluateCountdownState, evaluateDefaultLabel);
                 }
             }
 
@@ -3042,7 +3048,7 @@
                     return;
                 }
                 summarizeBtn?.setAttribute("disabled", "true");
-                if (summarizeBtn) summarizeBtn.textContent = "Résumé...";
+                startActionCountdown(summarizeBtn, summarizeCountdownState, summarizeDefaultLabel);
                 try {
                     const templateText = selectedTemplateText || "";
                     const prompt = (promptState.summary || promptDefaults.summary || "")
@@ -3069,7 +3075,7 @@
                     showToast("Impossible de résumer via IA.", true);
                 } finally {
                     summarizeBtn?.removeAttribute("disabled");
-                    if (summarizeBtn) summarizeBtn.textContent = "⌘ Résumer";
+                    stopActionCountdown(summarizeBtn, summarizeCountdownState, summarizeDefaultLabel);
                 }
             }
 
