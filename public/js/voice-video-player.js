@@ -29,8 +29,7 @@
             }
             .voice-video-player-dialog {
                 position: relative;
-                width: min(95vw, 1180px);
-                max-width: 1180px;
+                width: 95vw;
                 max-height: 90vh;
                 background: #fff;
                 border-radius: 24px;
@@ -78,18 +77,6 @@
                 object-fit: contain;
                 display: block;
                 background: #000;
-            }
-            .voice-video-player-subtitle {
-                width: 100%;
-                min-height: 56px;
-                padding: 10px 14px;
-                border-radius: 12px;
-                background: rgba(15, 23, 42, 0.04);
-                color: #0f172a;
-                font-size: 14px;
-                line-height: 1.4;
-                border: 1px solid rgba(15, 23, 42, 0.12);
-                resize: vertical;
             }
             .voice-video-player-controls {
                 display: flex;
@@ -171,8 +158,8 @@
                 gap: 6px;
             }
             .voice-video-player-transcript-item--active {
-                background: rgba(42, 122, 87, 0.12);
-                border-color: rgba(42, 122, 87, 0.3);
+                background: transparent;
+                border: 2px solid var(--primary-color, #2a7a57);
             }
             .voice-video-player-transcript-item__times {
                 display: flex;
@@ -186,26 +173,28 @@
                 border: none;
                 padding: 4px 8px;
                 font-size: 12px;
-                background: #transparent;
-                color: #0f172a;
+                background: transparent;
+                color: var(--border-color, #475467);
                 width:50px;
+                border: none;
             }
             .voice-video-player-transcript-time:focus {
-                outline: 2px solid rgba(42, 122, 87, 0.4);
+                border: 1px solid var(--border-color, #e2e8f0);
+                border-radius: 4px;
             }
             .voice-video-player-transcript-item__content {
                 min-height: 40px;
                 font-size: 13px;
                 line-height: 1.4;
-                color: #0f172a;
                 border-radius: 8px;
                 padding: 6px 8px;
-                border: 1px solid rgba(15, 23, 42, 0.1);
+                border: 1px solid #e2e8f0;
             }
-            .voice-video-player-transcript-item__content:focus {
-                border-color: #2a7a57;
-                box-shadow: 0 0 0 2px rgba(42, 122, 87, 0.12);
-            }
+
+.voice-video-player-transcript-item__content:focus,.voice-video-player-transcript-item__content:focus-visible {
+            border: 1px solid #e2e8f0;
+}
+
             .voice-video-player-transcript-save {
                 border: none;
                 outline: none;
@@ -313,7 +302,6 @@
                             <div class="voice-video-player-video-frame">
                                 <video playsinline></video>
                             </div>
-                            <textarea class="voice-video-player-subtitle" aria-live="polite" rows="3" placeholder="Sous-titre actif"></textarea>
                             <div class="voice-video-player-controls">
                                 <button type="button" class="voice-video-player-play-toggle" aria-label="Lecture">▶</button>
                                 <input type="range" min="0" max="1" step="0.001" value="0" class="voice-video-player-progress">
@@ -332,7 +320,6 @@
             this.dialog = this.overlay.querySelector(".voice-video-player-dialog");
             this.closeButton = this.overlay.querySelector(".voice-video-player-close");
             this.videoEl = this.overlay.querySelector("video");
-            this.subtitle = this.overlay.querySelector(".voice-video-player-subtitle");
             this.playToggle = this.overlay.querySelector(".voice-video-player-play-toggle");
             this.progress = this.overlay.querySelector(".voice-video-player-progress");
             this.timeLabel = this.overlay.querySelector(".voice-video-player-time");
@@ -348,12 +335,7 @@
             });
             this.closeButton?.addEventListener("click", () => this.close());
             this.playToggle?.addEventListener("click", () => {
-                if (!this.videoEl) return;
-                if (this.videoEl.paused) {
-                    this.videoEl.play().catch(() => { });
-                } else {
-                    this.videoEl.pause();
-                }
+                this._togglePlayback();
             });
             this.progress?.addEventListener("input", () => {
                 if (!this.videoEl || !this.videoEl.duration) return;
@@ -375,27 +357,23 @@
                 this._updateProgress(true);
                 this._refreshActiveNode();
             });
-            this.subtitle?.addEventListener("input", () => this._handleSubtitleInput());
             this.saveButton?.addEventListener("click", () => this._handleSave());
         }
 
         _handleKeydown(event) {
             if (event.key === "Escape") {
                 this.close();
+                return;
             }
-        }
-
-        _handleSubtitleInput() {
-            const idx = this._activeSentenceIndex;
-            if (idx < 0 || idx >= this.sentences.length) return;
-            const value = this.subtitle?.value || "";
-            const sentence = this.sentences[idx];
-            sentence.text = value;
-            const entry = this.sentenceEntries[idx];
-            if (entry?.contentEl) {
-                entry.contentEl.textContent = value;
+            const isSpace = event.code === "Space" || event.key === " ";
+            if (isSpace) {
+                const target = event.target;
+                const tag = target?.tagName;
+                const isEditable = target?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+                if (isEditable) return;
+                event.preventDefault();
+                this._togglePlayback();
             }
-            this._notifyTranscriptChange();
         }
 
         _handleSave() {
@@ -430,16 +408,23 @@
                 return currentTime >= start && currentTime < end;
             });
             if (foundIndex === -1) {
-                foundIndex = this.sentences.length - 1;
+                let futureIndex = -1;
+                let closestStart = Infinity;
+                this.sentences.forEach((sentence, index) => {
+                    const start = Number.isFinite(sentence.start) ? sentence.start : 0;
+                    if (start >= currentTime && start < closestStart) {
+                        closestStart = start;
+                        futureIndex = index;
+                    }
+                });
+                foundIndex = futureIndex !== -1 ? futureIndex : this.sentences.length - 1;
             }
+            if (foundIndex === -1) return;
             if (this._activeSentenceIndex === foundIndex) return;
             this._activeSentenceIndex = foundIndex;
             this.sentenceEntries.forEach((entry, index) => {
                 entry.container.classList.toggle("voice-video-player-transcript-item--active", index === foundIndex);
             });
-            if (this.subtitle) {
-                this.subtitle.value = this.sentences[foundIndex]?.text || "";
-            }
             this.sentenceEntries[foundIndex]?.container?.scrollIntoView({ block: "nearest", inline: "nearest" });
         }
 
@@ -487,9 +472,6 @@
             const sentence = this.sentences[index];
             if (!sentence) return;
             sentence.text = value;
-            if (index === this._activeSentenceIndex && this.subtitle) {
-                this.subtitle.value = value;
-            }
             this._notifyTranscriptChange();
         }
 
@@ -514,6 +496,15 @@
             if (!this.onTranscriptChange) return;
             const snapshot = this.sentences.map(sentence => ({ ...sentence }));
             this.onTranscriptChange(snapshot);
+        }
+
+        _togglePlayback() {
+            if (!this.videoEl) return;
+            if (this.videoEl.paused) {
+                this.videoEl.play().catch(() => { });
+            } else {
+                this.videoEl.pause();
+            }
         }
 
         _normalizeSentences(rawSentences = []) {
@@ -560,7 +551,6 @@
             this._normalizeSentences(sentences);
             this._renderSentences();
             this._applyVideoBlob(videoBlob);
-            this.subtitle && (this.subtitle.value = this.sentences[0]?.text || "");
             this.overlay.classList.add("voice-video-player-modal--open");
             this.overlay.setAttribute("aria-hidden", "false");
             document.body?.classList.add("voice-video-player-modal-open");
@@ -582,9 +572,6 @@
             if (this.videoBlobUrl) {
                 URL.revokeObjectURL(this.videoBlobUrl);
                 this.videoBlobUrl = "";
-            }
-            if (this.subtitle) {
-                this.subtitle.value = "";
             }
         }
     }
