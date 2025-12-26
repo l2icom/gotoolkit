@@ -513,6 +513,12 @@
             transform: translateX(2px);
         }
 
+        #audioImportBtn {
+            right: 28px;
+            top: 4px;
+            transform: translateX(0);
+        }
+
         .speech-button--active,
         .speech-button:active {
             color: #B11226;
@@ -1108,6 +1114,10 @@
                                     <button class="speech-button" id="speechToggleBtn" type="button"
                                         data-speech-target="transcribeInput" title="Dictée vocale"
                                         aria-label="Activer la dictée vocale">◉</button>
+                                    <button class="speech-button" id="audioImportBtn" type="button"
+                                        title="Importer un fichier audio"
+                                        aria-label="Importer un fichier audio">♪</button>
+                                    <input id="audioImportInput" type="file" accept="audio/*" hidden>
                                 </div>
                             </div>
                             <div class="summary-column">
@@ -1349,6 +1359,8 @@
             const transcribeGhost = document.getElementById("transcribeGhost");
             const transcribeMirror = document.getElementById("transcribeMirror");
             const speechToggleBtn = document.getElementById("speechToggleBtn");
+            const audioImportBtn = document.getElementById("audioImportBtn");
+            const audioImportInput = document.getElementById("audioImportInput");
             const summarizeBtn = document.getElementById("summarizeBtn");
             const summaryTextarea = document.getElementById("summaryTextarea");
             const noteModeSelect = document.getElementById("noteModeSelect");
@@ -2435,6 +2447,41 @@
                 }
             }
 
+            function handleAudioImportClick() {
+                if (!audioImportInput) return;
+                if (audioBlob) {
+                    const confirmClear = window.confirm("Un enregistrement existe déjà et sera remplacé. Continuer ?");
+                    if (!confirmClear) return;
+                }
+                audioImportInput.value = "";
+                audioImportInput.click();
+            }
+
+            async function handleAudioImportChange() {
+                if (!audioImportInput) return;
+                const file = audioImportInput.files?.[0];
+                audioImportInput.value = "";
+                if (!file) {
+                    return;
+                }
+                stopAudioRecording();
+                audioRecordingActive = false;
+                recognitionActive = false;
+                recognitionPaused = false;
+                setSpeechButtonState(false);
+                recordingStartedAt = null;
+                recordingElapsedSec = 0;
+                if (recordingTimer) {
+                    clearInterval(recordingTimer);
+                    recordingTimer = null;
+                }
+                recordingSegments = [file];
+                setAudioBlob(file);
+                updateRecordingUi();
+                updateTranscriptMeta();
+                await processAssemblyRecording(file);
+            }
+
             function getVoiceTranscriptionMode() {
                 try {
                     const stored = (localStorage.getItem(VOICE_TRANSCRIPTION_MODE_STORAGE) || "").trim();
@@ -2551,6 +2598,10 @@
             function handleNoteModeSelection(value) {
                 if (!noteModeSelect) return;
                 if (value === NOTE_MODE_TRANSCRIPT_IA) {
+                    if (!audioBlob) {
+                        handleAudioImportClick();
+                        return;
+                    }
                     if (!canRequestAssemblyTranscript()) {
                         return;
                     }
@@ -3700,6 +3751,8 @@
             audioPlayBtn?.addEventListener("click", toggleAudioPlayback);
             audioDownloadBtn?.addEventListener("click", downloadAudio);
             audioClearBtn?.addEventListener("click", clearCurrentAudioWithConfirm);
+            audioImportBtn?.addEventListener("click", handleAudioImportClick);
+            audioImportInput?.addEventListener("change", handleAudioImportChange);
             populateAudioSpeedOptions();
             audioSpeedSelect?.addEventListener("change", () => {
                 const speed = getAudioSpeed();
