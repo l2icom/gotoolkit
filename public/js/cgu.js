@@ -34,8 +34,8 @@ Ne transmettez jamais de données sensibles.</p>
 La dictée et la transcription peuvent impliquer un traitement externe de l’audio par des fournisseurs spécialisés.
 Informez les participants et recueillez leur consentement si nécessaire.</p>
 
-<p><strong>⟐ Accès privé ou partagé limité</strong><br>
-Vous pouvez utiliser vos propres clés API (accès privé) ou un accès partagé limité.
+<p><strong>⟐ Accès privé ou partagé avec quota</strong><br>
+Vous pouvez utiliser vos propres clés API (accès privé) ou un accès partagé avec quota journalier.
 Dans tous les cas, les données transmises sont limitées à la fonctionnalité demandée.</p>
 
 <p><strong>⧉ Partage et cloud</strong><br>
