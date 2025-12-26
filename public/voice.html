@@ -99,7 +99,7 @@
         }
 
         .app-main:not(.context-open) .voice-main-body {
-            grid-template-columns: minmax(0, 1fr) 400px;
+            grid-template-columns: minmax(0, 1fr) 500px;
         }
 
         .panel {
@@ -611,10 +611,10 @@
             background: #ffffff;
             border: none;
             border-radius: var(--radius-sm);
-            padding: 0px 10px;
+            padding: 0px 6px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
             min-height: 0;
         }
 
@@ -741,7 +741,7 @@
         .guideline-actions {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 6px;
             flex-wrap: wrap;
         }
 
@@ -1130,7 +1130,7 @@
 
                     <div class="guidelines-panel">
                         <div id="guidelineProgress">
-                            <div class="panel-header" style="align-items:flex-start;">
+                            <div class="panel-header panel-progress" style="align-items:flex-start;">
                                 <div style="display:flex;align-items:center;gap:8px;font-weight:600;">
                                     <div>Sujets</div>
                                     <span style="font-size:12px;color:var(--muted);">Durée prévue</span>
@@ -1138,7 +1138,8 @@
                                         <!-- options filled by JS -->
                                     </select>
                                 </div>
-                                <div class="guideline-actions">
+                                <div class="guideline-actions guideline-ai-btn">
+                                    <button id="completeBtn" type="button" class="btn">⌘ Compléter</button>
                                     <button id="evaluateBtn" type="button" class="btn">⌘ Évaluer</button>
                                     <button id="addSubjectBtn" type="button" class="btn">+ Sujet</button>
                                 </div>
@@ -1207,6 +1208,7 @@
                                 <option value="system">Trame</option>
                                 <option value="evaluate">Évaluation</option>
                                 <option value="summary">Résumé</option>
+                                <option value="complete">Compléter</option>
                             </select>
                         </div>
                         <textarea id="iaTemplateEditor" rows="14"
@@ -1274,10 +1276,63 @@
             const defaultSummaryPrompt =
                 (window.GoPrompts && window.GoPrompts.voiceSummaryPrompt) ||
                 `En t'appuyant sur le modèle "{{template_text}}", produis un résumé bref en français du contenu suivant : {{transcript_content}}. Mets en avant les décisions, actions et points ouverts en 5 phrases maximum.`;
+            const defaultCompletePrompt = `
+Analyse {{transcript_content}} et produis un résumé structuré de la discussion.
+
+### Objectifs
+- Identifier 3 sujets clés 
+- Pour chaque sujet :
+  - Extraire 2 à 3 phrases clés 
+  - Marquer chaque phrase comme :
+    - "direct" → discutée clairement / longuement  
+    - "indirect" → abordée brièvement
+- Identifier les participants (nom + rôle déduit) 
+- Calculer les timestamps en secondes : 
+  - start du premier sujet = 0** 
+  - end d’un sujet = start du sujet suivant
+  - end du dernier sujet = timestamp du dernier message − premier message 
+
+### Contraintes
+- Répondre en JSON strict uniquement
+- Aucune explication, aucun commentaire, aucun texte hors JSON
+
+### Format attendu
+\`\`\`json
+{
+  "title": "resume en 3-6 mots",
+  "duration": "estime a partir des timestamps",
+  "participants": [
+    {
+      "name": "nom deduit du timestamp",
+      "role": "role deduit"
+    }
+  ],
+  "subjects": [
+    {
+      "title": "sujet en 1-2 mots",
+      "timeframe": {
+        "start": 0,
+        "end": 15
+      },
+      "keySentences": [
+        {
+          "text": "point cle de 3-7 mots discute longuement",
+          "match": "direct"
+        },
+        {
+          "text": "point cle de 3-7 mots aborde brievement",
+          "match": "indirect"
+        }
+      ]
+    }
+  ]
+}
+\`\`\``;
             const promptDefaults = {
                 system: defaultSystemPrompt || "",
                 evaluate: defaultEvaluatePrompt,
-                summary: defaultSummaryPrompt
+                summary: defaultSummaryPrompt,
+                complete: defaultCompletePrompt
             };
             const promptState = { ...promptDefaults };
             let activeIaPrompt = "system";
@@ -1286,6 +1341,7 @@
             let respondCountdownTimer = null;
             const summarizeCountdownState = { timer: null };
             const evaluateCountdownState = { timer: null };
+            const completeCountdownState = { timer: null };
             const subjectModal = document.createElement("div");
             subjectModal.className = "modal-overlay";
             subjectModal.setAttribute("role", "dialog");
@@ -1349,6 +1405,8 @@
             const promptModify = document.getElementById("promptModify");
             const respondBtn = document.getElementById("respondBtn");
             const respondDefaultLabel = respondBtn?.textContent || "⌘ Répondre";
+            const completeBtn = document.getElementById("completeBtn");
+            const completeDefaultLabel = completeBtn?.textContent || "⌘ Compléter";
             const clearScenarioBtn = document.getElementById("clearScenarioBtn");
             const applyScriptBtn = document.getElementById("applyScriptBtn");
             const transcribeInput = document.getElementById("transcribeInput");
@@ -1790,6 +1848,9 @@
 
             function addDefaultSubjectsIfEmpty(page) {
                 if (!page || (page.subjects && page.subjects.length)) return;
+                if (page.__guidelinesCleared) {
+                    return;
+                }
                 page.subjects = [
                     {
                         id: "subject-1",
@@ -1839,17 +1900,21 @@
                     if (end <= start) {
                         end = start + DEFAULT_SUBJECT_DURATION;
                     }
-                    const keySentences = (subject.keySentences || []).map(entry => ({
-                        text: entry?.text || entry?.label || entry?.sentence || "",
-                        match: entry?.match === "direct"
-                            ? "direct"
-                            : entry?.match === "partiel"
-                                ? "partiel"
-                                : "missing"
-                    })).filter(item => item.text);
+                    const keySentences = (subject.keySentences || []).map(entry => {
+                        const match = entry?.match || entry?.status;
+                        return {
+                            text: entry?.text || entry?.label || entry?.sentence || "",
+                            match: match === "direct"
+                                ? "direct"
+                                : match === "indirect"
+                                    ? "indirect"
+                                    : match === "partiel"
+                                        ? "partiel"
+                                        : "missing"
+                        };
+                    }).filter(item => item.text);
                     const title = subject.title || subject.name || `Sujet ${index + 1}`;
                     return {
-                        label: title,
                         title,
                         timeframe: { start, end },
                         keySentences
@@ -1908,6 +1973,7 @@
                     if (summaryTextarea) summaryTextarea.value = parsed.summary;
                 }
                 page.script = JSON.stringify(parsed, null, 2);
+                page.__guidelinesCleared = false;
                 persistState();
                 renderPage();
                 return parsed;
@@ -1935,6 +2001,9 @@
             function renderGuidelines() {
                 const page = getActivePage();
                 if (!page) return;
+                if (Array.isArray(page.subjects) && page.subjects.length) {
+                    page.__guidelinesCleared = false;
+                }
                 addDefaultSubjectsIfEmpty(page);
                 page.participants = ensureParticipants(page.participants);
                 const subjects = page.subjects || [];
@@ -2229,7 +2298,7 @@
                             const indirectInput = document.createElement("input");
                             indirectInput.type = "checkbox";
                             indirectInput.id = indirectId;
-                            indirectInput.checked = item.match === "partiel";
+                            indirectInput.checked = item.match === "partiel" || item.match === "indirect";
                             indirectInput.addEventListener("change", () => {
                                 item.match = indirectInput.checked ? "partiel" : "pending";
                                 if (indirectInput.checked) {
@@ -2977,6 +3046,99 @@
                 }
             }
 
+            async function completeGuidelinesFromTranscript() {
+                const page = getActivePage();
+                if (!page) return;
+                const transcript = (transcribeInput?.value || "").trim();
+                if (!transcript) {
+                    showToast("Ajoute une transcription avant de compléter.", true);
+                    return;
+                }
+                if (hasCustomGuidelineData(page)) {
+                    const preview = transcript.replace(/\s+/g, " ").slice(0, 120);
+                    const labelSuffix = transcript.length > 120 ? "…" : "";
+                    const confirmMsg = preview
+                        ? `Des sujets existent déjà et seront remplacés par cette transcription : "${preview}${labelSuffix}". Continuer ?`
+                        : "Des sujets existent déjà et seront remplacés par la transcription actuelle. Continuer ?";
+                    if (!window.confirm(confirmMsg)) return;
+                    clearGuidelineData();
+                }
+                completeBtn?.setAttribute("disabled", "true");
+                startActionCountdown(completeBtn, completeCountdownState, completeDefaultLabel);
+                try {
+                    const promptTemplate = promptState.complete || promptDefaults.complete || defaultCompletePrompt;
+                    const prompt = promptTemplate.replace(/{{transcript_content}}/gi, transcript);
+                    const payload = {
+                        model: (window.GoToolkitIAConfig && window.GoToolkitIAConfig.getOpenAiModel?.()) || "gpt-5-nano",
+                        input: [
+                            {
+                                role: "system",
+                                content: prompt
+                            }
+                        ],
+                        max_output_tokens: 1200
+                    };
+                    const response = await window.GoToolkitIA.chatCompletion({ payload });
+                    const cleaned = response.trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+                    const parsed = JSON.parse(cleaned);
+                    if (!parsed || typeof parsed !== "object") {
+                        throw new Error("Réponse IA invalide");
+                    }
+                    const subjectsRaw = Array.isArray(parsed.subjects) ? parsed.subjects : [];
+                    const subjectsWithMinutes = subjectsRaw.map(subject => {
+                        const timeframe = subject.timeframe || {};
+                        const startSeconds = Number.isFinite(Number(timeframe.start)) ? Number(timeframe.start) :
+                            Number.isFinite(Number(timeframe.start_seconds)) ? Number(timeframe.start_seconds) :
+                                Number.isFinite(Number(timeframe.startSeconds)) ? Number(timeframe.startSeconds) : 0;
+                        const endSeconds = Number.isFinite(Number(timeframe.end)) ? Number(timeframe.end) :
+                            Number.isFinite(Number(timeframe.end_seconds)) ? Number(timeframe.end_seconds) :
+                                Number.isFinite(Number(timeframe.endSeconds)) ? Number(timeframe.endSeconds) :
+                                    Math.max(startSeconds + DEFAULT_SUBJECT_DURATION * 60, 0);
+                        const normalizedKeySentences = Array.isArray(subject.keySentences)
+                            ? subject.keySentences.map(entry => {
+                                if (!entry || typeof entry !== "object") return entry;
+                                return {
+                                    ...entry,
+                                    match: entry.match === "indirect" ? "partiel" : entry.match
+                                };
+                            })
+                            : subject.keySentences;
+                        return {
+                            ...subject,
+                            timeframe: {
+                                start: convertSecondsToMinutes(startSeconds),
+                                end: convertSecondsToMinutes(Math.max(endSeconds, startSeconds + 1))
+                            },
+                            keySentences: normalizedKeySentences
+                        };
+                    });
+                    const normalizedSubjects = normalizeSubjects(subjectsWithMinutes);
+                    page.subjects = normalizedSubjects;
+                    page.activeSubjectId = normalizedSubjects[0]?.id || null;
+                    const lastSubject = normalizedSubjects[normalizedSubjects.length - 1];
+                    const lastEnd = Number(lastSubject?.timeframe?.end || 0);
+                    page.duration = lastEnd || page.duration || DEFAULT_SUBJECT_DURATION;
+                    page.__guidelinesCleared = false;
+                    if (Array.isArray(parsed.participants) && parsed.participants.length) {
+                        page.participants = ensureParticipants(parsed.participants);
+                    } else {
+                        page.participants = ensureParticipants(page.participants);
+                    }
+                    const scriptPayload = JSON.stringify(parsed, null, 2);
+                    if (promptModify) promptModify.value = scriptPayload;
+                    page.script = scriptPayload;
+                    persistState();
+                    renderGuidelines();
+                    showToast("Guidelines complétés.");
+                } catch (err) {
+                    console.error("Complete guidelines failed", err);
+                    showToast("Impossible de compléter via IA.", true);
+                } finally {
+                    completeBtn?.removeAttribute("disabled");
+                    stopActionCountdown(completeBtn, completeCountdownState, completeDefaultLabel);
+                }
+            }
+
             async function evaluateGuidelines() {
                 const page = getActivePage();
                 if (!page || !page.subjects.length) {
@@ -3252,6 +3414,7 @@
                 const { silent } = options;
                 const text = promptModify?.value;
                 if (!text) {
+                    clearGuidelineData();
                     if (!silent) showToast("JSON vide.", true);
                     return;
                 }
@@ -3262,6 +3425,40 @@
                     console.error("Invalid JSON", err);
                     if (!silent) showToast("JSON invalide.", true);
                 }
+            }
+
+            function clearGuidelineData() {
+                const page = getActivePage();
+                if (!page) return;
+                page.subjects = [];
+                page.activeSubjectId = null;
+                page.duration = null;
+                page.script = "";
+                page.__guidelinesCleared = true;
+                if (promptModify) promptModify.value = "";
+                persistState();
+                renderGuidelines();
+            }
+
+            function hasCustomGuidelineData(page) {
+                if (!page || !Array.isArray(page.subjects) || !page.subjects.length) return false;
+                return page.subjects.some(subject => {
+                    const title = (subject.title || "").trim();
+                    const isDefaultTitle = /^Sujet\s+\d+$/i.test(title);
+                    const hasCustomTitle = title && !isDefaultTitle;
+                    const keySentences = Array.isArray(subject.keySentences) ? subject.keySentences : [];
+                    const hasCustomKeys = keySentences.some(ks => {
+                        const text = (ks.text || "").trim();
+                        return text && !/^Point\s+\d+/i.test(text);
+                    });
+                    return hasCustomTitle || hasCustomKeys;
+                });
+            }
+
+            function convertSecondsToMinutes(value) {
+                const secs = Number(value);
+                if (!Number.isFinite(secs)) return 0;
+                return Math.round((secs / 60) * 10) / 10;
             }
 
             function restoreLastIaResponse() {
@@ -3616,6 +3813,7 @@
             clearScenarioBtn?.addEventListener("click", () => {
                 if (promptCreate) promptCreate.value = "";
                 persistScenario();
+                clearGuidelineData();
                 showToast("Scénario vidé.");
             });
             applyScriptBtn?.addEventListener("click", restoreLastIaResponse);
@@ -3628,6 +3826,7 @@
             iaApplyBtn?.addEventListener("click", applyIaEditorValue);
             iaResetBtn?.addEventListener("click", resetIaEditorValue);
             iaPromptSelect?.addEventListener("change", () => syncIaEditor(iaPromptSelect.value));
+            completeBtn?.addEventListener("click", completeGuidelinesFromTranscript);
             evaluateBtn?.addEventListener("click", evaluateGuidelines);
             summarizeBtn?.addEventListener("click", summarizeTranscript);
             refreshFromScriptBtn?.addEventListener("click", applyScriptFromTextarea);

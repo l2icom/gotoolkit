@@ -1151,7 +1151,7 @@ STRUCTURE ATTENDUE :
 
   "subjects": [
     {
-      "label": "string (nom court du sujet, max 5 mots)",
+      "title": "string (nom court du sujet, max 5 mots)",
       "keySentences": [
         {
           "text": "string (phrase clé 1, action ou décision attendue)",
