@@ -140,10 +140,8 @@
             .voice-video-player-transcript-panel {
                 width: 350px;
                 max-height: 100%;
-                background: #fdfbf6;
-                border-radius: 18px;
                 padding: 8px;
-                border: 1px solid rgba(16, 24, 40, 0.08);
+                border: none;
                 display: flex;
                 flex-direction: column;
                 gap: 4px;
@@ -185,11 +183,10 @@
             }
             .voice-video-player-transcript-time {
                 flex: 1;
-                border: 1px solid rgba(15, 23, 42, 0.1);
-                border-radius: 8px;
+                border: none;
                 padding: 4px 8px;
                 font-size: 12px;
-                background: #f9fafb;
+                background: #transparent;
                 color: #0f172a;
                 width:50px;
             }
@@ -204,7 +201,6 @@
                 border-radius: 8px;
                 padding: 6px 8px;
                 border: 1px solid rgba(15, 23, 42, 0.1);
-                background: #fff;
             }
             .voice-video-player-transcript-item__content:focus {
                 border-color: #2a7a57;
@@ -217,7 +213,6 @@
                 padding: 6px 14px;
                 background: #2a7a57;
                 color: #fff;
-                font-weight: 600;
                 cursor: pointer;
                 transition: background 0.2s ease;
                 display: inline-flex;

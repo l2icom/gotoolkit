@@ -1636,12 +1636,12 @@
                 }
             }
 
-            function showToast(message, isError) {
+            function showToast(message, isError, durationMs = 2600) {
                 if (!copyToast) return;
                 copyToast.textContent = message;
                 copyToast.style.background = "rgba(17, 24, 39, 0.9)";
                 copyToast.classList.add("visible");
-                setTimeout(() => copyToast.classList.remove("visible"), 2600);
+                setTimeout(() => copyToast.classList.remove("visible"), durationMs);
             }
 
             function setShareStatus(message, type) {
@@ -3679,7 +3679,7 @@
                     return;
                 }
                 assemblyRequestInProgress = true;
-                showToast(`${toastLabel} en cours…`);
+                showToast(`${toastLabel} en cours…`, false, 5200);
                 try {
                     console.debug("AssemblyAI upload request, blob", blob);
                     const uploadUrl = await uploadAudioToAssembly(blob, assemblyKey);
