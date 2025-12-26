@@ -21,8 +21,8 @@ Aucun compte n’est requis. Vous restez responsable des contenus saisis.
 N’y saisissez pas de données personnelles ou sensibles et n’utilisez pas l’outil à des fins illégales.</p>
 
 <p><strong>⚲ Données et stockage</strong><br>
-Par défaut, les données restent dans votre navigateur (localStorage / IndexedDB) et sont utilisées uniquement
-au fonctionnement du service. Elles peuvent être perdues en cas de nettoyage du navigateur.</p>
+Par défaut, les données restent dans votre navigateur et sont utilisées uniquement
+au fonctionnement du service. Elles peuvent être perdues en cas de nettoyage ou de panne de l'appareil</p>
 
 <p><strong>⌘ Services tiers et intelligence artificielle</strong><br>
 Certaines fonctionnalités reposent sur des API tierces (ex. IA, transcription, reconnaissance vocale).
