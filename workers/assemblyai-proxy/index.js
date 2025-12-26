@@ -138,8 +138,14 @@ async function enforceRateLimitForToken(request, corsMeta, env) {
   return null;
 }
 
-async function wrapAssemblyResponse(upstreamResponse, corsHeaders) {
+async function wrapAssemblyResponse(upstreamResponse, corsHeaders, label = "proxy") {
   const body = await upstreamResponse.text();
+  const preview = body.slice(0, 400);
+  console.log(`[assemblyai-proxy] response ${label}`, {
+    status: upstreamResponse.status,
+    length: body.length,
+    preview: preview || undefined
+  });
   const responseHeaders = new Headers(corsHeaders);
   const responseContentType = upstreamResponse.headers.get("Content-Type");
   if (responseContentType) {
@@ -173,6 +179,11 @@ async function proxyAssemblyRequest(request, corsMeta, env, path) {
 
   let upstreamResponse;
   try {
+    console.log(`[assemblyai-proxy] request ${request.method} ${path}`, {
+      url: upstreamUrl.toString(),
+      origin: corsMeta.origin,
+      hasKey: Boolean(assemblyKey)
+    });
     upstreamResponse = await fetch(upstreamUrl.toString(), {
       method: request.method,
       headers,
@@ -185,7 +196,7 @@ async function proxyAssemblyRequest(request, corsMeta, env, path) {
     });
   }
 
-  return wrapAssemblyResponse(upstreamResponse, corsMeta.headers);
+  return wrapAssemblyResponse(upstreamResponse, corsMeta.headers, path);
 }
 
 async function proxyTokenRequest(request, corsMeta, env) {
@@ -203,6 +214,11 @@ async function proxyTokenRequest(request, corsMeta, env) {
 
   let upstreamResponse;
   try {
+    console.log("[assemblyai-proxy] token request", {
+      url: upstreamUrl.toString(),
+      origin: corsMeta.origin,
+      hasKey: Boolean(assemblyKey)
+    });
     upstreamResponse = await fetch(upstreamUrl.toString(), {
       headers: {
         Authorization: assemblyKey
@@ -215,7 +231,7 @@ async function proxyTokenRequest(request, corsMeta, env) {
     });
   }
 
-  return wrapAssemblyResponse(upstreamResponse, corsMeta.headers);
+  return wrapAssemblyResponse(upstreamResponse, corsMeta.headers, "token");
 }
 
 export default {
@@ -251,6 +267,15 @@ export default {
 
     if (request.method === "POST" && pathname.endsWith("/transcript")) {
       return proxyAssemblyRequest(request, corsMeta, env, "/transcript");
+    }
+
+    if (
+      request.method === "GET" &&
+      segments.length === 3 &&
+      segments[0] === "transcript" &&
+      segments[2] === "vtt"
+    ) {
+      return proxyAssemblyRequest(request, corsMeta, env, `/transcript/${segments[1]}/vtt`);
     }
 
     if (request.method === "GET" && segments.length === 2 && segments[0] === "transcript") {

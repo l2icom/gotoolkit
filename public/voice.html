@@ -294,6 +294,26 @@
             background: #fff;
         }
 
+        .screen-toggle {
+            border: 1px solid var(--border-strong);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text);
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .screen-toggle.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .toast {
+            z-index: 10050;
+        }
+
         .info-popup {
             position: absolute;
             top: 56px;
@@ -816,7 +836,7 @@
             pointer-events: none;
             transition: opacity 0.2s ease, transform 0.2s ease;
             transform: translateY(10px);
-            z-index: 9900;
+            z-index: 11000;
         }
 
         .toast.visible {
@@ -1074,8 +1094,9 @@
                                 <div class="panel-header">
                                     <select id="noteModeSelect" class="note-mode-select" aria-label="Mode de note">
                                         <option value="note">Note écrite</option>
-                                        <option value="transcript-auto">Transcript auto</option>
-                                        <option value="transcript-ia">Transcript IA</option>
+                                        <option value="transcript-auto">Dictée vocale</option>
+                                        <option value="transcript-ia">Transcript audio</option>
+                                        <option value="transcript-video">Transcript vidéo</option>
                                     </select>
                                     <div class="recording-toolbar">
                                         <span id="transcriptMeta" class="badge"
@@ -1094,6 +1115,9 @@
                                             <button id="audioClearBtn" type="button" class="audio-download-btn"
                                                 title="Supprimer l'enregistrement"
                                                 aria-label="Supprimer l'enregistrement">⊘</button>
+                                            <button id="screenCaptureToggleBtn" type="button"
+                                                class="audio-download-btn screen-toggle" title="Capturer l'écran"
+                                                aria-label="Capturer l'écran">⧉</button>
                                         </div>
                                     </div>
                                 </div>
@@ -1252,6 +1276,7 @@
     <script src="js/ia-config.js"></script>
     <script src="js/prompt.js?v=2025.12.26.4"></script>
     <script src="js/ia-client.js"></script>
+    <script src="js/voice-video-player.js"></script>
 
     <script>
         (() => {
@@ -1265,6 +1290,7 @@
             const NOTE_MODE_NOTE = "note";
             const NOTE_MODE_TRANSCRIPT_AUTO = "transcript-auto";
             const NOTE_MODE_TRANSCRIPT_IA = "transcript-ia";
+            const NOTE_MODE_TRANSCRIPT_VIDEO = "transcript-video";
             const templateList = (window.GoPrompts && window.GoPrompts.voicePrompts) || [];
             const promptDefaults = {
                 system: (window.GoPrompts && window.GoPrompts.voiceCreateSystemTemplate) || "",
@@ -1357,11 +1383,14 @@
             const summaryTextarea = document.getElementById("summaryTextarea");
             const summarizeDefaultLabel = summarizeBtn?.textContent || "⌘ Résumer";
             const noteModeSelect = document.getElementById("noteModeSelect");
+            const audioModeOption = noteModeSelect?.querySelector(`option[value="${NOTE_MODE_TRANSCRIPT_IA}"]`);
+            const videoModeOption = noteModeSelect?.querySelector(`option[value="${NOTE_MODE_TRANSCRIPT_VIDEO}"]`);
             const audioPlayBtn = document.getElementById("audioPlayBtn");
             const audioProgress = document.getElementById("audioProgress");
             const audioSpeedSelect = document.getElementById("audioSpeedSelect");
             const audioDownloadBtn = document.getElementById("audioDownloadBtn");
             const audioClearBtn = document.getElementById("audioClearBtn");
+            const screenCaptureToggleBtn = document.getElementById("screenCaptureToggleBtn");
             const recordBtn = document.getElementById("recordBtn");
             const pauseBtn = document.getElementById("pauseBtn");
             const recordStatus = document.getElementById("recordStatus");
@@ -1446,6 +1475,11 @@
                 store: "recordings",
                 key: "latest"
             };
+            const VIDEO_DB = {
+                name: "go-toolkit-voice-video",
+                store: "recordings",
+                key: "latest"
+            };
             let mediaRecorder = null;
             let mediaStream = null;
             let audioChunks = [];
@@ -1455,6 +1489,15 @@
             let audioUrl = null;
             const audioPlayer = new Audio();
             let audioDbPromise = null;
+            let videoDbPromise = null;
+            let videoBlob = null;
+            let videoUrl = null;
+            let screenCaptureEnabled = false;
+            let screenStream = null;
+            let screenRecorder = null;
+            let screenRecordingActive = false;
+            let screenChunks = [];
+            let videoPlayerModal = null;
 
             function getStoredSelfParticipant() {
                 try {
@@ -1514,6 +1557,14 @@
                     ],
                     manualTranscript: "",
                     assemblyTranscript: "",
+                    assemblyTranscriptId: "",
+                    assemblyTranscriptSentences: [],
+                    assemblyTranscriptLastManualEditAt: 0,
+                    videoTranscript: "",
+                    videoTranscriptId: "",
+                    videoTranscriptSentences: [],
+                    videoTranscriptFetchedId: "",
+                    videoTranscriptLastManualEditAt: 0,
                     noteMode: NOTE_MODE_NOTE,
                     lastIaResponse: "",
                     activeSubjectId: null,
@@ -1533,6 +1584,14 @@
                     if (typeof next.templateName !== "string") next.templateName = "";
                     if (typeof next.manualTranscript !== "string") next.manualTranscript = next.transcript || "";
                     if (typeof next.assemblyTranscript !== "string") next.assemblyTranscript = "";
+                    if (typeof next.assemblyTranscriptId !== "string") next.assemblyTranscriptId = "";
+                    if (!Array.isArray(next.assemblyTranscriptSentences)) next.assemblyTranscriptSentences = [];
+                    if (!Number.isFinite(next.assemblyTranscriptLastManualEditAt)) next.assemblyTranscriptLastManualEditAt = 0;
+                    if (typeof next.videoTranscript !== "string") next.videoTranscript = "";
+                    if (typeof next.videoTranscriptId !== "string") next.videoTranscriptId = "";
+                    if (!Array.isArray(next.videoTranscriptSentences)) next.videoTranscriptSentences = [];
+                    if (typeof next.videoTranscriptFetchedId !== "string") next.videoTranscriptFetchedId = "";
+                    if (!Number.isFinite(next.videoTranscriptLastManualEditAt)) next.videoTranscriptLastManualEditAt = 0;
                     if (!next.noteMode) next.noteMode = NOTE_MODE_NOTE;
                     return next;
                 });
@@ -1559,6 +1618,10 @@
 
             if (!state.activePageId && state.pages[0]) {
                 state.activePageId = state.pages[0].id;
+            }
+
+            function getMediaStorageKey() {
+                return (state?.activePageId && state.activePageId.toString()) || AUDIO_DB.key;
             }
 
             function persistState() {
@@ -1801,6 +1864,7 @@
 
             function updateRecordingUi() {
                 updateTranscriptMeta();
+                updateNoteModeOptions();
                 const page = getActivePage();
                 const total = page?.duration || 0;
                 const activeRange = subjectRanges?.querySelector('input[type="range"]');
@@ -2317,6 +2381,7 @@
                 }
                 updateTranscriptMeta();
                 renderGuidelines();
+                updateNoteModeOptions();
             }
 
             function openTemplateModal() {
@@ -2421,9 +2486,10 @@
             }
 
             async function loadAudioFromDb(key = AUDIO_DB.key) {
+                if (!key) return false;
                 try {
                     const db = await getAudioDb();
-                    if (!db) return;
+                    if (!db) return false;
                     const tx = db.transaction(AUDIO_DB.store, "readonly");
                     const store = tx.objectStore(AUDIO_DB.store);
                     const req = store.get(key);
@@ -2435,11 +2501,112 @@
                         const blob = new Blob([result.data], { type: result.type || "audio/webm" });
                         recordingSegments = blob ? [blob] : [];
                         setAudioBlob(blob, { skipSave: true });
-                    } else {
-                        recordingSegments = [];
+                        return true;
                     }
+                    recordingSegments = [];
                 } catch (err) {
                     console.warn("Impossible de charger l'audio", err);
+                }
+                return false;
+            }
+
+            function getVideoDb() {
+                if (videoDbPromise) return videoDbPromise;
+                videoDbPromise = new Promise((resolve, reject) => {
+                    if (!("indexedDB" in window)) {
+                        resolve(null);
+                        return;
+                    }
+                    const request = indexedDB.open(VIDEO_DB.name, 1);
+                    request.onupgradeneeded = () => {
+                        const db = request.result;
+                        if (!db.objectStoreNames.contains(VIDEO_DB.store)) {
+                            db.createObjectStore(VIDEO_DB.store);
+                        }
+                    };
+                    request.onerror = () => reject(request.error || new Error("IndexedDB vidéo indisponible"));
+                    request.onsuccess = () => resolve(request.result);
+                });
+                return videoDbPromise;
+            }
+
+            async function saveVideoToDb(blob, key = VIDEO_DB.key) {
+                try {
+                    const db = await getVideoDb();
+                    if (!db || !blob) return;
+                    const tx = db.transaction(VIDEO_DB.store, "readwrite");
+                    const store = tx.objectStore(VIDEO_DB.store);
+                    const buffer = await blob.arrayBuffer();
+                    store.put({ type: blob.type || "video/webm", data: buffer }, key);
+                } catch (err) {
+                    console.warn("Impossible de sauvegarder la vidéo", err);
+                }
+            }
+
+            async function clearVideoDb(key) {
+                try {
+                    const db = await getVideoDb();
+                    if (!db) return;
+                    const tx = db.transaction(VIDEO_DB.store, "readwrite");
+                    const store = tx.objectStore(VIDEO_DB.store);
+                    if (key) {
+                        store.delete(key);
+                    } else {
+                        store.clear();
+                    }
+                } catch (err) {
+                    console.warn("Impossible de vider la vidéo", err);
+                }
+            }
+
+            async function loadVideoFromDb(key = VIDEO_DB.key) {
+                if (!key) return false;
+                try {
+                    const db = await getVideoDb();
+                    if (!db) return false;
+                    const tx = db.transaction(VIDEO_DB.store, "readonly");
+                    const store = tx.objectStore(VIDEO_DB.store);
+                    const req = store.get(key);
+                    const result = await new Promise(resolve => {
+                        req.onsuccess = () => resolve(req.result);
+                        req.onerror = () => resolve(null);
+                    });
+                    if (result && result.data) {
+                        const blob = new Blob([result.data], { type: result.type || "video/webm" });
+                        setVideoBlob(blob, { skipSave: true });
+                        return true;
+                    }
+                } catch (err) {
+                    console.warn("Impossible de charger la vidéo", err);
+                }
+                return false;
+            }
+
+            async function hydrateMediaFromDb() {
+                const activeKey = getMediaStorageKey();
+                const audioKeys = [];
+                if (activeKey) {
+                    audioKeys.push(activeKey);
+                }
+                if (!audioKeys.includes(AUDIO_DB.key)) {
+                    audioKeys.push(AUDIO_DB.key);
+                }
+                for (const key of audioKeys) {
+                    if (await loadAudioFromDb(key)) {
+                        break;
+                    }
+                }
+                const videoKeys = [];
+                if (activeKey) {
+                    videoKeys.push(activeKey);
+                }
+                if (!videoKeys.includes(VIDEO_DB.key)) {
+                    videoKeys.push(VIDEO_DB.key);
+                }
+                for (const key of videoKeys) {
+                    if (await loadVideoFromDb(key)) {
+                        break;
+                    }
                 }
             }
 
@@ -2483,7 +2650,492 @@
                     audioDownloadBtn.disabled = !audioUrl;
                 }
                 if (blob && !skipSave) {
+                    const mediaKey = getMediaStorageKey();
                     saveAudioToDb(blob);
+                    if (mediaKey && mediaKey !== AUDIO_DB.key) {
+                        saveAudioToDb(blob, mediaKey);
+                    }
+                }
+                updateNoteModeOptions();
+            }
+
+            function setVideoBlob(blob, options = {}) {
+                const { skipSave } = options;
+                if (videoUrl) {
+                    try { URL.revokeObjectURL(videoUrl); } catch (e) { /* noop */ }
+                }
+                videoBlob = blob || null;
+                videoUrl = blob ? URL.createObjectURL(blob) : null;
+                if (blob && !skipSave) {
+                    const mediaKey = getMediaStorageKey();
+                    saveVideoToDb(blob);
+                    if (mediaKey && mediaKey !== VIDEO_DB.key) {
+                        saveVideoToDb(blob, mediaKey);
+                    }
+                }
+                updateNoteModeOptions();
+            }
+
+            function hasAudioRecording() {
+                return Boolean(audioBlob || recordingSegments.length);
+            }
+
+            async function discardAudioRecording() {
+                stopAudioRecording();
+                recordingSegments = [];
+                setAudioBlob(null);
+                try {
+                    await clearAudioDb();
+                } catch (err) {
+                    console.warn("Impossible de vider l'audio", err);
+                }
+                updateNoteModeOptions();
+            }
+
+            function updateNoteModeOptions() {
+                if (!noteModeSelect) return;
+                const hasRecording = hasAudioRecording();
+                if (audioModeOption) {
+                    audioModeOption.hidden = !hasRecording;
+                    audioModeOption.disabled = !hasRecording || audioRecordingActive;
+                    if (!hasRecording && activeNoteMode === NOTE_MODE_TRANSCRIPT_IA) {
+                        showToast("La transcription audio nécessite un enregistrement.", true);
+                        applyNoteMode(NOTE_MODE_NOTE);
+                    }
+                }
+                if (videoModeOption) {
+                    const showVideo = screenCaptureEnabled && hasRecording;
+                    videoModeOption.hidden = !showVideo;
+                    videoModeOption.disabled = !showVideo || audioRecordingActive;
+                    if (!showVideo && activeNoteMode === NOTE_MODE_TRANSCRIPT_VIDEO) {
+                        const reason = !hasRecording
+                            ? "La transcription vidéo nécessite un enregistrement audio."
+                            : "La transcription vidéo nécessite une capture d'écran.";
+                        showToast(reason, true);
+                        applyNoteMode(NOTE_MODE_NOTE);
+                    }
+                }
+            }
+
+            function hasManualTranscriptEdits(page) {
+                if (!page) return false;
+                return Boolean(page.videoTranscriptLastManualEditAt || page.assemblyTranscriptLastManualEditAt);
+            }
+
+            function confirmTranscriptRegeneration() {
+                if (!audioBlob) return true;
+                const page = getActivePage();
+                if (!page || !hasManualTranscriptEdits(page)) {
+                    return true;
+                }
+                const confirmed = window.confirm(
+                    "Le transcript vidéo / transcript IA sera regénéré et vos modifications seront perdues. Continuer ?"
+                );
+                if (!confirmed) {
+                    return false;
+                }
+                page.videoTranscriptLastManualEditAt = 0;
+                page.assemblyTranscriptLastManualEditAt = 0;
+                persistState();
+                return true;
+            }
+
+            function updateScreenToggleVisual() {
+                if (screenCaptureToggleBtn) {
+                    screenCaptureToggleBtn.classList.toggle("active", screenCaptureEnabled);
+                    screenCaptureToggleBtn.setAttribute("aria-pressed", screenCaptureEnabled ? "true" : "false");
+                }
+                updateNoteModeOptions();
+            }
+
+            async function ensureScreenCapture() {
+                if (!screenCaptureEnabled || !navigator.mediaDevices?.getDisplayMedia) {
+                    if (screenCaptureEnabled) {
+                        showToast("Capture d'écran indisponible.", true);
+                        screenCaptureEnabled = false;
+                        updateScreenToggleVisual();
+                    }
+                    return false;
+                }
+                try {
+                    const displayStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: { cursor: "always" },
+                        audio: false
+                    });
+                    const videoTrack = displayStream.getVideoTracks()[0];
+                    if (!videoTrack) {
+                        throw new Error("Flux vidéo indisponible");
+                    }
+                    const combined = new MediaStream();
+                    combined.addTrack(videoTrack);
+                    const micTrack = mediaStream?.getAudioTracks?.()[0];
+                    if (micTrack) {
+                        combined.addTrack(micTrack.clone());
+                    }
+                    screenChunks = [];
+                    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+                        ? "video/webm;codecs=vp9"
+                        : "video/webm";
+                    screenRecorder = new MediaRecorder(combined, { mimeType });
+                    screenRecorder.ondataavailable = event => {
+                        if (event.data && event.data.size) {
+                            screenChunks.push(event.data);
+                        }
+                    };
+                    screenRecorder.onstop = finalizeScreenRecording;
+                    screenRecorder.start();
+                    screenStream = displayStream;
+                    screenRecordingActive = true;
+                    return true;
+                } catch (err) {
+                    console.warn("Capture écran impossible", err);
+                    showToast("Capture d'écran annulée.", true);
+                    screenCaptureEnabled = false;
+                    updateScreenToggleVisual();
+                    stopScreenRecording();
+                    return false;
+                }
+            }
+
+            function stopScreenRecording() {
+                try {
+                    if (screenRecorder && screenRecorder.state === "recording") {
+                        screenRecorder.stop();
+                    }
+                } catch (err) {
+                    console.warn("Arrêt capture écran", err);
+                }
+                if (screenStream) {
+                    screenStream.getTracks().forEach(track => track.stop());
+                    screenStream = null;
+                }
+            }
+
+            function finalizeScreenRecording() {
+                if (screenChunks.length) {
+                    const blob = new Blob(screenChunks, { type: screenChunks[0]?.type || "video/webm" });
+                    setVideoBlob(blob);
+                } else {
+                    setVideoBlob(null, { skipSave: true });
+                }
+                screenChunks = [];
+                screenRecordingActive = false;
+                screenRecorder = null;
+                if (screenStream) {
+                    screenStream.getTracks().forEach(track => track.stop());
+                    screenStream = null;
+                }
+            }
+
+            function parseVttTimestamp(value = "") {
+                const normalized = String(value || "").trim();
+                if (!normalized) return NaN;
+                const sanitized = normalized.replace(/,/g, ".");
+                const parts = sanitized.split(":");
+                let hours = 0;
+                let minutes = 0;
+                let seconds = 0;
+                if (parts.length === 3) {
+                    hours = Number(parts[0]);
+                    minutes = Number(parts[1]);
+                    seconds = Number(parts[2]);
+                } else if (parts.length === 2) {
+                    minutes = Number(parts[0]);
+                    seconds = Number(parts[1]);
+                } else {
+                    return NaN;
+                }
+                if ([hours, minutes, seconds].some(num => Number.isNaN(num))) return NaN;
+                return hours * 3600 + minutes * 60 + seconds;
+            }
+
+            function formatVttTimestamp(value = 0) {
+                const totalMillis = Math.max(0, Math.floor((Number(value) || 0) * 1000));
+                const hours = Math.floor(totalMillis / 3600000);
+                const minutes = Math.floor((totalMillis % 3600000) / 60000);
+                const seconds = Math.floor((totalMillis % 60000) / 1000);
+                const millis = totalMillis % 1000;
+                return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(millis).padStart(3, "0")}`;
+            }
+
+            function parseSrtTimestamp(value = "") {
+                const normalized = String(value || "").trim();
+                const match = normalized.match(/(\d{1,2}):(\d{2}):(\d{2})[,.](\d{1,3})/);
+                if (!match) return NaN;
+                const hours = Number(match[1]);
+                const minutes = Number(match[2]);
+                const seconds = Number(match[3]);
+                const rawMillis = match[4] || "0";
+                const padded = (rawMillis + "000").slice(0, 3);
+                const millis = Number(padded);
+                if ([hours, minutes, seconds, millis].some(num => Number.isNaN(num))) return NaN;
+                return hours * 3600 + minutes * 60 + seconds + millis / 1000;
+            }
+
+            function parseVttTranscript(text) {
+                const raw = String(text || "").trim();
+                if (!raw) return [];
+                const lines = raw.split(/\r?\n/);
+                const blocks = [];
+                let current = [];
+                lines.forEach(line => {
+                    const trimmed = line.trim();
+                    if (!trimmed || trimmed === "---") {
+                        if (current.length) {
+                            blocks.push(current);
+                            current = [];
+                        }
+                        return;
+                    }
+                    if (trimmed.toUpperCase().startsWith("WEBVTT") || trimmed.toUpperCase().startsWith("NOTE")) {
+                        return;
+                    }
+                    current.push(trimmed);
+                });
+                if (current.length) {
+                    blocks.push(current);
+                }
+                return blocks.map((block, index) => {
+                    const timingIndex = block.findIndex(line => line.includes("-->"));
+                    if (timingIndex === -1) return null;
+                    const timing = block[timingIndex];
+                    const [startPart, endPart] = timing.split("-->").map(part => part.trim());
+                    const start = parseVttTimestamp(startPart);
+                    const end = parseVttTimestamp(endPart);
+                    if (!Number.isFinite(start)) return null;
+                    const safeEnd = Number.isFinite(end) && end > start ? end : start + 2;
+                    const contentLines = block.slice(timingIndex + 1);
+                    const textContent = contentLines.join("\n").trim();
+                    const id = timingIndex > 0 ? block[0] : `segment-${index}`;
+                    return {
+                        id,
+                        text: textContent,
+                        start,
+                        end: safeEnd
+                    };
+                }).filter(Boolean);
+            }
+
+            function parseSrtTranscript(text) {
+                const raw = String(text || "").trim();
+                if (!raw) return [];
+                const blocks = raw.split(/\r?\n\r?\n/).map(block => block.trim()).filter(Boolean);
+                return blocks.map((block, index) => {
+                    const lines = block.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+                    if (!lines.length) return null;
+                    const timingIndex = lines.findIndex(line => line.includes("-->"));
+                    if (timingIndex === -1) return null;
+                    const timing = lines[timingIndex];
+                    const [startPart, endPart] = timing.split("-->").map(part => part.trim());
+                    const start = parseSrtTimestamp(startPart);
+                    const end = parseSrtTimestamp(endPart);
+                    if (!Number.isFinite(start)) return null;
+                    const safeEnd = Number.isFinite(end) && end > start ? end : start + 2;
+                    const contentLines = lines.slice(timingIndex + 1);
+                    const textContent = contentLines.join("\n").trim();
+                    const firstLine = lines[0];
+                    const id = firstLine && /^\d+$/.test(firstLine) ? `segment-${firstLine}` : `segment-${index}`;
+                    return {
+                        id,
+                        text: textContent,
+                        start,
+                        end: safeEnd
+                    };
+                }).filter(Boolean);
+            }
+
+            function buildVttFromSegments(segments = []) {
+                if (!Array.isArray(segments) || !segments.length) return "";
+                const entries = segments.map(segment => {
+                    const start = formatVttTimestamp(segment.start);
+                    const end = formatVttTimestamp(segment.end);
+                    const content = (segment.text || "").trim();
+                    return `${start} --> ${end}\n${content}`;
+                });
+                return `WEBVTT\n\n${entries.join("\n\n")}`;
+            }
+
+            async function ensureVideoTranscriptSegments(page, options = {}) {
+                if (!page || !page.videoTranscriptId) return [];
+                const { forceRefresh = false } = options;
+                const storedSegments = Array.isArray(page.videoTranscriptSentences) ? page.videoTranscriptSentences : [];
+                const syncedForCurrentId = page.videoTranscriptFetchedId === page.videoTranscriptId && storedSegments.length;
+                const hasManualEdits = Boolean(page.videoTranscriptLastManualEditAt);
+                if (syncedForCurrentId && (!forceRefresh || hasManualEdits)) {
+                    return storedSegments;
+                }
+                try {
+                    const assemblyKey = getAssemblyApiKey();
+                    const vtt = await fetchAssemblyTranscriptVtt(page.videoTranscriptId, assemblyKey);
+                    const vttSegments = vtt ? parseVttTranscript(vtt) : [];
+                    if (vttSegments.length) {
+                        page.videoTranscript = vtt;
+                        page.videoTranscriptSentences = vttSegments;
+                        page.videoTranscriptFetchedId = page.videoTranscriptId;
+                        page.videoTranscriptLastManualEditAt = 0;
+                        persistState();
+                        return vttSegments;
+                    }
+                    const fallback = Array.isArray(page.assemblyTranscriptSentences)
+                        ? page.assemblyTranscriptSentences
+                        : [];
+                    if (fallback.length) {
+                        const fallbackVtt = buildVttFromSegments(fallback);
+                        if (fallbackVtt) {
+                            page.videoTranscript = fallbackVtt;
+                        }
+                        page.videoTranscriptSentences = fallback;
+                        page.videoTranscriptFetchedId = page.videoTranscriptId;
+                        page.videoTranscriptLastManualEditAt = 0;
+                        persistState();
+                        return fallback;
+                    }
+                } catch (err) {
+                    console.warn("Échec de la récupération VTT vidéo", err);
+                }
+                return Array.isArray(page.videoTranscriptSentences) ? page.videoTranscriptSentences : [];
+            }
+
+            function getVideoTranscriptSegments(page) {
+                if (!page) return [];
+                const stored = Array.isArray(page.videoTranscriptSentences) ? page.videoTranscriptSentences : [];
+                if (stored.length) {
+                    return stored.map((sentence, index) => {
+                        const start = Number.isFinite(sentence.start) ? sentence.start : 0;
+                        let end = Number.isFinite(sentence.end) ? sentence.end : start + 2;
+                        if (end <= start) end = start + 2;
+                        return {
+                            id: sentence.id || `segment-${index}`,
+                            text: sentence.text || "",
+                            start,
+                            end
+                        };
+                    });
+                }
+                const parsed = parseVttTranscript(page.videoTranscript || "");
+                if (parsed.length) return parsed;
+                const legacyParsed = parseSrtTranscript(page.videoTranscript || "");
+                if (legacyParsed.length) {
+                    const converted = buildVttFromSegments(legacyParsed);
+                    if (converted) {
+                        page.videoTranscript = converted;
+                    }
+                    page.videoTranscriptSentences = legacyParsed;
+                    persistState();
+                    return legacyParsed;
+                }
+                const assembly = Array.isArray(page.assemblyTranscriptSentences) ? page.assemblyTranscriptSentences : [];
+                if (assembly.length) {
+                    return assembly.map((sentence, index) => ({
+                        id: sentence.id || `sentence-${index}`,
+                        text: sentence.text || "",
+                        start: Number.isFinite(sentence.start) ? sentence.start : 0,
+                        end: Number.isFinite(sentence.end) ? sentence.end : (Number.isFinite(sentence.start) ? sentence.start + 2 : 2)
+                    }));
+                }
+                return [{
+                    id: "segment-0",
+                    text: page.videoTranscript || page.assemblyTranscript || "",
+                    start: 0,
+                    end: 2
+                }];
+            }
+
+            function handleTranscriptUpdateFromModal(sentences) {
+                if (!Array.isArray(sentences)) return;
+                const page = getActivePage();
+                if (!page) return;
+                const normalized = sentences.map((sentence, index) => {
+                    const start = Number.isFinite(sentence.start) ? sentence.start : 0;
+                    let end = Number.isFinite(sentence.end) ? sentence.end : start + 2;
+                    if (end <= start) {
+                        end = start + 2;
+                    }
+                    return {
+                        id: sentence.id || `segment-${index}`,
+                        text: sentence.text || "",
+                        start,
+                        end
+                    };
+                });
+                page.videoTranscriptSentences = normalized;
+                page.videoTranscript = buildVttFromSegments(normalized);
+                page.videoTranscriptLastManualEditAt = Date.now();
+                if (page.noteMode === NOTE_MODE_TRANSCRIPT_VIDEO && transcribeInput) {
+                    transcribeInput.value = page.videoTranscript;
+                }
+                persistState();
+                updateTranscriptMeta();
+            }
+
+            function handleVideoTranscriptSaved(sentences) {
+                handleTranscriptUpdateFromModal(sentences);
+                showToast("Transcription vidéo enregistrée.");
+            }
+
+            async function openVoiceVideoModal() {
+                if (!videoBlob) {
+                    toggleAudioPlayback();
+                    return;
+                }
+                if (!window.VoiceVideoPlayerModal) {
+                    showToast("Lecteur vidéo indisponible.", true);
+                    return;
+                }
+                if (!videoPlayerModal) {
+                    videoPlayerModal = new window.VoiceVideoPlayerModal();
+                }
+                const page = getActivePage();
+                await ensureVideoTranscriptSegments(page, { forceRefresh: true });
+                if (page?.noteMode === NOTE_MODE_TRANSCRIPT_VIDEO && transcribeInput) {
+                    transcribeInput.value = page.videoTranscript || "";
+                    updateTranscriptMeta();
+                }
+                const sentences = getVideoTranscriptSegments(page);
+                videoPlayerModal.open({
+                    videoBlob,
+                    sentences,
+                    onTranscriptChange: handleTranscriptUpdateFromModal,
+                    onTranscriptSaved: handleVideoTranscriptSaved
+                });
+            }
+
+            async function fetchAssemblyTranscriptVtt(transcriptId, key) {
+                if (!transcriptId) return "";
+                const url = getAssemblyProxyUrl(`transcript/${transcriptId}/vtt`);
+                if (!url) return "";
+                try {
+                    console.log("AssemblyAI VTT request", { url, transcriptId });
+                    const response = await fetch(url, {
+                        headers: key ? { "X-AssemblyAI-Key": key } : {}
+                    });
+                    const vtt = await response.text();
+                    console.log("AssemblyAI VTT response", {
+                        status: response.status,
+                        ok: response.ok,
+                        length: vtt.length,
+                        preview: vtt.slice(0, 280)
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return vtt;
+                } catch (err) {
+                    console.warn("Assembly VTT fetch failed", err);
+                    return "";
+                }
+            }
+
+            async function handleAudioPlayClick() {
+                if (!videoBlob) {
+                    toggleAudioPlayback();
+                    return;
+                }
+                try {
+                    await openVoiceVideoModal();
+                } catch (err) {
+                    console.warn("Lecteur vidéo indisponible :", err);
+                    showToast("Impossible d'ouvrir le lecteur vidéo.", true);
                 }
             }
 
@@ -2622,6 +3274,15 @@
 
             function getNoteContentForMode(page, mode) {
                 if (!page) return "";
+                if (mode === NOTE_MODE_TRANSCRIPT_VIDEO) {
+                    if (page.videoTranscript) {
+                        return page.videoTranscript;
+                    }
+                    if (Array.isArray(page.videoTranscriptSentences) && page.videoTranscriptSentences.length) {
+                        return buildVttFromSegments(page.videoTranscriptSentences);
+                    }
+                    return "";
+                }
                 if (mode === NOTE_MODE_TRANSCRIPT_IA) {
                     return page.assemblyTranscript || "";
                 }
@@ -2668,13 +3329,33 @@
                 return true;
             }
 
-            function handleNoteModeSelection(value) {
+            async function handleNoteModeSelection(value) {
                 if (!noteModeSelect) return;
-                if (value === NOTE_MODE_TRANSCRIPT_IA) {
-                    if (!audioBlob) {
-                        handleAudioImportClick();
+                const hasRecording = hasAudioRecording();
+                if (value === NOTE_MODE_TRANSCRIPT_IA || value === NOTE_MODE_TRANSCRIPT_VIDEO) {
+                    if (audioRecordingActive) {
+                        showToast("Arrête l'enregistrement avant de changer de mode.", true);
+                        if (noteModeSelect) noteModeSelect.value = activeNoteMode;
                         return;
                     }
+                    if (!hasRecording) {
+                        showToast("Crée d'abord un enregistrement audio.", true);
+                        if (noteModeSelect) noteModeSelect.value = activeNoteMode;
+                        return;
+                    }
+                }
+                if (value === NOTE_MODE_TRANSCRIPT_VIDEO) {
+                    if (!screenCaptureEnabled) {
+                        showToast("La transcription vidéo nécessite une capture d'écran.", true);
+                        applyNoteMode(NOTE_MODE_NOTE);
+                        return;
+                    }
+                    const page = getActivePage();
+                    await ensureVideoTranscriptSegments(page, { forceRefresh: true });
+                    applyNoteMode(NOTE_MODE_TRANSCRIPT_VIDEO);
+                    return;
+                }
+                if (value === NOTE_MODE_TRANSCRIPT_IA) {
                     if (!canRequestAssemblyTranscript()) {
                         return;
                     }
@@ -2717,6 +3398,50 @@
                     .join("\n\n");
             }
 
+            function extractAssemblySentences(result) {
+                if (!result) return [];
+                const mapSentences = (raw = []) => {
+                    return raw
+                        .map((sentence, index) => {
+                            const startMs = Number.isFinite(sentence.start)
+                                ? sentence.start
+                                : Number.isFinite(sentence.start_time)
+                                    ? sentence.start_time
+                                    : 0;
+                            const endMs = Number.isFinite(sentence.end)
+                                ? sentence.end
+                                : Number.isFinite(sentence.end_time)
+                                    ? sentence.end_time
+                                    : startMs;
+                            const start = startMs / 1000;
+                            const end = endMs > start ? endMs / 1000 : start + 0.1;
+                            return {
+                                id: sentence.id || `sentence-${index}`,
+                                text: (sentence.text || "").trim(),
+                                start,
+                                end
+                            };
+                        })
+                        .filter(sentence => Boolean(sentence.text) || sentence.start >= 0);
+                };
+                const rawSentences = Array.isArray(result.sentences) ? result.sentences : [];
+                if (rawSentences.length) {
+                    return mapSentences(rawSentences);
+                }
+                const utterances = Array.isArray(result.utterances) ? result.utterances : [];
+                if (utterances.length) {
+                    return mapSentences(
+                        utterances.map(utterance => ({
+                            id: utterance.id || undefined,
+                            text: utterance.text || "",
+                            start: utterance.start,
+                            end: utterance.end
+                        }))
+                    );
+                }
+                return [];
+            }
+
             function delay(ms) {
                 return new Promise(resolve => setTimeout(resolve, ms));
             }
@@ -2725,6 +3450,13 @@
                 if (!blob) throw new Error("Audio absent");
                 const url = getAssemblyProxyUrl("upload");
                 if (!url) throw new Error("Proxy AssemblyAI indisponible");
+                console.log("AssemblyAI upload request", {
+                    url,
+                    method: "POST",
+                    blobType: blob.type,
+                    blobSize: blob.size,
+                    hasKey: Boolean(key)
+                });
                 const response = await fetch(url, {
                     method: "POST",
                     headers: {
@@ -2733,10 +3465,20 @@
                     },
                     body: blob
                 });
+                let data = null;
+                try {
+                    data = await response.json();
+                } catch (err) {
+                    console.warn("AssemblyAI upload response parse failed", err);
+                }
+                console.log("AssemblyAI upload response", {
+                    status: response.status,
+                    ok: response.ok,
+                    data
+                });
                 if (!response.ok) {
                     throw new Error(`Envoi audio échoué (${response.status})`);
                 }
-                const data = await response.json();
                 if (!data?.upload_url) {
                     throw new Error("URL audio manquante");
                 }
@@ -2746,6 +3488,11 @@
             async function requestAssemblyTranscript(payload, key) {
                 const url = getAssemblyProxyUrl("transcript");
                 if (!url) throw new Error("Proxy AssemblyAI indisponible");
+                console.log("AssemblyAI transcript POST request", {
+                    url,
+                    hasKey: Boolean(key),
+                    payload
+                });
                 const response = await fetch(url, {
                     method: "POST",
                     headers: {
@@ -2755,6 +3502,12 @@
                     body: JSON.stringify(payload)
                 });
                 const responseText = await response.text();
+                console.log("AssemblyAI transcript POST response", {
+                    status: response.status,
+                    ok: response.ok,
+                    length: responseText.length,
+                    preview: responseText.slice(0, 400)
+                });
                 if (!response.ok) {
                     const detail = responseText ? `: ${responseText.replace(/\s+/g, " ").trim()}` : "";
                     const err = new Error(`Requête transcription échouée (${response.status})${detail}`);
@@ -2782,10 +3535,31 @@
                     const response = await fetch(url, {
                         headers: key ? { "X-AssemblyAI-Key": key } : {}
                     });
+                    const responseText = await response.text();
+                    const preview = responseText.slice(0, 400);
                     if (!response.ok) {
+                        console.log("AssemblyAI transcript GET response", {
+                            attempt,
+                            status: response.status,
+                            ok: false,
+                            preview
+                        });
                         throw new Error(`Échec du suivi (${response.status})`);
                     }
-                    const data = await response.json();
+                    let data = null;
+                    try {
+                        data = responseText ? JSON.parse(responseText) : null;
+                    } catch (err) {
+                        console.warn("AssemblyAI transcript GET response parse failed", err);
+                        throw new Error("Réponse AssemblyAI invalide");
+                    }
+                    console.log("AssemblyAI transcript GET response", {
+                        attempt,
+                        status: response.status,
+                        ok: true,
+                        preview,
+                        data
+                    });
                     if (!data) {
                         throw new Error("Réponse AssemblyAI invalide");
                     }
@@ -2857,7 +3631,30 @@
                     lastCaret = finalText.length;
                     const activePage = getActivePage();
                     if (activePage) {
+                        const assemblySentences = extractAssemblySentences(result);
+                        const vttText = await fetchAssemblyTranscriptVtt(transcriptId, assemblyKey);
+                        let videoSentences = vttText ? parseVttTranscript(vttText) : [];
+                        if (!videoSentences.length && assemblySentences.length) {
+                            videoSentences = assemblySentences;
+                        }
+                        if (!videoSentences.length) {
+                            videoSentences = [{
+                                id: `segment-${Date.now()}`,
+                                text: finalText,
+                                start: 0,
+                                end: 0.1
+                            }];
+                        }
+                        const videoTranscriptString = vttText || buildVttFromSegments(videoSentences);
                         activePage.assemblyTranscript = finalText;
+                        activePage.assemblyTranscriptId = transcriptId;
+                        activePage.assemblyTranscriptSentences = assemblySentences;
+                        activePage.assemblyTranscriptLastManualEditAt = 0;
+                        activePage.videoTranscript = videoTranscriptString;
+                        activePage.videoTranscriptId = transcriptId;
+                        activePage.videoTranscriptSentences = videoSentences;
+                        activePage.videoTranscriptFetchedId = transcriptId;
+                        activePage.videoTranscriptLastManualEditAt = 0;
                         applyNoteMode(NOTE_MODE_TRANSCRIPT_IA);
                     }
                     showToast("Transcription IA terminée.");
@@ -2925,6 +3722,7 @@
                 } catch (err) {
                     console.warn("Stop audio recording", err);
                 }
+                stopScreenRecording();
                 audioRecordingActive = false;
             }
 
@@ -3326,6 +4124,9 @@
                 if (draftId && audioBlob) {
                     saveAudioToDb(audioBlob, draftId);
                 }
+                if (draftId && videoBlob) {
+                    saveVideoToDb(videoBlob, draftId);
+                }
             }
 
             function resetDocument() {
@@ -3652,9 +4453,14 @@
                     const page = getActivePage();
                     if (page) {
                         const manualText = transcriptPrefix || getBaseWithoutInterim() || "";
-                        page.manualTranscript = manualText;
-                        if (page.noteMode !== NOTE_MODE_TRANSCRIPT_AUTO) {
-                            page.transcript = manualText;
+                        if (page.noteMode === NOTE_MODE_TRANSCRIPT_VIDEO) {
+                            page.videoTranscript = manualText;
+                            page.videoTranscriptSentences = parseVttTranscript(manualText);
+                        } else {
+                            page.manualTranscript = manualText;
+                            if (page.noteMode !== NOTE_MODE_TRANSCRIPT_AUTO) {
+                                page.transcript = manualText;
+                            }
                         }
                         persistState();
                     }
@@ -3672,12 +4478,21 @@
 
             async function startRecording() {
                 if (audioRecordingActive) return;
+                stopScreenRecording();
+                setVideoBlob(null, { skipSave: true });
                 const shouldUseSpeech = activeNoteMode === NOTE_MODE_TRANSCRIPT_AUTO;
                 if (shouldUseSpeech && !speechRecognition) {
                     setupSpeechRecognition();
                 }
                 const ready = await ensureAudioRecording();
                 if (!ready) return;
+                if (screenCaptureEnabled) {
+                    const screenReady = await ensureScreenCapture();
+                    if (!screenReady) {
+                        screenCaptureEnabled = false;
+                        updateScreenToggleVisual();
+                    }
+                }
                 transcriptPrefix = transcribeInput?.value || "";
                 recordingStartedAt = Date.now();
                 recordingElapsedSec = 0;
@@ -3760,6 +4575,8 @@
                     }
                 }
                 setAudioBlob(null);
+                stopScreenRecording();
+                setVideoBlob(null, { skipSave: true });
                 updateTranscriptMeta();
                 updateGhostOverlay("");
                 updateRecordingUi();
@@ -3768,9 +4585,12 @@
             function toggleSpeechRecording() {
                 if (audioRecordingActive) {
                     pauseRecording();
-                } else {
-                    startRecording();
+                    return;
                 }
+                if (!confirmTranscriptRegeneration()) {
+                    return;
+                }
+                startRecording();
             }
 
             function toggleContextPanel(forceOpen) {
@@ -3806,10 +4626,13 @@
                     recordingTimer = null;
                 }
                 setAudioBlob(null, { skipSave: true });
+                stopScreenRecording();
+                await clearVideoDb();
+                setVideoBlob(null, { skipSave: true });
             }
 
             function clearCurrentAudioWithConfirm() {
-                const confirmed = window.confirm("Supprimer l'enregistrement audio ?");
+                const confirmed = window.confirm("Supprimer l'enregistrement audio (et vidéo) ?");
                 if (!confirmed) return;
                 clearAudioStoreAll();
                 showToast("Enregistrement supprimé.");
@@ -4025,9 +4848,18 @@
                     lastCaret = Math.min(lastCaret, transcriptPrefix.length);
                 }
                 const manualText = getBaseWithoutInterim();
-                page.manualTranscript = manualText;
-                if (page.noteMode !== NOTE_MODE_TRANSCRIPT_AUTO) {
-                    page.transcript = manualText;
+                if (page.noteMode === NOTE_MODE_TRANSCRIPT_VIDEO) {
+                    page.videoTranscript = manualText;
+                    page.videoTranscriptSentences = parseVttTranscript(manualText);
+                    page.videoTranscriptLastManualEditAt = Date.now();
+                } else {
+                    page.manualTranscript = manualText;
+                    if (page.noteMode !== NOTE_MODE_TRANSCRIPT_AUTO) {
+                        page.transcript = manualText;
+                    }
+                    if (page.noteMode === NOTE_MODE_TRANSCRIPT_IA) {
+                        page.assemblyTranscriptLastManualEditAt = Date.now();
+                    }
                 }
                 persistState();
                 updateTranscriptMeta();
@@ -4040,7 +4872,7 @@
                 persistState();
             });
             noteModeSelect?.addEventListener("change", () => {
-                handleNoteModeSelection(noteModeSelect.value);
+                void handleNoteModeSelection(noteModeSelect.value);
             });
             ["click", "keyup", "mouseup", "focus", "select"].forEach(evt => {
                 transcribeInput?.addEventListener(evt, () => {
@@ -4051,12 +4883,28 @@
             speechToggleBtn?.addEventListener("click", toggleSpeechRecording);
             recordBtn?.addEventListener("click", startRecording);
             pauseBtn?.addEventListener("click", pauseRecording);
-            audioPlayBtn?.addEventListener("click", toggleAudioPlayback);
+            audioPlayBtn?.addEventListener("click", handleAudioPlayClick);
             audioDownloadBtn?.addEventListener("click", downloadAudio);
             audioClearBtn?.addEventListener("click", clearCurrentAudioWithConfirm);
+            screenCaptureToggleBtn?.addEventListener("click", async () => {
+                const willEnable = !screenCaptureEnabled;
+                if (willEnable && hasAudioRecording()) {
+                    const confirmed = window.confirm("L'enregistrement audio précédent sera supprimé. Continuer ?");
+                    if (!confirmed) {
+                        return;
+                    }
+                    await discardAudioRecording();
+                }
+                screenCaptureEnabled = willEnable;
+                updateScreenToggleVisual();
+                if (!screenCaptureEnabled) {
+                    stopScreenRecording();
+                }
+            });
             audioImportBtn?.addEventListener("click", handleAudioImportClick);
             audioImportInput?.addEventListener("change", handleAudioImportChange);
             populateAudioSpeedOptions();
+            updateScreenToggleVisual();
             audioSpeedSelect?.addEventListener("change", () => {
                 const speed = getAudioSpeed();
                 audioPlayer.playbackRate = speed;
@@ -4178,7 +5026,7 @@
             setupSpeechRecognition();
             updateShareMenuUI();
             tryLoadSharedStateFromUrl();
-            loadAudioFromDb();
+            void hydrateMediaFromDb();
             toggleContextPanel(true);
             populateAudioSpeedOptions();
             audioPlayer.playbackRate = getAudioSpeed();
