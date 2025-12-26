@@ -1565,6 +1565,8 @@
                     videoTranscriptSentences: [],
                     videoTranscriptFetchedId: "",
                     videoTranscriptLastManualEditAt: 0,
+                    audioRecordingVersion: 0,
+                    audioTranscriptVersion: 0,
                     noteMode: NOTE_MODE_NOTE,
                     lastIaResponse: "",
                     activeSubjectId: null,
@@ -1592,6 +1594,8 @@
                     if (!Array.isArray(next.videoTranscriptSentences)) next.videoTranscriptSentences = [];
                     if (typeof next.videoTranscriptFetchedId !== "string") next.videoTranscriptFetchedId = "";
                     if (!Number.isFinite(next.videoTranscriptLastManualEditAt)) next.videoTranscriptLastManualEditAt = 0;
+                    if (!Number.isFinite(next.audioRecordingVersion)) next.audioRecordingVersion = 0;
+                    if (!Number.isFinite(next.audioTranscriptVersion)) next.audioTranscriptVersion = 0;
                     if (!next.noteMode) next.noteMode = NOTE_MODE_NOTE;
                     return next;
                 });
@@ -2656,6 +2660,19 @@
                         saveAudioToDb(blob, mediaKey);
                     }
                 }
+                if (!skipSave) {
+                    const page = getActivePage();
+                    if (page) {
+                        if (blob) {
+                            page.audioRecordingVersion = Number.isFinite(page.audioRecordingVersion) ? page.audioRecordingVersion + 1 : 1;
+                            page.audioTranscriptVersion = 0;
+                        } else {
+                            page.audioRecordingVersion = 0;
+                            page.audioTranscriptVersion = 0;
+                        }
+                        persistState();
+                    }
+                }
                 updateNoteModeOptions();
             }
 
@@ -2720,6 +2737,25 @@
             function hasManualTranscriptEdits(page) {
                 if (!page) return false;
                 return Boolean(page.videoTranscriptLastManualEditAt || page.assemblyTranscriptLastManualEditAt);
+            }
+
+            function isAudioTranscriptFresh(page) {
+                if (!page) return false;
+                if (!Number.isFinite(page.audioRecordingVersion) || page.audioRecordingVersion <= 0) return false;
+                return Number.isFinite(page.audioTranscriptVersion) &&
+                    page.audioRecordingVersion === page.audioTranscriptVersion &&
+                    Boolean(page.assemblyTranscript);
+            }
+
+            function hasVideoTranscriptContent(page) {
+                if (!page) return false;
+                return Boolean(page.videoTranscript);
+            }
+
+            function shouldTranscribeForVideo(page) {
+                if (!page || !audioBlob) return false;
+                if (!hasVideoTranscriptContent(page)) return true;
+                return !isAudioTranscriptFresh(page);
             }
 
             function confirmTranscriptRegeneration() {
@@ -2964,6 +3000,15 @@
                 if (syncedForCurrentId && (!forceRefresh || hasManualEdits)) {
                     return storedSegments;
                 }
+                if (!storedSegments.length && page.videoTranscript) {
+                    const parsed = parseVttTranscript(page.videoTranscript);
+                    if (parsed.length) {
+                        page.videoTranscriptSentences = parsed;
+                        page.videoTranscriptFetchedId = page.videoTranscriptId;
+                        persistState();
+                        return parsed;
+                    }
+                }
                 try {
                     const assemblyKey = getAssemblyApiKey();
                     const vtt = await fetchAssemblyTranscriptVtt(page.videoTranscriptId, assemblyKey);
@@ -3086,10 +3131,20 @@
                     videoPlayerModal = new window.VoiceVideoPlayerModal();
                 }
                 const page = getActivePage();
-                await ensureVideoTranscriptSegments(page, { forceRefresh: true });
-                if (page?.noteMode === NOTE_MODE_TRANSCRIPT_VIDEO && transcribeInput) {
-                    transcribeInput.value = page.videoTranscript || "";
-                    updateTranscriptMeta();
+                if (page) {
+                    const needsTranscription = shouldTranscribeForVideo(page);
+                    if (needsTranscription && audioBlob) {
+                        await processAssemblyRecording(audioBlob, {
+                            targetNoteMode: NOTE_MODE_TRANSCRIPT_VIDEO,
+                            skipModeApply: true,
+                            toastLabel: "Transcription"
+                        });
+                    }
+                    await ensureVideoTranscriptSegments(page);
+                    if (page.noteMode === NOTE_MODE_TRANSCRIPT_VIDEO && transcribeInput) {
+                        transcribeInput.value = page.videoTranscript || "";
+                        updateTranscriptMeta();
+                    }
                 }
                 const sentences = getVideoTranscriptSegments(page);
                 videoPlayerModal.open({
@@ -3312,17 +3367,17 @@
 
             function canRequestAssemblyTranscript() {
                 if (!audioBlob) {
-                    showToast("Crée d'abord un enregistrement audio pour la transcription IA.", true);
+                    showToast("Crée d'abord un enregistrement audio pour la transcription.", true);
                     if (noteModeSelect) noteModeSelect.value = activeNoteMode;
                     return false;
                 }
                 if (audioRecordingActive) {
-                    showToast("Arrête l'enregistrement avant de demander la transcription IA.", true);
+                    showToast("Arrête l'enregistrement avant de demander la transcription.", true);
                     if (noteModeSelect) noteModeSelect.value = activeNoteMode;
                     return false;
                 }
                 if (recognitionActive && !recognitionPaused) {
-                    showToast("Arrête l'enregistrement avant de demander la transcription IA.", true);
+                    showToast("Arrête l'enregistrement avant de demander la transcription.", true);
                     if (noteModeSelect) noteModeSelect.value = activeNoteMode;
                     return false;
                 }
@@ -3351,12 +3406,34 @@
                         return;
                     }
                     const page = getActivePage();
-                    await ensureVideoTranscriptSegments(page, { forceRefresh: true });
+                    const needsTranscription = shouldTranscribeForVideo(page);
                     applyNoteMode(NOTE_MODE_TRANSCRIPT_VIDEO);
+                    if (needsTranscription && audioBlob) {
+                        await processAssemblyRecording(audioBlob, {
+                            targetNoteMode: NOTE_MODE_TRANSCRIPT_VIDEO,
+                            skipModeApply: true,
+                            toastLabel: "Transcription"
+                        });
+                    }
+                    if (page) {
+                        await ensureVideoTranscriptSegments(page);
+                        applyNoteMode(NOTE_MODE_TRANSCRIPT_VIDEO);
+                    }
                     return;
                 }
                 if (value === NOTE_MODE_TRANSCRIPT_IA) {
                     if (!canRequestAssemblyTranscript()) {
+                        return;
+                    }
+                    const page = getActivePage();
+                    if (
+                        page &&
+                        Number.isFinite(page.audioRecordingVersion) &&
+                        page.audioRecordingVersion > 0 &&
+                        page.audioRecordingVersion === page.audioTranscriptVersion &&
+                        page.assemblyTranscript
+                    ) {
+                        applyNoteMode(NOTE_MODE_TRANSCRIPT_IA);
                         return;
                     }
                     applyNoteMode(NOTE_MODE_TRANSCRIPT_IA);
@@ -3574,7 +3651,12 @@
                 throw new Error("Timeout AssemblyAI");
             }
 
-            async function processAssemblyRecording(blob) {
+            async function processAssemblyRecording(blob, options = {}) {
+                const {
+                    targetNoteMode = NOTE_MODE_TRANSCRIPT_IA,
+                    skipModeApply = false,
+                    toastLabel = "Transcription IA"
+                } = options;
                 if (!blob) return;
                 if (assemblyRequestInProgress) return;
                 const assemblyKey = getAssemblyApiKey();
@@ -3584,7 +3666,7 @@
                     return;
                 }
                 assemblyRequestInProgress = true;
-                showToast("Transcription IA en cours...");
+                showToast(`${toastLabel} en cours…`);
                 try {
                     console.debug("AssemblyAI upload request, blob", blob);
                     const uploadUrl = await uploadAudioToAssembly(blob, assemblyKey);
@@ -3655,9 +3737,16 @@
                         activePage.videoTranscriptSentences = videoSentences;
                         activePage.videoTranscriptFetchedId = transcriptId;
                         activePage.videoTranscriptLastManualEditAt = 0;
-                        applyNoteMode(NOTE_MODE_TRANSCRIPT_IA);
+                        activePage.audioTranscriptVersion = Number.isFinite(activePage.audioRecordingVersion)
+                            ? activePage.audioRecordingVersion
+                            : 0;
                     }
-                    showToast("Transcription IA terminée.");
+                    if (!skipModeApply) {
+                        applyNoteMode(targetNoteMode);
+                    } else {
+                        persistState();
+                    }
+                    showToast(`${toastLabel} terminée.`);
                 } catch (err) {
                     console.error("AssemblyAI transcription failed", err);
                     showToast("Transcription AssemblyAI impossible.", true);
@@ -4626,6 +4715,19 @@
                     recordingTimer = null;
                 }
                 setAudioBlob(null, { skipSave: true });
+                const page = getActivePage();
+                if (page) {
+                    page.audioRecordingVersion = 0;
+                    page.audioTranscriptVersion = 0;
+                    page.assemblyTranscript = "";
+                    page.assemblyTranscriptId = "";
+                    page.assemblyTranscriptSentences = [];
+                    page.videoTranscript = "";
+                    page.videoTranscriptId = "";
+                    page.videoTranscriptSentences = [];
+                    page.videoTranscriptFetchedId = "";
+                    persistState();
+                }
                 stopScreenRecording();
                 await clearVideoDb();
                 setVideoBlob(null, { skipSave: true });
