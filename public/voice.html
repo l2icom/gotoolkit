@@ -221,6 +221,16 @@
             font-size: 14px;
         }
 
+        .note-mode-select {
+            font-size: 13px;
+            border-radius: 8px;
+            border: 1px solid var(--border-strong);
+            padding: 4px 10px;
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+        }
+
         .recording-toolbar {
             display: flex;
             align-items: center;
@@ -477,7 +487,6 @@
         }
 
         .speech-field-wrapper textarea {
-            padding-right: 40px;
             position: relative;
             z-index: 2;
         }
@@ -1066,7 +1075,11 @@
                         <div class="panel-columns">
                             <div class="note-column">
                                 <div class="panel-header">
-                                    <span>Note</span>
+                                    <select id="noteModeSelect" class="note-mode-select" aria-label="Mode de note">
+                                        <option value="note">Note</option>
+                                        <option value="transcript-auto">Transcript auto</option>
+                                        <option value="transcript-ia">Transcript IA</option>
+                                    </select>
                                     <div class="recording-toolbar">
                                         <span id="transcriptMeta" class="badge"
                                             style="background:#e5e7eb;color:#000;">0' /
@@ -1103,8 +1116,8 @@
                                     <button id="summarizeBtn" type="button" class="btn">⌘ Résumer</button>
                                 </div>
                                 <div class="summary-wrapper">
-                                    <textarea id="summaryTextarea" class="summary-area" rows="8"
-                                        placeholder="Synthèse de la discussion." aria-label="Résumé IA"></textarea>
+                                    <textarea id="summaryTextarea" class="summary-area" rows="8" placeholder=""
+                                        aria-label="Résumé IA"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -1244,6 +1257,9 @@
             const ASSEMBLY_AI_KEY_STORAGE = "go-toolkit-assemblyai-key";
             const ASSEMBLY_PROXY_TOKEN_URL = (window.GO_TOOLKIT_ASSEMBLYAI_TOKEN_URL || "https://assemblyai-token.gotoolkit.workers.dev/token").replace(/\/$/, "");
             const ASSEMBLY_PROXY_BASE_URL = ASSEMBLY_PROXY_TOKEN_URL.replace(/\/token\/?$/i, "").replace(/\/$/, "") || ASSEMBLY_PROXY_TOKEN_URL;
+            const NOTE_MODE_NOTE = "note";
+            const NOTE_MODE_TRANSCRIPT_AUTO = "transcript-auto";
+            const NOTE_MODE_TRANSCRIPT_IA = "transcript-ia";
             const templateList = (window.GoPrompts && window.GoPrompts.voicePrompts) || [];
             const defaultSystemPrompt =
                 (window.GoPrompts && window.GoPrompts.voiceCreateSystemTemplate) ||
@@ -1335,6 +1351,7 @@
             const speechToggleBtn = document.getElementById("speechToggleBtn");
             const summarizeBtn = document.getElementById("summarizeBtn");
             const summaryTextarea = document.getElementById("summaryTextarea");
+            const noteModeSelect = document.getElementById("noteModeSelect");
             const audioPlayBtn = document.getElementById("audioPlayBtn");
             const audioProgress = document.getElementById("audioProgress");
             const audioSpeedSelect = document.getElementById("audioSpeedSelect");
@@ -1402,7 +1419,6 @@
             let shareStatusType = "";
             let shareRequestInProgress = false;
             let shareLastUpdatedAt = null;
-            let pendingAssemblyTranscription = false;
             let assemblyRequestInProgress = false;
             const SELF_PARTICIPANT_KEY = "go-toolkit-voice-self";
             const DEFAULT_SUBJECT_DURATION = 15;
@@ -1426,6 +1442,8 @@
             let mediaRecorder = null;
             let mediaStream = null;
             let audioChunks = [];
+            let recordingSegments = [];
+            let audioRecordingActive = false;
             let audioBlob = null;
             let audioUrl = null;
             const audioPlayer = new Audio();
@@ -1487,6 +1505,9 @@
                         self || { name: "", role: "" },
                         { name: "", role: "" }
                     ],
+                    manualTranscript: "",
+                    assemblyTranscript: "",
+                    noteMode: NOTE_MODE_NOTE,
                     lastIaResponse: "",
                     activeSubjectId: null,
                     checks: {}
@@ -1503,6 +1524,9 @@
                     if (typeof next.summary !== "string") next.summary = "";
                     if (typeof next.templateId !== "string") next.templateId = "";
                     if (typeof next.templateName !== "string") next.templateName = "";
+                    if (typeof next.manualTranscript !== "string") next.manualTranscript = next.transcript || "";
+                    if (typeof next.assemblyTranscript !== "string") next.assemblyTranscript = "";
+                    if (!next.noteMode) next.noteMode = NOTE_MODE_NOTE;
                     return next;
                 });
                 if (!raw.activePageId && raw.pages[0]) raw.activePageId = raw.pages[0].id;
@@ -2224,7 +2248,16 @@
                 if (pageTitleEl) pageTitleEl.textContent = page.title || "Page";
                 if (promptCreate) promptCreate.value = page.scenario || "";
                 if (promptModify) promptModify.value = page.script || "";
-                if (transcribeInput) transcribeInput.value = page.transcript || "";
+                if (!page.manualTranscript) {
+                    page.manualTranscript = page.transcript || "";
+                }
+                if (!page.noteMode) {
+                    page.noteMode = NOTE_MODE_NOTE;
+                }
+                activeNoteMode = page.noteMode;
+                const noteContent = getNoteContentForMode(page, page.noteMode);
+                if (transcribeInput) transcribeInput.value = noteContent;
+                if (noteModeSelect) noteModeSelect.value = page.noteMode;
                 if (summaryTextarea) summaryTextarea.value = page.summary || "";
                 if (promptTemplateMeta) {
                     const label = page.templateName || tplFromState?.title || "—";
@@ -2348,11 +2381,32 @@
                     });
                     if (result && result.data) {
                         const blob = new Blob([result.data], { type: result.type || "audio/webm" });
+                        recordingSegments = blob ? [blob] : [];
                         setAudioBlob(blob, { skipSave: true });
+                    } else {
+                        recordingSegments = [];
                     }
                 } catch (err) {
                     console.warn("Impossible de charger l'audio", err);
                 }
+            }
+
+            function rebuildCombinedAudioBlob() {
+                if (!recordingSegments.length) {
+                    setAudioBlob(null, { skipSave: true });
+                    return;
+                }
+                const combined = new Blob(recordingSegments, { type: recordingSegments[0]?.type || "audio/webm" });
+                setAudioBlob(combined);
+            }
+
+            function finalizeAudioSegment(type = "audio/webm") {
+                if (audioChunks.length) {
+                    const segment = new Blob(audioChunks, { type });
+                    recordingSegments.push(segment);
+                    rebuildCombinedAudioBlob();
+                }
+                audioChunks = [];
             }
 
             function setAudioBlob(blob, options = {}) {
@@ -2379,7 +2433,6 @@
                 if (blob && !skipSave) {
                     saveAudioToDb(blob);
                 }
-                maybeProcessAssemblyRecording(blob);
             }
 
             function getVoiceTranscriptionMode() {
@@ -2445,6 +2498,71 @@
                     };
                 }
                 return payload;
+            }
+
+            function getNoteContentForMode(page, mode) {
+                if (!page) return "";
+                if (mode === NOTE_MODE_TRANSCRIPT_IA) {
+                    return page.assemblyTranscript || "";
+                }
+                if (mode === NOTE_MODE_TRANSCRIPT_AUTO) {
+                    return page.manualTranscript || "";
+                }
+                return page.manualTranscript || page.transcript || "";
+            }
+
+            let activeNoteMode = NOTE_MODE_NOTE;
+            function applyNoteMode(mode) {
+                const page = getActivePage();
+                if (!page) return;
+                activeNoteMode = mode;
+                page.noteMode = mode;
+                const content = getNoteContentForMode(page, mode);
+                if (noteModeSelect) {
+                    noteModeSelect.value = mode;
+                }
+                if (transcribeInput) {
+                    transcribeInput.value = content;
+                }
+                persistState();
+                updateGhostOverlay("");
+                updateTranscriptMeta();
+            }
+
+            function canRequestAssemblyTranscript() {
+                if (!audioBlob) {
+                    showToast("Crée d'abord un enregistrement audio pour la transcription IA.", true);
+                    if (noteModeSelect) noteModeSelect.value = activeNoteMode;
+                    return false;
+                }
+                if (audioRecordingActive) {
+                    showToast("Arrête l'enregistrement avant de demander la transcription IA.", true);
+                    if (noteModeSelect) noteModeSelect.value = activeNoteMode;
+                    return false;
+                }
+                if (recognitionActive && !recognitionPaused) {
+                    showToast("Arrête l'enregistrement avant de demander la transcription IA.", true);
+                    if (noteModeSelect) noteModeSelect.value = activeNoteMode;
+                    return false;
+                }
+                return true;
+            }
+
+            function handleNoteModeSelection(value) {
+                if (!noteModeSelect) return;
+                if (value === NOTE_MODE_TRANSCRIPT_IA) {
+                    if (!canRequestAssemblyTranscript()) {
+                        return;
+                    }
+                    applyNoteMode(NOTE_MODE_TRANSCRIPT_IA);
+                    processAssemblyRecording(audioBlob);
+                    return;
+                }
+                if (value === NOTE_MODE_TRANSCRIPT_AUTO) {
+                    applyNoteMode(NOTE_MODE_TRANSCRIPT_AUTO);
+                    return;
+                }
+                applyNoteMode(NOTE_MODE_NOTE);
             }
 
             function formatAssemblyTimestamp(ms = 0) {
@@ -2574,26 +2692,23 @@
                     const knownValues = getAssemblyKnownValues(page);
                     const payload = buildAssemblyTranscriptPayload(uploadUrl, knownValues, participantsWithNames.length);
                     console.debug("AssemblyAI request payload", payload);
+                    console.log("AssemblyAI request payload", payload);
                     const transcriptId = await requestAssemblyTranscript(payload, assemblyKey);
                     console.debug("AssemblyAI transcript id", transcriptId);
                     const result = await pollAssemblyTranscript(transcriptId, assemblyKey);
                     console.debug("AssemblyAI poll result", result);
+                    console.log("AssemblyAI poll response", result);
                     const finalText = buildTranscriptFromUtterances(result);
                     if (!finalText) {
                         throw new Error("Transcription vide");
                     }
                     transcriptPrefix = finalText;
                     lastCaret = finalText.length;
-                    if (transcribeInput) {
-                        transcribeInput.value = finalText;
-                    }
                     const activePage = getActivePage();
                     if (activePage) {
-                        activePage.transcript = finalText;
-                        persistState();
+                        activePage.assemblyTranscript = finalText;
+                        applyNoteMode(NOTE_MODE_TRANSCRIPT_IA);
                     }
-                    updateGhostOverlay("");
-                    updateTranscriptMeta();
                     showToast("Transcription AssemblyAI terminée.");
                 } catch (err) {
                     console.error("AssemblyAI transcription failed", err);
@@ -2601,13 +2716,6 @@
                 } finally {
                     assemblyRequestInProgress = false;
                 }
-            }
-
-            function maybeProcessAssemblyRecording(blob) {
-                if (!pendingAssemblyTranscription) return;
-                pendingAssemblyTranscription = false;
-                if (!blob) return;
-                processAssemblyRecording(blob);
             }
 
             function updateAudioProgress() {
@@ -2647,13 +2755,7 @@
                         mediaStream.getTracks().forEach(track => track.stop());
                         mediaStream = null;
                     }
-                    if (audioChunks.length) {
-                        const blob = new Blob(audioChunks, { type: mime });
-                        setAudioBlob(blob);
-                    } else {
-                        pendingAssemblyTranscription = false;
-                    }
-                    audioChunks = [];
+                    finalizeAudioSegment(mime);
                     mediaRecorder = null;
                 };
                 mediaRecorder.start();
@@ -2672,6 +2774,7 @@
                 } catch (err) {
                     console.warn("Stop audio recording", err);
                 }
+                audioRecordingActive = false;
             }
 
             function toggleAudioPlayback() {
@@ -3222,7 +3325,11 @@
                     // persist the finalized transcript (no interim)
                     const page = getActivePage();
                     if (page) {
-                        page.transcript = transcriptPrefix || getBaseWithoutInterim() || "";
+                        const manualText = transcriptPrefix || getBaseWithoutInterim() || "";
+                        page.manualTranscript = manualText;
+                        if (page.noteMode !== NOTE_MODE_TRANSCRIPT_AUTO) {
+                            page.transcript = manualText;
+                        }
                         persistState();
                     }
 
@@ -3237,13 +3344,14 @@
                 };
             }
 
-            function startRecording() {
-                if (!speechRecognition) {
+            async function startRecording() {
+                if (audioRecordingActive) return;
+                const shouldUseSpeech = activeNoteMode === NOTE_MODE_TRANSCRIPT_AUTO;
+                if (shouldUseSpeech && !speechRecognition) {
                     setupSpeechRecognition();
                 }
-                if (!speechRecognition) return;
-                ensureAudioRecording();
-                pendingAssemblyTranscription = false;
+                const ready = await ensureAudioRecording();
+                if (!ready) return;
                 transcriptPrefix = transcribeInput?.value || "";
                 recordingStartedAt = Date.now();
                 recordingElapsedSec = 0;
@@ -3257,9 +3365,19 @@
                 if (transcribeGhost) {
                     updateGhostOverlay("");
                 }
-                recognitionActive = true;
-                recognitionPaused = false;
-                speechRecognition.start();
+                audioRecordingActive = true;
+                const canStartRecognition = shouldUseSpeech && Boolean(speechRecognition);
+                if (canStartRecognition) {
+                    recognitionActive = true;
+                    recognitionPaused = false;
+                    speechRecognition.start();
+                } else {
+                    recognitionActive = false;
+                    recognitionPaused = false;
+                    if (shouldUseSpeech && !speechRecognition) {
+                        showToast("Dictée vocale indisponible.", true);
+                    }
+                }
                 recordBtn?.classList.add("btn-primary");
                 pauseBtn?.classList.remove("btn-primary");
                 setSpeechButtonState(true);
@@ -3267,10 +3385,13 @@
             }
 
             function pauseRecording() {
-                recognitionPaused = true;
+                if (!audioRecordingActive && !recognitionActive) return;
+                const hadRecognition = recognitionActive;
+                recognitionPaused = hadRecognition;
                 recognitionActive = false;
                 try { speechRecognition?.stop(); } catch (e) { /* ignore */ }
                 stopAudioRecording();
+                audioRecordingActive = false;
                 recordingStartedAt = null;
                 if (recordingTimer) {
                     clearInterval(recordingTimer);
@@ -3280,8 +3401,9 @@
                 pauseBtn?.classList.add("btn-primary");
                 setSpeechButtonState(false);
                 transcriptPrefix = transcribeInput?.value || "";
-                insertPauseSpacing();
-                pendingAssemblyTranscription = shouldUseAssemblyTranscriptionMode() && Boolean(getAssemblyApiKey()) && Boolean(ASSEMBLY_PROXY_BASE_URL);
+                if (hadRecognition) {
+                    insertPauseSpacing();
+                }
                 updateGhostOverlay("");
                 updateRecordingUi();
             }
@@ -3289,10 +3411,11 @@
             function resetRecording() {
                 recognitionPaused = false;
                 recognitionActive = false;
-                pendingAssemblyTranscription = false;
                 try { speechRecognition?.stop(); } catch (e) { /* ignore */ }
                 stopAudioRecording();
                 recordingStartedAt = null;
+                recordingSegments = [];
+                audioRecordingActive = false;
                 recordingElapsedSec = 0;
                 lastTimestampMinute = null;
                 if (recordingTimer) {
@@ -3315,7 +3438,7 @@
             }
 
             function toggleSpeechRecording() {
-                if (recognitionActive && !recognitionPaused) {
+                if (audioRecordingActive) {
                     pauseRecording();
                 } else {
                     startRecording();
@@ -3342,7 +3465,18 @@
             }
 
             async function clearAudioStoreAll() {
+                stopAudioRecording();
                 await clearAudioDb();
+                recordingSegments = [];
+                audioRecordingActive = false;
+                recognitionActive = false;
+                recognitionPaused = false;
+                recordingStartedAt = null;
+                recordingElapsedSec = 0;
+                if (recordingTimer) {
+                    clearInterval(recordingTimer);
+                    recordingTimer = null;
+                }
                 setAudioBlob(null, { skipSave: true });
             }
 
@@ -3536,7 +3670,11 @@
                     lastInterim = "";
                     lastCaret = Math.min(lastCaret, transcriptPrefix.length);
                 }
-                page.transcript = getBaseWithoutInterim();
+                const manualText = getBaseWithoutInterim();
+                page.manualTranscript = manualText;
+                if (page.noteMode !== NOTE_MODE_TRANSCRIPT_AUTO) {
+                    page.transcript = manualText;
+                }
                 persistState();
                 updateTranscriptMeta();
                 updateGhostOverlay("");
@@ -3546,6 +3684,9 @@
                 if (!page) return;
                 page.summary = summaryTextarea.value;
                 persistState();
+            });
+            noteModeSelect?.addEventListener("change", () => {
+                handleNoteModeSelection(noteModeSelect.value);
             });
             ["click", "keyup", "mouseup", "focus", "select"].forEach(evt => {
                 transcribeInput?.addEventListener(evt, () => {
