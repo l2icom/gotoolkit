@@ -1425,6 +1425,7 @@
             let lastInterim = "";
             let lastCaret = 0;
             let lastTimestampMinute = null;
+            let pendingTimestamp = null;
             let currentShareToken = null;
             let shareLoadedFromRemote = false;
             let shareStatusMessage = "";
@@ -3338,23 +3339,48 @@
 
                     // Insert finals at the caret position (do not force a newline)
                     if (finals.length) {
-                        const parts = [];
+                        const effectiveBase = transcriptPrefix || base || "";
+                        let inserted = "";
+
+                        const appendSpeechSegment = segment => {
+                            const trimmed = (segment || "").trim();
+                            if (!trimmed) return;
+                            if (inserted && !/\s$/.test(inserted) && !trimmed.startsWith("\n")) {
+                                inserted += " ";
+                            }
+                            inserted += trimmed;
+                            const lastChar = trimmed.charAt(trimmed.length - 1);
+                            if (SENTENCE_TERMINATOR_REGEX.test(lastChar) && !inserted.endsWith("\n")) {
+                                inserted += "\n";
+                            }
+                        };
+
+                        const flushPendingTimestampIfReady = beforeText => {
+                            if (!pendingTimestamp) return;
+                            if (!isSentenceBoundary(beforeText)) return;
+                            inserted += buildTimestampBlock(pendingTimestamp.label, beforeText);
+                            lastTimestampMinute = pendingTimestamp.minuteBucket;
+                            pendingTimestamp = null;
+                        };
+
                         finals.filter(Boolean).forEach(text => {
                             const minuteBucket = Math.floor(elapsedSec / 60);
-                            let part = text.trim();
                             if (minuteBucket > (lastTimestampMinute ?? -1)) {
-                                lastTimestampMinute = minuteBucket;
-                                // insert a newline before the timestamp so it starts a new line
-                                part = `\n[${formatTimestamp(elapsedSec)}] ${part}`;
+                                pendingTimestamp = { label: formatTimestamp(elapsedSec), minuteBucket };
                             }
-                            parts.push(part);
+                            const beforeText = (effectiveBase || "") + inserted;
+                            flushPendingTimestampIfReady(beforeText);
+                            appendSpeechSegment(text);
                         });
-                        const inserted = parts.join(" ");
+
+                        const combinedText = (effectiveBase || "") + inserted;
+                        flushPendingTimestampIfReady(combinedText);
+
                         const caret = Math.min(lastCaret || 0, base.length);
                         const defaultSep = base && !base.endsWith(" ") ? " " : "";
                         const sep = inserted.startsWith("\n") ? "" : defaultSep;
                         const newBase = base.slice(0, caret) + sep + inserted + base.slice(caret);
-                        transcriptPrefix = newBase.replace(/\s+$/g, "");
+                        transcriptPrefix = newBase;
                         // move caret after inserted text
                         lastCaret = Math.min(transcriptPrefix.length, caret + sep.length + inserted.length);
                     }
@@ -3363,7 +3389,9 @@
                     // Show finalized base + interim inline at caret for live feedback
                     if (transcribeInput) {
                         const displayBase = transcriptPrefix || base || "";
-                        const caretPos = Math.min(lastCaret || 0, displayBase.length);
+                        const caretPos = recognitionActive
+                            ? displayBase.length
+                            : Math.min(lastCaret || 0, displayBase.length);
                         const before = displayBase.slice(0, caretPos);
                         const after = displayBase.slice(caretPos);
                         const display = interimLine ? (before + (before && !before.endsWith(" ") ? " " : "") + interimLine + after) : displayBase;
@@ -3407,6 +3435,7 @@
                 recordingStartedAt = Date.now();
                 recordingElapsedSec = 0;
                 lastTimestampMinute = null;
+                pendingTimestamp = null;
                 if (recordingTimer) clearInterval(recordingTimer);
                 recordingTimer = setInterval(() => {
                     if (!recordingStartedAt) return;
@@ -3469,6 +3498,7 @@
                 audioRecordingActive = false;
                 recordingElapsedSec = 0;
                 lastTimestampMinute = null;
+                pendingTimestamp = null;
                 if (recordingTimer) {
                     clearInterval(recordingTimer);
                     recordingTimer = null;
@@ -3690,6 +3720,22 @@
                     return `${text}\n`;
                 }
                 return `${text} `;
+            }
+
+            const SENTENCE_TERMINATOR_REGEX = /[.!?…]/;
+            function isSentenceBoundary(text = "") {
+                if (!text) return true;
+                if (text.endsWith("\n")) return true;
+                const trimmed = text.replace(/\s+$/g, "");
+                if (!trimmed) return true;
+                const lastChar = trimmed.charAt(trimmed.length - 1);
+                return SENTENCE_TERMINATOR_REGEX.test(lastChar);
+            }
+
+            function buildTimestampBlock(label, beforeText = "") {
+                const hasContent = Boolean((beforeText || "").replace(/\s+$/g, ""));
+                const needsLeadingNewline = hasContent && !beforeText.endsWith("\n");
+                return `${needsLeadingNewline ? "\n" : ""}[${label}]\n`;
             }
 
             function insertPauseSpacing() {
