@@ -30,7 +30,7 @@ Lorsque vous les déclenchez, seules les données strictement nécessaires sont 
 Aucun cookie ou traceur tiers n’est déposé sur votre navigateur.
 Ne transmettez jamais de données sensibles.</p>
 
-<p><strong>◉ Reconnaissance vocale et transcription</strong><br>
+<p><strong>◉ Reconnaissance et transcription vocale</strong><br>
 La dictée et la transcription peuvent impliquer un traitement externe de l’audio par des fournisseurs spécialisés.
 Informez les participants et recueillez leur consentement si nécessaire.</p>
 
