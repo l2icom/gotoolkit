@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.27.1">
-    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.27.1">
+    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.27.2">
+    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.27.2">
     <style>
         :root {
             --bg: #f3f4f6;
@@ -1082,15 +1082,15 @@
 <body class="app-body">
     <div class="app">
         <div class="app-header">
-            <a class="app-home-link" href="/?v=2025.12.27.1" title="Revenir à l'accueil">☍</a>
+            <a class="app-home-link" href="/?v=2025.12.27.2" title="Revenir à l'accueil">☍</a>
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                     aria-expanded="false">▷ Voice ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.27.1" role="menuitem"> ◍ Canvas</a>
-                    <a class="nav-switch-link" href="grid.html?v=2025.12.27.1" role="menuitem">▦ Grid</a>
-                    <a class="nav-switch-link" href="draw.html?v=2025.12.27.1" role="menuitem">◇ Draw</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.27.1" role="menuitem">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.27.2" role="menuitem"> ◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2025.12.27.2" role="menuitem">▦ Grid</a>
+                    <a class="nav-switch-link" href="draw.html?v=2025.12.27.2" role="menuitem">◇ Draw</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.27.2" role="menuitem">⇥ Timeline</a>
                 </div>
             </div>
 
@@ -1102,9 +1102,12 @@
             </div>
 
             <div class="global-actions">
-                <button class="btn" id="gtTemplateModalTrigger" aria-label="Ouvrir ⊞ Modèles" title="⊞ Modèles">⊞ Modèles</button>
-                <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir ⌘ Agent" title="⌘ Agent">⌘ Agent</button>
-                <button class="btn" id="gtPromptModalTrigger" aria-label="Ouvrir Prompt" title="⌬ Prompt">⌬ Prompt</button>
+                <button class="btn" id="gtTemplateModalTrigger" aria-label="Ouvrir ⊞ Modèles" title="⊞ Modèles">⊞
+                    Modèles</button>
+                <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir ⌘ Agent" title="⌘ Agent">⌘
+                    Agent</button>
+                <button class="btn" id="gtPromptModalTrigger" aria-label="Ouvrir Prompt" title="⌬ Prompt">⌬
+                    Prompt</button>
 
                 <div class="menu-trigger">
                     <button class="btn" id="fileMenuBtn" aria-label="Document" title="Document">⬠ Document</button>
@@ -1203,8 +1206,8 @@
                                     <div id="transcribeGhost" class="transcribe-ghost" aria-live="polite"></div>
                                     <div id="transcribeMirror" class="transcribe-mirror" aria-hidden="true"></div>
                                     <button class="speech-button" id="speechToggleBtn" type="button"
-                                        data-speech-target="transcribeInput" title="Dictée vocale"
-                                        aria-label="Activer la dictée vocale">◉</button>
+                                        data-speech-target="transcribeInput" title="Enregistrement"
+                                        aria-label="Activer l'enregistrement">◉</button>
                                     <button class="speech-button" id="audioImportBtn" type="button"
                                         title="Importer un fichier audio"
                                         aria-label="Importer un fichier audio">♪</button>
@@ -1324,7 +1327,7 @@
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
             <strong>Module Voice (Goal Digger)</strong>
-            <span>Version 2025.12.27.1</span>
+            <span>Version 2025.12.27.2</span>
             <span>Usage réservé à Savane Consulting.</span>
             <div class="info-actions">
                 <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
@@ -1345,12 +1348,12 @@
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2025.12.27.1"></script>
+    <script src="js/cgu.js?v=2025.12.27.2"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
     <script src="js/ia-config.js"></script>
-    <script src="js/prompt.js?v=2025.12.27.1"></script>
+    <script src="js/prompt.js?v=2025.12.27.2"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/voice-video-player.js"></script>
 
@@ -1500,7 +1503,7 @@
             const infoPopup = document.getElementById("infoPopup");
             const infoButton = aboutVoiceBtn;
             const updateAppBtn = document.getElementById("updateAppBtn");
-            const APP_VERSION = "2025.12.27.1";
+            const APP_VERSION = "2025.12.27.2";
             const VERSION_QUERY_PARAM = "v";
             function getBrowserDateVersion() {
                 const now = new Date();
@@ -3427,6 +3430,7 @@
                 });
                 const payload = {
                     audio_url: uploadUrl,
+                    auto_chapters: true,
                     filter_profanity: true,
                     speaker_labels: true,
                     language_detection: true,
