@@ -226,12 +226,14 @@ function base64UrlEncode(buffer) {
 
 async function getAccessToken(env) {
   const now = Date.now();
-  if (accessTokenCache.token && now < accessTokenCache.expiresAt - 60000) {
+  if (accessTokenCache.token && now < accessTokenCache.expiresAt - 6e4) {
     return accessTokenCache.token;
   }
+
   const account = getServiceAccount(env);
-  const iat = Math.floor(now / 1000);
+  const iat = Math.floor(now / 1e3);
   const exp = iat + 3600;
+
   const header = base64UrlEncode(textEncoder.encode(JSON.stringify({ alg: "RS256", typ: "JWT" })));
   const payload = base64UrlEncode(
     textEncoder.encode(
@@ -244,32 +246,26 @@ async function getAccessToken(env) {
       })
     )
   );
+
   const toSign = `${header}.${payload}`;
   const key = await getSigningKey(env);
-  const signature = await crypto.subtle.sign(
-    { name: "RSASSA-PKCS1-v1_5" },
-    key,
-    textEncoder.encode(toSign)
-  );
+  const signature = await crypto.subtle.sign({ name: "RSASSA-PKCS1-v1_5" }, key, textEncoder.encode(toSign));
   const jwt = `${toSign}.${base64UrlEncode(signature)}`;
+
   const form = new URLSearchParams();
   form.append("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer");
   form.append("assertion", jwt);
-  const response = await fetch(FIREBASE_TOKEN_URL, {
-    method: "POST",
-    body: form
-  });
+
+  const response = await fetch(FIREBASE_TOKEN_URL, { method: "POST", body: form });
   if (!response.ok) {
     const body = await response.text().catch(() => "");
-    throw new Error(`Erreur d'authentification Firebase: ${response.status} ${body}`);
+    throw new Error(`Auth Firebase échouée: ${response.status} ${body}`);
   }
+
   const data = await response.json();
-  if (!data.access_token || !data.expires_in) {
-    throw new Error("Jeton d'accès Firebase invalide");
-  }
   accessTokenCache = {
     token: data.access_token,
-    expiresAt: now + data.expires_in * 1000
+    expiresAt: now + data.expires_in * 1e3
   };
   return accessTokenCache.token;
 }

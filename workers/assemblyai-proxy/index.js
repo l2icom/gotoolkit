@@ -84,40 +84,13 @@ async function enforceRateLimitForToken(request, corsMeta, env) {
   if (corsMeta.allowLocal) {
     return null;
   }
-
-  if (!env?.RATE_LIMIT) {
+  if (!env?.MY_RATE_LIMITER || typeof env.MY_RATE_LIMITER.limit !== "function") {
     return null;
   }
 
-  const now = Date.now();
-  const clientIp = normalizeClientIp(request);
-
-  const minuteWindowMs = 60_000;
-  const perMinuteLimit = 3;
-  const dailyLimit = 30;
-  const today = new Date(now).toISOString().slice(0, 10);
-
-  const minuteBucket = Math.floor(now / minuteWindowMs);
-  const quotaKey = `assemblyai:quota:${clientIp}:${today}`;
-  const rlKey = `assemblyai:rl:${clientIp}:${minuteBucket}`;
-
-  const [storedDaily, storedMinute] = await Promise.all([
-    env.RATE_LIMIT.get(quotaKey),
-    env.RATE_LIMIT.get(rlKey)
-  ]);
-
-  const dailyCount = storedDaily ? parseInt(storedDaily, 10) || 0 : 0;
-  if (dailyCount >= dailyLimit) {
-    return jsonError(
-      corsMeta.headers,
-      429,
-      "DAILY_QUOTA_EXCEEDED",
-      `Daily quota exceeded (${dailyLimit} requests per day).`
-    );
-  }
-
-  const minuteCount = storedMinute ? parseInt(storedMinute, 10) || 0 : 0;
-  if (minuteCount >= perMinuteLimit) {
+  const ipAddress = request.headers.get("cf-connecting-ip") || "";
+  const { success } = await env.MY_RATE_LIMITER.limit({ key: ipAddress });
+  if (!success) {
     return jsonError(
       corsMeta.headers,
       429,
@@ -125,15 +98,6 @@ async function enforceRateLimitForToken(request, corsMeta, env) {
       "Too many requests, please wait a bit."
     );
   }
-
-  await Promise.all([
-    env.RATE_LIMIT.put(quotaKey, String(dailyCount + 1), {
-      expirationTtl: 27 * 60 * 60
-    }),
-    env.RATE_LIMIT.put(rlKey, String(minuteCount + 1), {
-      expirationTtl: 70
-    })
-  ]);
 
   return null;
 }

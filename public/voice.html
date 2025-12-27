@@ -225,6 +225,7 @@
             color: var(--text);
             font-size: 14px;
         }
+
         .panel-header .summary-actions {
             display: flex;
             align-items: center;
@@ -300,12 +301,23 @@
         }
 
         .audio-play-btn,
-        .audio-download-btn {
+        .screen-toggle {
+            border: 1px solid var(--border-strong);
+            background: transparent;
+            border-radius: 8px;
+            padding: 4px 8px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .audio-play-btn,
+        .audio-download-btn,
+        .screen-toggle {
             border: 1px solid var(--border-strong);
             background: transparent;
             border-radius: 8px;
             padding: 2px 6px;
-            font-size: 14px;
+            font-size: 15px;
             cursor: pointer;
         }
 
@@ -317,6 +329,56 @@
             border-radius: 6px;
             background: #e5e7eb;
             outline: none;
+        }
+
+        body.recording-border::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            border: 4px solid #B11226;
+            box-shadow: 0 0 12px rgba(177, 18, 38, 0.45);
+            animation: recording-border-pulse 1.6s infinite ease-in-out;
+            z-index: 9998;
+        }
+
+        @keyframes recording-border-pulse {
+            0% {
+                box-shadow: 0 0 12px rgba(177, 18, 38, 0.45);
+            }
+
+            50% {
+                box-shadow: 0 0 18px rgba(177, 18, 38, 0.65);
+            }
+
+            100% {
+                box-shadow: 0 0 12px rgba(177, 18, 38, 0.45);
+            }
+        }
+
+        .recording-countdown-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            color: #fff;
+            font-family: "Inter", system-ui, sans-serif;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+
+        .recording-countdown-overlay.visible {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .recording-countdown-number {
+            font-size: 120px;
+            font-weight: 700;
         }
 
         .audio-progress::-webkit-slider-thumb {
@@ -346,16 +408,6 @@
             padding: 2px 6px;
             font-size: 13px;
             background: #fff;
-        }
-
-        .screen-toggle {
-            border: 1px solid var(--border-strong);
-            border-radius: 8px;
-            background: transparent;
-            color: var(--text);
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
 
         .screen-toggle.active {
@@ -448,30 +500,6 @@
             outline: none;
             border: 1px solid var(--primary);
             box-shadow: 0 0 0 1px var(--primary-soft);
-        }
-
-        .speech-active {
-            border: 2px solid #B11226 !important;
-            animation: speech-border 2s infinite ease-in-out;
-        }
-
-        .speech-active:focus {
-            border: 1px solid #B11226 !important;
-            box-shadow: none;
-        }
-
-        @keyframes speech-border {
-            0% {
-                box-shadow: 0 0 0 0 rgba(177, 18, 38, 0.4);
-            }
-
-            50% {
-                box-shadow: 0 0 0 4px rgba(177, 18, 38, 0.15);
-            }
-
-            100% {
-                box-shadow: 0 0 0 0 rgba(177, 18, 38, 0.4);
-            }
         }
 
         .transcribe-area {
@@ -568,7 +596,7 @@
             width: 24px;
             height: 24px;
             background: rgba(255, 255, 255, 0.85);
-            font-size: 20px;
+            font-size: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -581,12 +609,6 @@
             pointer-events: auto;
             z-index: 3;
             transform: translateX(2px);
-        }
-
-        #audioImportBtn {
-            right: 28px;
-            top: 4px;
-            transform: translateX(0);
         }
 
         .speech-button--active,
@@ -1170,7 +1192,6 @@
                                 <div class="panel-header">
                                     <select id="noteModeSelect" class="note-mode-select" aria-label="Mode de note">
                                         <option value="note">Note écrite</option>
-                                        <option value="transcript-auto">Dictée vocale</option>
                                         <option value="transcript-ia">Transcript audio</option>
                                         <option value="transcript-video">Transcript vidéo</option>
                                     </select>
@@ -1179,8 +1200,16 @@
                                             style="background:#e5e7eb;color:#000;">0' /
                                             0'</span>
                                         <div class="audio-controls">
+                                            <button id="audioImportBtn" type="button" class="audio-play-btn"
+                                                title="Importer un fichier audio"
+                                                aria-label="Importer un fichier audio">♪</button>
+                                            <button id="screenCaptureToggleBtn" type="button" class="screen-toggle"
+                                                title="Capturer l'écran" aria-label="Capturer l'écran">⧉</button>
+
+
                                             <button id="audioPlayBtn" type="button" class="audio-play-btn"
-                                                title="Lire / pause" aria-label="Lire l'enregistrement">▶</button>
+                                                title="Démarrer l'enregistrement"
+                                                aria-label="Démarrer l'enregistrement">◉</button>
                                             <input id="audioProgress" class="audio-progress" type="range" min="0"
                                                 max="1" step="0.01" value="0" aria-label="Progression audio" disabled>
                                             <select id="audioSpeedSelect" class="audio-speed" title="Vitesse de lecture"
@@ -1200,9 +1229,7 @@
                                             <button id="audioClearBtn" type="button" class="audio-download-btn"
                                                 title="Supprimer l'enregistrement"
                                                 aria-label="Supprimer l'enregistrement">⊘</button>
-                                            <button id="screenCaptureToggleBtn" type="button"
-                                                class="audio-download-btn screen-toggle" title="Capturer l'écran"
-                                                aria-label="Capturer l'écran">⧉</button>
+
                                         </div>
                                     </div>
                                 </div>
@@ -1213,10 +1240,7 @@
                                     <div id="transcribeMirror" class="transcribe-mirror" aria-hidden="true"></div>
                                     <button class="speech-button" id="speechToggleBtn" type="button"
                                         data-speech-target="transcribeInput" title="Enregistrement"
-                                        aria-label="Activer l'enregistrement">◉</button>
-                                    <button class="speech-button" id="audioImportBtn" type="button"
-                                        title="Importer un fichier audio"
-                                        aria-label="Importer un fichier audio">♪</button>
+                                        aria-label="Activer l'enregistrement" style="display:none;">◉</button>
                                     <input id="audioImportInput" type="file"
                                         accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/aac,audio/ogg,audio/webm,audio/flac"
                                         hidden />
@@ -1501,31 +1525,34 @@
             const evaluateBtn = document.getElementById("evaluateBtn");
             const evaluateDefaultLabel = evaluateBtn?.textContent || "⌘ Évaluer";
             const refreshFromScriptBtn = document.getElementById("refreshFromScriptBtn");
+            let recordingCountdownTimer = null;
+            let recordingCountdownOverlay = null;
+            let recordingCountdownNumber = null;
             const fileMenuBtn = document.getElementById("fileMenuBtn");
             const fileMenu = document.getElementById("fileMenu");
             const completeActionCountdown =
                 window.GoToolkitSharedUI &&
-                typeof window.GoToolkitSharedUI.createActionCountdown === "function"
+                    typeof window.GoToolkitSharedUI.createActionCountdown === "function"
                     ? window.GoToolkitSharedUI.createActionCountdown(
-                          { element: completeBtn, defaultLabel: completeDefaultLabel },
-                          { duration: 30 }
-                      )
+                        { element: completeBtn, defaultLabel: completeDefaultLabel },
+                        { duration: 30 }
+                    )
                     : null;
             const evaluateActionCountdown =
                 window.GoToolkitSharedUI &&
-                typeof window.GoToolkitSharedUI.createActionCountdown === "function"
+                    typeof window.GoToolkitSharedUI.createActionCountdown === "function"
                     ? window.GoToolkitSharedUI.createActionCountdown(
-                          { element: evaluateBtn, defaultLabel: evaluateDefaultLabel },
-                          { duration: 30 }
-                      )
+                        { element: evaluateBtn, defaultLabel: evaluateDefaultLabel },
+                        { duration: 30 }
+                    )
                     : null;
             const summarizeActionCountdown =
                 window.GoToolkitSharedUI &&
-                typeof window.GoToolkitSharedUI.createActionCountdown === "function"
+                    typeof window.GoToolkitSharedUI.createActionCountdown === "function"
                     ? window.GoToolkitSharedUI.createActionCountdown(
-                          { element: summarizeBtn, defaultLabel: summarizeDefaultLabel },
-                          { duration: 30 }
-                      )
+                        { element: summarizeBtn, defaultLabel: summarizeDefaultLabel },
+                        { duration: 30 }
+                    )
                     : null;
             const optionsMenu = document.getElementById("optionsMenu");
             const newDocumentBtn = document.getElementById("newDocumentBtn");
@@ -1593,9 +1620,6 @@
                 if (btn) {
                     btn.classList.toggle("speech-button--active", Boolean(isActive));
                 }
-                if (transcribeInput) {
-                    transcribeInput.classList.toggle("speech-active", Boolean(isActive));
-                }
             };
             const AUDIO_DB = {
                 name: "go-toolkit-voice-audio",
@@ -1610,7 +1634,8 @@
             let mediaRecorder = null;
             let mediaStream = null;
             let audioChunks = [];
-            let recordingSegments = [];
+            let pendingAudioMerge = Promise.resolve();
+            let audioMergeInProgress = false;
             let audioRecordingActive = false;
             let audioBlob = null;
             let audioUrl = null;
@@ -1697,6 +1722,7 @@
                     videoTranscriptFetchedId: "",
                     videoTranscriptLastManualEditAt: 0,
                     screenCaptureRequested: false,
+                    audioPlaybackRate: 1.2,
                     audioRecordingVersion: 0,
                     audioTranscriptVersion: 0,
                     noteMode: NOTE_MODE_NOTE,
@@ -1740,9 +1766,10 @@
                     if (typeof next.videoTranscriptFetchedId !== "string") next.videoTranscriptFetchedId = "";
                     if (!Number.isFinite(next.videoTranscriptLastManualEditAt)) next.videoTranscriptLastManualEditAt = 0;
                     if (typeof next.screenCaptureRequested !== "boolean") next.screenCaptureRequested = false;
+                    if (!Number.isFinite(next.audioPlaybackRate)) next.audioPlaybackRate = 1.2;
                     if (!Number.isFinite(next.audioRecordingVersion)) next.audioRecordingVersion = 0;
                     if (!Number.isFinite(next.audioTranscriptVersion)) next.audioTranscriptVersion = 0;
-                    if (!next.noteMode) next.noteMode = NOTE_MODE_NOTE;
+                    if (!next.noteMode || next.noteMode !== NOTE_MODE_NOTE) next.noteMode = NOTE_MODE_NOTE;
                     return next;
                 });
                 if (!raw.activePageId && raw.pages[0]) raw.activePageId = raw.pages[0].id;
@@ -1944,17 +1971,29 @@
                     return `${m}'${String(s).padStart(2, "0")}"`;
                 };
                 const page = getActivePage();
-                const hasAudio = audioUrl && !Number.isNaN(audioPlayer?.duration || NaN) && (audioPlayer?.duration || 0) > 0;
-                if (hasAudio) {
-                    const current = Math.floor(audioPlayer.currentTime || 0);
-                    const totalAudio = Math.floor(audioPlayer.duration || 0);
-                    transcriptMeta.textContent = `${formatTime(current)} / ${formatTime(totalAudio)}`;
-                    return;
-                }
                 const totalMinutes = page?.duration
                     ? Number(page.duration)
                     : (page?.subjects?.length || 0) * DEFAULT_SUBJECT_DURATION;
                 const totalSeconds = Math.max(0, Math.floor((totalMinutes || 0) * 60));
+                if (audioRecordingActive) {
+                    transcriptMeta.textContent = `${formatTime(recordingElapsedSec)} / ${formatTime(totalSeconds)}`;
+                    return;
+                }
+                const hasAudio = audioUrl && !Number.isNaN(audioPlayer?.duration || NaN) && (audioPlayer?.duration || 0) > 0;
+                if (hasAudio) {
+                    const rawCurrent = Math.max(0, audioPlayer.currentTime || 0);
+                    const rawTotal = Math.max(0, audioPlayer.duration || 0);
+                    const recordedTotal = Math.max(
+                        Math.round(rawTotal),
+                        Math.ceil(recordingElapsedSec || rawTotal || 0)
+                    );
+                    const nearEnd = recordedTotal > 0 && (audioPlayer.ended || rawCurrent >= rawTotal - 0.25);
+                    const roundedCurrent = nearEnd
+                        ? recordedTotal
+                        : Math.min(recordedTotal, Math.max(0, Math.round(rawCurrent)));
+                    transcriptMeta.textContent = `${formatTime(roundedCurrent)} / ${formatTime(recordedTotal)}`;
+                    return;
+                }
                 const elapsedSec = recordingElapsedSec || 0;
                 transcriptMeta.textContent = `${formatTime(elapsedSec)} / ${formatTime(totalSeconds)}`;
             }
@@ -2022,6 +2061,45 @@
                 if (activeRange) {
                     updateRangeVisual(activeRange, total);
                 }
+                updateRecordingControlsState();
+            }
+
+            function updateRecordingControlsState() {
+                const recordingInProgress = Boolean(screenRecordingActive || audioMergeInProgress);
+                const hasAudio = Boolean(audioUrl);
+                const lockControls = Boolean(recordingInProgress || audioRecordingActive);
+                if (audioPlayBtn) {
+                    const isPlaying = !audioPlayer?.paused && !audioPlayer?.ended && Boolean(audioUrl);
+                    audioPlayBtn.disabled = audioMergeInProgress;
+                    if (audioRecordingActive) {
+                        audioPlayBtn.textContent = "■";
+                        audioPlayBtn.title = "Arrêter l'enregistrement";
+                        audioPlayBtn.setAttribute("aria-label", "Arrêter l'enregistrement");
+                    } else if (!hasAudio && !recordingInProgress) {
+                        audioPlayBtn.textContent = "◉";
+                        audioPlayBtn.title = "Démarrer l'enregistrement";
+                        audioPlayBtn.setAttribute("aria-label", "Démarrer l'enregistrement");
+                    } else if (hasAudio) {
+                        audioPlayBtn.textContent = isPlaying ? "⏸" : "▶";
+                        audioPlayBtn.title = isPlaying ? "Pause" : "Lire l'enregistrement";
+                        audioPlayBtn.setAttribute("aria-label", isPlaying ? "Mettre en pause" : "Lire l'enregistrement");
+                    }
+                }
+                if (audioImportBtn) {
+                    audioImportBtn.disabled = hasAudio || recordingInProgress || audioRecordingActive;
+                }
+                if (audioDownloadBtn) {
+                    audioDownloadBtn.disabled = lockControls || !hasAudio;
+                }
+                if (audioClearBtn) {
+                    audioClearBtn.disabled = lockControls || !hasAudio;
+                }
+                if (screenCaptureToggleBtn) {
+                    const baseDisabled = shouldDisableScreenCaptureToggle();
+                    const recordingDisabled = lockControls;
+                    screenCaptureToggleBtn.disabled = baseDisabled || recordingDisabled;
+                    screenCaptureToggleBtn.setAttribute("aria-disabled", (baseDisabled || recordingDisabled) ? "true" : "false");
+                }
             }
 
             function addDefaultSubjectsIfEmpty(page) {
@@ -2029,18 +2107,22 @@
                 if (page.__guidelinesCleared) {
                     return;
                 }
+                page.duration = 30;
+                if (guidelineDuration) {
+                    guidelineDuration.value = "30";
+                }
                 page.subjects = [
                     {
                         id: "subject-1",
-                        title: "Sujet 1",
+                        title: "Sujet A",
                         timeframe: { start: 0, end: DEFAULT_SUBJECT_DURATION },
-                        keySentences: [{ text: "Point 1.1", match: "pending" }, { text: "Point 1.2", match: "pending" }]
+                        keySentences: [{ text: "Point A1", match: "pending" }, { text: "Point A2", match: "pending" }]
                     },
                     {
                         id: "subject-2",
-                        title: "Sujet 2",
+                        title: "Sujet B",
                         timeframe: { start: DEFAULT_SUBJECT_DURATION, end: DEFAULT_SUBJECT_DURATION * 2 },
-                        keySentences: [{ text: "Point 2.1", match: "pending" }, { text: "Point 2.2", match: "pending" }]
+                        keySentences: [{ text: "Point B1", match: "pending" }, { text: "Point B2", match: "pending" }]
                     }
                 ];
                 page.activeSubjectId = page.subjects[0].id;
@@ -2542,6 +2624,7 @@
                 updateTranscriptMeta();
                 renderGuidelines();
                 applyScreenCapturePreference(page.screenCaptureRequested, { skipPersist: true });
+                applyAudioSpeedSetting(page.audioPlaybackRate || 1.2, { persistPage: false, updateVideo: true });
                 updateNoteModeOptions();
             }
 
@@ -2674,12 +2757,11 @@
                         const blob = blobData instanceof Blob
                             ? blobData
                             : new Blob([blobData], { type: result.type || "audio/webm" });
-                        recordingSegments = blob ? [blob] : [];
                         setAudioBlob(blob, { skipSave: true });
+                        pendingAudioMerge = Promise.resolve();
                         console.log("Audio loaded from IDB", { key, type: blob.type, size: blob.size });
                         return true;
                     }
-                    recordingSegments = [];
                 } catch (err) {
                     console.warn("Impossible de charger l'audio", err);
                 }
@@ -2775,6 +2857,8 @@
                     const loaded = await loadAudioFromDb(k);
                     if (loaded) {
                         console.log("Hydrated audio", { key: k });
+                        pendingAudioMerge = Promise.resolve();
+                        audioMergeInProgress = false;
                         break;
                     }
                 }
@@ -2797,22 +2881,49 @@
                 updateScreenToggleVisual();
             }
 
-            function rebuildCombinedAudioBlob() {
-                if (!recordingSegments.length) {
-                    setAudioBlob(null, { skipSave: true });
-                    return;
-                }
-                const combined = new Blob(recordingSegments, { type: recordingSegments[0]?.type || "audio/webm" });
-                setAudioBlob(combined);
+            function queueAudioMerge(fn) {
+                audioMergeInProgress = true;
+                updateRecordingControlsState();
+                const step = () => Promise.resolve().then(fn);
+                pendingAudioMerge = pendingAudioMerge.then(step, step);
+                pendingAudioMerge = pendingAudioMerge.finally(() => {
+                    audioMergeInProgress = false;
+                    updateRecordingControlsState();
+                });
+                return pendingAudioMerge;
             }
 
-            function finalizeAudioSegment(type = "audio/webm") {
-                if (audioChunks.length) {
-                    const segment = new Blob(audioChunks, { type });
-                    recordingSegments.push(segment);
-                    rebuildCombinedAudioBlob();
+            async function mergeSegmentWithExistingAudio(segment) {
+                if (!segment) return;
+                if (!audioBlob) {
+                    setAudioBlob(segment);
+                    return;
                 }
+                const previousBlob = audioBlob;
+                const fallbackType = segment.type || previousBlob.type || "audio/webm";
+                const fallbackBlob = concatenateBlobs([previousBlob, segment], fallbackType);
+                let mergedBlob = await mergeAudioSegmentsWithFfmpeg([previousBlob, segment]);
+                if (!mergedBlob && canCaptureAudioPlaybackStream()) {
+                    try {
+                        const mimeType = fallbackType || "audio/webm";
+                        mergedBlob = await captureSequentialAudioSegments([previousBlob, segment], mimeType, fallbackBlob);
+                    } catch (err) {
+                        console.warn("Capture fusion audio impossible", err);
+                    }
+                }
+                const finalBlob = mergedBlob || fallbackBlob || segment;
+                setAudioBlob(finalBlob);
+            }
+
+            async function finalizeAudioSegment(type = "audio/webm") {
+                if (!audioChunks.length) {
+                    return;
+                }
+                const segment = new Blob(audioChunks, { type });
                 audioChunks = [];
+                pendingAudioMerge = Promise.resolve();
+                audioMergeInProgress = false;
+                setAudioBlob(segment);
             }
 
             function setAudioBlob(blob, options = {}) {
@@ -2824,14 +2935,25 @@
                 audioUrl = blob ? URL.createObjectURL(blob) : null;
                 audioPlayer.src = audioUrl || "";
                 audioPlayer.playbackRate = getAudioSpeed();
+                audioPlayer.load();
                 audioPlayer.currentTime = 0;
                 if (audioProgress) {
                     audioProgress.disabled = !audioUrl;
                     audioProgress.value = 0;
                 }
                 if (audioPlayBtn) {
-                    audioPlayBtn.disabled = !audioUrl;
-                    audioPlayBtn.textContent = "▶";
+                    const isPlaying = !audioPlayer?.paused && !audioPlayer?.ended && Boolean(audioUrl);
+                    audioPlayBtn.disabled = audioMergeInProgress;
+                    if (audioRecordingActive) {
+                        audioPlayBtn.textContent = "■";
+                    } else if (!audioUrl) {
+                        audioPlayBtn.textContent = "◉";
+                    } else {
+                        audioPlayBtn.textContent = isPlaying ? "⏸" : "▶";
+                    }
+                }
+                if (audioImportBtn) {
+                    audioImportBtn.disabled = Boolean(audioUrl) || audioMergeInProgress || audioRecordingActive;
                 }
                 if (audioClearBtn) {
                     audioClearBtn.disabled = !audioUrl;
@@ -2858,6 +2980,10 @@
                 }
                 updateNoteModeOptions();
                 updateDownloadMenu();
+                updateRecordingControlsState();
+                updateAudioProgress();
+                updateTranscriptMeta();
+                updateScreenToggleVisual();
             }
 
             function setVideoBlob(blob, options = {}) {
@@ -2880,7 +3006,7 @@
             }
 
             function hasAudioRecording() {
-                return Boolean(audioBlob || recordingSegments.length);
+                return Boolean(audioBlob);
             }
 
             function hasVideoRecording() {
@@ -2889,7 +3015,8 @@
 
             async function discardAudioRecording() {
                 stopAudioRecording();
-                recordingSegments = [];
+                pendingAudioMerge = Promise.resolve();
+                audioMergeInProgress = false;
                 setAudioBlob(null);
                 try {
                     await clearAudioDb();
@@ -2901,23 +3028,21 @@
 
             function updateNoteModeOptions() {
                 if (!noteModeSelect) return;
-                const hasRecording = hasAudioRecording();
-                if (audioModeOption) {
-                    audioModeOption.hidden = !hasRecording;
-                    audioModeOption.disabled = !hasRecording || audioRecordingActive;
-                    if (!hasRecording && activeNoteMode === NOTE_MODE_TRANSCRIPT_IA) {
-                        showToast("La transcription audio nécessite un enregistrement.", true);
-                        applyNoteMode(NOTE_MODE_NOTE);
-                    }
+                const page = getActivePage();
+                const hasAssembly = Boolean(page?.assemblyTranscript);
+                const transcriptOption = noteModeSelect.querySelector(`option[value="${NOTE_MODE_TRANSCRIPT_IA}"]`);
+                const videoOption = noteModeSelect.querySelector(`option[value="${NOTE_MODE_TRANSCRIPT_VIDEO}"]`);
+                if (transcriptOption) {
+                    transcriptOption.disabled = Boolean(audioRecordingActive);
+                    transcriptOption.hidden = false;
                 }
-                if (videoModeOption) {
-                    const showVideo = hasRecording;
-                    videoModeOption.hidden = false;
-                    videoModeOption.disabled = !showVideo || audioRecordingActive;
-                    if (!showVideo && activeNoteMode === NOTE_MODE_TRANSCRIPT_VIDEO) {
-                        showToast("La transcription vidéo nécessite un enregistrement audio.", true);
-                        applyNoteMode(NOTE_MODE_NOTE);
-                    }
+                if (videoOption) {
+                    const showVideo = Boolean(videoBlob || hasVideoRecording());
+                    videoOption.disabled = !showVideo || audioRecordingActive;
+                    videoOption.hidden = !showVideo;
+                }
+                if (!hasAssembly && activeNoteMode === NOTE_MODE_TRANSCRIPT_IA) {
+                    applyNoteMode(NOTE_MODE_NOTE);
                 }
             }
 
@@ -2965,23 +3090,30 @@
 
             function shouldDisableScreenCaptureToggle() {
                 if (!screenCaptureToggleBtn) return false;
+                if (screenCaptureEnabled && hasVideoRecording()) return true;
                 return !screenCaptureEnabled && hasAudioRecording() && !hasVideoRecording();
             }
 
             function updateScreenToggleVisual() {
                 if (screenCaptureToggleBtn) {
                     const disabled = shouldDisableScreenCaptureToggle();
+                    const recordingDisabled = (audioRecordingActive || screenRecordingActive);
                     screenCaptureToggleBtn.classList.toggle("active", screenCaptureEnabled);
                     screenCaptureToggleBtn.setAttribute("aria-pressed", screenCaptureEnabled ? "true" : "false");
-                    screenCaptureToggleBtn.disabled = disabled;
-                    screenCaptureToggleBtn.setAttribute("aria-disabled", disabled ? "true" : "false");
+                    screenCaptureToggleBtn.disabled = disabled || recordingDisabled;
+                    screenCaptureToggleBtn.setAttribute("aria-disabled", (disabled || recordingDisabled) ? "true" : "false");
                 }
                 updateNoteModeOptions();
             }
 
             function applyScreenCapturePreference(enabled, { skipPersist = false } = {}) {
                 const page = getActivePage();
-                screenCaptureEnabled = Boolean(enabled);
+                const nextEnabled = Boolean(enabled);
+                if (!nextEnabled) {
+                    stopScreenRecording();
+                    releaseScreenCaptureStream();
+                }
+                screenCaptureEnabled = nextEnabled;
                 if (page) {
                     page.screenCaptureRequested = screenCaptureEnabled;
                     if (!skipPersist) {
@@ -2992,11 +3124,9 @@
             }
 
             async function ensureScreenCapture() {
-                if (!screenCaptureEnabled || !navigator.mediaDevices?.getDisplayMedia) {
-                    if (screenCaptureEnabled) {
-                        showToast("Capture d'écran indisponible.", true);
-                        applyScreenCapturePreference(false);
-                    }
+                if (screenStream) return true;
+                if (!navigator.mediaDevices?.getDisplayMedia) {
+                    showToast("Capture d'écran indisponible.", true);
                     return false;
                 }
                 try {
@@ -3008,32 +3138,11 @@
                     if (!videoTrack) {
                         throw new Error("Flux vidéo indisponible");
                     }
-                    const combined = new MediaStream();
-                    combined.addTrack(videoTrack);
-                    const micTrack = mediaStream?.getAudioTracks?.()[0];
-                    if (micTrack) {
-                        combined.addTrack(micTrack.clone());
-                    }
-                    screenChunks = [];
-                    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-                        ? "video/webm;codecs=vp9"
-                        : "video/webm";
-                    screenRecorder = new MediaRecorder(combined, { mimeType });
-                    screenRecorder.ondataavailable = event => {
-                        if (event.data && event.data.size) {
-                            screenChunks.push(event.data);
-                        }
-                    };
-                    screenRecorder.onstop = finalizeScreenRecording;
-                    screenRecorder.start();
                     screenStream = displayStream;
-                    screenRecordingActive = true;
                     return true;
                 } catch (err) {
                     console.warn("Capture écran impossible", err);
                     showToast("Capture d'écran annulée.", true);
-                    applyScreenCapturePreference(false);
-                    stopScreenRecording();
                     return false;
                 }
             }
@@ -3046,32 +3155,504 @@
                 } catch (err) {
                     console.warn("Arrêt capture écran", err);
                 }
+                updateRecordingControlsState();
+            }
+
+            function releaseScreenCaptureStream() {
                 if (screenStream) {
                     screenStream.getTracks().forEach(track => track.stop());
                     screenStream = null;
                 }
             }
 
-            function finalizeScreenRecording() {
-                if (screenChunks.length) {
-                    const blob = new Blob(screenChunks, { type: screenChunks[0]?.type || "video/webm" });
-                    const parts = [];
-                    if (videoBlob) {
-                        parts.push(videoBlob);
+            function ensureRecordingCountdownOverlay() {
+                if (recordingCountdownOverlay && recordingCountdownNumber) return;
+                const overlay = document.createElement("div");
+                overlay.className = "recording-countdown-overlay";
+                const number = document.createElement("div");
+                number.className = "recording-countdown-number";
+                overlay.appendChild(number);
+                document.body.appendChild(overlay);
+                recordingCountdownOverlay = overlay;
+                recordingCountdownNumber = number;
+            }
+
+            function hideRecordingCountdownOverlay() {
+                if (recordingCountdownTimer) {
+                    clearInterval(recordingCountdownTimer);
+                    recordingCountdownTimer = null;
+                }
+                if (recordingCountdownOverlay) {
+                    recordingCountdownOverlay.classList.remove("visible");
+                }
+                if (recordingCountdownNumber) {
+                    recordingCountdownNumber.textContent = "";
+                }
+            }
+
+            async function showRecordingCountdown() {
+                ensureRecordingCountdownOverlay();
+                if (!recordingCountdownOverlay || !recordingCountdownNumber) return true;
+                hideRecordingCountdownOverlay();
+                const steps = ["3", "2", "1", "Go!"];
+                let currentIndex = 0;
+                return new Promise(resolve => {
+                    const showStep = () => {
+                        if (currentIndex >= steps.length) {
+                            hideRecordingCountdownOverlay();
+                            resolve(true);
+                            return;
+                        }
+                        recordingCountdownNumber.textContent = steps[currentIndex];
+                        recordingCountdownOverlay.classList.add("visible");
+                        currentIndex += 1;
+                        recordingCountdownTimer = window.setTimeout(showStep, 1000);
+                    };
+                    showStep();
+                });
+            }
+
+            function setRecordingVisual(active) {
+                document.body.classList.toggle("recording-border", Boolean(active));
+            }
+
+            function createScreenRecordingStream() {
+                if (!screenStream) return null;
+                const videoTrack = screenStream.getVideoTracks()[0];
+                if (!videoTrack) return null;
+                const combined = new MediaStream();
+                combined.addTrack(videoTrack.clone());
+                const micTrack = mediaStream?.getAudioTracks?.()[0];
+                if (micTrack) {
+                    combined.addTrack(micTrack.clone());
+                }
+                return combined;
+            }
+
+            function startScreenRecordingSegment() {
+                stopScreenRecording();
+                const combinedStream = createScreenRecordingStream();
+                if (!combinedStream) {
+                    showToast("Capture d'écran indisponible.", true);
+                    return false;
+                }
+                const mimeType = chooseVideoTranscodeMimeType() || "video/webm";
+                try {
+                    screenChunks = [];
+                    screenRecorder = new MediaRecorder(combinedStream, { mimeType: mimeType || undefined });
+                } catch (err) {
+                    console.warn("MediaRecorder écran indisponible", err);
+                    showToast("Enregistrement écran indisponible.", true);
+                    return false;
+                }
+                screenRecorder.ondataavailable = event => {
+                    if (event.data && event.data.size) {
+                        screenChunks.push(event.data);
                     }
-                    parts.push(blob);
-                    const combined = new Blob(parts, { type: parts[0]?.type || blob.type || "video/webm" });
-                    setVideoBlob(combined);
-                } else if (!videoBlob) {
-                    setVideoBlob(null, { skipSave: true });
+                };
+                screenRecorder.onstop = () => {
+                    const captureStream = screenRecorder._captureStream;
+                    if (captureStream) {
+                        captureStream.getTracks().forEach(track => track.stop());
+                    }
+                    void finalizeScreenRecording().catch(err => {
+                        console.warn("Finalisation capture vidéo échouée", err);
+                    });
+                };
+                screenRecorder._captureStream = combinedStream;
+                try {
+                    screenRecorder.start();
+                } catch (err) {
+                    console.warn("Démarrage capture écran impossible", err);
+                    showToast("Impossible de démarrer la capture écran.", true);
+                    screenRecorder = null;
+                    return false;
                 }
-                screenChunks = [];
-                screenRecordingActive = false;
-                screenRecorder = null;
-                if (screenStream) {
-                    screenStream.getTracks().forEach(track => track.stop());
-                    screenStream = null;
+                screenRecordingActive = true;
+                updateRecordingControlsState();
+                return true;
+            }
+
+            function concatenateBlobs(blobs = [], type = "") {
+                if (!Array.isArray(blobs) || !blobs.length) return null;
+                const blobType = type || blobs[0]?.type || "video/webm";
+                return new Blob(blobs, { type: blobType });
+            }
+
+            function concatenateVideoBlobs(blobs = []) {
+                return concatenateBlobs(blobs, "video/webm");
+            }
+
+            function chooseVideoTranscodeMimeType() {
+                if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") {
+                    return "";
                 }
+                const candidates = [
+                    "video/webm;codecs=vp9,opus",
+                    "video/webm;codecs=vp8,opus",
+                    "video/webm;codecs=vp8",
+                    "video/webm"
+                ];
+                return candidates.find(type => MediaRecorder.isTypeSupported(type)) || "";
+            }
+
+            function canCapturePlaybackStream() {
+                return Boolean(
+                    typeof HTMLVideoElement !== "undefined" &&
+                    HTMLVideoElement.prototype &&
+                    typeof HTMLVideoElement.prototype.captureStream === "function" &&
+                    typeof MediaRecorder !== "undefined"
+                );
+            }
+
+            function canCaptureAudioPlaybackStream() {
+                return Boolean(
+                    typeof HTMLAudioElement !== "undefined" &&
+                    HTMLAudioElement.prototype &&
+                    typeof HTMLAudioElement.prototype.captureStream === "function" &&
+                    typeof MediaRecorder !== "undefined"
+                );
+            }
+
+            const ffmpegRuntime = {
+                instance: null,
+                loading: null,
+                ready: false
+            };
+
+            async function ensureFfmpegReady() {
+                console.warn("FFmpeg indisponible (non chargé). Utilisation des fallbacks.");
+                return null;
+            }
+
+            async function mergeVideoSegmentsWithFfmpeg(previousBlob, nextBlob) {
+                if (!previousBlob || !nextBlob) return null;
+                if (typeof FFmpeg === "undefined") return null;
+                const ffmpeg = await ensureFfmpegReady();
+                if (!ffmpeg || typeof FFmpeg.fetchFile !== "function") return null;
+                try {
+                    const inputs = [
+                        { name: "segment-0.webm", blob: previousBlob },
+                        { name: "segment-1.webm", blob: nextBlob }
+                    ];
+                    const outputName = "merged-output.webm";
+                    for (const input of inputs) {
+                        ffmpeg.FS("writeFile", input.name, await FFmpeg.fetchFile(input.blob));
+                    }
+                    await ffmpeg.run(
+                        "-i", inputs[0].name,
+                        "-i", inputs[1].name,
+                        "-filter_complex", `[0:v][0:a][1:v][1:a]concat=n=2:v=1:a=1[outv][outa]`,
+                        "-map", "[outv]",
+                        "-map", "[outa]",
+                        "-c:v", "libvpx",
+                        "-c:a", "libvorbis",
+                        "-y",
+                        outputName
+                    );
+                    const data = ffmpeg.FS("readFile", outputName);
+                    return new Blob([data.buffer], { type: "video/webm" });
+                } catch (err) {
+                    console.warn("Fusion FFmpeg impossible", err);
+                    return null;
+                } finally {
+                    try { ffmpeg.FS("unlink", "segment-0.webm"); } catch (err) { /* noop */ }
+                    try { ffmpeg.FS("unlink", "segment-1.webm"); } catch (err) { /* noop */ }
+                    try { ffmpeg.FS("unlink", "merged-output.webm"); } catch (err) { /* noop */ }
+                }
+            }
+
+            async function mergeAudioSegmentsWithFfmpeg(segments = []) {
+                if (!Array.isArray(segments) || segments.length < 2) return null;
+                if (typeof FFmpeg === "undefined") return null;
+                const ffmpeg = await ensureFfmpegReady();
+                if (!ffmpeg || typeof FFmpeg.fetchFile !== "function") return null;
+                const inputs = segments.map((blob, idx) => ({
+                    name: `audio-segment-${idx}.webm`,
+                    blob
+                }));
+                const outputName = "merged-audio.webm";
+                try {
+                    for (const input of inputs) {
+                        ffmpeg.FS("writeFile", input.name, await FFmpeg.fetchFile(input.blob));
+                    }
+                    const args = [];
+                    inputs.forEach(input => {
+                        args.push("-i", input.name);
+                    });
+                    const filterInputs = inputs.map((_, idx) => `[${idx}:a]`).join("");
+                    args.push(
+                        "-filter_complex", `${filterInputs}concat=n=${inputs.length}:v=0:a=1[outa]`,
+                        "-map", "[outa]",
+                        "-c:a", "libvorbis",
+                        "-y",
+                        outputName
+                    );
+                    await ffmpeg.run(...args);
+                    const data = ffmpeg.FS("readFile", outputName);
+                    return new Blob([data.buffer], { type: "audio/webm" });
+                } catch (err) {
+                    console.warn("Fusion audio FFmpeg impossible", err);
+                    return null;
+                } finally {
+                    inputs.forEach(input => {
+                        try { ffmpeg.FS("unlink", input.name); } catch (err) { /* noop */ }
+                    });
+                    try { ffmpeg.FS("unlink", outputName); } catch (err) { /* noop */ }
+                }
+            }
+
+            function createHiddenPlaybackContainer() {
+                const videoEl = document.createElement("video");
+                videoEl.muted = true;
+                videoEl.autoplay = true;
+                videoEl.playsInline = true;
+                videoEl.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;";
+                const wrapper = document.createElement("div");
+                wrapper.style.cssText = "position:absolute;overflow:hidden;width:0;height:0;";
+                wrapper.appendChild(videoEl);
+                if (document.body) {
+                    document.body.appendChild(wrapper);
+                }
+                return { videoEl, wrapper };
+            }
+
+            async function captureSequentialVideoSegments(segments, mimeType, fallbackBlob) {
+                return new Promise(resolve => {
+                    const { videoEl, wrapper } = createHiddenPlaybackContainer();
+                    const captureStream = videoEl.captureStream?.();
+                    if (!captureStream) {
+                        if (wrapper.parentNode) {
+                            wrapper.parentNode.removeChild(wrapper);
+                        }
+                        resolve(fallbackBlob);
+                        return;
+                    }
+                    let recorder;
+                    try {
+                        recorder = new MediaRecorder(captureStream, { mimeType: mimeType || undefined });
+                    } catch (err) {
+                        if (wrapper.parentNode) {
+                            wrapper.parentNode.removeChild(wrapper);
+                        }
+                        resolve(fallbackBlob);
+                        return;
+                    }
+                    const recordedChunks = [];
+                    const urls = segments.map(segment => URL.createObjectURL(segment));
+                    let finished = false;
+                    const cleanup = () => {
+                        try { videoEl.pause(); } catch (err) { /* noop */ }
+                        videoEl.removeAttribute("src");
+                        videoEl.load();
+                        if (wrapper.parentNode) {
+                            wrapper.parentNode.removeChild(wrapper);
+                        }
+                        urls.forEach(url => {
+                            try {
+                                URL.revokeObjectURL(url);
+                            } catch (err) { /* noop */ }
+                        });
+                    };
+                    const finalize = () => {
+                        if (finished) return;
+                        finished = true;
+                        cleanup();
+                        if (recordedChunks.length) {
+                            resolve(new Blob(recordedChunks, { type: mimeType || fallbackBlob?.type || "video/webm" }));
+                        } else {
+                            resolve(fallbackBlob);
+                        }
+                    };
+                    recorder.ondataavailable = event => {
+                        if (event.data && event.data.size) {
+                            recordedChunks.push(event.data);
+                        }
+                    };
+                    recorder.onerror = () => {
+                        if (recorder.state === "recording") {
+                            recorder.stop();
+                        }
+                    };
+                    recorder.onstop = finalize;
+                    let currentIndex = 0;
+                    const playNextSegment = () => {
+                        if (currentIndex >= urls.length) {
+                            if (recorder.state === "recording") {
+                                recorder.stop();
+                            }
+                            return;
+                        }
+                        const currentUrl = urls[currentIndex];
+                        videoEl.src = currentUrl;
+                        videoEl.onended = () => {
+                            currentIndex += 1;
+                            if (currentIndex < urls.length) {
+                                playNextSegment();
+                            } else if (recorder.state === "recording") {
+                                recorder.stop();
+                            }
+                        };
+                        videoEl.play().catch(() => {
+                            if (recorder.state === "recording") {
+                                recorder.stop();
+                            }
+                        });
+                    };
+                    try {
+                        recorder.start();
+                    } catch (err) {
+                        finalize();
+                        return;
+                    }
+                    playNextSegment();
+                });
+            }
+
+            async function captureSequentialAudioSegments(segments, mimeType, fallbackBlob) {
+                return new Promise(resolve => {
+                    const audioEl = document.createElement("audio");
+                    audioEl.muted = true;
+                    audioEl.autoplay = true;
+                    audioEl.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;";
+                    const wrapper = document.createElement("div");
+                    wrapper.style.cssText = "position:absolute;overflow:hidden;width:0;height:0;";
+                    wrapper.appendChild(audioEl);
+                    if (document.body) {
+                        document.body.appendChild(wrapper);
+                    }
+                    const captureStream = audioEl.captureStream?.();
+                    if (!captureStream) {
+                        if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+                        resolve(fallbackBlob);
+                        return;
+                    }
+                    let recorder;
+                    try {
+                        recorder = new MediaRecorder(captureStream, { mimeType: mimeType || undefined });
+                    } catch (err) {
+                        if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+                        resolve(fallbackBlob);
+                        return;
+                    }
+                    const recordedChunks = [];
+                    const urls = segments.map(segment => URL.createObjectURL(segment));
+                    let finished = false;
+                    const cleanup = () => {
+                        try { audioEl.pause(); } catch (err) { /* noop */ }
+                        audioEl.removeAttribute("src");
+                        audioEl.load();
+                        if (wrapper.parentNode) {
+                            wrapper.parentNode.removeChild(wrapper);
+                        }
+                        urls.forEach(url => {
+                            try { URL.revokeObjectURL(url); } catch (err) { /* noop */ }
+                        });
+                    };
+                    const finalize = () => {
+                        if (finished) return;
+                        finished = true;
+                        cleanup();
+                        if (recordedChunks.length) {
+                            resolve(new Blob(recordedChunks, { type: mimeType || fallbackBlob?.type || "audio/webm" }));
+                        } else {
+                            resolve(fallbackBlob);
+                        }
+                    };
+                    recorder.ondataavailable = event => {
+                        if (event.data && event.data.size) {
+                            recordedChunks.push(event.data);
+                        }
+                    };
+                    recorder.onerror = () => {
+                        if (recorder.state === "recording") recorder.stop();
+                    };
+                    recorder.onstop = finalize;
+                    let currentIndex = 0;
+                    const playNext = () => {
+                        if (currentIndex >= urls.length) {
+                            if (recorder.state === "recording") recorder.stop();
+                            return;
+                        }
+                        const url = urls[currentIndex];
+                        audioEl.src = url;
+                        audioEl.onended = () => {
+                            currentIndex += 1;
+                            if (currentIndex < urls.length) {
+                                playNext();
+                            } else if (recorder.state === "recording") {
+                                recorder.stop();
+                            }
+                        };
+                        audioEl.play().catch(() => {
+                            if (recorder.state === "recording") recorder.stop();
+                        });
+                    };
+                    try {
+                        recorder.start();
+                    } catch (err) {
+                        finalize();
+                        return;
+                    }
+                    playNext();
+                });
+            }
+
+            async function transcodeVideoSegments(previousBlob, nextBlob) {
+                const segments = [];
+                if (previousBlob) segments.push(previousBlob);
+                if (nextBlob) segments.push(nextBlob);
+                if (!segments.length) return null;
+                if (segments.length === 1) return segments[0];
+                const fallbackBlob = concatenateVideoBlobs(segments);
+                if (!fallbackBlob) return null;
+                const ffmpegBlob = await mergeVideoSegmentsWithFfmpeg(previousBlob, nextBlob);
+                if (ffmpegBlob) return ffmpegBlob;
+                if (!canCapturePlaybackStream()) {
+                    return fallbackBlob;
+                }
+                const mimeType = chooseVideoTranscodeMimeType() || fallbackBlob?.type || "video/webm";
+                try {
+                    const merged = await captureSequentialVideoSegments(segments, mimeType, fallbackBlob);
+                    return merged || fallbackBlob;
+                } catch (err) {
+                    console.warn("Transcodage vidéo impossible", err);
+                    return fallbackBlob;
+                }
+            }
+
+            async function finalizeScreenRecording() {
+                let chunkBlob = null;
+                try {
+                    if (screenChunks.length) {
+                        chunkBlob = new Blob(screenChunks, { type: screenChunks[0]?.type || "video/webm" });
+                        if (videoBlob) {
+                            const mergedBlob = await transcodeVideoSegments(videoBlob, chunkBlob);
+                            if (mergedBlob) {
+                                setVideoBlob(mergedBlob);
+                            } else if (chunkBlob) {
+                                setVideoBlob(chunkBlob);
+                            }
+                        } else if (chunkBlob) {
+                            setVideoBlob(chunkBlob);
+                        }
+                    } else if (!videoBlob) {
+                        setVideoBlob(null, { skipSave: true });
+                    }
+                } catch (err) {
+                    console.warn("Fusion vidéo échouée", err);
+                    if (chunkBlob) {
+                        const fallback = concatenateVideoBlobs([videoBlob, chunkBlob].filter(Boolean));
+                        if (fallback) {
+                            setVideoBlob(fallback);
+                        }
+                    }
+                } finally {
+                    screenChunks = [];
+                    screenRecordingActive = false;
+                    screenRecorder = null;
+                }
+                updateRecordingControlsState();
             }
 
             function parseVttTimestamp(value = "") {
@@ -3329,6 +3910,24 @@
                 showToast("Transcription vidéo enregistrée.");
             }
 
+            async function refreshVideoModalTranscripts({ forceRefresh = false, updateEditor = false } = {}) {
+                if (!videoPlayerModal) return;
+                const page = getActivePage();
+                if (!page) return;
+                try {
+                    await ensureVideoTranscriptSegments(page, { forceRefresh });
+                } catch (err) {
+                    console.warn("Impossible de rafraîchir les transcripts vidéo", err);
+                }
+                const sentences = getVideoTranscriptSegments(page);
+                videoPlayerModal.updateSentences(sentences);
+                if (updateEditor && page.noteMode === NOTE_MODE_TRANSCRIPT_VIDEO && transcribeInput) {
+                    transcribeInput.value = page.videoTranscript || "";
+                    updateTranscriptMeta();
+                }
+            }
+
+
             async function openVoiceVideoModal() {
                 if (!videoBlob) {
                     toggleAudioPlayback();
@@ -3340,31 +3939,22 @@
                 }
                 if (!videoPlayerModal) {
                     videoPlayerModal = new window.VoiceVideoPlayerModal();
+                    videoPlayerModal.onPlaybackRateChange = rate => {
+                        applyAudioSpeedSetting(rate, { persistPage: true, updateVideo: false });
+                    };
                 }
                 const page = getActivePage();
-                if (page) {
-                    const hasVideoTranscript = hasVideoTranscriptContent(page);
-                    const needsTranscription = !hasVideoTranscript && shouldTranscribeForVideo(page);
-                    if (needsTranscription && audioBlob) {
-                        await processAssemblyRecording(audioBlob, {
-                            targetNoteMode: NOTE_MODE_TRANSCRIPT_VIDEO,
-                            skipModeApply: true,
-                            toastLabel: "Transcription"
-                        });
-                    }
-                    await ensureVideoTranscriptSegments(page);
-                    if (page.noteMode === NOTE_MODE_TRANSCRIPT_VIDEO && transcribeInput) {
-                        transcribeInput.value = page.videoTranscript || "";
-                        updateTranscriptMeta();
-                    }
-                }
                 const sentences = getVideoTranscriptSegments(page);
+                const playbackRate = (page?.audioPlaybackRate ?? getAudioSpeed());
+                videoPlayerModal.setPlaybackRate(playbackRate);
                 videoPlayerModal.open({
                     videoBlob,
                     sentences,
                     onTranscriptChange: handleTranscriptUpdateFromModal,
                     onTranscriptSaved: handleVideoTranscriptSaved
                 });
+                videoPlayerModal.startPlayback();
+                refreshVideoModalTranscripts({ updateEditor: true }).catch(() => { });
             }
 
             async function fetchAssemblyTranscriptVtt(transcriptId, key) {
@@ -3394,6 +3984,26 @@
             }
 
             async function handleAudioPlayClick() {
+                try {
+                    const storageKey = getMediaStorageKey();
+                    const blobSize = audioBlob?.size || 0;
+                    console.log("Voice play click", {
+                        storageKey,
+                        audioBlobSize: blobSize,
+                        audioType: audioBlob?.type,
+                        hasVideo: Boolean(videoBlob)
+                    });
+                } catch (err) {
+                    console.warn("Voice play click log failed", err);
+                }
+                if (audioRecordingActive) {
+                    pauseRecording();
+                    return;
+                }
+                if (!audioBlob) {
+                    startRecording();
+                    return;
+                }
                 if (!videoBlob) {
                     toggleAudioPlayback();
                     return;
@@ -3434,7 +4044,8 @@
                     clearInterval(recordingTimer);
                     recordingTimer = null;
                 }
-                recordingSegments = [file];
+                pendingAudioMerge = Promise.resolve();
+                audioMergeInProgress = false;
                 setAudioBlob(file);
                 updateRecordingUi();
                 updateTranscriptMeta();
@@ -3573,11 +4184,13 @@
             function applyNoteMode(mode) {
                 const page = getActivePage();
                 if (!page) return;
-                activeNoteMode = mode;
-                page.noteMode = mode;
-                const content = getNoteContentForMode(page, mode);
+                const allowedModes = [NOTE_MODE_NOTE, NOTE_MODE_TRANSCRIPT_IA, NOTE_MODE_TRANSCRIPT_VIDEO];
+                const nextMode = allowedModes.includes(mode) ? mode : NOTE_MODE_NOTE;
+                activeNoteMode = nextMode;
+                page.noteMode = nextMode;
+                const content = getNoteContentForMode(page, nextMode);
                 if (noteModeSelect) {
-                    noteModeSelect.value = mode;
+                    noteModeSelect.value = nextMode;
                 }
                 if (transcribeInput) {
                     transcribeInput.value = content;
@@ -3665,64 +4278,24 @@
 
             async function handleNoteModeSelection(value) {
                 if (!noteModeSelect) return;
-                const hasRecording = hasAudioRecording();
-                if (value === NOTE_MODE_TRANSCRIPT_IA || value === NOTE_MODE_TRANSCRIPT_VIDEO) {
-                    if (audioRecordingActive) {
-                        showToast("Arrête l'enregistrement avant de changer de mode.", true);
-                        if (noteModeSelect) noteModeSelect.value = activeNoteMode;
-                        return;
-                    }
-                    if (!hasRecording) {
-                        showToast("Crée d'abord un enregistrement audio.", true);
-                        if (noteModeSelect) noteModeSelect.value = activeNoteMode;
-                        return;
-                    }
-                }
-                if (value === NOTE_MODE_TRANSCRIPT_VIDEO) {
-                    const page = getActivePage();
-                    const hasVideoTranscript = hasVideoTranscriptContent(page);
-                    if (!screenCaptureEnabled && !hasVideoTranscript) {
-                        showToast("La transcription vidéo nécessite une capture d'écran.", true);
-                        applyNoteMode(NOTE_MODE_NOTE);
-                        return;
-                    }
-                    const needsTranscription = !hasVideoTranscript && shouldTranscribeForVideo(page);
-                    if (needsTranscription && audioBlob) {
-                        await processAssemblyRecording(audioBlob, {
-                            targetNoteMode: NOTE_MODE_TRANSCRIPT_VIDEO,
-                            skipModeApply: true,
-                            toastLabel: "Transcription"
-                        });
-                    }
-                    if (page) {
-                        await ensureVideoTranscriptSegments(page);
-                        applyNoteMode(NOTE_MODE_TRANSCRIPT_VIDEO);
-                    } else {
-                        applyNoteMode(NOTE_MODE_TRANSCRIPT_VIDEO);
-                    }
-                    return;
-                }
                 if (value === NOTE_MODE_TRANSCRIPT_IA) {
-                    if (!canRequestAssemblyTranscript()) {
-                        return;
-                    }
                     const page = getActivePage();
-                    if (
-                        page &&
-                        Number.isFinite(page.audioRecordingVersion) &&
-                        page.audioRecordingVersion > 0 &&
-                        page.audioRecordingVersion === page.audioTranscriptVersion &&
-                        page.assemblyTranscript
-                    ) {
-                        applyNoteMode(NOTE_MODE_TRANSCRIPT_IA);
+                    const hasAssembly = Boolean(page?.assemblyTranscript);
+                    if (!hasAssembly) {
+                        showToast("Pas de transcript audio disponible.", true);
+                        noteModeSelect.value = activeNoteMode;
                         return;
                     }
                     applyNoteMode(NOTE_MODE_TRANSCRIPT_IA);
-                    processAssemblyRecording(audioBlob);
                     return;
                 }
-                if (value === NOTE_MODE_TRANSCRIPT_AUTO) {
-                    applyNoteMode(NOTE_MODE_TRANSCRIPT_AUTO);
+                if (value === NOTE_MODE_TRANSCRIPT_VIDEO) {
+                    if (!videoBlob) {
+                        showToast("Pas de capture vidéo disponible.", true);
+                        noteModeSelect.value = activeNoteMode;
+                        return;
+                    }
+                    applyNoteMode(NOTE_MODE_TRANSCRIPT_VIDEO);
                     return;
                 }
                 applyNoteMode(NOTE_MODE_NOTE);
@@ -4034,27 +4607,16 @@
                     const activePage = getActivePage();
                     if (activePage) {
                         const assemblySentences = extractAssemblySentences(result);
-                        const vttText = await fetchAssemblyTranscriptVtt(transcriptId, assemblyKey);
-                        let videoSentences = vttText ? parseVttTranscript(vttText) : [];
-                        if (!videoSentences.length && assemblySentences.length) {
-                            videoSentences = assemblySentences;
-                        }
-                        if (!videoSentences.length) {
-                            videoSentences = [{
-                                id: `segment-${Date.now()}`,
-                                text: finalText,
-                                start: 0,
-                                end: 0.1
-                            }];
-                        }
-                        const videoTranscriptString = vttText || buildVttFromSegments(videoSentences);
+                        const videoTranscriptString = assemblySentences.length
+                            ? buildVttFromSegments(assemblySentences)
+                            : "";
                         activePage.assemblyTranscript = finalText;
                         activePage.assemblyTranscriptId = transcriptId;
                         activePage.assemblyTranscriptSentences = assemblySentences;
                         activePage.assemblyTranscriptLastManualEditAt = 0;
                         activePage.videoTranscript = videoTranscriptString;
                         activePage.videoTranscriptId = transcriptId;
-                        activePage.videoTranscriptSentences = videoSentences;
+                        activePage.videoTranscriptSentences = assemblySentences;
                         activePage.videoTranscriptFetchedId = transcriptId;
                         activePage.videoTranscriptLastManualEditAt = 0;
                         activePage.audioTranscriptVersion = Number.isFinite(activePage.audioRecordingVersion)
@@ -4084,8 +4646,17 @@
             }
 
             function updateAudioProgress() {
-                if (!audioProgress || !audioPlayer?.duration || Number.isNaN(audioPlayer.duration)) return;
-                const ratio = Math.min(1, Math.max(0, audioPlayer.currentTime / audioPlayer.duration));
+                if (!audioProgress) return;
+                const totalDuration = Math.max(
+                    0,
+                    Number.isFinite(audioPlayer?.duration) ? audioPlayer.duration : 0,
+                    Number.isFinite(recordingElapsedSec) ? recordingElapsedSec : 0
+                );
+                if (!totalDuration) {
+                    audioProgress.value = 0;
+                    return;
+                }
+                const ratio = Math.min(1, Math.max(0, audioPlayer.currentTime / totalDuration));
                 audioProgress.value = ratio;
             }
 
@@ -4115,12 +4686,23 @@
                         audioChunks.push(e.data);
                     }
                 };
-                mediaRecorder.onstop = () => {
+                mediaRecorder.onstop = async () => {
                     if (mediaStream) {
                         mediaStream.getTracks().forEach(track => track.stop());
                         mediaStream = null;
                     }
-                    finalizeAudioSegment(mime);
+                    try {
+                        await finalizeAudioSegment(mime);
+                        if (audioBlob && !assemblyRequestInProgress) {
+                            await processAssemblyRecording(audioBlob, {
+                                targetNoteMode: NOTE_MODE_TRANSCRIPT_IA,
+                                skipModeApply: false,
+                                toastLabel: "Transcription"
+                            });
+                        }
+                    } catch (err) {
+                        console.warn("Finalisation audio échouée", err);
+                    }
                     mediaRecorder = null;
                 };
                 mediaRecorder.start();
@@ -4141,23 +4723,75 @@
                 }
                 stopScreenRecording();
                 audioRecordingActive = false;
+                setRecordingVisual(false);
+                updateRecordingControlsState();
             }
 
             function toggleAudioPlayback() {
                 if (!audioUrl) return;
-                if (audioPlayer.paused) {
-                    audioPlayer.play();
-                    if (audioPlayBtn) audioPlayBtn.textContent = "⏸";
-                } else {
-                    audioPlayer.pause();
-                    if (audioPlayBtn) audioPlayBtn.textContent = "▶";
+                if (audioMergeInProgress) {
+                    showToast("Fusion de l'audio en cours…", false, 1800);
+                    return;
                 }
+                pendingAudioMerge.catch(() => { /* noop */ }).then(() => {
+                    const duration = Number.isFinite(audioPlayer?.duration) ? audioPlayer.duration : 0;
+                    const nearEnd = duration > 0 && (audioPlayer.ended || audioPlayer.currentTime >= duration - 0.05);
+                    const needsReload = !duration || Number.isNaN(duration) || audioPlayer.readyState < 1;
+                    console.log("Voice playback toggle", {
+                        currentTime: audioPlayer.currentTime,
+                        duration,
+                        readyState: audioPlayer.readyState,
+                        nearEnd
+                    });
+                    if (needsReload) {
+                        audioPlayer.load();
+                    }
+                    if (nearEnd || needsReload) {
+                        audioPlayer.currentTime = 0;
+                        if (audioProgress) {
+                            audioProgress.value = 0;
+                        }
+                    }
+                    if (audioPlayer.paused) {
+                        audioPlayer.play();
+                        if (audioPlayBtn) audioPlayBtn.textContent = "⏸";
+                    } else {
+                        audioPlayer.pause();
+                        if (audioPlayBtn) audioPlayBtn.textContent = "▶";
+                    }
+                });
+            }
+
+            function normalizePlaybackRate(value) {
+                const numeric = Number(value);
+                if (!Number.isFinite(numeric)) return 1.2;
+                return Math.min(2, Math.max(0.5, Math.round(numeric * 10) / 10));
             }
 
             function getAudioSpeed() {
-                const val = parseFloat(audioSpeedSelect?.value || "1.2");
-                if (Number.isNaN(val)) return 1.2;
-                return Math.min(2, Math.max(0.5, val));
+                if (!audioSpeedSelect) return 1.2;
+                return normalizePlaybackRate(audioSpeedSelect.value);
+            }
+
+            function applyAudioSpeedSetting(value, { persistPage = true, updateVideo = true } = {}) {
+                const normalized = normalizePlaybackRate(value);
+                if (audioSpeedSelect) {
+                    audioSpeedSelect.value = normalized.toFixed(1);
+                }
+                if (audioPlayer) {
+                    audioPlayer.playbackRate = normalized;
+                }
+                if (updateVideo && videoPlayerModal) {
+                    videoPlayerModal.setPlaybackRate(normalized);
+                }
+                const page = getActivePage();
+                if (page) {
+                    page.audioPlaybackRate = normalized;
+                    if (persistPage) {
+                        persistState();
+                    }
+                }
+                return normalized;
             }
 
             function populateAudioSpeedOptions() {
@@ -4170,7 +4804,6 @@
                     opt.textContent = `${rounded.toFixed(1)}x`;
                     audioSpeedSelect.appendChild(opt);
                 }
-                audioSpeedSelect.value = "1.2";
             }
 
             function formatBlobSize(blob) {
@@ -4985,37 +5618,63 @@
 
             async function startRecording() {
                 if (audioRecordingActive) return;
-                stopScreenRecording();
-                if (!screenCaptureEnabled) {
-                    setVideoBlob(null, { skipSave: true });
+                await pendingAudioMerge.catch(() => { });
+                if (audioBlob) {
+                    await discardAudioRecording();
                 }
+                setContextPanelOpen(false);
+                const countdownOk = await showRecordingCountdown(3);
+                if (!countdownOk) return;
                 const shouldUseSpeech = activeNoteMode === NOTE_MODE_TRANSCRIPT_AUTO;
                 if (shouldUseSpeech && !speechRecognition) {
                     setupSpeechRecognition();
                 }
                 const ready = await ensureAudioRecording();
-                if (!ready) return;
-                if (screenCaptureEnabled && !screenRecordingActive) {
+                if (!ready) {
+                    hideRecordingCountdownOverlay();
+                    return;
+                }
+                if (screenCaptureEnabled) {
                     const screenReady = await ensureScreenCapture();
                     if (!screenReady) {
                         applyScreenCapturePreference(false);
+                        hideRecordingCountdownOverlay();
+                        return;
                     }
+                    const startedScreen = startScreenRecordingSegment();
+                    if (!startedScreen) {
+                        applyScreenCapturePreference(false);
+                        hideRecordingCountdownOverlay();
+                        return;
+                    }
+                } else {
+                    stopScreenRecording();
+                    setVideoBlob(null, { skipSave: true });
                 }
                 transcriptPrefix = transcribeInput?.value || "";
+                const previousElapsed = Math.max(0, recordingElapsedSec || 0);
+                recordingBaseElapsedSec = previousElapsed;
                 recordingStartedAt = Date.now();
-                recordingElapsedSec = 0;
+                recordingElapsedSec = previousElapsed;
                 lastTimestampMinute = null;
                 pendingTimestamp = null;
                 if (recordingTimer) clearInterval(recordingTimer);
                 recordingTimer = setInterval(() => {
                     if (!recordingStartedAt) return;
-                    recordingElapsedSec = Math.max(recordingElapsedSec, Math.floor((Date.now() - recordingStartedAt) / 1000));
+                    const sessionElapsed = Math.floor((Date.now() - recordingStartedAt) / 1000);
+                    recordingElapsedSec = Math.max(recordingElapsedSec, recordingBaseElapsedSec + Math.max(0, sessionElapsed));
                     updateRecordingUi();
                 }, 1000);
                 if (transcribeGhost) {
                     updateGhostOverlay("");
                 }
                 audioRecordingActive = true;
+                setRecordingVisual(true);
+                if (audioPlayBtn) {
+                    audioPlayBtn.textContent = "■";
+                    audioPlayBtn.title = "Arrêter l'enregistrement";
+                    audioPlayBtn.setAttribute("aria-label", "Arrêter l'enregistrement");
+                }
                 const canStartRecognition = shouldUseSpeech && Boolean(speechRecognition);
                 if (canStartRecognition) {
                     recognitionActive = true;
@@ -5042,7 +5701,16 @@
                 try { speechRecognition?.stop(); } catch (e) { /* ignore */ }
                 stopAudioRecording();
                 audioRecordingActive = false;
+                setRecordingVisual(false);
                 recordingStartedAt = null;
+                recordingBaseElapsedSec = recordingElapsedSec;
+                if (videoBlob && screenCaptureEnabled) {
+                    try {
+                        openVoiceVideoModal();
+                    } catch (err) {
+                        console.warn("Impossible d'ouvrir le lecteur vidéo après enregistrement", err);
+                    }
+                }
                 if (recordingTimer) {
                     clearInterval(recordingTimer);
                     recordingTimer = null;
@@ -5056,6 +5724,10 @@
                 }
                 updateGhostOverlay("");
                 updateRecordingUi();
+                if (audioPlayBtn) {
+                    audioPlayBtn.title = "Démarrer l'enregistrement";
+                    audioPlayBtn.setAttribute("aria-label", "Démarrer l'enregistrement");
+                }
             }
 
             function resetRecording() {
@@ -5064,9 +5736,12 @@
                 try { speechRecognition?.stop(); } catch (e) { /* ignore */ }
                 stopAudioRecording();
                 recordingStartedAt = null;
-                recordingSegments = [];
+                pendingAudioMerge = Promise.resolve();
+                audioMergeInProgress = false;
                 audioRecordingActive = false;
+                setRecordingVisual(false);
                 recordingElapsedSec = 0;
+                recordingBaseElapsedSec = 0;
                 lastTimestampMinute = null;
                 pendingTimestamp = null;
                 if (recordingTimer) {
@@ -5159,9 +5834,12 @@
             async function clearAudioStoreAll() {
                 stopAudioRecording();
                 applyScreenCapturePreference(false, { skipPersist: true });
+                applyAudioSpeedSetting(1.2);
                 await clearAudioDb();
-                recordingSegments = [];
+                pendingAudioMerge = Promise.resolve();
+                audioMergeInProgress = false;
                 audioRecordingActive = false;
+                setRecordingVisual(false);
                 recognitionActive = false;
                 recognitionPaused = false;
                 recordingStartedAt = null;
@@ -5506,29 +6184,31 @@
             });
             audioClearBtn?.addEventListener("click", clearCurrentAudioWithConfirm);
             screenCaptureToggleBtn?.addEventListener("click", async () => {
-                const willEnable = !screenCaptureEnabled;
-                if (willEnable) {
-                    if (!hasVideoRecording() && hasAudioRecording()) {
-                        const confirmed = window.confirm("L'audio précédent sera supprimé pour créer l'enregistrement vidéo. Continuer ?");
-                        if (!confirmed) {
-                            return;
-                        }
-                        await discardAudioRecording();
+                if (screenCaptureEnabled) {
+                    if (hasVideoRecording()) {
+                        showToast("Supprimer la vidéo pour désactiver la capture d'écran.", true);
+                        return;
                     }
-                    applyScreenCapturePreference(true);
+                    stopScreenRecording();
+                    releaseScreenCaptureStream();
+                    applyScreenCapturePreference(false);
                     return;
                 }
-                if (hasVideoRecording()) {
-                    const confirmed = window.confirm(
-                        "La vidéo précédente sera supprimée mais la piste audio est conservée. Continuer ?"
-                    );
+                if (!navigator.mediaDevices?.getDisplayMedia) {
+                    showToast("Capture d'écran indisponible.", true);
+                    return;
+                }
+                if (!hasVideoRecording() && hasAudioRecording()) {
+                    const confirmed = window.confirm("L'audio précédent sera supprimé pour créer l'enregistrement vidéo. Continuer ?");
                     if (!confirmed) {
                         return;
                     }
-                    await dropVideoRecording();
+                    await discardAudioRecording();
                 }
-                stopScreenRecording();
-                applyScreenCapturePreference(false);
+                const granted = await ensureScreenCapture();
+                if (!granted) return;
+                void ensureFfmpegReady();
+                applyScreenCapturePreference(true);
             });
             audioImportBtn?.addEventListener("click", handleAudioImportClick);
             audioImportInput?.addEventListener("change", handleAudioImportChange);
@@ -5537,8 +6217,7 @@
             updateDownloadMenu();
             updateVoiceClearButtonState();
             audioSpeedSelect?.addEventListener("change", () => {
-                const speed = getAudioSpeed();
-                audioPlayer.playbackRate = speed;
+                applyAudioSpeedSetting(getAudioSpeed());
             });
             audioProgress?.addEventListener("input", () => {
                 if (!audioPlayer || !audioPlayer.duration || Number.isNaN(audioPlayer.duration)) return;
@@ -5549,7 +6228,10 @@
             audioPlayer.addEventListener("loadedmetadata", updateAudioProgress);
             audioPlayer.addEventListener("ended", () => {
                 if (audioPlayBtn) audioPlayBtn.textContent = "▶";
+                audioPlayer.currentTime = 0;
+                if (audioProgress) audioProgress.value = 0;
                 updateAudioProgress();
+                updateTranscriptMeta();
             });
             audioPlayer.addEventListener("timeupdate", updateTranscriptMeta);
             audioPlayer.addEventListener("loadedmetadata", updateTranscriptMeta);
@@ -5648,13 +6330,13 @@
             // Init
             syncIaEditor(activeIaPrompt);
             renderTabs();
+            populateAudioSpeedOptions();
             renderPage();
             setupSpeechRecognition();
             updateShareMenuUI();
             tryLoadSharedStateFromUrl();
             void hydrateMediaFromDb();
             toggleContextPanel(!isResponsiveContextMode());
-            populateAudioSpeedOptions();
             audioPlayer.playbackRate = getAudioSpeed();
             try {
                 const params = new URLSearchParams(window.location.search);

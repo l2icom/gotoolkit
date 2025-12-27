@@ -3,9 +3,14 @@ main = "index.js"
 compatibility_date = "2024-12-01"
 workers_dev = true
 
-kv_namespaces = [
-  { binding = "RATE_LIMIT", id = "90a49630169d4619b3c2306f85d6a90a" }
-]
+
+
+[[ratelimits]]
+name = "MY_RATE_LIMITER"
+namespace_id = "1005"
+
+# 10 requests per 60 seconds
+simple = { limit = 10, period = 60 }
 
 # Set these secrets/vars at deploy time:
 # - FIREBASE_SERVICE_ACCOUNT (JSON string)

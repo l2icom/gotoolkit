@@ -3,9 +3,14 @@ main = "index.js"
 compatibility_date = "2024-12-01"
 workers_dev = true
 
-kv_namespaces = [
-	{ binding = "RATE_LIMIT", id = "bbf7394927e149b6897beca1c47855c2" }
-]
+
+
+[[ratelimits]]
+name = "MY_RATE_LIMITER"
+namespace_id = "1002"
+
+# 10 requests per 60 seconds
+simple = { limit = 10, period = 60 }
 
 # Configure account_id, zone_id, and routes before deploying.
 # account_id = "bdcd0c3bac2cc9b0280d71a911b2b74f"

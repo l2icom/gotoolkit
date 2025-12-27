@@ -292,6 +292,7 @@
             this.sentenceEntries = [];
             this.onTranscriptChange = null;
             this.onTranscriptSaved = null;
+            this.onPlaybackRateChange = null;
             this._activeSentenceIndex = -1;
             this._handleKeydown = this._handleKeydown.bind(this);
             this.videoBlobUrl = "";
@@ -369,7 +370,7 @@
                 this.videoEl.currentTime = ratio * this.videoEl.duration;
             });
             this.speedSelect?.addEventListener("change", () => {
-                this._applyPlaybackRate();
+                this._applyPlaybackRate(true);
             });
             this.videoEl?.addEventListener("timeupdate", () => {
                 this._updateProgress();
@@ -447,9 +448,21 @@
             return Math.min(2, Math.max(0.5, Math.round(numeric * 10) / 10));
         }
 
-        _applyPlaybackRate() {
+        setPlaybackRate(value, { emitChange = false } = {}) {
+            if (!this.speedSelect) return;
+            const numeric = Number(value);
+            const normalized = Math.min(2, Math.max(0.5, Math.round((Number.isFinite(numeric) ? numeric : 1.2) * 10) / 10));
+            this.speedSelect.value = normalized.toFixed(1);
+            this._applyPlaybackRate(emitChange);
+        }
+
+        _applyPlaybackRate(emitChange = false) {
             if (!this.videoEl) return;
-            this.videoEl.playbackRate = this._getSelectedSpeed();
+            const rate = this._getSelectedSpeed();
+            this.videoEl.playbackRate = rate;
+            if (emitChange && typeof this.onPlaybackRateChange === "function") {
+                this.onPlaybackRateChange(rate);
+            }
         }
 
         _refreshActiveNode() {
@@ -523,6 +536,12 @@
             this._updateTextTrack();
         }
 
+        updateSentences(sentences = []) {
+            if (!this.transcriptList) return;
+            this._normalizeSentences(sentences);
+            this._renderSentences();
+        }
+
         _handleTextEdit(index, value) {
             const sentence = this.sentences[index];
             if (!sentence) return;
@@ -575,6 +594,11 @@
             } else {
                 this.videoEl.pause();
             }
+        }
+
+        startPlayback() {
+            if (!this.videoEl) return;
+            this.videoEl.play().catch(() => { });
         }
 
         _normalizeSentences(rawSentences = []) {

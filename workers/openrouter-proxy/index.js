@@ -69,48 +69,21 @@ export default {
     }
 
     const now = Date.now();
-    const today = new Date(now).toISOString().slice(0, 10);
-    const dailyLimit = 300;
     const windowMs = 60_000;
     const perMinuteLimit = 30;
 
-    const quotaKey = `quota:${clientId}:${today}`;
-    const windowId = Math.floor(now / windowMs);
-    const rlKey = `rl:${clientId}:${windowId}`;
-
-    const [storedDaily, storedMinute] = await Promise.all([
-      env.RATE_LIMIT.get(quotaKey),
-      env.RATE_LIMIT.get(rlKey)
-    ]);
-
-    const dailyCount = storedDaily ? parseInt(storedDaily, 10) || 0 : 0;
-    if (dailyCount >= dailyLimit) {
-      return jsonError(
-        corsOrigin,
-        429,
-        "DAILY_QUOTA_EXCEEDED",
-        `Daily quota exceeded (${dailyLimit} requests per day).`
-      );
+    const ipAddress = request.headers.get("cf-connecting-ip") || "";
+    if (env?.MY_RATE_LIMITER && typeof env.MY_RATE_LIMITER.limit === "function") {
+      const { success } = await env.MY_RATE_LIMITER.limit({ key: ipAddress });
+      if (!success) {
+        return jsonError(
+          corsOrigin,
+          429,
+          "RATE_LIMIT_EXCEEDED",
+          "Too many requests, please wait a bit."
+        );
+      }
     }
-
-    const minuteCount = storedMinute ? parseInt(storedMinute, 10) || 0 : 0;
-    if (minuteCount >= perMinuteLimit) {
-      return jsonError(
-        corsOrigin,
-        429,
-        "RATE_LIMIT_EXCEEDED",
-        "Too many requests, please wait a bit."
-      );
-    }
-
-    await Promise.all([
-      env.RATE_LIMIT.put(quotaKey, String(dailyCount + 1), {
-        expirationTtl: 27 * 60 * 60
-      }),
-      env.RATE_LIMIT.put(rlKey, String(minuteCount + 1), {
-        expirationTtl: 70
-      })
-    ]);
 
     return forwardToOpenRouter(request, env, corsOrigin);
   }

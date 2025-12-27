@@ -251,38 +251,12 @@ function isAdminIp(request) {
 __name(isAdminIp, "isAdminIp");
 
 async function enforceRateLimit(request, env) {
-    const kv = env?.RATE_LIMIT;
-    if (!kv?.get || !kv?.put) return null;
-
-    const ip = getClientIp(request);
-    const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-    const minuteWindow = Math.floor(Date.now() / 6e4);
-
-    const dailyKey = `feedback:${ip}:day:${today}`;
-    const minuteKey = `feedback:${ip}:min:${minuteWindow}`;
-    const cooldownKey = `feedback:${ip}:cooldown`;
-
-    const dailyLimit = 5;
-    const minuteLimit = 1;
-
-    const isCoolingDown = await kv.get(cooldownKey);
-    if (isCoolingDown) {
+    if (!env?.MY_RATE_LIMITER || typeof env.MY_RATE_LIMITER.limit !== "function") return null;
+    const ipAddress = getClientIp(request) || "";
+    const { success } = await env.MY_RATE_LIMITER.limit({ key: ipAddress });
+    if (!success) {
         return jsonResponse({ error: "Attends quelques secondes avant un nouvel envoi" }, 429, request, env);
     }
-
-    const dailyCount = await readCounter(kv, dailyKey);
-    if (dailyCount >= dailyLimit) {
-        return jsonResponse({ error: "Quota quotidien atteint" }, 429, request, env);
-    }
-
-    const minuteCount = await readCounter(kv, minuteKey);
-    if (minuteCount >= minuteLimit) {
-        return jsonResponse({ error: "Trop de requêtes, réessaie dans une minute" }, 429, request, env);
-    }
-
-    await writeCounter(kv, dailyKey, dailyCount + 1, 27 * 60 * 60);
-    await writeCounter(kv, minuteKey, minuteCount + 1, 90);
-    await writeCounter(kv, cooldownKey, 1, 15);
     return null;
 }
 __name(enforceRateLimit, "enforceRateLimit");
