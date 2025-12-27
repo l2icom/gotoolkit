@@ -1696,6 +1696,7 @@
                     videoTranscriptSentences: [],
                     videoTranscriptFetchedId: "",
                     videoTranscriptLastManualEditAt: 0,
+                    screenCaptureRequested: false,
                     audioRecordingVersion: 0,
                     audioTranscriptVersion: 0,
                     noteMode: NOTE_MODE_NOTE,
@@ -1738,6 +1739,7 @@
                     if (!Array.isArray(next.videoTranscriptSentences)) next.videoTranscriptSentences = [];
                     if (typeof next.videoTranscriptFetchedId !== "string") next.videoTranscriptFetchedId = "";
                     if (!Number.isFinite(next.videoTranscriptLastManualEditAt)) next.videoTranscriptLastManualEditAt = 0;
+                    if (typeof next.screenCaptureRequested !== "boolean") next.screenCaptureRequested = false;
                     if (!Number.isFinite(next.audioRecordingVersion)) next.audioRecordingVersion = 0;
                     if (!Number.isFinite(next.audioTranscriptVersion)) next.audioTranscriptVersion = 0;
                     if (!next.noteMode) next.noteMode = NOTE_MODE_NOTE;
@@ -2539,6 +2541,7 @@
                 }
                 updateTranscriptMeta();
                 renderGuidelines();
+                applyScreenCapturePreference(page.screenCaptureRequested, { skipPersist: true });
                 updateNoteModeOptions();
             }
 
@@ -2791,7 +2794,6 @@
                         break;
                     }
                 }
-                screenCaptureEnabled = videoLoaded;
                 updateScreenToggleVisual();
             }
 
@@ -2874,7 +2876,6 @@
                 }
                 updateNoteModeOptions();
                 updateDownloadMenu();
-                screenCaptureEnabled = Boolean(videoBlob);
                 updateScreenToggleVisual();
             }
 
@@ -2962,20 +2963,39 @@
                 return true;
             }
 
+            function shouldDisableScreenCaptureToggle() {
+                if (!screenCaptureToggleBtn) return false;
+                return !screenCaptureEnabled && hasAudioRecording() && !hasVideoRecording();
+            }
+
             function updateScreenToggleVisual() {
                 if (screenCaptureToggleBtn) {
+                    const disabled = shouldDisableScreenCaptureToggle();
                     screenCaptureToggleBtn.classList.toggle("active", screenCaptureEnabled);
                     screenCaptureToggleBtn.setAttribute("aria-pressed", screenCaptureEnabled ? "true" : "false");
+                    screenCaptureToggleBtn.disabled = disabled;
+                    screenCaptureToggleBtn.setAttribute("aria-disabled", disabled ? "true" : "false");
                 }
                 updateNoteModeOptions();
+            }
+
+            function applyScreenCapturePreference(enabled, { skipPersist = false } = {}) {
+                const page = getActivePage();
+                screenCaptureEnabled = Boolean(enabled);
+                if (page) {
+                    page.screenCaptureRequested = screenCaptureEnabled;
+                    if (!skipPersist) {
+                        persistState();
+                    }
+                }
+                updateScreenToggleVisual();
             }
 
             async function ensureScreenCapture() {
                 if (!screenCaptureEnabled || !navigator.mediaDevices?.getDisplayMedia) {
                     if (screenCaptureEnabled) {
                         showToast("Capture d'écran indisponible.", true);
-                        screenCaptureEnabled = false;
-                        updateScreenToggleVisual();
+                        applyScreenCapturePreference(false);
                     }
                     return false;
                 }
@@ -3012,8 +3032,7 @@
                 } catch (err) {
                     console.warn("Capture écran impossible", err);
                     showToast("Capture d'écran annulée.", true);
-                    screenCaptureEnabled = false;
-                    updateScreenToggleVisual();
+                    applyScreenCapturePreference(false);
                     stopScreenRecording();
                     return false;
                 }
@@ -3036,8 +3055,14 @@
             function finalizeScreenRecording() {
                 if (screenChunks.length) {
                     const blob = new Blob(screenChunks, { type: screenChunks[0]?.type || "video/webm" });
-                    setVideoBlob(blob);
-                } else {
+                    const parts = [];
+                    if (videoBlob) {
+                        parts.push(videoBlob);
+                    }
+                    parts.push(blob);
+                    const combined = new Blob(parts, { type: parts[0]?.type || blob.type || "video/webm" });
+                    setVideoBlob(combined);
+                } else if (!videoBlob) {
                     setVideoBlob(null, { skipSave: true });
                 }
                 screenChunks = [];
@@ -4961,18 +4986,19 @@
             async function startRecording() {
                 if (audioRecordingActive) return;
                 stopScreenRecording();
-                setVideoBlob(null, { skipSave: true });
+                if (!screenCaptureEnabled) {
+                    setVideoBlob(null, { skipSave: true });
+                }
                 const shouldUseSpeech = activeNoteMode === NOTE_MODE_TRANSCRIPT_AUTO;
                 if (shouldUseSpeech && !speechRecognition) {
                     setupSpeechRecognition();
                 }
                 const ready = await ensureAudioRecording();
                 if (!ready) return;
-                if (screenCaptureEnabled) {
+                if (screenCaptureEnabled && !screenRecordingActive) {
                     const screenReady = await ensureScreenCapture();
                     if (!screenReady) {
-                        screenCaptureEnabled = false;
-                        updateScreenToggleVisual();
+                        applyScreenCapturePreference(false);
                     }
                 }
                 transcriptPrefix = transcribeInput?.value || "";
@@ -5132,6 +5158,7 @@
 
             async function clearAudioStoreAll() {
                 stopAudioRecording();
+                applyScreenCapturePreference(false, { skipPersist: true });
                 await clearAudioDb();
                 recordingSegments = [];
                 audioRecordingActive = false;
@@ -5155,15 +5182,54 @@
                     page.videoTranscriptId = "";
                     page.videoTranscriptSentences = [];
                     page.videoTranscriptFetchedId = "";
-                    persistState();
+                    if (activeNoteMode === NOTE_MODE_NOTE) {
+                        persistState();
+                    } else {
+                        applyNoteMode(NOTE_MODE_NOTE);
+                    }
                 }
+                if (transcribeInput) {
+                    transcribeInput.value = "";
+                }
+                updateGhostOverlay("");
+                updateTranscriptMeta();
                 stopScreenRecording();
                 await clearVideoDb();
                 setVideoBlob(null, { skipSave: true });
+                updateScreenToggleVisual();
+            }
+
+            async function dropVideoRecording() {
+                const mediaKey = getMediaStorageKey();
+                setVideoBlob(null);
+                try {
+                    await clearVideoDb(mediaKey);
+                    if (mediaKey && mediaKey !== VIDEO_DB.key) {
+                        await clearVideoDb(VIDEO_DB.key);
+                    }
+                } catch (err) {
+                    console.warn("Impossible de vider la vidéo", err);
+                }
+                const page = getActivePage();
+                if (page) {
+                    page.videoTranscript = "";
+                    page.videoTranscriptId = "";
+                    page.videoTranscriptSentences = [];
+                    page.videoTranscriptFetchedId = "";
+                    page.videoTranscriptLastManualEditAt = 0;
+                    if (activeNoteMode === NOTE_MODE_TRANSCRIPT_VIDEO) {
+                        applyNoteMode(NOTE_MODE_NOTE);
+                    } else {
+                        persistState();
+                        updateTranscriptMeta();
+                        refreshSummaryTextarea();
+                    }
+                }
+                updateScreenToggleVisual();
             }
 
             function clearCurrentAudioWithConfirm() {
-                const confirmed = window.confirm("Supprimer l'enregistrement audio (et vidéo) ?");
+                const confirmed = window.confirm("Supprimer l'enregistrement et les transcripts ?");
                 if (!confirmed) return;
                 clearAudioStoreAll();
                 showToast("Enregistrement supprimé.");
@@ -5449,28 +5515,20 @@
                         }
                         await discardAudioRecording();
                     }
-                    screenCaptureEnabled = true;
-                } else {
-                    if (hasVideoRecording()) {
-                        const confirmed = window.confirm("L'enregistrement courant n'aura plus de vidéo. Continuer ?");
-                        if (!confirmed) {
-                            return;
-                        }
-                        const mediaKey = getMediaStorageKey();
-                        setVideoBlob(null);
-                        try {
-                            await clearVideoDb(mediaKey);
-                            if (mediaKey && mediaKey !== VIDEO_DB.key) {
-                                await clearVideoDb(VIDEO_DB.key);
-                            }
-                        } catch (err) {
-                            console.warn("Impossible de vider la vidéo", err);
-                        }
-                    }
-                    screenCaptureEnabled = false;
-                    stopScreenRecording();
+                    applyScreenCapturePreference(true);
+                    return;
                 }
-                updateScreenToggleVisual();
+                if (hasVideoRecording()) {
+                    const confirmed = window.confirm(
+                        "La vidéo précédente sera supprimée mais la piste audio est conservée. Continuer ?"
+                    );
+                    if (!confirmed) {
+                        return;
+                    }
+                    await dropVideoRecording();
+                }
+                stopScreenRecording();
+                applyScreenCapturePreference(false);
             });
             audioImportBtn?.addEventListener("click", handleAudioImportClick);
             audioImportInput?.addEventListener("change", handleAudioImportChange);
