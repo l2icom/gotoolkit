@@ -773,13 +773,16 @@
         };
         const maxPrompt = parsePositive(backend?.maxPrice?.prompt);
         const maxCompletion = parsePositive(backend?.maxPrice?.completion);
+        const dataCollection = backend?.dataCollection || "deny";
         result.provider = {
             allow_fallbacks: true,
             sort: {
                 by: "latency",
                 partition: null
             },
-            data_collection: backend?.dataCollection || "deny",
+            data_collection: dataCollection,
+            dataCollection,
+            zdr: true,
             max_price: {
                 prompt: maxPrompt,
                 completion: maxCompletion

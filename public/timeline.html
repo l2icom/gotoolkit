@@ -1401,9 +1401,12 @@
                 </div>
 
                 <div class="global-actions">
-                    <button class="btn" id="gtTemplateModalTrigger" aria-label="Ouvrir ⊞ Modèles" title="⊞ Modèles">⊞ Modèles</button>
-                    <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir ⌘ Agent" title="⌘ Agent">⌘ Agent</button>
-                    <button class="btn" id="gtPromptModalTrigger" aria-label="Ouvrir Prompt" title="⌬ Prompt">⌬ Prompt</button>
+                    <button class="btn" id="gtTemplateModalTrigger" aria-label="Ouvrir ⊞ Modèles" title="⊞ Modèles">⊞
+                        Modèles</button>
+                    <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir ⌘ Agent" title="⌘ Agent">⌘
+                        Agent</button>
+                    <button class="btn" id="gtPromptModalTrigger" aria-label="Ouvrir Prompt" title="⌬ Prompt">⌬
+                        Prompt</button>
 
                     <div class="menu-trigger">
                         <button class="btn" id="optionsBtn" aria-label="Affichage" title="Affichage">◯
@@ -7067,7 +7070,7 @@
                     var promptText = (promptField && promptField.value ? promptField.value.trim() : "");
 
                     if (!promptText) {
-                        alert("Ajoute un prompt avant d'appeler OpenAI 🙂");
+                        alert("Ajoute un prompt avant de lancer la requête");
                         promptField && promptField.focus();
                         return;
                     }

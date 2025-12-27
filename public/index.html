@@ -186,6 +186,13 @@
             color: #B11226;
         }
 
+        .ia-model-label {
+            margin-left: 6px;
+            font-size: 0.75rem;
+            color: var(--muted);
+            display: inline-block;
+        }
+
 
 
         .ghost-button {
@@ -1400,24 +1407,17 @@
                                 <div
                                     style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
                                     <div>
-                                        <span class="label-title">OpenRouter</span>
+                                        <a class="label-title" href="https://openrouter.ai/settings/keys"
+                                            target="_blank" rel="noopener noreferrer">Clé OpenRouter</a>
                                         <span class="ia-status" id="openrouterStatus" aria-hidden="true"></span>
+                                        <span class="ia-model-label" id="openrouterModelLabel" aria-live="polite"></span>
                                     </div>
                                     <div style="display:flex; gap:0.35rem;">
                                         <button id="openrouterVerifyBtn" type="button"
                                             class="btn-secondary">Vérifier</button>
                                     </div>
                                 </div>
-                                <span class="label-subtitle">Utilise les moteurs OpenRouter (clé optionnelle).</span>
                                 <input id="openrouterApiKeyInput" type="password" placeholder="or-..." />
-                            </label>
-                        </div>
-                        <div class="field-row">
-                            <label>
-                                <span class="label-title">Moteur OpenRouter</span>
-                                <select id="openrouterModelSelect"></select>
-                                <span class="label-subtitle">Sélectionne un moteur recommandé (pas de saisie
-                                    libre).</span>
                             </label>
                         </div>
                     </div>
@@ -2384,6 +2384,43 @@
             }
         }
 
+        function resolveOpenRouterModel(modelOverride) {
+            const normalizedOverride = (modelOverride && typeof modelOverride === "string") ? modelOverride.trim() : "";
+            if (normalizedOverride) {
+                return normalizedOverride;
+            }
+            const config = window.GoToolkitIAConfig;
+            try {
+                if (config && typeof config.getOpenRouterModel === "function") {
+                    const stored = config.getOpenRouterModel();
+                    if (stored && typeof stored === "string") {
+                        const normalized = stored.trim();
+                        if (normalized) {
+                            return normalized;
+                        }
+                    }
+                }
+            } catch (err) {
+                // ignore read errors
+            }
+            return (
+                (config && config.DEFAULTS && config.DEFAULTS.OPENROUTER_MODEL) ||
+                ""
+            );
+        }
+
+        function updateOpenRouterModelLabel(modelOverride) {
+            if (!openrouterModelLabelEl) {
+                return;
+            }
+            const model = resolveOpenRouterModel(modelOverride);
+            if (!model) {
+                openrouterModelLabelEl.textContent = "";
+                return;
+            }
+            openrouterModelLabelEl.textContent = `Réponse OpenRouter · ${model}`;
+        }
+
         function getWebllmModelLabel(modelId) {
             if (!modelId) return "WebLLM";
             const models = window.GoToolkitIAConfig?.WEBLLM_MODELS || [];
@@ -3020,6 +3057,7 @@
         const ollamaStatusEl = document.getElementById("ollamaStatus");
         const webllmStatusEl = document.getElementById("webllmStatus");
         const openrouterStatusEl = document.getElementById("openrouterStatus");
+        const openrouterModelLabelEl = document.getElementById("openrouterModelLabel");
         const openrouterVerifyBtn = document.getElementById("openrouterVerifyBtn");
         const assemblyAiStatusEl = document.getElementById("assemblyAiStatus");
         const openaiVerifyBtn = document.getElementById("openaiVerifyBtn");
@@ -3036,7 +3074,6 @@
         const webllmModelSelect = document.getElementById("webllmModelSelect");
         const assemblyAiKeyInput = document.getElementById("assemblyAiKeyInput");
         const openrouterApiKeyInput = document.getElementById("openrouterApiKeyInput");
-        const openrouterModelSelect = document.getElementById("openrouterModelSelect");
         const ASSEMBLY_AI_KEY_STORAGE = "go-toolkit-assemblyai-key";
         const VOICE_AUDIO_DB = { name: "go-toolkit-voice-audio", store: "recordings" };
 
@@ -3053,40 +3090,6 @@
             if (ollamaSettingsEl) ollamaSettingsEl.style.display = val === "ollama" ? "" : "none";
             if (webllmSettingsEl) webllmSettingsEl.style.display = val === "webllm" ? "" : "none";
             window.GoToolkitSelectedAIBackend = val;
-        }
-
-        function populateOpenrouterModelSelect(storedValue) {
-            if (!openrouterModelSelect) return;
-            const models = Array.isArray(window.GoToolkitIAConfig?.OPENROUTER_MODELS)
-                ? [...window.GoToolkitIAConfig.OPENROUTER_MODELS]
-                : [];
-            if (!models.length && window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL) {
-                models.push(window.GoToolkitIAConfig.DEFAULTS.OPENROUTER_MODEL);
-            }
-            openrouterModelSelect.innerHTML = "";
-            const added = new Set();
-            models.forEach(model => {
-                if (!model || added.has(model)) return;
-                const option = document.createElement("option");
-                option.value = model;
-                option.textContent = model;
-                openrouterModelSelect.appendChild(option);
-                added.add(model);
-            });
-            let target = storedValue || "";
-            if (target && !added.has(target)) {
-                const option = document.createElement("option");
-                option.value = target;
-                option.textContent = target;
-                openrouterModelSelect.appendChild(option);
-                added.add(target);
-            }
-            if (!target && openrouterModelSelect.options.length) {
-                target = openrouterModelSelect.options[0].value;
-            }
-            if (target) {
-                openrouterModelSelect.value = target;
-            }
         }
 
         function updateOllamaAddressUI() {
@@ -3228,7 +3231,7 @@
                     (config && typeof config.getOpenRouterModel === "function" ? config.getOpenRouterModel() : "") ||
                     window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL ||
                     "";
-                populateOpenrouterModelSelect(storedOpenRouterModel);
+                updateOpenRouterModelLabel(storedOpenRouterModel);
                 const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("nuances-reasoning-effort") || "low";
                 if (settingsReasoningSelect) settingsReasoningSelect.value = storedReasoning;
                 const storedAssemblyKey = ((localStorage.getItem(ASSEMBLY_AI_KEY_STORAGE) || "").trim() || (window.GoToolkitAssemblyAiKey || "").trim()) || "";
@@ -3299,10 +3302,6 @@
                 const openrouterKeyValue = (openrouterApiKeyInput?.value || "").trim();
                 if (iaConfig && typeof iaConfig.setOpenRouterApiKey === "function") {
                     iaConfig.setOpenRouterApiKey(openrouterKeyValue);
-                }
-                const openrouterModelValue = (openrouterModelSelect?.value || "").trim();
-                if (iaConfig && typeof iaConfig.setOpenRouterModel === "function" && openrouterModelValue) {
-                    iaConfig.setOpenRouterModel(openrouterModelValue);
                 }
                 selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openrouter";
                 if (iaConfig && typeof iaConfig.setBackend === "function") {
@@ -3521,6 +3520,7 @@
                 const ready = typeof backend?.type === "string" && backend.type.startsWith("openrouter");
                 updateStatusIcon(openrouterStatusEl, ready ? "ready" : null);
                 openrouterStatusEl.setAttribute("aria-hidden", ready ? "false" : "true");
+                updateOpenRouterModelLabel(ready ? backend?.model : null);
             }
         }
 
