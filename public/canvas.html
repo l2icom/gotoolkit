@@ -1730,7 +1730,7 @@
     <div class="app">
         <div class="app-header">
             <div class="tabs-actions">
-                <a class="app-home-link" href="index.html?v=2025.12.27.1" title="Revenir à l'accueil">☍</a>
+                <a class="app-home-link" href="/?v=2025.12.27.1" title="Revenir à l'accueil">☍</a>
                 <div class="nav-switch">
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                         aria-expanded="false">◍ Canvas ▾</button>
@@ -6852,14 +6852,21 @@
         const APP_VERSION = "2025.12.27.1";
         const VERSION_QUERY_PARAM = "v";
 
+        function getBrowserDateVersion() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, "0");
+            const day = String(now.getDate()).padStart(2, "0");
+            return `${now.getFullYear()}.${month}.${day}`;
+        }
+
         function closeInfoPopup() {
             infoPopup?.classList.remove("open");
         }
 
-        function reloadAppWithVersion() {
+        function reloadAppWithVersion(version = APP_VERSION) {
             try {
                 const url = new URL(window.location.href);
-                url.searchParams.set(VERSION_QUERY_PARAM, APP_VERSION);
+                url.searchParams.set(VERSION_QUERY_PARAM, version);
                 window.location.href = url.toString();
             } catch (err) {
                 window.location.reload();
@@ -6874,7 +6881,7 @@
         updateAppBtn?.addEventListener("click", event => {
             event.stopPropagation();
             closeInfoPopup();
-            reloadAppWithVersion();
+            reloadAppWithVersion(getBrowserDateVersion());
         });
         document.addEventListener("click", event => {
             if (!infoPopup?.contains(event.target) && event.target !== infoButton) {

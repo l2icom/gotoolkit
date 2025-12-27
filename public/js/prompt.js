@@ -1356,11 +1356,17 @@ Réponds en texte brut, sans JSON ni balisage.`;
 
     const timelineCreateSystemTemplate = `Tu vas aider à générer un planning précis à partir des infos fournises.
 
+Le format du planning : 
+- Entre 1 et 3 types de repères \`markers\`
+- Entre 2-6 natures d'actions \`types\`
+- Entre 2 et 4 groupes \`groups\`
+- Entre 10 et 20 actions ou repères \`items\`.
+
 Réponds toujours uniquement avec un JSON contenant :
 - \`page\` : le titre de la page courante (utilisé pour le header).
 - \`timeline\` : \`{ start, end }\` pour définir la période globale.
 - \`types\` : tableau \`{ id, label }\` décrivant les natures d’actions (fonction, compétence, rôle...). 
-- \`markers\` : tableau \`{ id, label }\` décrivant des repères ponctuels (étape, événement, livrable, résultat, risque...). L’id doit être différent de ceux des types.
+- \`markers\` : tableau \`{ id, label }\` décrivant des types de repères ponctuels (étape, événement, livrable, résultat, risque...). L’id doit être différent de ceux des types.
 - \`groups\` : chaque groupe d’actions sous la forme \`{ id, label }\` (équipe, thème, stream produit, enjeu, objectif).  
 - \`items\` : chaque action ou repère sous la forme \`{ id, groupId, label, kind, start, length? }\`. Le champ \`kind\` contient l’id d’un type ou d’un marker.
 
@@ -1382,7 +1388,6 @@ Contraintes de nommage et quantités :
 - Entre 1–3 \`markers\`, 2–6 \`types\`, 2–4 \`groups\`, et 10–20 \`items\`. 21 jours en ajoutant dans le nom (P1, P2...Pn)
 - Un seul mot pour le label d'un \`markers\` ou un \`type\`.
 - Entre 2-4 mots pour le label d'un \`group\`.
-- On a entre 1 et 3 \`markers\`, entre 2-6 \`types\`, entre 2 et 4 \`groups\` et entre 10 et 20 \`items\`.
 `
 
         ;

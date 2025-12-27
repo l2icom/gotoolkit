@@ -1361,7 +1361,7 @@
     <div class="app">
         <div class="app-header">
             <div class="tabs-actions">
-                <a class="app-home-link" href="index.html?v=2025.12.27.1" title="Revenir à l'accueil">☍</a>
+                <a class="app-home-link" href="/?v=2025.12.27.1" title="Revenir à l'accueil">☍</a>
                 <div class="nav-switch">
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                         aria-expanded="false">⇥ Timeline ▾</button>
@@ -3164,6 +3164,12 @@
                 var timelineUpdateBtn = document.getElementById("timelineUpdateBtn");
                 var APP_VERSION = "2025.12.27.1";
                 var VERSION_QUERY_PARAM = "v";
+                function getBrowserDateVersion() {
+                    var now = new Date();
+                    var month = String(now.getMonth() + 1).padStart(2, "0");
+                    var day = String(now.getDate()).padStart(2, "0");
+                    return now.getFullYear() + "." + month + "." + day;
+                }
                 var copyToast = document.getElementById("copyToast");
                 var copyToastTimer = null;
                 var speechToast = document.getElementById("speechToast");
@@ -4226,7 +4232,7 @@
                 function buildTextExport(planning, viewTitle) {
                     var lines = [];
                     if (viewTitle) {
-                        lines.push("Bloc : " + viewTitle);
+                        lines.push("Page : " + viewTitle);
                     }
                     if (planning && planning.timeline) {
                         var start = planning.timeline.start || "";
@@ -4396,7 +4402,7 @@
                     var importedViews = [];
                     if (Array.isArray(state.views) && state.views.length) {
                         importedViews = state.views.map(function (view, index) {
-                            var label = view.name || view.title || ("Bloc " + (index + 1));
+                            var label = view.name || view.title || ("Page " + (index + 1));
                             return {
                                 name: label,
                                 title: view.title || view.name || label,
@@ -4405,7 +4411,7 @@
                             };
                         });
                     } else if (state.groups) {
-                        var label = state.label || state.name || "Bloc 1";
+                        var label = state.label || state.name || "Page 1";
                         importedViews = [{ name: label, title: label, planning: state, context: cloneDefaultContext() }];
                     }
                     if (!importedViews.length) {
@@ -4828,10 +4834,10 @@
                     infoPopup.classList.toggle("open");
                 }
 
-                function reloadAppWithVersion() {
+                function reloadAppWithVersion(version) {
                     try {
                         var url = new URL(window.location.href);
-                        url.searchParams.set(VERSION_QUERY_PARAM, APP_VERSION);
+                        url.searchParams.set(VERSION_QUERY_PARAM, version || APP_VERSION);
                         window.location.href = url.toString();
                     } catch (err) {
                         window.location.reload();
@@ -4850,7 +4856,7 @@
                     timelineUpdateBtn.addEventListener("click", function (event) {
                         event.stopPropagation();
                         closeTimelineInfoPopup();
-                        reloadAppWithVersion();
+                        reloadAppWithVersion(getBrowserDateVersion());
                     });
                 }
 
@@ -5094,10 +5100,10 @@
 
                 function ensureViewName(index) {
                     var view = views[index];
-                    if (!view) return "Bloc " + (index + 1);
+                    if (!view) return "Page " + (index + 1);
                     if (view.name !== undefined && view.name !== null) return view.name;
                     if (view.title !== undefined && view.title !== null) return view.title;
-                    return "Bloc " + (index + 1);
+                    return "Page " + (index + 1);
                 }
 
                 function refreshHeaderText() {
@@ -5255,7 +5261,7 @@
 
                 function addView() {
                     persistCurrentPlanning();
-                    var label = "Bloc " + (views.length + 1);
+                    var label = "Page " + (views.length + 1);
                     var newView = { name: label, title: label, planning: null, context: cloneDefaultContext() };
                     ensureViewFilterState(newView);
                     views.push(newView);
@@ -5280,7 +5286,7 @@
                 if (deleteViewBtn) {
                     deleteViewBtn.addEventListener("click", function () {
                         if (!views || views.length <= 1) return;
-                        var name = (views[activeViewIndex] && (views[activeViewIndex].title || views[activeViewIndex].name)) || ("Bloc " + (activeViewIndex + 1));
+                        var name = (views[activeViewIndex] && (views[activeViewIndex].title || views[activeViewIndex].name)) || ("Page " + (activeViewIndex + 1));
                         var ok = confirm("Supprimer la vue '" + name + "' ? Cette action est irréversible.");
                         if (ok) deleteView();
                     });

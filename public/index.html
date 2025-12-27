@@ -3280,6 +3280,35 @@
         const openrouterApiKeyInput = document.getElementById("openrouterApiKeyInput");
         const openrouterExtras = document.getElementById("openrouterExtras");
         const openrouterDataCollectionSelect = document.getElementById("openrouterDataCollectionSelect");
+        const VERSION_QUERY_PARAM = "v";
+        const DATE_VERSION_PATTERN = /^\d{4}\.\d{2}\.\d{2}$/;
+        function getBrowserDateVersion() {
+            const now = new Date();
+            const month = String(now.getMonth() + 1).padStart(2, "0");
+            const day = String(now.getDate()).padStart(2, "0");
+            return `${now.getFullYear()}.${month}.${day}`;
+        }
+        function reloadIndexWithVersion(version = getBrowserDateVersion()) {
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set(VERSION_QUERY_PARAM, version);
+                window.location.href = url.toString();
+            } catch (err) {
+                window.location.reload();
+            }
+        }
+        (function removeVersionQueryParam() {
+            try {
+                const url = new URL(window.location.href);
+                const versionValue = url.searchParams.get(VERSION_QUERY_PARAM);
+                if (versionValue && DATE_VERSION_PATTERN.test(versionValue) && window.history?.replaceState) {
+                    url.searchParams.delete(VERSION_QUERY_PARAM);
+                    window.history.replaceState(null, "", url.toString());
+                }
+            } catch (err) {
+                // ignore invalid URL or history replacement failures
+            }
+        })();
         const openrouterMaxPriceInput = document.getElementById("openrouterMaxPriceInput");
         let openrouterHasValidPrivateKey = false;
         const openrouterLatencies = { private: null, shared: null };
@@ -3660,6 +3689,9 @@
             }
             if (updateRequestsButtonVisibility()) {
                 fetchRequests().catch(() => { /* noop */ });
+            }
+            if (result?.success) {
+                reloadIndexWithVersion();
             }
         }
 
