@@ -730,9 +730,17 @@
         }
 
         const isDirect = Boolean(backend?.hasOpenRouterKey);
-        const defaultModel = isDirect ? "openrouter/auto" : (configuredModel || "openai/gpt-oss-120b:free");
-        if (isDirect && !modelCandidates.includes("openrouter/auto")) {
-            modelCandidates.unshift("openrouter/auto");
+        if (!isDirect) {
+            const proxyModel = configuredModel || modelCandidates[0] || "openai/gpt-oss-120b:free";
+            return {
+                model: proxyModel,
+                messages: buildOpenRouterMessages(source)
+            };
+        }
+
+        const defaultModel = "openrouter/auto";
+        if (!modelCandidates.includes(defaultModel)) {
+            modelCandidates.unshift(defaultModel);
         }
         const result = {
             model: defaultModel,

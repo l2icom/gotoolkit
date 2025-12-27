@@ -322,7 +322,7 @@
         }
 
         .audio-progress {
-            width: 120px;
+            width: 90px;
             accent-color: var(--primary);
             appearance: none;
             height: 6px;
@@ -2718,7 +2718,6 @@
                     const tx = db.transaction(AUDIO_DB.store, "readwrite");
                     const store = tx.objectStore(AUDIO_DB.store);
                     store.put({ type: blob.type || "audio/webm", data: blob }, key);
-                    console.log("Audio saved to IDB", { key, type: blob.type, size: blob.size });
                 } catch (err) {
                     console.warn("Impossible de sauvegarder l'audio", err);
                 }
@@ -2759,7 +2758,6 @@
                             : new Blob([blobData], { type: result.type || "audio/webm" });
                         setAudioBlob(blob, { skipSave: true });
                         pendingAudioMerge = Promise.resolve();
-                        console.log("Audio loaded from IDB", { key, type: blob.type, size: blob.size });
                         return true;
                     }
                 } catch (err) {
@@ -2795,7 +2793,6 @@
                     const tx = db.transaction(VIDEO_DB.store, "readwrite");
                     const store = tx.objectStore(VIDEO_DB.store);
                     store.put({ type: blob.type || "video/webm", data: blob }, key);
-                    console.log("Video saved to IDB", { key, type: blob.type, size: blob.size });
                 } catch (err) {
                     console.warn("Impossible de sauvegarder la vidéo", err);
                 }
@@ -2835,7 +2832,6 @@
                             ? blobData
                             : new Blob([blobData], { type: result.type || "video/webm" });
                         setVideoBlob(blob, { skipSave: true });
-                        console.log("Video loaded from IDB", { key, type: blob.type, size: blob.size });
                         return true;
                     }
                 } catch (err) {
@@ -2856,7 +2852,6 @@
                 for (const k of audioKeys) {
                     const loaded = await loadAudioFromDb(k);
                     if (loaded) {
-                        console.log("Hydrated audio", { key: k });
                         pendingAudioMerge = Promise.resolve();
                         audioMergeInProgress = false;
                         break;
@@ -2873,7 +2868,6 @@
                 for (const k of videoKeys) {
                     const loaded = await loadVideoFromDb(k);
                     if (loaded) {
-                        console.log("Hydrated video", { key: k });
                         videoLoaded = true;
                         break;
                     }
@@ -3962,17 +3956,10 @@
                 const url = getAssemblyProxyUrl(`transcript/${transcriptId}/vtt`);
                 if (!url) return "";
                 try {
-                    console.log("AssemblyAI VTT request", { url, transcriptId });
                     const response = await fetch(url, {
                         headers: key ? { "X-AssemblyAI-Key": key } : {}
                     });
                     const vtt = await response.text();
-                    console.log("AssemblyAI VTT response", {
-                        status: response.status,
-                        ok: response.ok,
-                        length: vtt.length,
-                        preview: vtt.slice(0, 280)
-                    });
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}`);
                     }
@@ -3984,18 +3971,6 @@
             }
 
             async function handleAudioPlayClick() {
-                try {
-                    const storageKey = getMediaStorageKey();
-                    const blobSize = audioBlob?.size || 0;
-                    console.log("Voice play click", {
-                        storageKey,
-                        audioBlobSize: blobSize,
-                        audioType: audioBlob?.type,
-                        hasVideo: Boolean(videoBlob)
-                    });
-                } catch (err) {
-                    console.warn("Voice play click log failed", err);
-                }
                 if (audioRecordingActive) {
                     pauseRecording();
                     return;
@@ -4420,13 +4395,6 @@
                 if (!blob) throw new Error("Audio absent");
                 const url = getAssemblyProxyUrl("upload");
                 if (!url) throw new Error("Proxy AssemblyAI indisponible");
-                console.log("AssemblyAI upload request", {
-                    url,
-                    method: "POST",
-                    blobType: blob.type,
-                    blobSize: blob.size,
-                    hasKey: Boolean(key)
-                });
                 const response = await fetch(url, {
                     method: "POST",
                     headers: {
@@ -4441,11 +4409,6 @@
                 } catch (err) {
                     console.warn("AssemblyAI upload response parse failed", err);
                 }
-                console.log("AssemblyAI upload response", {
-                    status: response.status,
-                    ok: response.ok,
-                    data
-                });
                 if (!response.ok) {
                     throw new Error(`Envoi audio échoué (${response.status})`);
                 }
@@ -4458,11 +4421,6 @@
             async function requestAssemblyTranscript(payload, key) {
                 const url = getAssemblyProxyUrl("transcript");
                 if (!url) throw new Error("Proxy AssemblyAI indisponible");
-                console.log("AssemblyAI transcript POST request", {
-                    url,
-                    hasKey: Boolean(key),
-                    payload
-                });
                 const response = await fetch(url, {
                     method: "POST",
                     headers: {
@@ -4472,12 +4430,6 @@
                     body: JSON.stringify(payload)
                 });
                 const responseText = await response.text();
-                console.log("AssemblyAI transcript POST response", {
-                    status: response.status,
-                    ok: response.ok,
-                    length: responseText.length,
-                    preview: responseText.slice(0, 400)
-                });
                 if (!response.ok) {
                     const detail = responseText ? `: ${responseText.replace(/\s+/g, " ").trim()}` : "";
                     const err = new Error(`Requête transcription échouée (${response.status})${detail}`);
@@ -4508,12 +4460,6 @@
                     const responseText = await response.text();
                     const preview = responseText.slice(0, 400);
                     if (!response.ok) {
-                        console.log("AssemblyAI transcript GET response", {
-                            attempt,
-                            status: response.status,
-                            ok: false,
-                            preview
-                        });
                         throw new Error(`Échec du suivi (${response.status})`);
                     }
                     let data = null;
@@ -4523,13 +4469,6 @@
                         console.warn("AssemblyAI transcript GET response parse failed", err);
                         throw new Error("Réponse AssemblyAI invalide");
                     }
-                    console.log("AssemblyAI transcript GET response", {
-                        attempt,
-                        status: response.status,
-                        ok: true,
-                        preview,
-                        data
-                    });
                     if (!data) {
                         throw new Error("Réponse AssemblyAI invalide");
                     }
@@ -4561,15 +4500,11 @@
                 assemblyRequestInProgress = true;
                 showToast(`${toastLabel} en cours…`, false, 5200);
                 try {
-                    console.debug("AssemblyAI upload request, blob", blob);
                     const uploadUrl = await uploadAudioToAssembly(blob, assemblyKey);
-                    console.debug("AssemblyAI upload response url", uploadUrl);
                     const page = getActivePage();
                     const participantsWithNames = (page?.participants || []).filter(participant => (participant?.name || "").trim());
                     const knownValues = getAssemblyKnownValues(page);
                     const payload = buildAssemblyTranscriptPayload(uploadUrl, participantsWithNames.length, knownValues);
-                    console.debug("AssemblyAI request payload", payload);
-                    console.log("AssemblyAI request payload", payload);
                     let transcriptId;
                     try {
                         transcriptId = await requestAssemblyTranscript(payload, assemblyKey);
@@ -4594,10 +4529,7 @@
                             throw err;
                         }
                     }
-                    console.debug("AssemblyAI transcript id", transcriptId);
                     const result = await pollAssemblyTranscript(transcriptId, assemblyKey);
-                    console.debug("AssemblyAI poll result", result);
-                    console.log("AssemblyAI poll response", result);
                     const finalText = buildTranscriptFromUtterances(result);
                     if (!finalText) {
                         throw new Error("Transcription vide");
@@ -4737,12 +4669,6 @@
                     const duration = Number.isFinite(audioPlayer?.duration) ? audioPlayer.duration : 0;
                     const nearEnd = duration > 0 && (audioPlayer.ended || audioPlayer.currentTime >= duration - 0.05);
                     const needsReload = !duration || Number.isNaN(duration) || audioPlayer.readyState < 1;
-                    console.log("Voice playback toggle", {
-                        currentTime: audioPlayer.currentTime,
-                        duration,
-                        readyState: audioPlayer.readyState,
-                        nearEnd
-                    });
                     if (needsReload) {
                         audioPlayer.load();
                     }
@@ -5493,14 +5419,12 @@
                 speechRecognition.interimResults = true;
                 speechRecognition.continuous = true;
                 speechRecognition.onstart = () => {
-                    console.debug("speechRecognition started");
                     setSpeechButtonState(true);
                 };
                 speechRecognition.onerror = e => {
                     console.warn("speechRecognition error", e);
                 };
                 speechRecognition.onresult = event => {
-                    console.debug("speechRecognition.onresult", { index: event.resultIndex, results: event.results?.length });
                     const now = Date.now();
                     const sessionElapsed = recordingStartedAt ? Math.max(0, Math.floor((now - recordingStartedAt) / 1000)) : 0;
                     const elapsedSec = recordingBaseElapsedSec + sessionElapsed;
