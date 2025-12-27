@@ -4,8 +4,8 @@
 	<head>
 	    <meta charset="UTF-8" />
 	    <title>Canvas | Go-Toolkit</title>
-	    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.7">
-	    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.7">
+	    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.8">
+	    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.8">
 	    <style>
         :root {
             --app-bg: #f3f4f6;
@@ -1735,10 +1735,10 @@
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                         aria-expanded="false">◍ Canvas ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-	                        <a class="nav-switch-link" href="grid.html?v=2025.12.26.7" role="menuitem">▦ Grid</a>
-	                        <a class="nav-switch-link" href="timeline.html?v=2025.12.26.7" role="menuitem">⇥ Timeline</a>
-	                        <a class="nav-switch-link" href="draw.html?v=2025.12.26.7" role="menuitem">◇ Draw</a>
-	                        <a class="nav-switch-link" href="voice.html?v=2025.12.26.7" role="menuitem">▷ Voice</a>
+	                        <a class="nav-switch-link" href="grid.html?v=2025.12.26.8" role="menuitem">▦ Grid</a>
+	                        <a class="nav-switch-link" href="timeline.html?v=2025.12.26.8" role="menuitem">⇥ Timeline</a>
+	                        <a class="nav-switch-link" href="draw.html?v=2025.12.26.8" role="menuitem">◇ Draw</a>
+	                        <a class="nav-switch-link" href="voice.html?v=2025.12.26.8" role="menuitem">▷ Voice</a>
                     </div>
                 </div>
 
@@ -1753,11 +1753,10 @@
 
                 <div class="menu-trigger" id="settingsMenuTrigger">
                     <button id="gtTemplateModalTrigger" class="btn" type="button" aria-label="Choisir un modèle"
-                        title="⊞ Modèle">⊞ Modèle</button>
+                        title="⊞ Modèles">⊞ Modèles</button>
                     <button id="gtContextModalTrigger" class="btn" type="button" aria-label="Ouvrir Contexte"
-                        title="⸙ Contexte">⸙ Contexte</button>
-                    <button id="gtPromptModalTrigger" class="btn" type="button" aria-label="Prompt" title="⌘ Prompt">⌘
-                        Prompt</button>
+                        title="⌘ Agent">⌘ Agent</button>
+                    <button id="gtPromptModalTrigger" class="btn" type="button" aria-label="Prompt" title="⌬ Prompt">⌬ Prompt</button>
 
                     <button id="textStyleBtn" class="btn" type="button" aria-label="Affichage" title="Affichage">◯
                         Affichage</button>
@@ -1820,7 +1819,7 @@
 	        <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
 	            <img src="logo.gif" alt="Logo Go-Toolkit">
 	            <strong>Module Canvas (50 Nuances de Vrai)</strong>
-	            <span>Version 2025.12.26.7</span>
+	            <span>Version 2025.12.26.8</span>
 	            <span>Usage réservé à Savane Consulting.</span>
 	            <div class="info-actions">
 	                <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
@@ -1865,7 +1864,7 @@
                     </label>
                     <div class="scenario-section">
                         <div class="scenario-header-row">
-                            <label>Scénario</label>
+                            <label>Commande</label>
                             <button class="btn" id="clearSectionsBtn" type="button" aria-label="Vider les sections">⊘
                                 Vider</button>
                             <button class="btn-primary" id="generateFullSlideBtn" type="button"
@@ -1897,7 +1896,7 @@
     <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true" aria-labelledby="gtPromptModalTitle">
         <div class="modal">
             <div class="modal-header">
-                <h3 id="gtPromptModalTitle" title="⌘ Prompt">⌘ Prompt</h3>
+                <h3 id="gtPromptModalTitle" title="⌬ Prompt">⌬ Prompt</h3>
                 <button class="modal-close" data-close="gtPromptModal">×</button>
             </div>
             <div class="modal-panel hide" data-panel="settings">
@@ -1936,7 +1935,7 @@
     <div class="modal-overlay gt-template-modal" id="gtTemplateModal" role="dialog" aria-modal="true" aria-labelledby="gtTemplateModalTitle">
         <div class="modal gt-template-modal__dialog">
             <div class="modal-header">
-                <h3 id="gtTemplateModalTitle" title="⊞ Modèle">⊞ Modèle</h3>
+                <h3 id="gtTemplateModalTitle" title="⊞ Modèles">⊞ Modèles</h3>
                 <button class="modal-close" data-close="gtTemplateModal">×</button>
             </div>
             <div class="modal-panel">
@@ -2012,8 +2011,8 @@
 	    <script src="js/idb-doc-store.js"></script>
 	    <script src="js/storage-service.js"></script>
 	    <script src="js/shared-ui.js"></script>
-	    <script src="js/cgu.js?v=2025.12.26.7"></script>
-		    <script src="js/prompt.js?v=2025.12.26.7"></script>
+	    <script src="js/cgu.js?v=2025.12.26.8"></script>
+		    <script src="js/prompt.js?v=2025.12.26.8"></script>
 	    <script src="js/share-worker-client.js"></script>
 	    <script src="js/share-history.js"></script>
 	    <script src="js/capsule-drafts.js"></script>
@@ -6851,7 +6850,7 @@
         const infoButton = document.getElementById("infoButton");
         const infoPopup = document.getElementById("infoPopup");
         const updateAppBtn = document.getElementById("updateAppBtn");
-        const APP_VERSION = "2025.12.26.7";
+        const APP_VERSION = "2025.12.26.8";
         const VERSION_QUERY_PARAM = "v";
 
         function closeInfoPopup() {

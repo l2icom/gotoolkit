@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.7">
-    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.7">
+    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.8">
+    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.8">
     <style>
         :root {
             --bg: #f3f4f6;
@@ -930,7 +930,7 @@
             background: #fff;
             border-radius: 14px;
             padding: 14px;
-            width: min(720px, 96vw);
+            width: min(900px, 96vw);
             max-height: 90vh;
             overflow: auto;
             box-shadow: var(--shadow-soft);
@@ -1087,10 +1087,10 @@
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                     aria-expanded="false">▷ Voice ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.7" role="menuitem"> ◍ Canvas</a>
-                    <a class="nav-switch-link" href="grid.html?v=2025.12.26.7" role="menuitem">▦ Grid</a>
-                    <a class="nav-switch-link" href="draw.html?v=2025.12.26.7" role="menuitem">◇ Draw</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.7" role="menuitem">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.8" role="menuitem"> ◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2025.12.26.8" role="menuitem">▦ Grid</a>
+                    <a class="nav-switch-link" href="draw.html?v=2025.12.26.8" role="menuitem">◇ Draw</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.8" role="menuitem">⇥ Timeline</a>
                 </div>
             </div>
 
@@ -1102,12 +1102,9 @@
             </div>
 
             <div class="global-actions">
-                <button class="btn" id="gtTemplateModalTrigger" aria-label="Ouvrir ⊞ Modèle" title="⊞ Modèle">⊞
-                    Modèle</button>
-                <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir Contexte" title="⸙ Contexte">⸙
-                    Contexte</button>
-                <button class="btn" id="gtPromptModalTrigger" aria-label="Ouvrir Prompt" title="⌘ Prompt">⌘
-                    Prompt</button>
+                <button class="btn" id="gtTemplateModalTrigger" aria-label="Ouvrir ⊞ Modèles" title="⊞ Modèles">⊞ Modèles</button>
+                <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir ⌘ Agent" title="⌘ Agent">⌘ Agent</button>
+                <button class="btn" id="gtPromptModalTrigger" aria-label="Ouvrir Prompt" title="⌬ Prompt">⌬ Prompt</button>
 
                 <div class="menu-trigger">
                     <button class="btn" id="fileMenuBtn" aria-label="Document" title="Document">⬠ Document</button>
@@ -1136,9 +1133,9 @@
             aria-labelledby="gtTemplateModalTitle">
             <div class="modal gt-template-modal__dialog">
                 <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;">
-                    <h3 id="gtTemplateModalTitle" title="⊞ Modèle">⊞ Modèle</h3>
+                    <h3 id="gtTemplateModalTitle" title="⊞ Modèles">⊞ Modèles</h3>
                     <button class="modal-close btn" id="gtTemplateModalClose" type="button"
-                        aria-label="Fermer ⊞ Modèle">×</button>
+                        aria-label="Fermer ⊞ Modèles">×</button>
                 </div>
                 <div class="gt-template-modal__list" id="gtTemplateModalList">
                     <!-- cards rendered by JS -->
@@ -1258,16 +1255,15 @@
                 </div>
             </div>
 
-            <div class="gutenberg-card gt-context-modal" id="gtContextModal" role="complementary"
-                aria-hidden="true">
+            <div class="gutenberg-card gt-context-modal" id="gtContextModal" role="complementary" aria-hidden="true">
                 <div class="ia-actions">
                     <div class="header-row ia-header-actions gutenberg-recette">
                         <div class="gutenberg-recette-header">
-                            <label for="promptCreate">Scénario</label>
+                            <label for="promptCreate">Commande</label>
                             <button class="btn" type="button" id="clearScenarioBtn"
                                 aria-label="Réinitialiser le scénario">⊘ Vider</button>
                             <button class="btn btn-primary" id="respondBtn" type="button">
-                                <span>⌘ Répondre</span>
+                                <span>⌘ Envoyer</span>
                             </button>
                         </div>
                         <div class="ia-prompt-fields">
@@ -1299,7 +1295,7 @@
             aria-labelledby="gtPromptModalTitle">
             <div class="modal">
                 <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;">
-                    <h3 id="gtPromptModalTitle" title="⌘ Prompt">⌘ Prompt</h3>
+                    <h3 id="gtPromptModalTitle" title="⌬ Prompt">⌬ Prompt</h3>
                     <button class="modal-close btn" id="gtPromptModalClose" type="button"
                         aria-label="Fermer l'IA">×</button>
                 </div>
@@ -1328,7 +1324,7 @@
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
             <strong>Module Voice (Goal Digger)</strong>
-            <span>Version 2025.12.26.7</span>
+            <span>Version 2025.12.26.8</span>
             <span>Usage réservé à Savane Consulting.</span>
             <div class="info-actions">
                 <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
@@ -1349,12 +1345,12 @@
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2025.12.26.7"></script>
+    <script src="js/cgu.js?v=2025.12.26.8"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
     <script src="js/ia-config.js"></script>
-    <script src="js/prompt.js?v=2025.12.26.7"></script>
+    <script src="js/prompt.js?v=2025.12.26.8"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/voice-video-player.js"></script>
 
@@ -1452,7 +1448,7 @@
             const promptCreate = document.getElementById("promptCreate");
             const promptModify = document.getElementById("promptModify");
             const respondBtn = document.getElementById("respondBtn");
-            const respondDefaultLabel = respondBtn?.textContent || "⌘ Répondre";
+            const respondDefaultLabel = respondBtn?.textContent || "⌘ Envoyer";
             const completeBtn = document.getElementById("completeBtn");
             const completeDefaultLabel = completeBtn?.textContent || "⌘ Remplir";
             const clearScenarioBtn = document.getElementById("clearScenarioBtn");
@@ -1504,7 +1500,7 @@
             const infoPopup = document.getElementById("infoPopup");
             const infoButton = aboutVoiceBtn;
             const updateAppBtn = document.getElementById("updateAppBtn");
-            const APP_VERSION = "2025.12.26.7";
+            const APP_VERSION = "2025.12.26.8";
             const VERSION_QUERY_PARAM = "v";
             const viewTabs = document.getElementById("viewTabs");
             const addViewBtn = document.getElementById("addViewBtn");
@@ -5018,7 +5014,7 @@
                 if (promptCreate) promptCreate.value = "";
                 persistScenario();
                 clearGuidelineData();
-                showToast("Scénario vidé.");
+                showToast("Commande vidé.");
             });
             applyScriptBtn?.addEventListener("click", restoreLastIaResponse);
             openContextModalBtn?.addEventListener("click", () => toggleContextPanel());

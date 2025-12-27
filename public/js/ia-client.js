@@ -325,12 +325,16 @@
             const parts = buffer.split("\n");
             buffer = parts.pop() || "";
             for (const part of parts) {
-                const trimmed = part.trim();
-                if (!trimmed) {
-                    continue;
-                }
-                try {
-                    const payload = JSON.parse(trimmed);
+            var trimmed = part.trim();
+            if (!trimmed) {
+                continue;
+            }
+            var sanitized = trimmed.replace(/^data:\\s*/i, "").trim();
+            if (!sanitized || sanitized === "[DONE]") {
+                continue;
+            }
+            try {
+                const payload = JSON.parse(sanitized);
                     const shouldStop = await handlePayload(payload);
                     if (shouldStop) {
                         return aggregated.trim();
@@ -341,13 +345,16 @@
             }
         }
 
-        const leftover = buffer.trim();
+        var leftover = buffer.trim();
         if (leftover) {
-            try {
-                const payload = JSON.parse(leftover);
-                await handlePayload(payload);
-            } catch (error) {
-                console.warn("NDJSON leftover parse failed", error);
+            var sanitized = leftover.replace(/^data:\\s*/i, "").trim();
+            if (sanitized && sanitized !== "[DONE]") {
+                try {
+                    const payload = JSON.parse(sanitized);
+                    await handlePayload(payload);
+                } catch (error) {
+                    console.warn("NDJSON leftover parse failed", error);
+                }
             }
         }
 
@@ -675,6 +682,133 @@
         }
     }
 
+    function buildOpenRouterMessages(payload) {
+        const source = payload || {};
+        if (Array.isArray(source?.messages) && source.messages.length) {
+            return source.messages.map(message => ({
+                role: (message?.role || "user").toString(),
+                content: stringifyContent(message?.content ?? message)
+            }));
+        }
+        if (Array.isArray(source?.input) && source.input.length) {
+            return source.input.map(item => ({
+                role: (item?.role || "user").toString(),
+                content: stringifyContent(item?.content ?? item)
+            }));
+        }
+        if (typeof source?.prompt === "string") {
+            return [{ role: "user", content: source.prompt }];
+        }
+        if (typeof source?.input === "string") {
+            return [{ role: "user", content: source.input }];
+        }
+        return [{ role: "user", content: "" }];
+    }
+
+    function buildOpenRouterPayload(payload, backend) {
+        const source = payload || {};
+        let modelCandidates = [];
+        if (Array.isArray(source?.models) && source.models.length) {
+            modelCandidates = source.models
+                .map(entry => (entry ? String(entry).trim() : ""))
+                .filter(Boolean);
+        }
+        const configuredModel = String(backend?.model || source?.model || "").trim();
+        if (configuredModel) {
+            if (!modelCandidates.includes(configuredModel)) {
+                modelCandidates.unshift(configuredModel);
+            }
+        }
+        if (!modelCandidates.length) {
+            let fallbackModel = "xiaomi/mimo-v2-flash:free";
+            try {
+                if (global.GoToolkitIAConfig && typeof global.GoToolkitIAConfig.getOpenRouterModel === "function") {
+                    fallbackModel = global.GoToolkitIAConfig.getOpenRouterModel() || fallbackModel;
+                }
+            } catch (err) { /* ignore */ }
+            modelCandidates = [fallbackModel];
+        }
+
+        const result = {
+            models: modelCandidates,
+            messages: buildOpenRouterMessages(source)
+        };
+        [
+            "temperature",
+            "top_p",
+            "max_tokens",
+            "max_output_tokens",
+            "presence_penalty",
+            "frequency_penalty",
+            "n",
+            "logprobs"
+        ].forEach(key => {
+            if (typeof source?.[key] !== "undefined") {
+                result[key] = source[key];
+            }
+        });
+        if (typeof source?.stream !== "undefined") {
+            result.stream = Boolean(source.stream);
+        }
+        if (typeof source?.stop !== "undefined") {
+            result.stop = source.stop;
+        }
+        if (typeof source?.user === "string" && source.user.trim()) {
+            result.user = source.user.trim();
+        }
+        if (typeof source?.logit_bias !== "undefined") {
+            result.logit_bias = source.logit_bias;
+        }
+        if (typeof result.temperature === "undefined") {
+            result.temperature = 1;
+        }
+
+        const parsePositive = value => {
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric) || numeric < 0) {
+                return 0;
+            }
+            return numeric;
+        };
+        const maxPrompt = parsePositive(backend?.maxPrice?.prompt);
+        const maxCompletion = parsePositive(backend?.maxPrice?.completion);
+        result.provider = {
+            allow_fallbacks: true,
+            sort: {
+                by: "latency",
+                partition: null
+            },
+            data_collection: backend?.dataCollection || "deny",
+            max_price: {
+                prompt: maxPrompt,
+                completion: maxCompletion
+            }
+        };
+
+        return result;
+    }
+
+    async function executeOpenRouter(backend, payload, stopCondition, signal, onChunk) {
+        const requestPayload = buildOpenRouterPayload(payload, backend);
+        const wantsStream = Boolean(requestPayload.stream);
+        const response = await fetch(backend.endpoint, {
+            method: "POST",
+            headers: buildHeaders(backend.apiKey),
+            body: JSON.stringify(requestPayload),
+            signal
+        });
+        if (!response.ok) {
+            const body = await response.text().catch(() => "");
+            throw new Error(body || "OpenRouter indisponible");
+        }
+        const contentType = response.headers.get("content-type") || "";
+        const isStream = wantsStream && !!response.body && contentType.includes("text/event-stream");
+        if (isStream) {
+            return consumeStream(response, stopCondition, signal, onChunk);
+        }
+        return parseJsonResponse(response);
+    }
+
     function makeAbortError() {
         try {
             return new DOMException("Aborted", "AbortError");
@@ -773,6 +907,9 @@
         if (!initial.model && backend?.model) {
             initial.model = backend.model;
         }
+        if (backend?.type === "openrouter" || backend?.type === "openrouter-proxy") {
+            return executeOpenRouter(backend, initial, stopCondition, signal, onChunk);
+        }
         if (backend?.type === "webllm") {
             return executeWebllm(backend, initial, stopCondition, signal, onChunk);
         }
@@ -806,6 +943,13 @@
                     signal,
                     onChunk
                 });
+            }
+            if (backend?.type === "openrouter" && global.GoToolkitAIBackend) {
+                const fallback = await global.GoToolkitAIBackend.getBackend(endpointType, { forceOpenRouterProxy: true });
+                if (fallback) {
+                    const fallbackPayload = { ...initial };
+                    return executeOpenRouter(fallback, fallbackPayload, stopCondition, signal, onChunk);
+                }
             }
             throw err;
         }

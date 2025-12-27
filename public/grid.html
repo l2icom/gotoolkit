@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.7">
-    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.7">
+    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.8">
+    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.8">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
     <script
@@ -1091,10 +1091,10 @@
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button">▦ Grid ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.7">◍ Canvas</a>
-                    <a class="nav-switch-link" href="draw.html?v=2025.12.26.7">◇ Draw</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.7">⇥ Timeline</a>
-                    <a class="nav-switch-link" href="voice.html?v=2025.12.26.7">▷ Voice</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.8">◍ Canvas</a>
+                    <a class="nav-switch-link" href="draw.html?v=2025.12.26.8">◇ Draw</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.8">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="voice.html?v=2025.12.26.8">▷ Voice</a>
                 </div>
             </div>
 
@@ -1104,11 +1104,9 @@
                 <button id="deletePageBtn" class="tab-action" title="Supprimer la page">×</button>
             </div>
             <div class="global-actions">
-                <button id="gtContextModalTrigger" class="btn drawer-toggle-btn" type="button" title="⸙ Contexte">⸙
-                    Contexte</button>
-                <button id="gtPromptModalTrigger" class="btn ai-button" type="button" title="⌘ Prompt">⌘ Prompt</button>
-                <button id="gtTemplateModalTrigger" class="btn" type="button" title="⊞ Modèle" style="display: none;">⊞
-                    Modèle</button>
+                <button id="gtContextModalTrigger" class="btn drawer-toggle-btn" type="button" title="⌘ Agent">⌘ Agent</button>
+                <button id="gtPromptModalTrigger" class="btn ai-button" type="button" title="⌬ Prompt">⌬ Prompt</button>
+                <button id="gtTemplateModalTrigger" class="btn" type="button" title="⊞ Modèles" style="display: none;">⊞ Modèles</button>
                 <div class="menu-trigger">
                     <button id="affichageBtn" class="btn" type="button" aria-label="Affichage" title="Affichage">◯
                         Affichage</button>
@@ -1168,9 +1166,9 @@
             <section class="connect-left">
                 <div class="prompt-input-card" id="prompt-input-card">
                     <div class="card-title-row">
-                        <label>Scénario</label>
+                        <label>Commande</label>
                         <button id="clearGridBtn" class="btn" type="button">⊘ Vider</button>
-                        <button id="generateBtn" class="btn-primary generate-btn" type="button">⌘ Répondre</button>
+                        <button id="generateBtn" class="btn-primary generate-btn" type="button">⌘ Envoyer</button>
                     </div>
                     <div id="templateMeta" class="template-meta"></div>
                     <div class="prompt-input-wrapper">
@@ -1214,7 +1212,7 @@
         <img src="logo.gif" alt="Logo Go-Toolkit">
         <strong>Module Grid (Le Cardinal)</strong>
         <p>Les tableaux générés ici peuvent être partagés et exportés pour enrichir vos capsules métier.</p>
-        <span>Version 2025.12.26.7</span>
+        <span>Version 2025.12.26.8</span>
         <div class="info-actions">
             <button id="updateAppBtn" type="button" class="btn-primary">Mettre à jour</button>
             <button type="button" data-open-nexus-modal>Mentions légales</button>
@@ -1224,7 +1222,7 @@
     <div class="modal-overlay gt-template-modal" id="gtTemplateModal" role="dialog" aria-modal="true" aria-labelledby="gtTemplateModalTitle">
         <div class="modal gt-template-modal__dialog">
             <header class="modal-header">
-                <h3 id="gtTemplateModalTitle" title="⊞ Modèle">⊞ Modèle</h3>
+                <h3 id="gtTemplateModalTitle" title="⊞ Modèles">⊞ Modèles</h3>
                 <button class="modal-close btn-secondary" id="gtTemplateModalClose" type="button" aria-label="Fermer">✕</button>
             </header>
             <div class="gt-template-modal__list" id="gtTemplateModalList"></div>
@@ -1237,7 +1235,7 @@
     <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true" aria-labelledby="gtPromptModalTitle">
         <div class="modal">
             <header class="modal-header">
-                <h3 id="gtPromptModalTitle" title="⌘ Prompt">⌘ Prompt</h3>
+                <h3 id="gtPromptModalTitle" title="⌬ Prompt">⌬ Prompt</h3>
                 <button id="gtPromptModalClose" class="btn-secondary" type="button">✕</button>
             </header>
             <div class="template-modal-label" aria-live="polite">
@@ -1293,13 +1291,13 @@
         </div>
     </div>
 
-		    <script src="js/prompt.js?v=2025.12.26.7"></script>
+		    <script src="js/prompt.js?v=2025.12.26.8"></script>
 	    <script src="js/ia-config.js"></script>
 	    <script src="js/ia-client.js"></script>
 	    <script src="js/idb-doc-store.js"></script>
 	    <script src="js/storage-service.js"></script>
 	    <script src="js/shared-ui.js"></script>
-	    <script src="js/cgu.js?v=2025.12.26.7"></script>
+	    <script src="js/cgu.js?v=2025.12.26.8"></script>
 	    <script src="js/share-worker-client.js"></script>
 	    <script src="js/share-history.js"></script>
 	    <script src="js/capsule-drafts.js"></script>
@@ -1420,14 +1418,14 @@
                 const infoButton = document.getElementById("infoButton");
                 const infoPopup = document.getElementById("infoPopup");
                 const updateAppBtn = document.getElementById("updateAppBtn");
-                const APP_VERSION = "2025.12.26.7";
+                const APP_VERSION = "2025.12.26.8";
                 const VERSION_QUERY_PARAM = "v";
                 const templateMeta = document.getElementById("templateMeta");
                 const shareHistory = window.goToolkitShareHistory;
                 const shareService = window.goToolkitShareWorker;
                 const capsuleDrafts = window.goToolkitCapsuleDrafts;
-                const generateDefaultLabel = generateBtn?.textContent || "⌘ Répondre";
-                const drawerDefaultLabel = drawerBtn?.textContent || "⸙ Contexte";
+                const generateDefaultLabel = generateBtn?.textContent || "⌘ Envoyer";
+                const drawerDefaultLabel = drawerBtn?.textContent || "⌘ Agent";
                 const hasSeenTemplateModal =
                     typeof localStorage !== "undefined" &&
                     localStorage.getItem(TEMPLATE_MODAL_SEEN_KEY) === "1";

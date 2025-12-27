@@ -1043,7 +1043,7 @@ classDiagram
             title: "🎬 Feature Demo",
             text:
                 "Mettre en scène une nouvelle fonctionnalité.\n" +
-                "☐ Scénario utilisateur\n" +
+                "☐ Commande utilisateur\n" +
                 "☐ Valeur métier\n" +
                 "☐ Points de vigilance"
         },

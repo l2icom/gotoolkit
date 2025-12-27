@@ -1,0 +1,27 @@
+name = "openrouter"
+main = "index.js"
+compatibility_date = "2024-12-01"
+workers_dev = true
+
+kv_namespaces = [
+  { binding = "RATE_LIMIT", id = "bbf7394927e149b6897beca1c47855c2" }
+]
+
+# Configure account_id, zone_id, and routes before deploying.
+# account_id = "b286ce2e71f34c63bfe16f940cb069fb"
+# route = "https://gotoolkit.web.app/*"
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1

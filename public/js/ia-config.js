@@ -9,6 +9,13 @@
         CONTEXT_WINDOW: "go-toolkit-context-window"
     };
     var STORAGE_KEYS_BACKEND = "go-toolkit-ai-backend";
+    var STORAGE_KEYS_OPENROUTER = {
+        API_KEY: "go-toolkit-openrouter-key",
+        MODEL: "go-toolkit-openrouter-model",
+        DATA_COLLECTION: "go-toolkit-openrouter-data-collection",
+        MAX_PRICE_PROMPT: "go-toolkit-openrouter-max-price-prompt",
+        MAX_PRICE_COMPLETION: "go-toolkit-openrouter-max-price-completion"
+    };
 
     var DEFAULTS = {
         OPENAI_MODEL: "gpt-5-nano",
@@ -16,11 +23,28 @@
         OLLAMA_URL: "http://localhost:11434",
         OLLAMA_API_KEY: "",
         WEBLLM_MODEL: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
-        CONTEXT_WINDOW: "0"
+        CONTEXT_WINDOW: "0",
+        OPENROUTER_MODEL: "openai/gpt-oss-20b:free",
+        OPENROUTER_DATA_COLLECTION: "deny",
+        OPENROUTER_MAX_PRICE_PROMPT: "0",
+        OPENROUTER_MAX_PRICE_COMPLETION: "0"
     };
 
     var OPENAI_MODELS = ["gpt-5-nano", "gpt-5-mini"];
     var OLLAMA_MODELS = ["gpt-oss:latest", "gemma3", "ministral-3:latest", "deepseek-r1"];
+    var OPENROUTER_MODELS = [
+        "openai/gpt-oss-20b:free",
+        "openai/gpt-oss-120b:free",
+        "meta-llama/llama-3.2-3b-instruct:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "meta-llama/llama-3.1-405b-instruct:free",
+        "xiaomi/mimo-v2-flash:free",
+        "mistralai/mistral-7b-instruct:free",
+        "mistralai/mistral-small-3.1-24b-instruct:free",
+        "google/gemma-3n-e4b-it:free",
+        "google/gemma-3-12b-it:free",
+        "google/gemma-3-27b-it:free"
+    ];
     function isAllowedWebllmModelId(id) {
         return typeof id === "string" && /q4f16/i.test(id);
     }
@@ -54,6 +78,9 @@
         responses: "https://openai.gotoolkit.workers.dev/v1/responses",
         chat: "https://openai.gotoolkit.workers.dev/v1/chat/completions"
     };
+
+    var OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
+    var OPENROUTER_PROXY_ENDPOINT = "https://openrouter.gotoolkit.workers.dev/api/v1/chat/completions";
 
     var OLLAMA_GENERATE_PATH = "/api/generate";
     var OLLAMA_CHAT_PATH = "/api/generate";
@@ -95,6 +122,14 @@
             trimmed = "http://" + trimmed;
         }
         return trimmed.replace(/\/+$/, "");
+    }
+
+    function normalizeOpenRouterPrice(value) {
+        var candidate = Number((value || "").toString().trim());
+        if (!Number.isFinite(candidate) || candidate < 0) {
+            candidate = 0;
+        }
+        return candidate.toFixed(2);
     }
 
     (function sanitizeWebllmStoredModel() {
@@ -182,6 +217,54 @@
             }
             safeStorageWrite(STORAGE_KEYS.CONTEXT_WINDOW, normalized);
         },
+        getOpenRouterApiKey: function () {
+            return (safeStorageRead(STORAGE_KEYS_OPENROUTER.API_KEY) || "").trim();
+        },
+        setOpenRouterApiKey: function (value) {
+            safeStorageWrite(STORAGE_KEYS_OPENROUTER.API_KEY, (value || "").trim());
+        },
+        getOpenRouterModel: function () {
+            var model = safeStorageRead(STORAGE_KEYS_OPENROUTER.MODEL);
+            if (!model) {
+                model = DEFAULTS.OPENROUTER_MODEL;
+            }
+            return model;
+        },
+        setOpenRouterModel: function (value) {
+            var normalized = (value || "").trim();
+            if (!normalized) {
+                normalized = DEFAULTS.OPENROUTER_MODEL;
+            }
+            safeStorageWrite(STORAGE_KEYS_OPENROUTER.MODEL, normalized);
+        },
+        getOpenRouterDataCollection: function () {
+            var val = (safeStorageRead(STORAGE_KEYS_OPENROUTER.DATA_COLLECTION) || "").trim().toLowerCase();
+            if (val === "allow") {
+                return "allow";
+            }
+            return DEFAULTS.OPENROUTER_DATA_COLLECTION;
+        },
+        setOpenRouterDataCollection: function (value) {
+            var normalized = (value || "").trim().toLowerCase();
+            if (normalized !== "allow") {
+                normalized = "deny";
+            }
+            safeStorageWrite(STORAGE_KEYS_OPENROUTER.DATA_COLLECTION, normalized);
+        },
+        getOpenRouterMaxPricePrompt: function () {
+            var value = safeStorageRead(STORAGE_KEYS_OPENROUTER.MAX_PRICE_PROMPT) || DEFAULTS.OPENROUTER_MAX_PRICE_PROMPT;
+            return normalizeOpenRouterPrice(value);
+        },
+        setOpenRouterMaxPricePrompt: function (value) {
+            safeStorageWrite(STORAGE_KEYS_OPENROUTER.MAX_PRICE_PROMPT, normalizeOpenRouterPrice(value));
+        },
+        getOpenRouterMaxPriceCompletion: function () {
+            var value = safeStorageRead(STORAGE_KEYS_OPENROUTER.MAX_PRICE_COMPLETION) || DEFAULTS.OPENROUTER_MAX_PRICE_COMPLETION;
+            return normalizeOpenRouterPrice(value);
+        },
+        setOpenRouterMaxPriceCompletion: function (value) {
+            safeStorageWrite(STORAGE_KEYS_OPENROUTER.MAX_PRICE_COMPLETION, normalizeOpenRouterPrice(value));
+        },
         getBackend: function () {
             return safeStorageRead(STORAGE_KEYS_BACKEND) || "openai";
         },
@@ -194,7 +277,10 @@
         DEFAULTS: DEFAULTS,
         OPENAI_ENDPOINTS: OPENAI_ENDPOINTS,
         PROXY_ENDPOINTS: PROXY_ENDPOINTS,
-        WEBLLM_MODELS: WEBLLM_MODELS
+        WEBLLM_MODELS: WEBLLM_MODELS,
+        OPENROUTER_MODELS: OPENROUTER_MODELS,
+        OPENROUTER_ENDPOINT: OPENROUTER_ENDPOINT,
+        OPENROUTER_PROXY_ENDPOINT: OPENROUTER_PROXY_ENDPOINT
     };
 
     var GoToolkitAIBackend = (function () {
@@ -264,8 +350,10 @@
         async function getBackend(endpointType, options) {
             var type = endpointType === "chat" ? "chat" : "responses";
             options = options || {};
+            var forceProxy = options.forceProxy === true;
+            var forceOpenRouterProxy = options.forceOpenRouterProxy === true;
             // respect explicit force to use the public proxy
-            if (options.forceProxy) {
+            if (forceProxy) {
                 return {
                     type: "proxy",
                     endpoint: PROXY_ENDPOINTS[type],
@@ -292,6 +380,29 @@
                     endpoint: PROXY_ENDPOINTS[type],
                     apiKey: "",
                     model: GoToolkitIAConfig.getOpenAiModel()
+                };
+            }
+
+            if (selected === "openrouter") {
+                var openrouterKey = GoToolkitIAConfig.getOpenRouterApiKey();
+                var openrouterModel = GoToolkitIAConfig.getOpenRouterModel();
+                var dataCollection = GoToolkitIAConfig.getOpenRouterDataCollection();
+                var maxPrompt = GoToolkitIAConfig.getOpenRouterMaxPricePrompt();
+                var maxCompletion = GoToolkitIAConfig.getOpenRouterMaxPriceCompletion();
+                var useProxy = forceOpenRouterProxy || !openrouterKey;
+                var targetEndpoint = useProxy ? OPENROUTER_PROXY_ENDPOINT : OPENROUTER_ENDPOINT;
+                var backendType = useProxy ? "openrouter-proxy" : "openrouter";
+                var apiKeyValue = useProxy ? "" : openrouterKey;
+                return {
+                    type: backendType,
+                    endpoint: targetEndpoint,
+                    apiKey: apiKeyValue,
+                    model: openrouterModel,
+                    dataCollection: dataCollection,
+                    maxPrice: {
+                        prompt: maxPrompt,
+                        completion: maxCompletion
+                    }
                 };
             }
 

@@ -17,8 +17,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.7">
-    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.7">
+    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.8">
+    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.8">
     <style>
         :root {
             --bg: #f3f4f6;
@@ -168,7 +168,7 @@
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        /* Scénario / Script conservent leur police monospace pour la saisie structurée */
+        /* Commande / Script conservent leur police monospace pour la saisie structurée */
         .ia-prompt-field {
             font-family: Menlo, Consolas, "Courier New", monospace;
         }
@@ -413,7 +413,7 @@
             gap: 8px;
         }
 
-        /* Increase the label font size for Scénario and Script by 2px */
+        /* Increase the label font size for Commande and Script by 2px */
         .gutenberg-card label[for="promptCreate"],
         .gutenberg-card label[for="promptModify"] {
             font-size: 14px;
@@ -629,7 +629,7 @@
             opacity: 1;
         }
 
-        /* Tooltip affiché sous le textarea Scénario (noir semi-transparent, texte blanc) */
+        /* Tooltip affiché sous le textarea Commande (noir semi-transparent, texte blanc) */
         .scenario-template-tooltip {
             position: absolute;
             z-index: 120;
@@ -1366,10 +1366,10 @@
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                         aria-expanded="false">⇥ Timeline ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                        <a class="nav-switch-link" href="canvas.html?v=2025.12.26.7" role="menuitem"> ◍ Canvas</a>
-                        <a class="nav-switch-link" href="grid.html?v=2025.12.26.7" role="menuitem">▦ Grid</a>
-                        <a class="nav-switch-link" href="draw.html?v=2025.12.26.7" role="menuitem">◇ Draw</a>
-                        <a class="nav-switch-link" href="voice.html?v=2025.12.26.7" role="menuitem">▷ Voice</a>
+                        <a class="nav-switch-link" href="canvas.html?v=2025.12.26.8" role="menuitem"> ◍ Canvas</a>
+                        <a class="nav-switch-link" href="grid.html?v=2025.12.26.8" role="menuitem">▦ Grid</a>
+                        <a class="nav-switch-link" href="draw.html?v=2025.12.26.8" role="menuitem">◇ Draw</a>
+                        <a class="nav-switch-link" href="voice.html?v=2025.12.26.8" role="menuitem">▷ Voice</a>
                     </div>
                 </div>
 
@@ -1387,9 +1387,9 @@
                     aria-labelledby="gtTemplateModalTitle">
                     <div class="modal gt-template-modal__dialog">
                         <div class="modal-header">
-                            <h3 id="gtTemplateModalTitle" title="⊞ Modèle">⊞ Modèle</h3>
+                            <h3 id="gtTemplateModalTitle" title="⊞ Modèles">⊞ Modèles</h3>
                             <button class="modal-close" id="gtTemplateModalClose" type="button"
-                                aria-label="Fermer ⊞ Modèle">×</button>
+                                aria-label="Fermer ⊞ Modèles">×</button>
                         </div>
                         <div class="gt-template-modal__list" id="gtTemplateModalList">
                             <!-- cards rendered by JS -->
@@ -1401,12 +1401,9 @@
                 </div>
 
                 <div class="global-actions">
-                    <button class="btn" id="gtTemplateModalTrigger" aria-label="Ouvrir ⊞ Modèle" title="⊞ Modèle">⊞
-                        Modèle</button>
-                    <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir Contexte" title="⸙ Contexte">⸙
-                        Contexte</button>
-                    <button class="btn" id="gtPromptModalTrigger" aria-label="Ouvrir Prompt" title="⌘ Prompt">⌘
-                        Prompt</button>
+                    <button class="btn" id="gtTemplateModalTrigger" aria-label="Ouvrir ⊞ Modèles" title="⊞ Modèles">⊞ Modèles</button>
+                    <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir ⌘ Agent" title="⌘ Agent">⌘ Agent</button>
+                    <button class="btn" id="gtPromptModalTrigger" aria-label="Ouvrir Prompt" title="⌬ Prompt">⌬ Prompt</button>
 
                     <div class="menu-trigger">
                         <button class="btn" id="optionsBtn" aria-label="Affichage" title="Affichage">◯
@@ -1572,7 +1569,7 @@
                 <div class="timeline-wrapper">
                     <div id="timeline"></div>
                     <div id="timelineEmptyState" class="timeline-empty-state" aria-hidden="true">
-                        <p class="timeline-empty-text">Page vide. Remplir le Scénario → et cliquer sur ⌘ Répondre</p>
+                        <p class="timeline-empty-text">Page vide. Remplir le Commande → et cliquer sur ⌘ Envoyer</p>
 
                     </div>
                 </div>
@@ -1584,11 +1581,11 @@
                 <div class="ia-actions">
                     <div class="header-row ia-header-actions gutenberg-recette">
                         <div class="gutenberg-recette-header">
-                            <label for="promptCreate">Scénario</label>
+                            <label for="promptCreate">Commande</label>
                             <button class="btn" type="button" id="clearTimelineBtn"
                                 aria-label="Réinitialiser la timeline et le script">⊘ Vider</button>
                             <button class="btn btn-primary" id="btn-call">
-                                <span>⌘ Répondre</span>
+                                <span>⌘ Envoyer</span>
                             </button>
                         </div>
                         <div class="ia-prompt-fields">
@@ -1623,7 +1620,7 @@
             aria-labelledby="gtPromptModalTitle">
             <div class="modal">
                 <div class="modal-header">
-                    <h3 id="gtPromptModalTitle" title="⌘ Prompt">⌘ Prompt</h3>
+                    <h3 id="gtPromptModalTitle" title="⌬ Prompt">⌬ Prompt</h3>
                     <button class="modal-close" id="gtPromptModalClose" type="button"
                         aria-label="Fermer l'IA">×</button>
                 </div>
@@ -1666,7 +1663,7 @@
         <div id="timelineInfoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
             <strong>Module Timeline (Goal Digger)</strong>
-            <span>Version 2025.12.26.7</span>
+            <span>Version 2025.12.26.8</span>
             <span>Usage réservé à Savane Consulting.</span>
             <div class="info-actions">
                 <button id="timelineUpdateBtn" type="button" class="update-btn">Mettre à jour</button>
@@ -1687,11 +1684,11 @@
         <script src="js/idb-doc-store.js"></script>
         <script src="js/storage-service.js"></script>
         <script src="js/shared-ui.js"></script>
-        <script src="js/cgu.js?v=2025.12.26.7"></script>
+        <script src="js/cgu.js?v=2025.12.26.8"></script>
         <script src="js/share-worker-client.js"></script>
         <script src="js/share-history.js"></script>
         <script src="js/capsule-drafts.js"></script>
-        <script src="js/prompt.js?v=2025.12.26.7"></script>
+        <script src="js/prompt.js?v=2025.12.26.8"></script>
         <script src="js/ia-client.js"></script>
         <script src="js/ia-config.js"></script>
         <script src="js/template-criteria.js"></script>
@@ -3162,7 +3159,7 @@
                 var headerTitleElement = document.querySelector(".header-text h1");
                 var infoPopup = document.getElementById("timelineInfoPopup");
                 var timelineUpdateBtn = document.getElementById("timelineUpdateBtn");
-                var APP_VERSION = "2025.12.26.7";
+                var APP_VERSION = "2025.12.26.8";
                 var VERSION_QUERY_PARAM = "v";
                 var copyToast = document.getElementById("copyToast");
                 var copyToastTimer = null;
@@ -6624,7 +6621,7 @@
                     }
                 }
 
-                // Show tooltip under the Scénario textarea on focus; hide after 5s inactivity.
+                // Show tooltip under the Commande textarea on focus; hide after 5s inactivity.
                 if (txtPromptCreate) {
                     txtPromptCreate.addEventListener('focus', function () {
                         var tpl = getTemplateById(selectedRoadmapPromptId || "");

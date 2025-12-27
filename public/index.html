@@ -15,8 +15,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.7">
-    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.7">
+    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.8">
+    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.8">
     <style>
         :root {
             --bg: #f5f2eb;
@@ -952,7 +952,7 @@
             </div>
             <h1>Go-Toolkit</h1>
             <p>La boîte à outils des super Product Owners</p>
-            <span class="hero-version">v2025.12.26.7</span>
+            <span class="hero-version">v2025.12.26.8</span>
 
             <div class="hero-meta">
                 <button id="openFeedbackBtn" class="feedback-button" type="button">☄ Feedback</button>
@@ -965,35 +965,35 @@
                 <p class="section-label superpower-label label-link" id="superpowerToggle">⚡︎ Super-pouvoirs</p>
             </div>
             <div class="launcher-grid">
-                <a class="launcher" href="canvas.html?v=2025.12.26.7">
+                <a class="launcher" href="canvas.html?v=2025.12.26.8">
                     <span class="launcher-emoji">◍</span>
                     <span class="launcher-name">
                         Canvas (50 Nuances)
                         <div class="launcher-desc">Varie ton vocabulaire</div>
                     </span>
                 </a>
-                <a class="launcher" href="timeline.html?v=2025.12.26.7">
+                <a class="launcher" href="timeline.html?v=2025.12.26.8">
                     <span class="launcher-emoji">⇥</span>
                     <span class="launcher-name">
                         Timeline (Goal Digger)
                         <div class="launcher-desc">Trace ta feuille de route</div>
                     </span>
                 </a>
-                <a class="launcher" href="draw.html?v=2025.12.26.7">
+                <a class="launcher" href="draw.html?v=2025.12.26.8">
                     <span class="launcher-emoji">◇</span>
                     <span class="launcher-name">
                         Draw (Indélébile)
                         <div class="launcher-desc">Modélise tes idées</div>
                     </span>
                 </a>
-                <a class="launcher" href="voice.html?v=2025.12.26.7">
+                <a class="launcher" href="voice.html?v=2025.12.26.8">
                     <span class="launcher-emoji">▷</span>
                     <span class="launcher-name">
-                        Voice (Goal Digger)
+                        Voice (Tuto Tarantino)
                         <div class="launcher-desc">Pilote tes réunions</div>
                     </span>
                 </a>
-                <a class="launcher" href="grid.html?v=2025.12.26.7">
+                <a class="launcher" href="grid.html?v=2025.12.26.8">
                     <span class="launcher-emoji">▦</span>
                     <span class="launcher-name">
                         Grid (Le Cardinal)
@@ -1173,9 +1173,8 @@
                 <div class="superpower-list">
                     <p class="superpower-subtitle">
                         La Go-Toolkit est un vaisseau des compétences-clés du Product Owner,.
-                        Certains ont leur module dédié, d’autres permettent de piloter (cockpit) ou d'accélérer
-                        (propulseur) les
-                        autres modules, d'autres enfin sont encore en proximité (en orbite).
+                        Certains ont leur module dédié, d’autres permettent de piloter ou d'accélérer
+                        les autres super-pouvoirs.
                     </p>
                     <section>
                         <div class="superpower-head">
@@ -1213,7 +1212,7 @@
                     </section>
                     <section>
                         <div class="superpower-head">
-                            <h4>⸙ Contexte</h4>
+                            <h4>⌘ Promptzilla</h4>
                             <div class="superpower-tag-row">
                                 <span class="superpower-tag superpower-tag--cockpit">Cockpit</span>
                             </div>
@@ -1246,7 +1245,7 @@
                         <div class="superpower-head">
                             <h4>⌲ Tuto Tarantino</h4>
                             <div class="superpower-tag-row">
-                                <span class="superpower-tag superpower-tag--soon">En orbite</span>
+                                <span class="superpower-tag superpower-tag">Module</span>
                             </div>
                         </div>
                         <div class="superpower-subtitle">Le pouvoir de captiver par des tutoriels vidéo percutants.
@@ -1264,7 +1263,7 @@
                     </section>
                     <section>
                         <div class="superpower-head">
-                            <h4>⛶ Prompt</h4>
+                            <h4>⌬ Promptzilla</h4>
                             <div class="superpower-tag-row">
                                 <span class="superpower-tag superpower-tag--cockpit">Cockpit</span>
                                 </span>
@@ -1286,7 +1285,7 @@
                     </section>
                     <section>
                         <div class="superpower-head">
-                            <h4>⌬ Pôlène</h4>
+                            <h4>⛶ Pôlène</h4>
                             <div class="superpower-tag-row">
                                 <span class="superpower-tag superpower-tag--soon">En orbite</span>
                             </div>
@@ -1341,6 +1340,7 @@
                             <span class="label-title">Moteur IA</span>
                             <select id="aiBackendSelect">
                                 <option value="openai">OpenAI (recommandé)</option>
+                                <option value="openrouter">OpenRouter</option>
                                 <option value="webllm">WebLLM </option>
                             </select>
                         </label>
@@ -1392,6 +1392,63 @@
                                 </select>
                             </label>
                         </div>
+                    </div>
+
+                    <div id="openrouterSettings" style="display:none;">
+                        <div class="field-row">
+                            <label style="width:100%">
+                                <div
+                                    style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+                                    <div>
+                                        <span class="label-title">OpenRouter</span>
+                                        <span class="ia-status" id="openrouterStatus" aria-hidden="true"></span>
+                                    </div>
+                                </div>
+                                <span class="label-subtitle">Utilise les moteurs OpenRouter (clé optionnelle).</span>
+                                <input id="openrouterApiKeyInput" type="password" placeholder="or-..." />
+                            </label>
+                        </div>
+                        <div class="field-row">
+                            <label>
+                                <span class="label-title">Moteur OpenRouter</span>
+                                <input list="openrouterModelList" id="openrouterModelInput"
+                                    placeholder="Ex: xiaomi/mimo-v2-flash:free" />
+                                <span class="label-subtitle">Sélectionne un moteur gratuit ou colle tout autre modèle.</span>
+                            </label>
+                        </div>
+                        <div class="field-row">
+                            <label>
+                                <span class="label-title">Collecte des données</span>
+                                <select id="openrouterDataCollectionSelect">
+                                    <option value="deny">Refuser la collecte</option>
+                                    <option value="allow">Autoriser la collecte</option>
+                                </select>
+                                <span class="label-subtitle">Indique si les fournisseurs peuvent stocker tes prompts.</span>
+                            </label>
+                        </div>
+                        <div class="field-row">
+                            <label>
+                                <div
+                                    style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem;">
+                                    <span class="label-title">Prix max (prompt / completion)</span>
+                                    <span class="label-subtitle" id="openrouterPriceLabel">Gratuit</span>
+                                </div>
+                                <div style="display:flex; gap:0.5rem;">
+                                    <input id="openrouterMaxPricePromptInput" type="number" min="0" step="0.01"
+                                        placeholder="0" />
+                                    <input id="openrouterMaxPriceCompletionInput" type="number" min="0" step="0.01"
+                                        placeholder="0" />
+                                </div>
+                                <span class="label-subtitle">Limite les tarifs OpenRouter ; 0 signifie gratuitement.</span>
+                            </label>
+                        </div>
+                        <datalist id="openrouterModelList">
+                            <option value="xiaomi/mimo-v2-flash:free">xiaomi/mimo-v2-flash:free (gratuit)</option>
+                            <option value="openai/gpt-oss-20b:free">openai/gpt-oss-20b:free (gratuit)</option>
+                            <option value="meta-llama/llama-3.2-3b-instruct:free">meta-llama/llama-3.2-3b-instruct:free (gratuit)</option>
+                            <option value="mistralai/mistral-small-3.1-24b-instruct:free">mistralai/mistral-small-3.1-24b-instruct:free (gratuit)</option>
+                            <option value="google/gemma-3-12b-it:free">google/gemma-3-12b-it:free (gratuit)</option>
+                        </datalist>
                     </div>
 
                     <div id="webllmSettings" style="display:none;">
@@ -1452,7 +1509,7 @@
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2025.12.26.7"></script>
+    <script src="js/cgu.js?v=2025.12.26.8"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
@@ -1512,11 +1569,11 @@
             const capsuleDrafts = window.goToolkitCapsuleDrafts;
 
             const APP_DEFINITIONS = {
-                nuances: { emoji: "◍", name: "Canvas", page: "canvas.html?v=2025.12.26.7", collection: "slides" },
-                plan: { emoji: "⇥", name: "Timeline", page: "timeline.html?v=2025.12.26.7", collection: "timelines" },
-                draw: { emoji: "◇", name: "Draw", page: "draw.html?v=2025.12.26.7", collection: "diagrams" },
-                grid: { emoji: "▦", name: "Grid", page: "grid.html?v=2025.12.26.7", collection: "grids" },
-                voice: { emoji: "▷", name: "Voice", page: "voice.html?v=2025.12.26.7", collection: "voices" }
+                nuances: { emoji: "◍", name: "Canvas", page: "canvas.html?v=2025.12.26.8", collection: "slides" },
+                plan: { emoji: "⇥", name: "Timeline", page: "timeline.html?v=2025.12.26.8", collection: "timelines" },
+                draw: { emoji: "◇", name: "Draw", page: "draw.html?v=2025.12.26.8", collection: "diagrams" },
+                grid: { emoji: "▦", name: "Grid", page: "grid.html?v=2025.12.26.8", collection: "grids" },
+                voice: { emoji: "▷", name: "Voice", page: "voice.html?v=2025.12.26.8", collection: "voices" }
             };
             const GRID_TEMPLATE_LABELS = {
                 "tree-structure": "Structure de données",
@@ -2950,6 +3007,7 @@
         const openaiStatusEl = document.getElementById("openaiStatus");
         const ollamaStatusEl = document.getElementById("ollamaStatus");
         const webllmStatusEl = document.getElementById("webllmStatus");
+        const openrouterStatusEl = document.getElementById("openrouterStatus");
         const assemblyAiStatusEl = document.getElementById("assemblyAiStatus");
         const openaiVerifyBtn = document.getElementById("openaiVerifyBtn");
         const ollamaVerifyBtn = document.getElementById("ollamaVerifyBtn");
@@ -2959,10 +3017,17 @@
         const webllmVerifyBtn = document.getElementById("webllmVerifyBtn");
         const aiBackendSelect = document.getElementById("aiBackendSelect");
         const openaiSettingsEl = document.getElementById("openaiSettings");
+        const openrouterSettingsEl = document.getElementById("openrouterSettings");
         const ollamaSettingsEl = document.getElementById("ollamaSettings");
         const webllmSettingsEl = document.getElementById("webllmSettings");
         const webllmModelSelect = document.getElementById("webllmModelSelect");
         const assemblyAiKeyInput = document.getElementById("assemblyAiKeyInput");
+        const openrouterApiKeyInput = document.getElementById("openrouterApiKeyInput");
+        const openrouterModelInput = document.getElementById("openrouterModelInput");
+        const openrouterDataCollectionSelect = document.getElementById("openrouterDataCollectionSelect");
+        const openrouterMaxPricePromptInput = document.getElementById("openrouterMaxPricePromptInput");
+        const openrouterMaxPriceCompletionInput = document.getElementById("openrouterMaxPriceCompletionInput");
+        const openrouterPriceLabel = document.getElementById("openrouterPriceLabel");
         const ASSEMBLY_AI_KEY_STORAGE = "go-toolkit-assemblyai-key";
         const VOICE_AUDIO_DB = { name: "go-toolkit-voice-audio", store: "recordings" };
 
@@ -2975,9 +3040,26 @@
         function updateBackendVisibility() {
             const val = (aiBackendSelect && aiBackendSelect.value) || "openai";
             if (openaiSettingsEl) openaiSettingsEl.style.display = val === "openai" ? "" : "none";
+            if (openrouterSettingsEl) openrouterSettingsEl.style.display = val === "openrouter" ? "" : "none";
             if (ollamaSettingsEl) ollamaSettingsEl.style.display = val === "ollama" ? "" : "none";
             if (webllmSettingsEl) webllmSettingsEl.style.display = val === "webllm" ? "" : "none";
             window.GoToolkitSelectedAIBackend = val;
+        }
+
+        function updateOpenrouterPriceLabel() {
+            if (!openrouterPriceLabel) return;
+            const parseValue = input => {
+                const text = (input?.value || "").trim();
+                const next = Number(text);
+                return Number.isFinite(next) && next >= 0 ? next : 0;
+            };
+            const prompt = parseValue(openrouterMaxPricePromptInput);
+            const completion = parseValue(openrouterMaxPriceCompletionInput);
+            if (prompt === 0 && completion === 0) {
+                openrouterPriceLabel.textContent = "Gratuit";
+            } else {
+                openrouterPriceLabel.textContent = `Max ${prompt.toFixed(2)} / ${completion.toFixed(2)}`;
+            }
         }
 
         function updateOllamaAddressUI() {
@@ -3064,6 +3146,8 @@
             }
             updateStatusIcon(webllmStatusEl);
         });
+        openrouterMaxPricePromptInput?.addEventListener("input", updateOpenrouterPriceLabel);
+        openrouterMaxPriceCompletionInput?.addEventListener("input", updateOpenrouterPriceLabel);
 
         function openSettings() {
             if (!settingsModal) return;
@@ -3111,6 +3195,36 @@
                 }
                 if (aiBackendSelect) aiBackendSelect.value = storedBackend;
                 updateBackendVisibility();
+                var storedOpenRouterKey = (config && typeof config.getOpenRouterApiKey === "function" ? config.getOpenRouterApiKey() : "") || "";
+                if (openrouterApiKeyInput) {
+                    openrouterApiKeyInput.value = storedOpenRouterKey;
+                }
+                var storedOpenRouterModel =
+                    (config && typeof config.getOpenRouterModel === "function" ? config.getOpenRouterModel() : "") ||
+                    window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL ||
+                    "";
+                if (openrouterModelInput) {
+                    openrouterModelInput.value = storedOpenRouterModel;
+                }
+                var storedOpenRouterDataCollection =
+                    (config && typeof config.getOpenRouterDataCollection === "function" ? config.getOpenRouterDataCollection() : "") ||
+                    "deny";
+                if (openrouterDataCollectionSelect) {
+                    openrouterDataCollectionSelect.value = storedOpenRouterDataCollection;
+                }
+                var storedOpenRouterPricePrompt =
+                    (config && typeof config.getOpenRouterMaxPricePrompt === "function" ? config.getOpenRouterMaxPricePrompt() : "") ||
+                    "0";
+                var storedOpenRouterPriceCompletion =
+                    (config && typeof config.getOpenRouterMaxPriceCompletion === "function" ? config.getOpenRouterMaxPriceCompletion() : "") ||
+                    "0";
+                if (openrouterMaxPricePromptInput) {
+                    openrouterMaxPricePromptInput.value = storedOpenRouterPricePrompt;
+                }
+                if (openrouterMaxPriceCompletionInput) {
+                    openrouterMaxPriceCompletionInput.value = storedOpenRouterPriceCompletion;
+                }
+                updateOpenrouterPriceLabel();
                 const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("nuances-reasoning-effort") || "low";
                 if (settingsReasoningSelect) settingsReasoningSelect.value = storedReasoning;
                 const storedAssemblyKey = ((localStorage.getItem(ASSEMBLY_AI_KEY_STORAGE) || "").trim() || (window.GoToolkitAssemblyAiKey || "").trim()) || "";
@@ -3177,6 +3291,30 @@
                 const openaiModelValue = (settingsOpenAiModelSelect?.value || "").trim();
                 if (iaConfig && typeof iaConfig.setOpenAiModel === "function" && openaiModelValue) {
                     iaConfig.setOpenAiModel(openaiModelValue);
+                }
+                const openrouterKeyValue = (openrouterApiKeyInput?.value || "").trim();
+                if (iaConfig && typeof iaConfig.setOpenRouterApiKey === "function") {
+                    iaConfig.setOpenRouterApiKey(openrouterKeyValue);
+                }
+                const openrouterModelValue = (openrouterModelInput?.value || "").trim();
+                if (iaConfig && typeof iaConfig.setOpenRouterModel === "function" && openrouterModelValue) {
+                    iaConfig.setOpenRouterModel(openrouterModelValue);
+                }
+                const openrouterDataCollectionValue = (openrouterDataCollectionSelect?.value || "").trim();
+                if (iaConfig && typeof iaConfig.setOpenRouterDataCollection === "function" && openrouterDataCollectionValue) {
+                    iaConfig.setOpenRouterDataCollection(openrouterDataCollectionValue);
+                }
+                const promptPriceValue = Number(openrouterMaxPricePromptInput?.value);
+                const completionPriceValue = Number(openrouterMaxPriceCompletionInput?.value);
+                const normalizePrice = value => {
+                    if (!Number.isFinite(value) || value < 0) return "0";
+                    return value.toFixed(2);
+                };
+                if (iaConfig && typeof iaConfig.setOpenRouterMaxPricePrompt === "function") {
+                    iaConfig.setOpenRouterMaxPricePrompt(normalizePrice(promptPriceValue));
+                }
+                if (iaConfig && typeof iaConfig.setOpenRouterMaxPriceCompletion === "function") {
+                    iaConfig.setOpenRouterMaxPriceCompletion(normalizePrice(completionPriceValue));
                 }
                 selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openai";
                 if (iaConfig && typeof iaConfig.setBackend === "function") {
@@ -3382,6 +3520,11 @@
                 updateStatusIcon(ollamaStatusEl, ready ? "ready" : null);
                 ollamaStatusEl.setAttribute("aria-hidden", ready ? "false" : "true");
             }
+            if (openrouterStatusEl) {
+                const ready = typeof backend?.type === "string" && backend.type.startsWith("openrouter");
+                updateStatusIcon(openrouterStatusEl, ready ? "ready" : null);
+                openrouterStatusEl.setAttribute("aria-hidden", ready ? "false" : "true");
+            }
         }
 
         function checkIaConnection(showNotifications = false) {
@@ -3405,6 +3548,9 @@
                                 : backend.endpoint;
                         const label = backend.model ? `${host} · ${backend.model}` : host;
                         showToast(`Connexion Ollama prête (${label})`);
+                    } else if (typeof backend.type === "string" && backend.type.startsWith("openrouter")) {
+                        const label = backend.model ? backend.model : "modèle OpenRouter";
+                        showToast(`Connexion OpenRouter prête (${label})`);
                     }
                 })
                 .catch(err => {
