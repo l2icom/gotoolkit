@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.6">
-    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.6">
+    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.7">
+    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.7">
     <style>
         :root {
             --bg: #f3f4f6;
@@ -170,6 +170,10 @@
             min-height: 0;
             height: 100%;
             margin-top: 0;
+        }
+
+        .note-column {
+            min-width: 600px;
         }
 
         .summary-column {
@@ -1065,20 +1069,11 @@
                 opacity: 1;
                 pointer-events: auto;
             }
-
-            .gutenberg-card {
-                right: 12px;
-                top: 12px;
-                bottom: 12px;
-            }
         }
 
         @media (max-width: 1000px) {
             .gutenberg-card {
                 width: min(340px, 90vw);
-                right: 8px;
-                top: 12px;
-                bottom: 12px;
             }
         }
     </style>
@@ -1092,10 +1087,10 @@
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                     aria-expanded="false">▷ Voice ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.6" role="menuitem"> ◍ Canvas</a>
-                    <a class="nav-switch-link" href="grid.html?v=2025.12.26.6" role="menuitem">▦ Grid</a>
-                    <a class="nav-switch-link" href="draw.html?v=2025.12.26.6" role="menuitem">◇ Draw</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.6" role="menuitem">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.7" role="menuitem"> ◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2025.12.26.7" role="menuitem">▦ Grid</a>
+                    <a class="nav-switch-link" href="draw.html?v=2025.12.26.7" role="menuitem">◇ Draw</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.7" role="menuitem">⇥ Timeline</a>
                 </div>
             </div>
 
@@ -1263,8 +1258,8 @@
                 </div>
             </div>
 
-            <div class="gutenberg-card open gt-context-modal" id="gtContextModal" role="complementary"
-                aria-hidden="false">
+            <div class="gutenberg-card gt-context-modal" id="gtContextModal" role="complementary"
+                aria-hidden="true">
                 <div class="ia-actions">
                     <div class="header-row ia-header-actions gutenberg-recette">
                         <div class="gutenberg-recette-header">
@@ -1333,7 +1328,7 @@
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
             <strong>Module Voice (Goal Digger)</strong>
-            <span>Version 2025.12.26.6</span>
+            <span>Version 2025.12.26.7</span>
             <span>Usage réservé à Savane Consulting.</span>
             <div class="info-actions">
                 <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
@@ -1354,12 +1349,12 @@
     <script src="js/idb-doc-store.js"></script>
     <script src="js/storage-service.js"></script>
     <script src="js/shared-ui.js"></script>
-    <script src="js/cgu.js?v=2025.12.26.6"></script>
+    <script src="js/cgu.js?v=2025.12.26.7"></script>
     <script src="js/share-worker-client.js"></script>
     <script src="js/share-history.js"></script>
     <script src="js/capsule-drafts.js"></script>
     <script src="js/ia-config.js"></script>
-    <script src="js/prompt.js?v=2025.12.26.6"></script>
+    <script src="js/prompt.js?v=2025.12.26.7"></script>
     <script src="js/ia-client.js"></script>
     <script src="js/voice-video-player.js"></script>
 
@@ -1509,7 +1504,7 @@
             const infoPopup = document.getElementById("infoPopup");
             const infoButton = aboutVoiceBtn;
             const updateAppBtn = document.getElementById("updateAppBtn");
-            const APP_VERSION = "2025.12.26.6";
+            const APP_VERSION = "2025.12.26.7";
             const VERSION_QUERY_PARAM = "v";
             const viewTabs = document.getElementById("viewTabs");
             const addViewBtn = document.getElementById("addViewBtn");
@@ -4911,7 +4906,7 @@
                 }
             }
 
-            contextBackdrop?.addEventListener("click", () => setContextPanelOpen(false));
+            contextBackdrop?.addEventListener("pointerdown", () => setContextPanelOpen(false));
             window.addEventListener("resize", ensureContextPanelForBreakpoint);
 
             function closeInfoPopup() {
@@ -5375,7 +5370,7 @@
                     openTemplateModal();
                 }
             } catch (err) { /* ignore */ }
-            document.addEventListener("click", ev => {
+            document.addEventListener("pointerdown", ev => {
                 if (!contextPanel?.classList.contains("open")) return;
                 if (!isResponsiveContextMode()) return;
                 const target = ev.target;

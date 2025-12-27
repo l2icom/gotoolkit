@@ -9,10 +9,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.6">
-    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.6">
+    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.7">
+    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.7">
     <link rel="stylesheet" href="https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.min.css">
     <style>
+        .clear-btn {
+            margin-left: auto;
+            margin-right: 4px;
+        }
+
         .template-tooltip {
             display: none;
             position: fixed;
@@ -656,10 +661,10 @@
             <div class="nav-switch">
                 <button id="navSwitcherBtn" class="nav-switch-btn" type="button">◇ Draw ▾</button>
                 <div id="navSwitcherMenu" class="nav-switch-menu">
-                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.6">◍ Canvas</a>
-                    <a class="nav-switch-link" href="grid.html?v=2025.12.26.6">▦ Grid</a>
-                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.6">⇥ Timeline</a>
-                    <a class="nav-switch-link" href="voice.html?v=2025.12.26.6">▷ Voice</a>
+                    <a class="nav-switch-link" href="canvas.html?v=2025.12.26.7">◍ Canvas</a>
+                    <a class="nav-switch-link" href="grid.html?v=2025.12.26.7">▦ Grid</a>
+                    <a class="nav-switch-link" href="timeline.html?v=2025.12.26.7">⇥ Timeline</a>
+                    <a class="nav-switch-link" href="voice.html?v=2025.12.26.7">▷ Voice</a>
                 </div>
             </div>
 
@@ -718,7 +723,7 @@
         <div id="infoPopup" class="info-popup" role="dialog" aria-live="polite">
             <img src="logo.gif" alt="Logo Go-Toolkit">
             <strong>Module Draw (Le Cardinal)</strong>
-            <span>Version 2025.12.26.6</span>
+            <span>Version 2025.12.26.7</span>
             <span>Usage réservé à Savane Consulting.</span>
             <div class="info-actions">
                 <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
@@ -741,7 +746,7 @@
                 <div class="prompt-input-card" id="prompt-input-card">
                     <div class="card-title-row">
                         <label>Scénario</label>
-                        <button id="clearMermaidBtn" class="btn" type="button">⊘ Vider</button>
+                        <button id="clearMermaidBtn" class="btn clear-btn" type="button">⊘ Vider</button>
                         <button id="generateBtn" class="btn-primary" type="button">⌘ Répondre</button>
                     </div>
                     <div class="draw-type-control">
@@ -809,17 +814,17 @@
         window.GO_TOOLKIT_SHARE_API_URL =
             window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
     </script>
-	    <script src="js/idb-doc-store.js"></script>
-	    <script src="js/storage-service.js"></script>
-	    <script src="js/shared-ui.js"></script>
-	    <script src="js/cgu.js?v=2025.12.26.6"></script>
-	    <script src="js/share-worker-client.js"></script>
-	    <script src="js/share-history.js"></script>
-	    <script src="js/capsule-drafts.js"></script>
-		    <script src="js/prompt.js?v=2025.12.26.6"></script>
-	    <script src="js/ia-client.js"></script>
-	    <script src="js/ia-config.js"></script>
-	    <script src="js/template-criteria.js"></script>
+    <script src="js/idb-doc-store.js"></script>
+    <script src="js/storage-service.js"></script>
+    <script src="js/shared-ui.js"></script>
+    <script src="js/cgu.js?v=2025.12.26.7"></script>
+    <script src="js/share-worker-client.js"></script>
+    <script src="js/share-history.js"></script>
+    <script src="js/capsule-drafts.js"></script>
+    <script src="js/prompt.js?v=2025.12.26.7"></script>
+    <script src="js/ia-client.js"></script>
+    <script src="js/ia-config.js"></script>
+    <script src="js/template-criteria.js"></script>
     <script>
         var process = window.process || {};
         (function () {
@@ -832,7 +837,7 @@
         })();
     </script>
     <script src="js/connect.bundle.js" data-excalidraw-bundle="true"></script>
-        <script>
+    <script>
         (() => {
             const DEFAULT_PROMPT_TEMPLATE =
                 (window.GoPrompts && window.GoPrompts.drawDefaultPromptTemplate) || "";
@@ -2390,7 +2395,7 @@
                 capsuleMenu?.classList.remove("open");
             }
 
-            const APP_VERSION = "2025.12.26.6";
+            const APP_VERSION = "2025.12.26.7";
             const VERSION_QUERY_PARAM = "v";
 
             function closeInfoPopup() {
