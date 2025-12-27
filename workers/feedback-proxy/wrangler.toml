@@ -9,8 +9,8 @@ workers_dev = true
 name = "MY_RATE_LIMITER"
 namespace_id = "1005"
 
-# 10 requests per 60 seconds
-simple = { limit = 10, period = 60 }
+# 1 requests per 60 seconds
+simple = { limit = 1, period = 60 }
 
 # Set these secrets/vars at deploy time:
 # - FIREBASE_SERVICE_ACCOUNT (JSON string)
