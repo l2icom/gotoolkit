@@ -11,7 +11,11 @@
     var STORAGE_KEYS_BACKEND = "go-toolkit-ai-backend";
     var STORAGE_KEYS_OPENROUTER = {
         API_KEY: "go-toolkit-openrouter-key",
-        MODEL: "go-toolkit-openrouter-model"
+        MODEL: "go-toolkit-openrouter-model",
+        DATA_COLLECTION: "go-toolkit-openrouter-data-collection",
+        MAX_PRICE_PROMPT: "go-toolkit-openrouter-max-price-prompt",
+        MAX_PRICE_COMPLETION: "go-toolkit-openrouter-max-price-completion",
+        SORT: "go-toolkit-openrouter-sort"
     };
 
     var DEFAULTS = {
@@ -22,16 +26,17 @@
         WEBLLM_MODEL: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
         CONTEXT_WINDOW: "0",
         OPENROUTER_MODEL: "openai/gpt-oss-20b:free",
-        OPENROUTER_DATA_COLLECTION: "deny",
+        OPENROUTER_DATA_COLLECTION: "allow",
         OPENROUTER_MAX_PRICE_PROMPT: "0",
-        OPENROUTER_MAX_PRICE_COMPLETION: "0"
+        OPENROUTER_MAX_PRICE_COMPLETION: "0",
+        OPENROUTER_SORT: "price"
     };
 
     var OPENAI_MODELS = ["gpt-5-nano", "gpt-5-mini"];
     var OLLAMA_MODELS = ["gpt-oss:latest", "gemma3", "ministral-3:latest", "deepseek-r1"];
     var OPENROUTER_MODELS = [
-        "openai/gpt-oss-20b:free",
         "openai/gpt-oss-120b:free",
+        "openai/gpt-oss-20b:free",
         "meta-llama/llama-3.2-3b-instruct:free",
         "meta-llama/llama-3.3-70b-instruct:free",
         "meta-llama/llama-3.1-405b-instruct:free",
@@ -226,14 +231,65 @@
             }
             safeStorageWrite(STORAGE_KEYS_OPENROUTER.MODEL, normalized);
         },
+        getOpenRouterDataCollectionOption: function () {
+            var stored = safeStorageRead(STORAGE_KEYS_OPENROUTER.DATA_COLLECTION);
+            return stored || DEFAULTS.OPENROUTER_DATA_COLLECTION;
+        },
         getOpenRouterDataCollection: function () {
-            return DEFAULTS.OPENROUTER_DATA_COLLECTION;
+            var stored = safeStorageRead(STORAGE_KEYS_OPENROUTER.DATA_COLLECTION);
+            if (!stored) {
+                stored = DEFAULTS.OPENROUTER_DATA_COLLECTION;
+            }
+            var parts = stored.split("-");
+            return (parts && parts[0]) || DEFAULTS.OPENROUTER_DATA_COLLECTION;
+        },
+        setOpenRouterDataCollection: function (value) {
+            var normalized = (value || "").trim();
+            if (!normalized) {
+                normalized = DEFAULTS.OPENROUTER_DATA_COLLECTION;
+            }
+            safeStorageWrite(STORAGE_KEYS_OPENROUTER.DATA_COLLECTION, normalized);
+        },
+        getOpenRouterZdr: function () {
+            var stored = safeStorageRead(STORAGE_KEYS_OPENROUTER.DATA_COLLECTION);
+            if (!stored) {
+                stored = DEFAULTS.OPENROUTER_DATA_COLLECTION;
+            }
+            return stored.includes("zdr");
         },
         getOpenRouterMaxPricePrompt: function () {
-            return DEFAULTS.OPENROUTER_MAX_PRICE_PROMPT;
+            var stored = safeStorageRead(STORAGE_KEYS_OPENROUTER.MAX_PRICE_PROMPT);
+            return stored || DEFAULTS.OPENROUTER_MAX_PRICE_PROMPT;
+        },
+        setOpenRouterMaxPricePrompt: function (value) {
+            var normalized = (value || "").trim();
+            if (!normalized) {
+                normalized = DEFAULTS.OPENROUTER_MAX_PRICE_PROMPT;
+            }
+            safeStorageWrite(STORAGE_KEYS_OPENROUTER.MAX_PRICE_PROMPT, normalized);
         },
         getOpenRouterMaxPriceCompletion: function () {
-            return DEFAULTS.OPENROUTER_MAX_PRICE_COMPLETION;
+            var stored = safeStorageRead(STORAGE_KEYS_OPENROUTER.MAX_PRICE_COMPLETION);
+            return stored || DEFAULTS.OPENROUTER_MAX_PRICE_COMPLETION;
+        },
+        setOpenRouterMaxPriceCompletion: function (value) {
+            var normalized = (value || "").trim();
+            if (!normalized) {
+                normalized = DEFAULTS.OPENROUTER_MAX_PRICE_COMPLETION;
+            }
+            safeStorageWrite(STORAGE_KEYS_OPENROUTER.MAX_PRICE_COMPLETION, normalized);
+        },
+        getOpenRouterSort: function () {
+            var stored = safeStorageRead(STORAGE_KEYS_OPENROUTER.SORT);
+            var trimmed = (stored || "").trim();
+            return trimmed || DEFAULTS.OPENROUTER_SORT;
+        },
+        setOpenRouterSort: function (value) {
+            var normalized = (value || "").trim();
+            if (!normalized) {
+                normalized = DEFAULTS.OPENROUTER_SORT;
+            }
+            safeStorageWrite(STORAGE_KEYS_OPENROUTER.SORT, normalized);
         },
         getBackend: function () {
             return safeStorageRead(STORAGE_KEYS_BACKEND) || "openrouter";
@@ -321,7 +377,7 @@
             var type = endpointType === "chat" ? "chat" : "responses";
             options = options || {};
             var forceProxy = options.forceProxy === true;
-            var forceOpenRouterProxy = options.forceOpenRouterProxy === true;
+            var forceOpenRouterProxy = options.forceOpenRouterProxy === true || Boolean(global?.GoToolkitForceOpenRouterProxy);
             // respect explicit force to use the public proxy
             if (forceProxy) {
                 return {
@@ -359,20 +415,27 @@
                 var dataCollection = GoToolkitIAConfig.getOpenRouterDataCollection();
                 var maxPrompt = GoToolkitIAConfig.getOpenRouterMaxPricePrompt();
                 var maxCompletion = GoToolkitIAConfig.getOpenRouterMaxPriceCompletion();
+                var openrouterSort = GoToolkitIAConfig.getOpenRouterSort();
+                var openrouterZdr = GoToolkitIAConfig.getOpenRouterZdr();
                 var useProxy = forceOpenRouterProxy || !openrouterKey;
                 var targetEndpoint = useProxy ? OPENROUTER_PROXY_ENDPOINT : OPENROUTER_ENDPOINT;
                 var backendType = useProxy ? "openrouter-proxy" : "openrouter";
                 var apiKeyValue = useProxy ? "" : openrouterKey;
+                var openrouterHasKey = !useProxy;
                 return {
                     type: backendType,
                     endpoint: targetEndpoint,
                     apiKey: apiKeyValue,
                     model: openrouterModel,
                     dataCollection: dataCollection,
+                    sort: openrouterSort,
                     maxPrice: {
                         prompt: maxPrompt,
                         completion: maxCompletion
-                    }
+                    },
+                    zdr: openrouterZdr,
+                    edit: openrouterHasKey,
+                    hasOpenRouterKey: openrouterHasKey
                 };
             }
 

@@ -39,6 +39,10 @@ export default {
       });
     }
 
+    if (request.method === "GET") {
+      return forwardToOpenRouterModelsUser(request, env, corsOrigin);
+    }
+
     if (request.method !== "POST") {
       return new Response("Only POST", {
         status: 405,
@@ -156,6 +160,37 @@ async function forwardToOpenRouter(request, env, corsOrigin) {
   headers.set("Cache-Control", "no-store");
   headers.set("Vary", "Origin");
 
+  return new Response(upstreamResponse.body, {
+    status: upstreamResponse.status,
+    headers
+  });
+}
+
+async function forwardToOpenRouterModelsUser(request, env, corsOrigin) {
+  if (!env.OPENROUTER_API_KEY) {
+    return jsonError(corsOrigin, 500, "MISSING_ENV", "OpenRouter API key missing.");
+  }
+  let upstreamResponse;
+  try {
+    upstreamResponse = await fetch("https://openrouter.ai/api/v1/models/user", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${env.OPENROUTER_API_KEY}`
+      }
+    });
+  } catch (error) {
+    console.error("OpenRouter models fetch failed", error);
+    return jsonError(
+      corsOrigin,
+      502,
+      "UPSTREAM_UNAVAILABLE",
+      "OpenRouter upstream unavailable."
+    );
+  }
+  const headers = new Headers(upstreamResponse.headers);
+  headers.set("Access-Control-Allow-Origin", corsOrigin);
+  headers.set("Cache-Control", "no-store");
+  headers.set("Vary", "Origin");
   return new Response(upstreamResponse.body, {
     status: upstreamResponse.status,
     headers

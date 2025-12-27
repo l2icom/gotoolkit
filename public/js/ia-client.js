@@ -729,8 +729,13 @@
             modelCandidates = [fallbackModel];
         }
 
+        const isDirect = Boolean(backend?.hasOpenRouterKey);
+        const defaultModel = isDirect ? "openrouter/auto" : (configuredModel || "openai/gpt-oss-120b:free");
+        if (isDirect && !modelCandidates.includes("openrouter/auto")) {
+            modelCandidates.unshift("openrouter/auto");
+        }
         const result = {
-            model: "openai/gpt-oss-120b:free",
+            model: defaultModel,
             models: modelCandidates,
             messages: buildOpenRouterMessages(source)
         };
@@ -771,23 +776,24 @@
             }
             return numeric;
         };
-        const maxPrompt = parsePositive(backend?.maxPrice?.prompt);
-        const maxCompletion = parsePositive(backend?.maxPrice?.completion);
-        const dataCollection = backend?.dataCollection || "deny";
-        result.provider = {
+        const maxPrompt = isDirect ? parsePositive(backend?.maxPrice?.prompt) : 0;
+        const maxCompletion = isDirect ? parsePositive(backend?.maxPrice?.completion) : 0;
+        const sortBy = (typeof backend?.sort === "string" && backend.sort.trim()) ? backend.sort.trim() : "price";
+        const normalizedDataCollection = (isDirect ? backend?.dataCollection : "allow") || (isDirect ? "deny" : "allow");
+        const provider = {
             allow_fallbacks: true,
             sort: {
-                by: "latency",
+                by: sortBy,
                 partition: null
             },
-            data_collection: dataCollection,
-            dataCollection,
-            zdr: true,
+            data_collection: normalizedDataCollection,
+            zdr: isDirect && normalizedDataCollection.includes("zdr"),
             max_price: {
                 prompt: maxPrompt,
                 completion: maxCompletion
             }
         };
+        result.provider = provider;
 
         return result;
     }

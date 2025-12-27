@@ -175,11 +175,12 @@
             margin-left: 6px;
             font-size: 15px;
             color: var(--text);
-            min-width: 1ch;
+            min-width: 0;
             display: inline-flex;
             justify-content: center;
             align-items: center;
             transition: color 0.2s ease;
+            white-space: nowrap;
         }
 
         .ia-status--error {
@@ -1373,8 +1374,7 @@
                                             class="btn-secondary">Vérifier</button>
                                     </div>
                                 </div>
-                                <span class="label-subtitle">Accès privé et requêtes ⌘ plus rapides (~1 ct/jour.
-                                    Recharge minimum 5€)</span>
+                                <span class="label-subtitle">Requêtes plus rapides</span>
                                 <input id="iaApiKeyInput" type="password" placeholder="sk-..." />
                             </label>
                         </div>
@@ -1410,7 +1410,10 @@
                                         <a class="label-title" href="https://openrouter.ai/settings/keys"
                                             target="_blank" rel="noopener noreferrer">Clé OpenRouter</a>
                                         <span class="ia-status" id="openrouterStatus" aria-hidden="true"></span>
-                                        <span class="ia-model-label" id="openrouterModelLabel" aria-live="polite"></span>
+                                        <span class="ia-model-label" id="openrouterModelLabel"
+                                            aria-live="polite"></span><br>
+                                        <span class="label-subtitle">Accès payant pour la protection des données
+                                            personnelles
                                     </div>
                                     <div style="display:flex; gap:0.35rem;">
                                         <button id="openrouterVerifyBtn" type="button"
@@ -1419,6 +1422,24 @@
                                 </div>
                                 <input id="openrouterApiKeyInput" type="password" placeholder="or-..." />
                             </label>
+                        </div>
+                        <div id="openrouterExtras" style="display:none; margin-top:8px;">
+                            <div class="field-row">
+                                <label>
+                                    <span class="label-title">Collecte et rétention des données</span>
+                                    <select id="openrouterDataCollectionSelect">
+                                        <option value="deny-zdr">Non</option>
+                                        <option value="allow">Oui</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="field-row">
+                                <label>
+                                    <span class="label-title">Prix max en € pour 1M token</span>
+                                    <input id="openrouterMaxPriceInput" type="number" min="1" step="0.01"
+                                        placeholder="0" />
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -2362,25 +2383,46 @@
                 }
             }
         }
+        const IA_STATUS_ICONS = {
+            ready: "🗹",
+            verifying: "⌛",
+            error: "✕"
+        };
+
         function updateStatusIcon(el, state) {
             if (!el) {
                 return;
             }
-            const icons = {
-                ready: "🗹",
-                verifying: "⌛",
-                error: "✕"
-            };
             if (!state) {
                 el.textContent = "";
                 el.classList.remove("ia-status--error");
                 return;
             }
-            el.textContent = icons[state] || "";
+            el.textContent = IA_STATUS_ICONS[state] || "";
             if (state === "error") {
                 el.classList.add("ia-status--error");
             } else {
                 el.classList.remove("ia-status--error");
+            }
+        }
+
+        function setOpenAiStatusLabel(label, options = {}) {
+            if (!openaiStatusEl) return;
+            const trimmed = (label || "").trim();
+            const iconState = options.state;
+            const hasIcon = iconState && IA_STATUS_ICONS[iconState];
+            const text = (hasIcon ? IA_STATUS_ICONS[iconState] + (trimmed ? " " : "") : "") + trimmed;
+            openaiStatusEl.textContent = text.trim();
+            if (iconState === "error") {
+                openaiStatusEl.classList.add("ia-status--error");
+            } else {
+                openaiStatusEl.classList.remove("ia-status--error");
+            }
+            openaiStatusEl.setAttribute("aria-hidden", trimmed ? "false" : "true");
+            if (options.sticky) {
+                openaiStatusEl.dataset.openaiStatusSticky = "1";
+            } else {
+                delete openaiStatusEl.dataset.openaiStatusSticky;
             }
         }
 
@@ -2409,8 +2451,12 @@
             );
         }
 
-        function updateOpenRouterModelLabel(modelOverride) {
+        function updateOpenRouterModelLabel(modelOverride, accessType = "default") {
             if (!openrouterModelLabelEl) {
+                return;
+            }
+            if (accessType === "error") {
+                openrouterModelLabelEl.textContent = "Accès partagé indisponible";
                 return;
             }
             const model = resolveOpenRouterModel(modelOverride);
@@ -2418,7 +2464,88 @@
                 openrouterModelLabelEl.textContent = "";
                 return;
             }
-            openrouterModelLabelEl.textContent = `Réponse OpenRouter · ${model}`;
+            if (accessType === "private") {
+                openrouterModelLabelEl.textContent = `Accès privé : ${model}`;
+            } else if (accessType === "shared") {
+                openrouterModelLabelEl.textContent = `Accès partagé : ${model}`;
+            } else {
+                openrouterModelLabelEl.textContent = model;
+            }
+        }
+
+        if (typeof window.GoToolkitForceOpenRouterProxy !== "boolean") {
+            window.GoToolkitForceOpenRouterProxy = false;
+        }
+
+        async function fetchOpenRouterModelLabel({ apiKey, useProxy = false } = {}) {
+            const endpoint = useProxy
+                ? "https://openrouter.gotoolkit.workers.dev/api/v1/models"
+                : "https://openrouter.ai/api/v1/models/user";
+            const headers = {};
+            if (!useProxy && apiKey) {
+                headers.Authorization = "Bearer " + apiKey;
+            }
+            const response = await fetch(endpoint, {
+                method: "GET",
+                headers,
+                cache: "no-cache"
+            });
+            if (!response.ok) {
+                const text = await response.text().catch(() => "");
+                throw new Error(text || "HTTP " + response.status);
+            }
+            const payload = await response.json().catch(() => null);
+            if (payload && typeof payload === "string") {
+                return payload;
+            }
+            if (payload && Array.isArray(payload.models)) {
+                const first = payload.models[0];
+                return (
+                    payload.default ||
+                    payload.default_model ||
+                    first?.model_id ||
+                    first?.id ||
+                    first?.name ||
+                    "openrouter/auto"
+                );
+            }
+            return payload?.default || payload?.default_model || "openrouter/auto";
+        }
+
+        async function verifyOpenRouterDirect(apiKey, { showToasts } = {}) {
+            const modelLabel = await fetchOpenRouterModelLabel({ apiKey, useProxy: false });
+            window.GoToolkitForceOpenRouterProxy = false;
+            openrouterHasValidPrivateKey = true;
+            updateOpenRouterExtrasVisibility();
+            updateStatusIcon(openrouterStatusEl, "ready");
+            updateOpenRouterModelLabel(modelLabel, "private");
+            if (showToasts) {
+                showToast("Accès privé OpenRouter prêt (" + modelLabel + ")");
+            }
+            return true;
+        }
+
+        async function verifyOpenRouterProxy({ showToasts } = {}) {
+            window.GoToolkitForceOpenRouterProxy = true;
+            openrouterHasValidPrivateKey = false;
+            updateOpenRouterExtrasVisibility();
+            try {
+                const modelLabel = await fetchOpenRouterModelLabel({ useProxy: true });
+                updateStatusIcon(openrouterStatusEl, "ready");
+                updateOpenRouterModelLabel(modelLabel, "shared");
+                if (showToasts) {
+                    showToast("Accès partagé OpenRouter prêt (" + modelLabel + ")");
+                }
+                return true;
+            } catch (err) {
+                console.warn("OpenRouter proxy test failed", err);
+                updateStatusIcon(openrouterStatusEl, "error");
+                updateOpenRouterModelLabel(null, "error");
+                if (showToasts) {
+                    showToast("Accès partagé indisponible", true, "openrouterStatus");
+                }
+                return false;
+            }
         }
 
         function getWebllmModelLabel(modelId) {
@@ -2831,37 +2958,82 @@
 
         async function testOpenAiConnection({ showToasts = true } = {}) {
             var config = window.GoToolkitIAConfig;
-            var apiKey = config && typeof config.getApiKey === "function" ? config.getApiKey() : "";
-            if (!apiKey) {
-                updateStatusIcon(openaiStatusEl, "error");
-                if (showToasts) {
-                    showToast("Clé OpenAI requise pour tester la connexion.", true);
-                }
-                return false;
-            }
-            updateStatusIcon(openaiStatusEl, "verifying");
-            try {
-                var response = await fetch("https://api.openai.com/v1/models", {
-                    method: "GET",
-                    headers: {
-                        Authorization: "Bearer " + apiKey
+            var apiKey = config && typeof config.getApiKey === "function" ? (config.getApiKey() || "").trim() : "";
+            setOpenAiStatusLabel("Vérification OpenAI...", { state: "verifying" });
+            if (apiKey) {
+                try {
+                    var response = await fetch("https://api.openai.com/v1/models", {
+                        method: "GET",
+                        headers: {
+                            Authorization: "Bearer " + apiKey
+                        }
+                    });
+                    if (!response.ok) {
+                        throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
                     }
+                    if (showToasts) {
+                        showToast("Connexion OpenAI prête");
+                    }
+                    setOpenAiStatusLabel("Accès privé", { state: "ready" });
+                    return true;
+                } catch (err) {
+                    console.warn("OpenAI test failed", err);
+                    var message = (err && err.message) || String(err) || "erreur inconnue";
+                    if (showToasts) {
+                        showToast("Échec de la connexion OpenAI (" + message + ")", true);
+                    }
+                }
+            }
+            return await testOpenAiProxyConnection({ showToasts });
+        }
+
+        async function testOpenAiProxyConnection({ showToasts = true } = {}) {
+            var config = window.GoToolkitIAConfig;
+            var endpoint =
+                (config && config.PROXY_ENDPOINTS && config.PROXY_ENDPOINTS.responses) ||
+                "https://openai.gotoolkit.workers.dev/v1/responses";
+            var model =
+                (config && typeof config.getOpenAiModel === "function" ? config.getOpenAiModel() : "") ||
+                (config && config.DEFAULTS && config.DEFAULTS.OPENAI_MODEL) ||
+                "gpt-5-nano";
+            setOpenAiStatusLabel("Vérification en cours...", { state: "verifying" });
+            try {
+                var response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        input: [
+                            {
+                                role: "user",
+                                content: [
+                                    {
+                                        type: "input_text",
+                                        text: "Vérification"
+                                    }
+                                ]
+                            }
+                        ],
+                        stream: false
+                    })
                 });
                 if (!response.ok) {
                     throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
                 }
                 if (showToasts) {
-                    showToast("Connexion OpenAI prête");
+                    showToast("Connexion partagée prête");
                 }
-                updateStatusIcon(openaiStatusEl, "ready");
+                setOpenAiStatusLabel("Accès partagé", { state: "ready" });
                 return true;
             } catch (err) {
-                console.warn("OpenAI test failed", err);
+                console.warn("OpenAI proxy test failed", err);
                 var message = (err && err.message) || String(err) || "erreur inconnue";
                 if (showToasts) {
-                    showToast("Échec de la connexion OpenAI (" + message + ")", true);
+                    showToast("Accès partagé indisponible (" + message + ")", true);
                 }
-                updateStatusIcon(openaiStatusEl, "error");
+                setOpenAiStatusLabel("Accès partagé indisponible", { state: "error", sticky: true });
                 return false;
             }
         }
@@ -2929,37 +3101,19 @@
         async function testOpenRouterConnection({ showToasts = true } = {}) {
             var config = window.GoToolkitIAConfig;
             var apiKey = config && typeof config.getOpenRouterApiKey === "function" ? config.getOpenRouterApiKey() : "";
-            if (!apiKey) {
-                updateStatusIcon(openrouterStatusEl, "error");
-                if (showToasts) {
-                    showToast("Clé OpenRouter requise pour tester la connexion.", true, "openrouterStatus");
-                }
-                return false;
-            }
             updateStatusIcon(openrouterStatusEl, "verifying");
+            if (!apiKey) {
+                window.GoToolkitForceOpenRouterProxy = true;
+                return verifyOpenRouterProxy({ showToasts });
+            }
             try {
-                var response = await fetch("https://openrouter.ai/api/v1/models", {
-                    method: "GET",
-                    headers: {
-                        Authorization: "Bearer " + apiKey
-                    }
-                });
-                if (!response.ok) {
-                    throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
-                }
-                if (showToasts) {
-                    showToast("Connexion OpenRouter prête");
-                }
-                updateStatusIcon(openrouterStatusEl, "ready");
-                return true;
+                return await verifyOpenRouterDirect(apiKey, { showToasts });
             } catch (err) {
                 console.warn("OpenRouter test failed", err);
-                var message = (err && err.message) || String(err) || "erreur inconnue";
                 if (showToasts) {
-                    showToast("Échec de la connexion OpenRouter (" + message + ")", true, "openrouterStatus");
+                    showToast("Clé OpenRouter invalide — utilisation de l'accès partagé", true, "openrouterStatus");
                 }
-                updateStatusIcon(openrouterStatusEl, "error");
-                return false;
+                return verifyOpenRouterProxy({ showToasts });
             }
         }
         function openModal() {
@@ -3074,6 +3228,10 @@
         const webllmModelSelect = document.getElementById("webllmModelSelect");
         const assemblyAiKeyInput = document.getElementById("assemblyAiKeyInput");
         const openrouterApiKeyInput = document.getElementById("openrouterApiKeyInput");
+        const openrouterExtras = document.getElementById("openrouterExtras");
+        const openrouterDataCollectionSelect = document.getElementById("openrouterDataCollectionSelect");
+        const openrouterMaxPriceInput = document.getElementById("openrouterMaxPriceInput");
+        let openrouterHasValidPrivateKey = false;
         const ASSEMBLY_AI_KEY_STORAGE = "go-toolkit-assemblyai-key";
         const VOICE_AUDIO_DB = { name: "go-toolkit-voice-audio", store: "recordings" };
 
@@ -3090,6 +3248,13 @@
             if (ollamaSettingsEl) ollamaSettingsEl.style.display = val === "ollama" ? "" : "none";
             if (webllmSettingsEl) webllmSettingsEl.style.display = val === "webllm" ? "" : "none";
             window.GoToolkitSelectedAIBackend = val;
+        }
+
+        function updateOpenRouterExtrasVisibility() {
+            if (!openrouterExtras || !openrouterApiKeyInput) return;
+            const hasKey = Boolean((openrouterApiKeyInput.value || "").trim());
+            const showExtras = hasKey && openrouterHasValidPrivateKey;
+            openrouterExtras.style.display = showExtras ? "" : "none";
         }
 
         function updateOllamaAddressUI() {
@@ -3227,6 +3392,23 @@
                 if (openrouterApiKeyInput) {
                     openrouterApiKeyInput.value = storedOpenRouterKey;
                 }
+                const dataCollectionDefault = window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_DATA_COLLECTION || "deny";
+                const storedOpenRouterDataCollection =
+                    (config && typeof config.getOpenRouterDataCollectionOption === "function"
+                        ? config.getOpenRouterDataCollectionOption()
+                        : "") ||
+                    dataCollectionDefault;
+                if (openrouterDataCollectionSelect) {
+                    openrouterDataCollectionSelect.value = storedOpenRouterDataCollection;
+                }
+                const promptDefault = window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MAX_PRICE_PROMPT || "0";
+                const storedOpenRouterMaxPrice =
+                    (config && typeof config.getOpenRouterMaxPricePrompt === "function" ? config.getOpenRouterMaxPricePrompt() : "") ||
+                    promptDefault;
+                if (openrouterMaxPriceInput) {
+                    openrouterMaxPriceInput.value = storedOpenRouterMaxPrice;
+                }
+                updateOpenRouterExtrasVisibility();
                 var storedOpenRouterModel =
                     (config && typeof config.getOpenRouterModel === "function" ? config.getOpenRouterModel() : "") ||
                     window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL ||
@@ -3302,6 +3484,21 @@
                 const openrouterKeyValue = (openrouterApiKeyInput?.value || "").trim();
                 if (iaConfig && typeof iaConfig.setOpenRouterApiKey === "function") {
                     iaConfig.setOpenRouterApiKey(openrouterKeyValue);
+                }
+                const openrouterDataCollectionValue =
+                    (openrouterDataCollectionSelect?.value || window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_DATA_COLLECTION || "deny");
+                if (iaConfig && typeof iaConfig.setOpenRouterDataCollection === "function") {
+                    iaConfig.setOpenRouterDataCollection(openrouterDataCollectionValue);
+                }
+                const openrouterMaxPriceValue =
+                    (openrouterMaxPriceInput?.value || "").trim() ||
+                    window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MAX_PRICE_PROMPT ||
+                    "0";
+                if (iaConfig && typeof iaConfig.setOpenRouterMaxPricePrompt === "function") {
+                    iaConfig.setOpenRouterMaxPricePrompt(openrouterMaxPriceValue);
+                }
+                if (iaConfig && typeof iaConfig.setOpenRouterMaxPriceCompletion === "function") {
+                    iaConfig.setOpenRouterMaxPriceCompletion(openrouterMaxPriceValue);
                 }
                 selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openrouter";
                 if (iaConfig && typeof iaConfig.setBackend === "function") {
@@ -3447,6 +3644,11 @@
                 testOpenRouterConnection({ showToasts: true }).catch(() => { /* noop */ });
             }
         });
+        openrouterApiKeyInput?.addEventListener("input", () => {
+            window.GoToolkitForceOpenRouterProxy = false;
+            openrouterHasValidPrivateKey = false;
+            updateOpenRouterExtrasVisibility();
+        });
 
         openFeedbackBtn?.addEventListener("click", openModal);
         closeFeedbackBtn?.addEventListener("click", closeModal);
@@ -3506,10 +3708,14 @@
         }
 
         function setIaStatus(backend) {
-            if (openaiStatusEl) {
-                const ready = backend?.type === "openai";
-                updateStatusIcon(openaiStatusEl, ready ? "ready" : null);
-                openaiStatusEl.setAttribute("aria-hidden", ready ? "false" : "true");
+            if (openaiStatusEl && !openaiStatusEl.dataset.openaiStatusSticky) {
+                if (backend?.type === "openai") {
+                    setOpenAiStatusLabel("Accès privé", { state: "ready" });
+                } else if (backend?.type === "proxy") {
+                    setOpenAiStatusLabel("Accès partagé", { state: "ready" });
+                } else {
+                    setOpenAiStatusLabel("", { state: null });
+                }
             }
             if (ollamaStatusEl) {
                 const ready = backend?.type === "ollama";
@@ -3520,7 +3726,17 @@
                 const ready = typeof backend?.type === "string" && backend.type.startsWith("openrouter");
                 updateStatusIcon(openrouterStatusEl, ready ? "ready" : null);
                 openrouterStatusEl.setAttribute("aria-hidden", ready ? "false" : "true");
-                updateOpenRouterModelLabel(ready ? backend?.model : null);
+                if (ready) {
+                    const accessType =
+                        backend.type === "openrouter"
+                            ? "private"
+                            : backend.type === "openrouter-proxy"
+                                ? "shared"
+                                : "default";
+                    updateOpenRouterModelLabel(backend?.model, accessType);
+                } else {
+                    updateOpenRouterModelLabel(null);
+                }
             }
         }
 
