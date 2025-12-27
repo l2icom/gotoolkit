@@ -1009,6 +1009,7 @@
             const diagramTitleInput = document.getElementById("diagramTitleInput");
             const mermaidOutput = document.getElementById("mermaidOutput");
             const drawTypeButtons = Array.from(document.querySelectorAll(".draw-type-btn[data-draw-type]"));
+            const drawRestoreTargets = new Map();
             const drawTypePlaceholders = {
                 flow: "Décris le processus, les décisions et les résultats.",
                 class: "Décris les éléments, leurs caractéristiques, leurs rôles et leurs relations.",
@@ -1676,8 +1677,17 @@
             const shareHistory = window.goToolkitShareHistory;
             const generateDefaultLabel = generateBtn?.textContent || "⌘ Envoyer";
             const drawerDefaultLabel = toggleDrawerBtn?.textContent || "⌘ Agent";
-            let generateCooldownTimer = null;
-            let generateCooldownEndTime = 0;
+            const drawGenerateCountdown =
+                window.GoToolkitSharedUI &&
+                typeof window.GoToolkitSharedUI.createActionCountdown === "function"
+                    ? window.GoToolkitSharedUI.createActionCountdown(
+                          [
+                              { element: generateBtn, defaultLabel: generateDefaultLabel },
+                              { element: toggleDrawerBtn, defaultLabel: drawerDefaultLabel }
+                          ],
+                          { duration: 30 }
+                      )
+                    : null;
             let activeIaAbortController = null;
             // Start open on desktop by default; auto logic can rehydrate stored state
             let isDrawerOpen = true;
@@ -2572,6 +2582,7 @@
                     input: "",
                     mermaid: "",
                     lastAiMermaid: "",
+                    lastManualMermaid: null,
                     drawType: DEFAULT_DRAW_TYPE,
                     scene: null
                 };
@@ -2595,6 +2606,8 @@
                     input: sanitizeScenarioText(page?.input || ""),
                     mermaid,
                     lastAiMermaid,
+                    lastManualMermaid:
+                        typeof page.lastManualMermaid === "string" ? page.lastManualMermaid : null,
                     drawType,
                     scene
                 };
@@ -3130,61 +3143,22 @@
             }
 
             function clearGenerateCooldown() {
-                if (generateCooldownTimer) {
-                    clearInterval(generateCooldownTimer);
-                    generateCooldownTimer = null;
-                }
-                generateCooldownEndTime = 0;
+                drawGenerateCountdown?.stop();
                 if (generateBtn) {
                     generateBtn.disabled = false;
-                    generateBtn.textContent = generateDefaultLabel;
                 }
                 if (toggleDrawerBtn) {
                     toggleDrawerBtn.disabled = false;
-                    toggleDrawerBtn.textContent = drawerDefaultLabel;
                 }
             }
 
             function startGenerateCooldown(seconds = 30) {
                 if (!generateBtn) return;
-                clearGenerateCooldown();
-                const duration = Math.max(1, seconds);
-                generateCooldownEndTime = Date.now() + duration * 1000;
-
-                const updateLabel = () => {
-                    if (!generateBtn) {
-                        clearGenerateCooldown();
-                        return;
-                    }
-                    const remainingMs = generateCooldownEndTime - Date.now();
-                    const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
-                    if (remainingSeconds === 0 && activeIaAbortController) {
-                        generateBtn.textContent = "⌛ en cours";
-                        if (toggleDrawerBtn) {
-                            toggleDrawerBtn.textContent = "⌛ en cours";
-                        }
-                        return;
-                    }
-                    const frames = ["◴", "◷", "◶", "◵"];
-                    const frame = frames[remainingSeconds % frames.length];
-                    const label = `${frame} ${remainingSeconds}s`;
-                    generateBtn.textContent = label;
-                    if (toggleDrawerBtn) {
-                        toggleDrawerBtn.textContent = label;
-                    }
-                    if (remainingSeconds <= 0) {
-                        clearGenerateCooldown();
-                        generateBtn.disabled = false;
-                        generateBtn.textContent = generateDefaultLabel;
-                        if (toggleDrawerBtn) {
-                            toggleDrawerBtn.disabled = false;
-                            toggleDrawerBtn.textContent = drawerDefaultLabel;
-                        }
-                    }
-                };
-
-                updateLabel();
-                generateCooldownTimer = setInterval(updateLabel, 1000);
+                generateBtn.disabled = true;
+                if (toggleDrawerBtn) {
+                    toggleDrawerBtn.disabled = true;
+                }
+                drawGenerateCountdown?.start(seconds);
             }
 
             async function handleGenerate() {
@@ -3212,6 +3186,13 @@
                     return;
                 }
                 startGenerateCooldown(30);
+                const manualMermaidValue = mermaidOutput?.value || "";
+                if (page) {
+                    page.lastManualMermaid = manualMermaidValue;
+                    if (page.id) {
+                        drawRestoreTargets.set(page.id, "ai");
+                    }
+                }
                 const existingScript = mermaidOutput.value.trim();
                 const drawType = page.drawType || DEFAULT_DRAW_TYPE;
                 const drawTypePrompt = getDrawTypePromptValue(drawType);
@@ -4371,6 +4352,9 @@
                                 diagramTitleInput.value = titleFromScript;
                             }
                         }
+                        if (page.id) {
+                            drawRestoreTargets.set(page.id, "ai");
+                        }
                         saveState();
                     }
                     updateExcalidrawScene(value);
@@ -4441,26 +4425,71 @@
                     saveState();
                     setStatus("Script vidé.");
                 });
+                function determineDrawRestoreTarget(preferred, hasAi, hasManual) {
+                    if (preferred === "ai") {
+                        if (hasAi) return "ai";
+                        if (hasManual) return "manual";
+                    } else {
+                        if (hasManual) return "manual";
+                        if (hasAi) return "ai";
+                    }
+                    if (hasAi) return "ai";
+                    if (hasManual) return "manual";
+                    return null;
+                }
+
+                function nextDrawRestorePreference(lastUsed, hasAi, hasManual) {
+                    if (lastUsed === "ai") {
+                        return hasManual ? "manual" : (hasAi ? "ai" : "manual");
+                    }
+                    if (lastUsed === "manual") {
+                        return hasAi ? "ai" : (hasManual ? "manual" : "ai");
+                    }
+                    return hasAi ? "ai" : (hasManual ? "manual" : "ai");
+                }
+
                 refreshExcalidrawBtn?.addEventListener("click", () => {
                     const page = getActivePage();
-                    const restoreCode = page?.lastAiMermaid || "";
-                    if (!restoreCode) {
+                    const aiScript = page?.lastAiMermaid || "";
+                    const manualScript = page?.lastManualMermaid;
+                    const hasAi = Boolean(aiScript);
+                    const hasManual = manualScript != null;
+                    if (!hasAi && !hasManual) {
                         setStatus("Aucun script IA précédent à restaurer.");
                         return;
                     }
-                    page.mermaid = restoreCode;
-                    page.scene = null;
-                    const titleFromScript = extractDiagramTitle(restoreCode);
-                    if (titleFromScript) {
-                        page.title = titleFromScript;
-                        if (diagramTitleInput) {
-                            diagramTitleInput.value = titleFromScript;
+                    const preferred = page?.id ? (drawRestoreTargets.get(page.id) || "ai") : "ai";
+                    const target = determineDrawRestoreTarget(preferred, hasAi, hasManual);
+                    if (!target) {
+                        setStatus("Aucun script IA précédent à restaurer.");
+                        return;
+                    }
+                    const scriptValue = target === "manual" ? (manualScript || "") : aiScript;
+                    if (page) {
+                        page.mermaid = scriptValue;
+                        page.scene = null;
+                        const titleFromScript = extractDiagramTitle(scriptValue);
+                        if (titleFromScript) {
+                            page.title = titleFromScript;
+                            if (diagramTitleInput) {
+                                diagramTitleInput.value = titleFromScript;
+                            }
                         }
                     }
-                    mermaidOutput.value = restoreCode;
-                    updateExcalidrawScene(restoreCode);
+                    mermaidOutput.value = scriptValue;
+                    updateExcalidrawScene(scriptValue);
                     saveState();
-                    setStatus("Script restauré depuis la dernière réponse IA ✔️");
+                    setStatus(
+                        target === "manual"
+                            ? "Script restauré depuis la version manuelle précédente."
+                            : "Script restauré depuis la dernière réponse IA ✔️"
+                    );
+                    if (page?.id) {
+                        drawRestoreTargets.set(
+                            page.id,
+                            nextDrawRestorePreference(target, hasAi, hasManual)
+                        );
+                    }
                 });
                 infoButton?.addEventListener("click", event => {
                     event.stopPropagation();

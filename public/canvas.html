@@ -2237,8 +2237,16 @@
         const restoreStructureBtn = document.getElementById("restoreStructureBtn");
         const generateFullSlideBtn = document.getElementById("generateFullSlideBtn");
         const adviceBtn = document.getElementById("adviceBtn");
-        ensureButtonBaseLabel(generateFullSlideBtn);
+        const generateFullSlideBaseLabel = ensureButtonBaseLabel(generateFullSlideBtn);
         ensureButtonBaseLabel(adviceBtn);
+        const canvasGenerateCountdown =
+            window.GoToolkitSharedUI &&
+            typeof window.GoToolkitSharedUI.createActionCountdown === "function"
+                ? window.GoToolkitSharedUI.createActionCountdown(
+                      { element: generateFullSlideBtn, defaultLabel: generateFullSlideBaseLabel },
+                      { duration: PLACEHOLDER_COOLDOWN_DURATION }
+                  )
+                : null;
         const clearSectionsBtn = document.getElementById("clearSectionsBtn");
         const exportBtn = document.getElementById("exportPngBtn");
         const exportPptxBtn = document.getElementById("exportPptxBtn");
@@ -3930,7 +3938,6 @@
             const disableButtons = onCooldown && !isGeneratingSuggestions;
             if (generateFullSlideBtn) {
                 generateFullSlideBtn.disabled = disableButtons;
-                setButtonBusyState(generateFullSlideBtn, onCooldown || isGeneratingSuggestions);
             }
         }
 
@@ -3943,6 +3950,9 @@
             }
             let remaining = Math.max(0, duration);
             updateGeneratePlaceholdersButton(remaining);
+            if (remaining > 0) {
+                canvasGenerateCountdown?.start(remaining);
+            }
             if (remaining === 0) {
                 return;
             }
@@ -3952,6 +3962,7 @@
                     clearInterval(suggestionCooldownTimer);
                     suggestionCooldownTimer = null;
                     updateGeneratePlaceholdersButton(0);
+                    canvasGenerateCountdown?.stop();
                 } else {
                     updateGeneratePlaceholdersButton(remaining);
                 }
@@ -3963,6 +3974,7 @@
                 clearInterval(suggestionCooldownTimer);
                 suggestionCooldownTimer = null;
             }
+            canvasGenerateCountdown?.stop();
             updateGeneratePlaceholdersButton(0);
         }
 

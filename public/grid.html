@@ -1420,6 +1420,7 @@
                 const updateAppBtn = document.getElementById("updateAppBtn");
                 const APP_VERSION = "2025.12.27.2";
                 const VERSION_QUERY_PARAM = "v";
+                const gridRestoreTargets = new Map();
                 function getBrowserDateVersion() {
                     const now = new Date();
                     const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -1436,8 +1437,17 @@
                     typeof localStorage !== "undefined" &&
                     localStorage.getItem(TEMPLATE_MODAL_SEEN_KEY) === "1";
                 let templateModalContext = null;
-                let generateCooldownTimer = null;
-                let generateCooldownEndTime = 0;
+                const generateCountdown =
+                    window.GoToolkitSharedUI &&
+                    typeof window.GoToolkitSharedUI.createActionCountdown === "function"
+                        ? window.GoToolkitSharedUI.createActionCountdown(
+                              [
+                                  { element: generateBtn, defaultLabel: generateDefaultLabel },
+                                  { element: drawerBtn, defaultLabel: drawerDefaultLabel }
+                              ],
+                              { duration: 30 }
+                          )
+                        : null;
 
                 let activeRequestController = null;
                 let pendingAbortStatus = false;
@@ -1667,6 +1677,7 @@
                         scenario: "",
                         datasetScript: "",
                         lastAiDatasetScript: "",
+                        lastManualDatasetScript: null,
                         data: { columnDefs: [], rowData: [] }
                     };
                 }
@@ -1708,6 +1719,10 @@
                         datasetScript: page.datasetScript || page.script || templateState?.datasetScript || "",
                         lastAiDatasetScript:
                             page.lastAiDatasetScript || page.lastAiScript || templateState?.lastAiDatasetScript || "",
+                        lastManualDatasetScript:
+                            typeof page.lastManualDatasetScript === "string"
+                                ? page.lastManualDatasetScript
+                                : (templateState?.lastManualDatasetScript ?? null),
                         data: page.data && typeof page.data === "object"
                             ? {
                                 columnDefs: Array.isArray(page.data.columnDefs) ? page.data.columnDefs : [],
@@ -5435,56 +5450,19 @@
                     requestData();
                 }
 
-                function updateGenerateLabel(label) {
-                    if (generateBtn) {
-                        generateBtn.textContent = label;
-                    }
-                }
-
                 function clearGenerateCooldown() {
-                    if (generateCooldownTimer) {
-                        clearInterval(generateCooldownTimer);
-                        generateCooldownTimer = null;
-                    }
-                    generateCooldownEndTime = 0;
-                    updateGenerateLabel(generateDefaultLabel);
+                    generateCountdown?.stop();
                     if (drawerBtn) {
                         drawerBtn.disabled = false;
-                        drawerBtn.textContent = drawerDefaultLabel;
                     }
                 }
 
                 function startGenerateCooldown(seconds = 30) {
                     if (!generateBtn) return;
-                    clearGenerateCooldown();
-                    const duration = Math.max(1, seconds);
-                    generateCooldownEndTime = Date.now() + duration * 1000;
                     if (drawerBtn) {
                         drawerBtn.disabled = true;
                     }
-                    const frames = ["◴", "◷", "◶", "◵"];
-                    const updateLabel = () => {
-                        if (!generateBtn) {
-                            clearGenerateCooldown();
-                            return;
-                        }
-                        const remainingMs = generateCooldownEndTime - Date.now();
-                        const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
-                        if (remainingSeconds <= 0 && activeRequestController) {
-                            // If a request is still active when the countdown reaches 0,
-                            // restart the countdown (e.g., to 30s) instead of showing a static "⌛ en cours" label.
-                            generateCooldownEndTime = Date.now() + duration * 1000;
-                            return;
-                        }
-                        const frame = frames[remainingSeconds % frames.length];
-                        const label = `${frame} ${remainingSeconds}s`;
-                        updateGenerateLabel(label);
-                        if (remainingSeconds <= 0 && !activeRequestController) {
-                            clearGenerateCooldown();
-                        }
-                    };
-                    updateLabel();
-                    generateCooldownTimer = setInterval(updateLabel, 1000);
+                    generateCountdown?.start(seconds);
                 }
 
                 function cleanJson(raw) {
@@ -7898,6 +7876,7 @@
                     }
                     if (options.markAsAi) {
                         normalizedPage.lastAiDatasetScript = normalizedPage.datasetScript || "";
+                        gridRestoreTargets.set(normalizedPage.id, "ai");
                         state.scenarioGeneratedTables = state.scenarioGeneratedTables && typeof state.scenarioGeneratedTables === "object"
                             ? state.scenarioGeneratedTables
                             : {};
@@ -7929,7 +7908,8 @@
                     setLoading(true);
                     showStatus("Génération en cours…");
                     const scenarioText = (promptInput?.value || "").trim();
-                    const scriptText = (gridScript?.value || page?.datasetScript || "").trim();
+                    const rawScriptValue = gridScript?.value ?? page?.datasetScript ?? "";
+                    const scriptText = (rawScriptValue || "").trim();
                     const promptTemplate =
                         page?.promptTemplate || tplConfig.defaultPromptTemplate || DEFAULT_PROMPT_TEMPLATE;
                     let systemPrompt =
@@ -7940,6 +7920,12 @@
                     }
                     const userPrompt = promptTemplate.replace("{{scenario_prompt}}", scenarioText || "ton sujet");
                     const fileAttachments = isOpenAIBackendSelected() ? getUploadedFileAttachments() : [];
+                    if (page) {
+                        page.lastManualDatasetScript = rawScriptValue || "";
+                        if (page.id) {
+                            gridRestoreTargets.set(page.id, "ai");
+                        }
+                    }
 
                     const messages = [
                         { role: "system", content: systemPrompt }
@@ -8148,6 +8134,7 @@
                     activePage.data = { columnDefs: [], rowData: [] };
                     activePage.datasetScript = "";
                     activePage.lastAiDatasetScript = "";
+                    activePage.lastManualDatasetScript = null;
                     if (state.scenarioGeneratedTables && activePage.id) {
                         delete state.scenarioGeneratedTables[activePage.id];
                     }
@@ -8165,6 +8152,9 @@
                     syncDatasetScriptFromState();
                     scheduleNaturalFilterRecalc();
                     showStatus("Données de la page vidées.");
+                    if (activePage.id) {
+                        gridRestoreTargets.set(activePage.id, "ai");
+                    }
                 }
 
                 function applyScriptToGrid(options = {}) {
@@ -8249,21 +8239,61 @@
                     }
                 }
 
+                function determineGridRestoreTarget(preferred, hasAi, hasManual) {
+                    if (preferred === "ai") {
+                        if (hasAi) return "ai";
+                        if (hasManual) return "manual";
+                    } else {
+                        if (hasManual) return "manual";
+                        if (hasAi) return "ai";
+                    }
+                    if (hasAi) return "ai";
+                    if (hasManual) return "manual";
+                    return null;
+                }
+
+                function nextGridRestorePreference(lastUsed, hasAi, hasManual) {
+                    if (lastUsed === "ai") {
+                        return hasManual ? "manual" : (hasAi ? "ai" : "manual");
+                    }
+                    if (lastUsed === "manual") {
+                        return hasAi ? "ai" : (hasManual ? "manual" : "ai");
+                    }
+                    return hasAi ? "ai" : (hasManual ? "manual" : "ai");
+                }
+
                 function restoreLastAiResponse() {
                     const page = getActivePage();
-                    const script =
-                        page?.lastAiDatasetScript ||
-                        page?.datasetScript ||
-                        "";
-                    if (!script.trim()) {
+                    const aiScript = page?.lastAiDatasetScript || "";
+                    const manualScript = page?.lastManualDatasetScript;
+                    const hasAi = Boolean(aiScript);
+                    const hasManual = manualScript != null;
+                    if (!hasAi && !hasManual) {
                         showStatus("Aucune réponse IA à restaurer.", true);
                         return;
                     }
-                    if (page) {
-                        page.datasetScript = script;
+                    const preferred = page?.id ? (gridRestoreTargets.get(page.id) || "ai") : "ai";
+                    const target = determineGridRestoreTarget(preferred, hasAi, hasManual);
+                    if (!target) {
+                        showStatus("Aucune réponse IA à restaurer.", true);
+                        return;
                     }
-                    gridScript.value = script;
-                    applyScriptToGrid();
+                    const scriptToRestore = target === "manual" ? (manualScript || "") : aiScript;
+                    if (gridScript) {
+                        gridScript.value = scriptToRestore;
+                    }
+                    applyScriptToGrid({ silentOnError: true, silentOnSuccess: true });
+                    setStatus(
+                        target === "manual"
+                            ? "Script restauré depuis la version manuelle précédente."
+                            : "Script restauré depuis la dernière réponse IA ✔️"
+                    );
+                    if (page?.id) {
+                        gridRestoreTargets.set(
+                            page.id,
+                            nextGridRestorePreference(target, hasAi, hasManual)
+                        );
+                    }
                 }
 
                 function wireNavSwitcher() {
@@ -8690,6 +8720,9 @@
                             const page = getActivePage();
                             if (page) {
                                 page.datasetScript = scriptValue;
+                                if (page.id) {
+                                    gridRestoreTargets.set(page.id, "ai");
+                                }
                             }
                             persistState();
                         });

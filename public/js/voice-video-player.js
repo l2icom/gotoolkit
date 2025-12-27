@@ -92,6 +92,7 @@
                 cursor: pointer;
                 font-size: 16px;
                 color: #1f2937;
+                border-radius: 8px;
             }
             .voice-video-player-progress {
                 flex: 1;

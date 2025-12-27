@@ -225,6 +225,12 @@
             color: var(--text);
             font-size: 14px;
         }
+        .panel-header .summary-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
 
         .note-mode-select {
             font-size: 13px;
@@ -1218,8 +1224,12 @@
                             </div>
                             <div class="summary-column">
                                 <div class="panel-header">
-                                    <span>Résumé</span>
-                                    <button id="summarizeBtn" type="button" class="btn">⌘ Résumer</button>
+                                    <span id="summaryLabel">Résumé</span>
+                                    <div class="summary-actions">
+                                        <button id="revertSummaryBtn" type="button" class="btn"
+                                            title="Restaurer la version manuelle">↺</button>
+                                        <button id="summarizeBtn" type="button" class="btn">⌘ Résumer</button>
+                                    </div>
                                 </div>
                                 <div class="summary-wrapper">
                                     <textarea id="summaryTextarea" class="summary-area" rows="8" placeholder=""
@@ -1384,9 +1394,6 @@
             let activeRequestId = null;
             let activeRequestController = null;
             let respondCountdownTimer = null;
-            const summarizeCountdownState = { timer: null };
-            const evaluateCountdownState = { timer: null };
-            const completeCountdownState = { timer: null };
             const subjectModal = document.createElement("div");
             subjectModal.className = "modal-overlay";
             subjectModal.setAttribute("role", "dialog");
@@ -1456,6 +1463,7 @@
             const completeDefaultLabel = completeBtn?.textContent || "⌘ Remplir";
             const clearScenarioBtn = document.getElementById("clearScenarioBtn");
             const applyScriptBtn = document.getElementById("applyScriptBtn");
+            const voiceRestoreTargets = new Map();
             const transcribeInput = document.getElementById("transcribeInput");
             const transcribeGhost = document.getElementById("transcribeGhost");
             const transcribeMirror = document.getElementById("transcribeMirror");
@@ -1465,6 +1473,8 @@
             const summarizeBtn = document.getElementById("summarizeBtn");
             const summaryTextarea = document.getElementById("summaryTextarea");
             const summarizeDefaultLabel = summarizeBtn?.textContent || "⌘ Résumer";
+            const summaryLabel = document.getElementById("summaryLabel");
+            const revertSummaryBtn = document.getElementById("revertSummaryBtn");
             const noteModeSelect = document.getElementById("noteModeSelect");
             const audioModeOption = noteModeSelect?.querySelector(`option[value="${NOTE_MODE_TRANSCRIPT_IA}"]`);
             const videoModeOption = noteModeSelect?.querySelector(`option[value="${NOTE_MODE_TRANSCRIPT_VIDEO}"]`);
@@ -1493,6 +1503,30 @@
             const refreshFromScriptBtn = document.getElementById("refreshFromScriptBtn");
             const fileMenuBtn = document.getElementById("fileMenuBtn");
             const fileMenu = document.getElementById("fileMenu");
+            const completeActionCountdown =
+                window.GoToolkitSharedUI &&
+                typeof window.GoToolkitSharedUI.createActionCountdown === "function"
+                    ? window.GoToolkitSharedUI.createActionCountdown(
+                          { element: completeBtn, defaultLabel: completeDefaultLabel },
+                          { duration: 30 }
+                      )
+                    : null;
+            const evaluateActionCountdown =
+                window.GoToolkitSharedUI &&
+                typeof window.GoToolkitSharedUI.createActionCountdown === "function"
+                    ? window.GoToolkitSharedUI.createActionCountdown(
+                          { element: evaluateBtn, defaultLabel: evaluateDefaultLabel },
+                          { duration: 30 }
+                      )
+                    : null;
+            const summarizeActionCountdown =
+                window.GoToolkitSharedUI &&
+                typeof window.GoToolkitSharedUI.createActionCountdown === "function"
+                    ? window.GoToolkitSharedUI.createActionCountdown(
+                          { element: summarizeBtn, defaultLabel: summarizeDefaultLabel },
+                          { duration: 30 }
+                      )
+                    : null;
             const optionsMenu = document.getElementById("optionsMenu");
             const newDocumentBtn = document.getElementById("newDocumentBtn");
             const importJsonBtn = document.getElementById("importJsonBtn");
@@ -1640,6 +1674,10 @@
                     script: "",
                     transcript: "",
                     summary: "",
+                    manualSummary: "",
+                    manualTranscriptSummary: "",
+                    transcriptSummary: "",
+                    autoTranscriptSummary: "",
                     templateId: defaultTemplate?.id || "",
                     templateName: defaultTemplate?.title || "",
                     subjects: [],
@@ -1662,6 +1700,7 @@
                     audioTranscriptVersion: 0,
                     noteMode: NOTE_MODE_NOTE,
                     lastIaResponse: "",
+                    lastManualScript: null,
                     activeSubjectId: null,
                     checks: {}
                 };
@@ -1674,7 +1713,12 @@
                     next.participants = ensureParticipants(next.participants);
                     if (!next.tabLabel) next.tabLabel = next.title || next.label || "Page";
                     if (typeof next.lastIaResponse !== "string") next.lastIaResponse = "";
+                    if (typeof next.lastManualScript !== "string") next.lastManualScript = null;
                     if (typeof next.summary !== "string") next.summary = "";
+                    if (typeof next.manualSummary !== "string") next.manualSummary = next.summary || "";
+                    if (typeof next.manualTranscriptSummary !== "string") next.manualTranscriptSummary = "";
+                    if (typeof next.transcriptSummary !== "string") next.transcriptSummary = "";
+                    if (typeof next.autoTranscriptSummary !== "string") next.autoTranscriptSummary = "";
                     if (typeof next.templateId !== "string") next.templateId = "";
                     if (typeof next.templateName !== "string") next.templateName = "";
                     if (!next.templateId && defaultTemplate) {
@@ -2102,7 +2146,7 @@
                 }
                 if (parsed.summary && typeof parsed.summary === "string") {
                     page.summary = parsed.summary;
-                    if (summaryTextarea) summaryTextarea.value = parsed.summary;
+                    refreshSummaryTextarea();
                 }
                 page.script = JSON.stringify(parsed, null, 2);
                 page.__guidelinesCleared = false;
@@ -2487,7 +2531,7 @@
                 const noteContent = getNoteContentForMode(page, page.noteMode);
                 if (transcribeInput) transcribeInput.value = noteContent;
                 if (noteModeSelect) noteModeSelect.value = page.noteMode;
-                if (summaryTextarea) summaryTextarea.value = page.summary || "";
+                refreshSummaryTextarea();
                 if (promptTemplateMeta) {
                     const label = page.templateName || tplFromState?.title || "—";
                     promptTemplateMeta.textContent = `Modèle : ${label}`;
@@ -2730,13 +2774,17 @@
                 if (!videoKeys.includes(VIDEO_DB.key)) {
                     videoKeys.push(VIDEO_DB.key);
                 }
+                let videoLoaded = false;
                 for (const k of videoKeys) {
                     const loaded = await loadVideoFromDb(k);
                     if (loaded) {
                         console.log("Hydrated video", { key: k });
+                        videoLoaded = true;
                         break;
                     }
                 }
+                screenCaptureEnabled = videoLoaded;
+                updateScreenToggleVisual();
             }
 
             function rebuildCombinedAudioBlob() {
@@ -2815,10 +2863,16 @@
                 }
                 updateNoteModeOptions();
                 updateDownloadMenu();
+                screenCaptureEnabled = Boolean(videoBlob);
+                updateScreenToggleVisual();
             }
 
             function hasAudioRecording() {
                 return Boolean(audioBlob || recordingSegments.length);
+            }
+
+            function hasVideoRecording() {
+                return Boolean(videoBlob);
             }
 
             async function discardAudioRecording() {
@@ -3253,7 +3307,8 @@
                 }
                 const page = getActivePage();
                 if (page) {
-                    const needsTranscription = shouldTranscribeForVideo(page);
+                    const hasVideoTranscript = hasVideoTranscriptContent(page);
+                    const needsTranscription = !hasVideoTranscript && shouldTranscribeForVideo(page);
                     if (needsTranscription && audioBlob) {
                         await processAssemblyRecording(audioBlob, {
                             targetNoteMode: NOTE_MODE_TRANSCRIPT_VIDEO,
@@ -3494,6 +3549,63 @@
                 persistState();
                 updateGhostOverlay("");
                 updateTranscriptMeta();
+                refreshSummaryTextarea();
+            }
+
+            const isTranscriptSummaryMode = mode => mode === NOTE_MODE_TRANSCRIPT_IA || mode === NOTE_MODE_TRANSCRIPT_VIDEO;
+
+            function getTranscriptSummaryValue(page) {
+                if (!page) return "";
+                return page.transcriptSummary || page.autoTranscriptSummary || "";
+            }
+
+            function getActiveSummaryValue(page) {
+                if (!page) return "";
+                if (isTranscriptSummaryMode(activeNoteMode)) {
+                    return getTranscriptSummaryValue(page);
+                }
+                return page.summary || "";
+            }
+
+            function updateSummaryLabel(mode) {
+                if (!summaryLabel) return;
+                summaryLabel.textContent = isTranscriptSummaryMode(mode) ? "Résumé du transcript" : "Résumé";
+            }
+
+            function refreshSummaryTextarea() {
+                const page = getActivePage();
+                if (!page || !summaryTextarea) return;
+                summaryTextarea.value = getActiveSummaryValue(page);
+                updateSummaryLabel(activeNoteMode);
+            }
+
+            function setActiveSummaryValue(page, value) {
+                if (!page) return;
+                if (isTranscriptSummaryMode(activeNoteMode)) {
+                    page.transcriptSummary = value;
+                } else {
+                    page.summary = value;
+                }
+            }
+
+            function saveManualSummarySnapshot(page) {
+                if (!page) return;
+                if (isTranscriptSummaryMode(activeNoteMode)) {
+                    page.manualTranscriptSummary = getTranscriptSummaryValue(page);
+                    return;
+                }
+                page.manualSummary = page.summary || "";
+            }
+
+            function restoreManualSummary(page) {
+                if (!page || !summaryTextarea) return;
+                if (isTranscriptSummaryMode(activeNoteMode)) {
+                    page.transcriptSummary = page.manualTranscriptSummary || "";
+                } else {
+                    page.summary = page.manualSummary || "";
+                }
+                refreshSummaryTextarea();
+                persistState();
             }
 
             function canRequestAssemblyTranscript() {
@@ -3531,14 +3643,14 @@
                     }
                 }
                 if (value === NOTE_MODE_TRANSCRIPT_VIDEO) {
-                    if (!screenCaptureEnabled) {
+                    const page = getActivePage();
+                    const hasVideoTranscript = hasVideoTranscriptContent(page);
+                    if (!screenCaptureEnabled && !hasVideoTranscript) {
                         showToast("La transcription vidéo nécessite une capture d'écran.", true);
                         applyNoteMode(NOTE_MODE_NOTE);
                         return;
                     }
-                    const page = getActivePage();
-                    const needsTranscription = shouldTranscribeForVideo(page);
-                    applyNoteMode(NOTE_MODE_TRANSCRIPT_VIDEO);
+                    const needsTranscription = !hasVideoTranscript && shouldTranscribeForVideo(page);
                     if (needsTranscription && audioBlob) {
                         await processAssemblyRecording(audioBlob, {
                             targetNoteMode: NOTE_MODE_TRANSCRIPT_VIDEO,
@@ -3548,6 +3660,8 @@
                     }
                     if (page) {
                         await ensureVideoTranscriptSegments(page);
+                        applyNoteMode(NOTE_MODE_TRANSCRIPT_VIDEO);
+                    } else {
                         applyNoteMode(NOTE_MODE_TRANSCRIPT_VIDEO);
                     }
                     return;
@@ -3587,6 +3701,45 @@
                     return `[${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}]`;
                 }
                 return `[${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}]`;
+            }
+
+            function formatChapterTimestamp(ms) {
+                const numeric = Number(ms);
+                if (!Number.isFinite(numeric)) return "";
+                const totalSeconds = Math.max(0, Math.floor(numeric / 1000));
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                const minuteStr = String(minutes).padStart(2, "0");
+                const secondStr = String(seconds).padStart(2, "0");
+                if (hours > 0) {
+                    return `${String(hours).padStart(2, "0")}:${minuteStr}:${secondStr}`;
+                }
+                return `${minuteStr}:${secondStr}`;
+            }
+
+            function buildAutoTranscriptSummary(chapters) {
+                if (!Array.isArray(chapters) || !chapters.length) return "";
+                const entries = chapters
+                    .map(chapter => {
+                        const gist = (chapter?.gist || chapter?.headline || "").trim();
+                        const summary = String(chapter?.summary || "").trim();
+                        const timestamp = formatChapterTimestamp(chapter?.start ?? chapter?.start_time);
+                        const headerParts = [];
+                        if (timestamp) headerParts.push(timestamp);
+                        if (gist) headerParts.push(gist);
+                        const lines = [];
+                        if (headerParts.length) {
+                            lines.push(headerParts.join(" "));
+                        }
+                        if (summary) {
+                            lines.push(summary);
+                        }
+                        if (!lines.length) return null;
+                        return lines.join("\n");
+                    })
+                    .filter(Boolean);
+                return entries.join("\n\n");
             }
 
             function buildTranscriptFromUtterances(result) {
@@ -3786,7 +3939,7 @@
                 const {
                     targetNoteMode = NOTE_MODE_TRANSCRIPT_IA,
                     skipModeApply = false,
-                    toastLabel = "Transcription IA"
+                    toastLabel = "Transcription"
                 } = options;
                 if (!blob) return;
                 if (assemblyRequestInProgress) return;
@@ -3871,6 +4024,14 @@
                         activePage.audioTranscriptVersion = Number.isFinite(activePage.audioRecordingVersion)
                             ? activePage.audioRecordingVersion
                             : 0;
+                        const transcriptSummary = buildAutoTranscriptSummary(result?.chapters);
+                        const previousTranscriptSummary = activePage.transcriptSummary || "";
+                        activePage.manualTranscriptSummary = previousTranscriptSummary;
+                        activePage.autoTranscriptSummary = transcriptSummary;
+                        activePage.transcriptSummary = transcriptSummary;
+                        if (isTranscriptSummaryMode(activeNoteMode)) {
+                            refreshSummaryTextarea();
+                        }
                     }
                     if (!skipModeApply) {
                         applyNoteMode(targetNoteMode);
@@ -4068,28 +4229,6 @@
                 if (respondBtn) respondBtn.textContent = respondDefaultLabel;
             }
 
-            const ACTION_COUNTDOWN_PREFIX = "◴";
-
-            function startActionCountdown(button, state, defaultLabel, seconds = 30) {
-                if (!button) return;
-                let remaining = seconds;
-                const tick = () => {
-                    const label = remaining < 10 ? `0${remaining}` : `${remaining}`;
-                    button.textContent = `${ACTION_COUNTDOWN_PREFIX} ${label}s`;
-                    remaining -= 1;
-                    if (remaining < 0) remaining = seconds;
-                };
-                tick();
-                if (state.timer) clearInterval(state.timer);
-                state.timer = setInterval(tick, 1000);
-            }
-
-            function stopActionCountdown(button, state, defaultLabel) {
-                if (state.timer) clearInterval(state.timer);
-                state.timer = null;
-                if (button) button.textContent = defaultLabel;
-            }
-
             function clearActiveRequest() {
                 activeRequestId = null;
                 activeRequestController = null;
@@ -4130,6 +4269,11 @@
                 if (!systemPrompt || !scenario) {
                     showToast("Ajoute un scénario avant de lancer l'IA.", true);
                     return;
+                }
+                const manualScriptValue = promptModify?.value ?? page.script ?? "";
+                page.lastManualScript = manualScriptValue;
+                if (page.id) {
+                    voiceRestoreTargets.set(page.id, "ai");
                 }
                 const requestId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
                 activeRequestId = requestId;
@@ -4198,7 +4342,7 @@
                     clearGuidelineData();
                 }
                 completeBtn?.setAttribute("disabled", "true");
-                startActionCountdown(completeBtn, completeCountdownState, completeDefaultLabel);
+                completeActionCountdown?.start(30);
                 try {
                     const promptTemplate = promptState.complete || promptDefaults.complete || "";
                     const prompt = promptTemplate.replace(/{{transcript_content}}/gi, transcript);
@@ -4269,7 +4413,7 @@
                     showToast("Impossible de compléter via IA.", true);
                 } finally {
                     completeBtn?.removeAttribute("disabled");
-                    stopActionCountdown(completeBtn, completeCountdownState, completeDefaultLabel);
+                    completeActionCountdown?.stop();
                 }
             }
 
@@ -4285,7 +4429,7 @@
                     return;
                 }
                 evaluateBtn?.setAttribute("disabled", "true");
-                startActionCountdown(evaluateBtn, evaluateCountdownState, evaluateDefaultLabel);
+                evaluateActionCountdown?.start(30);
                 try {
                     const evaluatePrompt = promptState.evaluate || promptDefaults.evaluate;
                     const summary = page.subjects.map(s => {
@@ -4331,20 +4475,21 @@
                     showToast("Impossible d'évaluer via IA.", true);
                 } finally {
                     evaluateBtn?.removeAttribute("disabled");
-                    stopActionCountdown(evaluateBtn, evaluateCountdownState, evaluateDefaultLabel);
+                    evaluateActionCountdown?.stop();
                 }
             }
 
             async function summarizeTranscript() {
                 const page = getActivePage();
                 if (!page) return;
+                saveManualSummarySnapshot(page);
                 const transcript = (transcribeInput?.value || "").trim();
                 if (!transcript) {
                     showToast("Ajoute une transcription avant de résumer.", true);
                     return;
                 }
                 summarizeBtn?.setAttribute("disabled", "true");
-                startActionCountdown(summarizeBtn, summarizeCountdownState, summarizeDefaultLabel);
+                summarizeActionCountdown?.start(30);
                 try {
                     const templateText = selectedTemplateText || "";
                     const prompt = (promptState.summary || promptDefaults.summary || "")
@@ -4362,8 +4507,8 @@
                     };
                     const response = await window.GoToolkitIA.chatCompletion({ payload });
                     const cleaned = response.trim().replace(/^```(?:[a-z]+)?/i, "").replace(/```$/i, "").trim();
-                    if (summaryTextarea) summaryTextarea.value = cleaned;
-                    page.summary = cleaned;
+                    setActiveSummaryValue(page, cleaned);
+                    refreshSummaryTextarea();
                     persistState();
                     showToast("Résumé généré.");
                 } catch (err) {
@@ -4371,7 +4516,7 @@
                     showToast("Impossible de résumer via IA.", true);
                 } finally {
                     summarizeBtn?.removeAttribute("disabled");
-                    stopActionCountdown(summarizeBtn, summarizeCountdownState, summarizeDefaultLabel);
+                    summarizeActionCountdown?.stop();
                 }
             }
 
@@ -4598,18 +4743,56 @@
                 return Math.round((secs / 60) * 10) / 10;
             }
 
+            function determineVoiceRestoreTarget(preferred, hasAi, hasManual) {
+                if (preferred === "ai") {
+                    if (hasAi) return "ai";
+                    if (hasManual) return "manual";
+                } else {
+                    if (hasManual) return "manual";
+                    if (hasAi) return "ai";
+                }
+                if (hasAi) return "ai";
+                if (hasManual) return "manual";
+                return null;
+            }
+
+            function nextVoiceRestorePreference(lastUsed, hasAi, hasManual) {
+                if (lastUsed === "ai") {
+                    return hasManual ? "manual" : (hasAi ? "ai" : "manual");
+                }
+                if (lastUsed === "manual") {
+                    return hasAi ? "ai" : (hasManual ? "manual" : "ai");
+                }
+                return hasAi ? "ai" : (hasManual ? "manual" : "ai");
+            }
+
             function restoreLastIaResponse() {
                 const page = getActivePage();
-                const fallback = page?.lastIaResponse || page?.script || "";
-                if (!fallback) {
+                const aiScript = page?.lastIaResponse || "";
+                const manualScript = page?.lastManualScript;
+                const hasAi = Boolean(aiScript);
+                const hasManual = manualScript != null;
+                if (!hasAi && !hasManual) {
                     showToast("Aucune réponse IA à restaurer.", true);
                     return;
                 }
+                const preferred = page?.id ? (voiceRestoreTargets.get(page.id) || "ai") : "ai";
+                const target = determineVoiceRestoreTarget(preferred, hasAi, hasManual);
+                if (!target) {
+                    showToast("Aucune réponse IA à restaurer.", true);
+                    return;
+                }
+                const scriptValue = target === "manual" ? (manualScript || "") : aiScript;
                 if (promptModify) {
-                    promptModify.value = fallback;
+                    promptModify.value = scriptValue;
                 }
                 applyScriptFromTextarea({ silent: true });
-                showToast("Dernière réponse IA restaurée.");
+                showToast(
+                    target === "manual" ? "Dernière version manuelle restaurée." : "Dernière réponse IA restaurée."
+                );
+                if (page?.id) {
+                    voiceRestoreTargets.set(page.id, nextVoiceRestorePreference(target, hasAi, hasManual));
+                }
             }
 
             function setupSpeechRecognition() {
@@ -5017,6 +5200,12 @@
             promptCreate?.addEventListener("input", persistScenario);
             promptModify?.addEventListener("focus", exportPageStateToScriptField);
             promptModify?.addEventListener("blur", () => applyScriptFromTextarea({ silent: true }));
+            promptModify?.addEventListener("input", () => {
+                const page = getActivePage();
+                if (page?.id) {
+                    voiceRestoreTargets.set(page.id, "ai");
+                }
+            });
             respondBtn?.addEventListener("click", runVoicePrompt);
             clearScenarioBtn?.addEventListener("click", () => {
                 const ok = confirm("Supprimer le scénario ? Cette action est irréversible.");
@@ -5039,6 +5228,11 @@
             completeBtn?.addEventListener("click", completeGuidelinesFromTranscript);
             evaluateBtn?.addEventListener("click", evaluateGuidelines);
             summarizeBtn?.addEventListener("click", summarizeTranscript);
+            revertSummaryBtn?.addEventListener("click", () => {
+                const page = getActivePage();
+                if (!page) return;
+                restoreManualSummary(page);
+            });
             refreshFromScriptBtn?.addEventListener("click", applyScriptFromTextarea);
             addSubjectBtn?.addEventListener("click", () => {
                 openSubjectModal(null);
@@ -5202,7 +5396,7 @@
             summaryTextarea?.addEventListener("input", () => {
                 const page = getActivePage();
                 if (!page) return;
-                page.summary = summaryTextarea.value;
+                setActiveSummaryValue(page, summaryTextarea.value);
                 persistState();
             });
             noteModeSelect?.addEventListener("change", () => {
@@ -5232,18 +5426,36 @@
             audioClearBtn?.addEventListener("click", clearCurrentAudioWithConfirm);
             screenCaptureToggleBtn?.addEventListener("click", async () => {
                 const willEnable = !screenCaptureEnabled;
-                if (willEnable && hasAudioRecording()) {
-                    const confirmed = window.confirm("L'enregistrement audio précédent sera supprimé. Continuer ?");
-                    if (!confirmed) {
-                        return;
+                if (willEnable) {
+                    if (!hasVideoRecording() && hasAudioRecording()) {
+                        const confirmed = window.confirm("L'audio précédent sera supprimé pour créer l'enregistrement vidéo. Continuer ?");
+                        if (!confirmed) {
+                            return;
+                        }
+                        await discardAudioRecording();
                     }
-                    await discardAudioRecording();
-                }
-                screenCaptureEnabled = willEnable;
-                updateScreenToggleVisual();
-                if (!screenCaptureEnabled) {
+                    screenCaptureEnabled = true;
+                } else {
+                    if (hasVideoRecording()) {
+                        const confirmed = window.confirm("L'enregistrement courant n'aura plus de vidéo. Continuer ?");
+                        if (!confirmed) {
+                            return;
+                        }
+                        const mediaKey = getMediaStorageKey();
+                        setVideoBlob(null);
+                        try {
+                            await clearVideoDb(mediaKey);
+                            if (mediaKey && mediaKey !== VIDEO_DB.key) {
+                                await clearVideoDb(VIDEO_DB.key);
+                            }
+                        } catch (err) {
+                            console.warn("Impossible de vider la vidéo", err);
+                        }
+                    }
+                    screenCaptureEnabled = false;
                     stopScreenRecording();
                 }
+                updateScreenToggleVisual();
             });
             audioImportBtn?.addEventListener("click", handleAudioImportClick);
             audioImportInput?.addEventListener("change", handleAudioImportChange);

@@ -1,0 +1,210 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - link "☍" [ref=e4] [cursor=pointer]:
+        - /url: /?v=2025.12.27.2
+      - button "▷ Voice ▾" [ref=e6] [cursor=pointer]
+      - generic [ref=e7]:
+        - button "Page 1" [ref=e9] [cursor=pointer]
+        - button "Ajouter une vue" [ref=e10] [cursor=pointer]: +
+        - button "Supprimer la vue active" [ref=e11] [cursor=pointer]: ×
+      - generic [ref=e12]:
+        - button "Ouvrir ⊞ Modèles" [ref=e13] [cursor=pointer]: ⊞ Modèles
+        - button "Ouvrir ⌘ Agent" [ref=e14] [cursor=pointer]: ⌘ Agent
+        - button "Ouvrir Prompt" [ref=e15] [cursor=pointer]: ⌬ Prompt
+        - button "Document" [ref=e17] [cursor=pointer]: ⬠ Document
+        - button "Partager" [ref=e19] [cursor=pointer]: ☍ Partage
+    - dialog "⊞ Modèles" [ref=e20]:
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - heading "⊞ Modèles" [level=3] [ref=e23]
+          - button "Fermer ⊞ Modèles" [ref=e24] [cursor=pointer]: ×
+        - generic [ref=e25]:
+          - generic [ref=e26] [cursor=pointer]:
+            - strong [ref=e27]: 🧹 Backlog Grooming
+            - generic [ref=e28]: Affiner les stories avant le sprint. ☐ Priorités et risques ☐ Clarification des critères ☐ Estimations ou dépendances
+          - generic [ref=e29] [cursor=pointer]:
+            - strong [ref=e30]: 🔁 Sprint Review
+            - generic [ref=e31]: Partager les incréments du sprint. ☐ Objectifs atteints ☐ Démo des livrables ☐ Feedback et décisions
+          - generic [ref=e32] [cursor=pointer]:
+            - strong [ref=e33]: 🎬 Feature Demo
+            - generic [ref=e34]: Mettre en scène une nouvelle fonctionnalité. ☐ Commande utilisateur ☐ Valeur métier ☐ Points de vigilance
+          - generic [ref=e35] [cursor=pointer]:
+            - strong [ref=e36]: ✨ Brainstorm UX
+            - generic [ref=e37]: Explorer des pistes d'expérience. ☐ Problème et contexte ☐ Variations d'interaction ☐ Critères de choix
+          - generic [ref=e38] [cursor=pointer]:
+            - strong [ref=e39]: 🧠 Workshop UX
+            - generic [ref=e40]: Animer un atelier collaboratif. ☐ Participants et rôles ☐ Activités et livrables ☐ Planning minute
+          - generic [ref=e41] [cursor=pointer]:
+            - strong [ref=e42]: 🔧 Daily Tech
+            - generic [ref=e43]: Synchroniser l'équipe technique. ☐ Avancées ☐ Blocages ☐ Priorités du jour
+          - generic [ref=e44] [cursor=pointer]:
+            - strong [ref=e45]: 🏛️ Comité Tech
+            - generic [ref=e46]: Arbitrer les sujets techniques. ☐ Décisions à prendre ☐ Impacts produit/infra ☐ Actions et responsables
+          - generic [ref=e47] [cursor=pointer]:
+            - strong [ref=e48]: 📢 Pitch produit
+            - generic [ref=e49]: Présenter la valeur d’un produit ou d’une release. ☐ Problème / besoin adressé ☐ Proposition de valeur ☐ Démo rapide / points clés ☐ Appel à l’action
+          - generic [ref=e50] [cursor=pointer]:
+            - strong [ref=e51]: 🧾 Recueil de besoins
+            - generic [ref=e52]: Capturer les attentes et contraintes d’un demandeur. ☐ Contexte métier ☐ Objectifs / KPIs ☐ Contraintes / priorités ☐ Prochaines étapes
+          - generic [ref=e53] [cursor=pointer]:
+            - strong [ref=e54]: 👥 Entretien candidat
+            - generic [ref=e55]: Structurer un entretien de recrutement. ☐ Parcours / réalisations ☐ Compétences clés ☐ Situations vécues ☐ Motivations / fit
+          - generic [ref=e56] [cursor=pointer]:
+            - strong [ref=e57]: 🤝 Entretien client
+            - generic [ref=e58]: Explorer les besoins et irritants d’un client. ☐ Contexte et enjeux ☐ Problèmes rencontrés ☐ Attentes / priorités ☐ Actions / suivis
+          - generic [ref=e59] [cursor=pointer]:
+            - strong [ref=e60]: 🕊️ Réunion générique
+            - generic [ref=e61]: . ☐ Informations ☐ Décisions ☐ Actions
+        - button "Appliquer" [ref=e63] [cursor=pointer]
+    - generic [ref=e64]:
+      - generic [ref=e65]:
+        - textbox "Titre de la page" [ref=e68]
+        - generic [ref=e69]:
+          - generic [ref=e71]:
+            - generic [ref=e72]:
+              - generic [ref=e73]:
+                - combobox "Mode de note" [ref=e74] [cursor=pointer]:
+                  - option "Note écrite" [selected]
+                  - option "Dictée vocale"
+                  - option "Transcript vidéo" [disabled]
+                - generic [ref=e75]:
+                  - generic [ref=e76]: 0'00" / 15'00"
+                  - generic [ref=e77]:
+                    - button "Lire l'enregistrement" [ref=e78] [cursor=pointer]: ▶
+                    - slider "Progression audio" [disabled] [ref=e79]: "0"
+                    - combobox "Vitesse de lecture" [ref=e80]:
+                      - option "0.5x"
+                      - option "0.6x"
+                      - option "0.7x"
+                      - option "0.8x"
+                      - option "0.9x"
+                      - option "1.0x"
+                      - option "1.1x"
+                      - option "1.2x" [selected]
+                      - option "1.3x"
+                      - option "1.4x"
+                      - option "1.5x"
+                      - option "1.6x"
+                      - option "1.7x"
+                      - option "1.8x"
+                      - option "1.9x"
+                      - option "2.0x"
+                    - button "Télécharger" [disabled] [ref=e82] [cursor=pointer]: 🡇
+                    - button "Supprimer l'enregistrement" [ref=e83] [cursor=pointer]: ⊘
+                    - button "Capturer l'écran" [ref=e84] [cursor=pointer]: ⧉
+              - generic [ref=e85]:
+                - textbox "Transcription" [ref=e86]:
+                  - /placeholder: ""
+                - button "Activer l'enregistrement" [ref=e87] [cursor=pointer]: ◉
+                - button "Importer un fichier audio" [ref=e88] [cursor=pointer]: ♪
+            - generic [ref=e89]:
+              - generic [ref=e90]:
+                - generic [ref=e91]: Résumé
+                - generic [ref=e92]:
+                  - button "↺" [ref=e93] [cursor=pointer]
+                  - button "⌘ Résumer" [ref=e94] [cursor=pointer]
+              - textbox "Résumé IA" [ref=e96]:
+                - /placeholder: ""
+          - generic [ref=e97]:
+            - generic [ref=e98]:
+              - generic [ref=e99]:
+                - generic [ref=e100]:
+                  - generic [ref=e101]: Sujets
+                  - generic [ref=e102]: Durée prévue
+                  - combobox [ref=e103]:
+                    - option "10'"
+                    - option "15'" [selected]
+                    - option "20'"
+                    - option "25'"
+                    - option "30'"
+                    - option "35'"
+                    - option "40'"
+                    - option "45'"
+                    - option "50'"
+                    - option "55'"
+                    - option "60'"
+                    - option "65'"
+                    - option "70'"
+                    - option "75'"
+                    - option "80'"
+                    - option "85'"
+                    - option "90'"
+                - generic [ref=e104]:
+                  - button "⌘ Remplir" [ref=e105] [cursor=pointer]
+                  - button "+ Sujet" [ref=e106] [cursor=pointer]
+              - generic [ref=e107]:
+                - button "Sujet 1 ✎" [ref=e108] [cursor=pointer]:
+                  - generic [ref=e110]:
+                    - generic [ref=e111]: Sujet 1
+                    - button "✎" [ref=e113]
+                - button "Sujet 2 ✎" [ref=e114] [cursor=pointer]:
+                  - generic [ref=e116]:
+                    - generic [ref=e117]: Sujet 2
+                    - button "✎" [ref=e119]
+              - generic [ref=e121]:
+                - generic [ref=e122]:
+                  - generic [ref=e123]: 15 mn
+                  - slider [ref=e124]: "15"
+                  - generic [ref=e125]: 0' → 15'
+                - button "⌘ Évaluer" [ref=e126] [cursor=pointer]
+              - list [ref=e127]:
+                - listitem [ref=e128]:
+                  - generic [ref=e129]: Point 1.1
+                  - generic [ref=e130]:
+                    - generic [ref=e131] [cursor=pointer]:
+                      - checkbox "Discuté" [ref=e132]
+                      - text: Discuté
+                    - generic [ref=e133] [cursor=pointer]:
+                      - checkbox "Abordé" [ref=e134]
+                      - text: Abordé
+                - listitem [ref=e135]:
+                  - generic [ref=e136]: Point 1.2
+                  - generic [ref=e137]:
+                    - generic [ref=e138] [cursor=pointer]:
+                      - checkbox "Discuté" [ref=e139]
+                      - text: Discuté
+                    - generic [ref=e140] [cursor=pointer]:
+                      - checkbox "Abordé" [ref=e141]
+                      - text: Abordé
+            - generic [ref=e142]:
+              - generic [ref=e143]:
+                - generic [ref=e144]: Participants
+                - button "+ Participant" [ref=e145] [cursor=pointer]
+              - generic [ref=e146]:
+                - generic [ref=e147]:
+                  - textbox "Moi" [ref=e148]
+                  - textbox "Rôle" [ref=e149]
+                  - button "×" [ref=e150] [cursor=pointer]
+                - generic [ref=e151]:
+                  - textbox "Participant 2" [ref=e152]
+                  - textbox "Rôle" [ref=e153]
+                  - button "×" [ref=e154] [cursor=pointer]
+      - complementary [ref=e155]:
+        - generic [ref=e156]:
+          - generic [ref=e157]:
+            - generic [ref=e158]:
+              - generic [ref=e159]: Commande
+              - button "Réinitialiser le scénario" [ref=e160] [cursor=pointer]: ⊘ Vider
+              - button "⌘ Envoyer" [ref=e161] [cursor=pointer]:
+                - generic [ref=e162]: ⌘ Envoyer
+            - generic [ref=e163]:
+              - generic [ref=e164]: "Modèle : 🕊️ Réunion générique"
+              - textbox "Commande" [active] [ref=e165]:
+                - /placeholder: Décris le contexte, les objectifs et les interlocuteurs.
+                - text: Tester le scénario avant l'IA
+          - generic [ref=e166]:
+            - generic [ref=e167]:
+              - generic [ref=e168]: Script (JSON)
+              - button "↺ Restaurer" [ref=e169] [cursor=pointer]
+            - textbox "Script (JSON)" [ref=e171]:
+              - /placeholder: "{\"title\": \"...\", \"subjects\": [...]}"
+              - text: "{ \"title\": \"Page 1\", \"duration\": 15, \"participants\": [ { \"name\": \"\", \"role\": \"\" } ], \"subjects\": [ { \"title\": \"Sujet 1\", \"timeframe\": { \"start\": 0, \"end\": 15 }, \"keySentences\": [ { \"text\": \"Point 1.1\", \"match\": \"missing\" }, { \"text\": \"Point 1.2\", \"match\": \"missing\" } ] }, { \"title\": \"Sujet 2\", \"timeframe\": { \"start\": 15, \"end\": 30 }, \"keySentences\": [ { \"text\": \"Point 2.1\", \"match\": \"missing\" }, { \"text\": \"Point 2.2\", \"match\": \"missing\" } ] } ] }{ \"title\": \"Manual before AI\" }"
+    - status
+  - generic:
+    - button "☄ Feedback" [ref=e173] [cursor=pointer]
+    - status [ref=e174]
+```

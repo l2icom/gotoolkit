@@ -87,13 +87,143 @@
         hydrateToastSlots();
     }
 
+    const ACTION_COUNTDOWN_FRAMES = ["◴", "◷", "◶", "◵"];
+
+    function normalizeActionCountdownTargets(targets) {
+        if (!targets) {
+            return [];
+        }
+        const entries = Array.isArray(targets) ? targets : [targets];
+        const normalized = [];
+        entries.forEach(entry => {
+            if (!entry) {
+                return;
+            }
+            if (entry instanceof Element) {
+                normalized.push({ element: entry, defaultLabel: entry.textContent || "" });
+                return;
+            }
+            const element = entry.element || entry.button;
+            if (!(element instanceof Element)) {
+                return;
+            }
+            const label =
+                typeof entry.defaultLabel === "string"
+                    ? entry.defaultLabel
+                    : element.textContent || "";
+            normalized.push({ element, defaultLabel: label });
+        });
+        return normalized;
+    }
+
+    function resolveCountdownDuration(value, fallback) {
+        const numeric = Number(value);
+        if (Number.isFinite(numeric) && numeric > 0) {
+            return Math.max(1, Math.round(numeric));
+        }
+        return fallback;
+    }
+
+    function createActionCountdown(targets, options = {}) {
+        const resolvedTargets = normalizeActionCountdownTargets(targets);
+        if (!resolvedTargets.length) {
+            return {
+                start() { /* noop */ },
+                stop() { /* noop */ },
+                isActive() { return false; }
+            };
+        }
+        const frames =
+            Array.isArray(options.frames) && options.frames.length
+                ? options.frames.slice()
+                : ACTION_COUNTDOWN_FRAMES.slice();
+        const labelFormatter =
+            typeof options.labelFormatter === "function"
+                ? options.labelFormatter
+                : function (frame, seconds) {
+                      const padded = seconds < 10 ? "0" + seconds : String(seconds);
+                      return frame + " " + padded + "s";
+                  };
+        let globalDefaultLabel =
+            typeof options.defaultLabel === "string" ? options.defaultLabel : null;
+        resolvedTargets.forEach(target => {
+            if (globalDefaultLabel !== null) {
+                target.defaultLabel = globalDefaultLabel;
+            } else if (typeof target.defaultLabel !== "string") {
+                target.defaultLabel = target.element.textContent || "";
+            }
+        });
+        let timerId = null;
+        let duration = resolveCountdownDuration(options.duration, 30);
+        let remaining = duration;
+
+        function applyLabel(label) {
+            resolvedTargets.forEach(target => {
+                if (!target.element) return;
+                target.element.textContent = label;
+            });
+        }
+
+        function restoreLabels() {
+            resolvedTargets.forEach(target => {
+                if (!target.element) return;
+                if (typeof target.defaultLabel === "string") {
+                    target.element.textContent = target.defaultLabel;
+                }
+            });
+        }
+
+        function tick() {
+            if (!resolvedTargets.length) {
+                return;
+            }
+            if (remaining < 0) {
+                remaining = duration;
+            }
+            const frame = frames[Math.abs(remaining) % frames.length];
+            const label = labelFormatter(frame, Math.max(0, remaining));
+            applyLabel(label);
+            remaining -= 1;
+        }
+
+        function stop(restore) {
+            if (timerId) {
+                clearInterval(timerId);
+                timerId = null;
+            }
+            if (restore === false) {
+                return;
+            }
+            restoreLabels();
+        }
+
+        function start(value) {
+            stop(false);
+            duration = resolveCountdownDuration(value, duration);
+            remaining = duration;
+            tick();
+            timerId = setInterval(tick, 1000);
+        }
+
+        return {
+            start,
+            stop,
+            isActive: function () {
+                return Boolean(timerId);
+            }
+        };
+    }
+
     hydrateSharedUI();
     if (document.readyState === "loading") {
         window.addEventListener("DOMContentLoaded", hydrateSharedUI);
     }
 
-    window.GoToolkitSharedUI = window.GoToolkitSharedUI || {
-        renderShareMenu,
-        renderToast
-    };
+    window.GoToolkitSharedUI = window.GoToolkitSharedUI || {};
+    window.GoToolkitSharedUI.renderShareMenu =
+        window.GoToolkitSharedUI.renderShareMenu || renderShareMenu;
+    window.GoToolkitSharedUI.renderToast =
+        window.GoToolkitSharedUI.renderToast || renderToast;
+    window.GoToolkitSharedUI.createActionCountdown =
+        window.GoToolkitSharedUI.createActionCountdown || createActionCountdown;
 })();
