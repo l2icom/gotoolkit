@@ -1339,8 +1339,8 @@
                         <label>
                             <span class="label-title">Moteur IA</span>
                             <select id="aiBackendSelect">
-                                <option value="openrouter">OpenRouter</option>
-                                <option value="openai">OpenAI (recommandé)</option>
+                                <option value="openrouter">OpenRouter (recommandé)</option>
+                                <option value="openai">OpenAI</option>
                                 <option value="webllm">WebLLM </option>
                             </select>
                         </label>
@@ -1416,33 +1416,8 @@
                             <label>
                                 <span class="label-title">Moteur OpenRouter</span>
                                 <select id="openrouterModelSelect"></select>
-                                <span class="label-subtitle">Sélectionne un moteur recommandé (pas de saisie libre).</span>
-                            </label>
-                        </div>
-                        <div class="field-row">
-                            <label>
-                                <span class="label-title">Collecte des données</span>
-                                <select id="openrouterDataCollectionSelect">
-                                    <option value="deny">Refuser la collecte</option>
-                                    <option value="allow">Autoriser la collecte</option>
-                                </select>
-                                <span class="label-subtitle">Indique si les fournisseurs peuvent stocker tes prompts.</span>
-                            </label>
-                        </div>
-                        <div class="field-row">
-                            <label>
-                                <div
-                                    style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem;">
-                                    <span class="label-title">Prix max (prompt / completion)</span>
-                                    <span class="label-subtitle" id="openrouterPriceLabel">Gratuit</span>
-                                </div>
-                                <div style="display:flex; gap:0.5rem;">
-                                    <input id="openrouterMaxPricePromptInput" type="number" min="0" step="0.01"
-                                        placeholder="0" />
-                                    <input id="openrouterMaxPriceCompletionInput" type="number" min="0" step="0.01"
-                                        placeholder="0" />
-                                </div>
-                                <span class="label-subtitle">Limite les tarifs OpenRouter ; 0 signifie gratuitement.</span>
+                                <span class="label-subtitle">Sélectionne un moteur recommandé (pas de saisie
+                                    libre).</span>
                             </label>
                         </div>
                     </div>
@@ -2126,10 +2101,15 @@
             }
         }
 
-        function showToast(message, isError = false) {
+        function showToast(message, isError = false, reason = "") {
             if (!toastEl) return;
             toastEl.textContent = message;
             toastEl.classList.toggle("error", Boolean(isError));
+            if (reason) {
+                toastEl.dataset.reason = reason;
+            } else {
+                delete toastEl.dataset.reason;
+            }
             toastEl.classList.add("show");
             setTimeout(() => toastEl.classList.remove("show"), 3200);
         }
@@ -2915,7 +2895,7 @@
             if (!apiKey) {
                 updateStatusIcon(openrouterStatusEl, "error");
                 if (showToasts) {
-                    showToast("Clé OpenRouter requise pour tester la connexion.", true);
+                    showToast("Clé OpenRouter requise pour tester la connexion.", true, "openrouterStatus");
                 }
                 return false;
             }
@@ -2939,7 +2919,7 @@
                 console.warn("OpenRouter test failed", err);
                 var message = (err && err.message) || String(err) || "erreur inconnue";
                 if (showToasts) {
-                    showToast("Échec de la connexion OpenRouter (" + message + ")", true);
+                    showToast("Échec de la connexion OpenRouter (" + message + ")", true, "openrouterStatus");
                 }
                 updateStatusIcon(openrouterStatusEl, "error");
                 return false;
@@ -3057,10 +3037,6 @@
         const assemblyAiKeyInput = document.getElementById("assemblyAiKeyInput");
         const openrouterApiKeyInput = document.getElementById("openrouterApiKeyInput");
         const openrouterModelSelect = document.getElementById("openrouterModelSelect");
-        const openrouterDataCollectionSelect = document.getElementById("openrouterDataCollectionSelect");
-        const openrouterMaxPricePromptInput = document.getElementById("openrouterMaxPricePromptInput");
-        const openrouterMaxPriceCompletionInput = document.getElementById("openrouterMaxPriceCompletionInput");
-        const openrouterPriceLabel = document.getElementById("openrouterPriceLabel");
         const ASSEMBLY_AI_KEY_STORAGE = "go-toolkit-assemblyai-key";
         const VOICE_AUDIO_DB = { name: "go-toolkit-voice-audio", store: "recordings" };
 
@@ -3077,22 +3053,6 @@
             if (ollamaSettingsEl) ollamaSettingsEl.style.display = val === "ollama" ? "" : "none";
             if (webllmSettingsEl) webllmSettingsEl.style.display = val === "webllm" ? "" : "none";
             window.GoToolkitSelectedAIBackend = val;
-        }
-
-        function updateOpenrouterPriceLabel() {
-            if (!openrouterPriceLabel) return;
-            const parseValue = input => {
-                const text = (input?.value || "").trim();
-                const next = Number(text);
-                return Number.isFinite(next) && next >= 0 ? next : 0;
-            };
-            const prompt = parseValue(openrouterMaxPricePromptInput);
-            const completion = parseValue(openrouterMaxPriceCompletionInput);
-            if (prompt === 0 && completion === 0) {
-                openrouterPriceLabel.textContent = "Gratuit";
-            } else {
-                openrouterPriceLabel.textContent = `Max ${prompt.toFixed(2)} / ${completion.toFixed(2)}`;
-            }
         }
 
         function populateOpenrouterModelSelect(storedValue) {
@@ -3213,8 +3173,6 @@
             }
             updateStatusIcon(webllmStatusEl);
         });
-        openrouterMaxPricePromptInput?.addEventListener("input", updateOpenrouterPriceLabel);
-        openrouterMaxPriceCompletionInput?.addEventListener("input", updateOpenrouterPriceLabel);
 
         function openSettings() {
             if (!settingsModal) return;
@@ -3271,25 +3229,6 @@
                     window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL ||
                     "";
                 populateOpenrouterModelSelect(storedOpenRouterModel);
-                var storedOpenRouterDataCollection =
-                    (config && typeof config.getOpenRouterDataCollection === "function" ? config.getOpenRouterDataCollection() : "") ||
-                    "deny";
-                if (openrouterDataCollectionSelect) {
-                    openrouterDataCollectionSelect.value = storedOpenRouterDataCollection;
-                }
-                var storedOpenRouterPricePrompt =
-                    (config && typeof config.getOpenRouterMaxPricePrompt === "function" ? config.getOpenRouterMaxPricePrompt() : "") ||
-                    "0";
-                var storedOpenRouterPriceCompletion =
-                    (config && typeof config.getOpenRouterMaxPriceCompletion === "function" ? config.getOpenRouterMaxPriceCompletion() : "") ||
-                    "0";
-                if (openrouterMaxPricePromptInput) {
-                    openrouterMaxPricePromptInput.value = storedOpenRouterPricePrompt;
-                }
-                if (openrouterMaxPriceCompletionInput) {
-                    openrouterMaxPriceCompletionInput.value = storedOpenRouterPriceCompletion;
-                }
-                updateOpenrouterPriceLabel();
                 const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("nuances-reasoning-effort") || "low";
                 if (settingsReasoningSelect) settingsReasoningSelect.value = storedReasoning;
                 const storedAssemblyKey = ((localStorage.getItem(ASSEMBLY_AI_KEY_STORAGE) || "").trim() || (window.GoToolkitAssemblyAiKey || "").trim()) || "";
@@ -3364,22 +3303,6 @@
                 const openrouterModelValue = (openrouterModelSelect?.value || "").trim();
                 if (iaConfig && typeof iaConfig.setOpenRouterModel === "function" && openrouterModelValue) {
                     iaConfig.setOpenRouterModel(openrouterModelValue);
-                }
-                const openrouterDataCollectionValue = (openrouterDataCollectionSelect?.value || "").trim();
-                if (iaConfig && typeof iaConfig.setOpenRouterDataCollection === "function" && openrouterDataCollectionValue) {
-                    iaConfig.setOpenRouterDataCollection(openrouterDataCollectionValue);
-                }
-                const promptPriceValue = Number(openrouterMaxPricePromptInput?.value);
-                const completionPriceValue = Number(openrouterMaxPriceCompletionInput?.value);
-                const normalizePrice = value => {
-                    if (!Number.isFinite(value) || value < 0) return "0";
-                    return value.toFixed(2);
-                };
-                if (iaConfig && typeof iaConfig.setOpenRouterMaxPricePrompt === "function") {
-                    iaConfig.setOpenRouterMaxPricePrompt(normalizePrice(promptPriceValue));
-                }
-                if (iaConfig && typeof iaConfig.setOpenRouterMaxPriceCompletion === "function") {
-                    iaConfig.setOpenRouterMaxPriceCompletion(normalizePrice(completionPriceValue));
                 }
                 selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openrouter";
                 if (iaConfig && typeof iaConfig.setBackend === "function") {

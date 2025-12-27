@@ -730,6 +730,7 @@
         }
 
         const result = {
+            model: "openai/gpt-oss-120b:free",
             models: modelCandidates,
             messages: buildOpenRouterMessages(source)
         };

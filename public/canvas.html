@@ -1869,7 +1869,7 @@
                                 Vider</button>
                             <button class="btn-primary" id="generateFullSlideBtn" type="button"
                                 aria-label="Générer toutes les sections et la synthèse">⌘
-                                Répondre</button>
+                                Générer</button>
                         </div>
                         <label class="scenario-input-group">
                             <div id="canvasSelectedTemplateLabel" class="template-label"></div>
@@ -3781,9 +3781,8 @@
                     button.textContent = `${frame} ${state.remaining}s`;
                 }
                 state.frameIndex = (state.frameIndex + 1) % spinnerFrames.length;
-                state.remaining--;
-                if (state.remaining < 0) {
-                    state.remaining = 30;
+                if (state.remaining > 0) {
+                    state.remaining -= 1;
                 }
             };
             updateLabel();

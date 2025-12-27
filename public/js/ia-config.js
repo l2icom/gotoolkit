@@ -11,10 +11,7 @@
     var STORAGE_KEYS_BACKEND = "go-toolkit-ai-backend";
     var STORAGE_KEYS_OPENROUTER = {
         API_KEY: "go-toolkit-openrouter-key",
-        MODEL: "go-toolkit-openrouter-model",
-        DATA_COLLECTION: "go-toolkit-openrouter-data-collection",
-        MAX_PRICE_PROMPT: "go-toolkit-openrouter-max-price-prompt",
-        MAX_PRICE_COMPLETION: "go-toolkit-openrouter-max-price-completion"
+        MODEL: "go-toolkit-openrouter-model"
     };
 
     var DEFAULTS = {
@@ -124,14 +121,6 @@
         return trimmed.replace(/\/+$/, "");
     }
 
-    function normalizeOpenRouterPrice(value) {
-        var candidate = Number((value || "").toString().trim());
-        if (!Number.isFinite(candidate) || candidate < 0) {
-            candidate = 0;
-        }
-        return candidate.toFixed(2);
-    }
-
     (function sanitizeWebllmStoredModel() {
         try {
             var stored = safeStorageRead(STORAGE_KEYS.WEBLLM_MODEL) || "";
@@ -238,32 +227,13 @@
             safeStorageWrite(STORAGE_KEYS_OPENROUTER.MODEL, normalized);
         },
         getOpenRouterDataCollection: function () {
-            var val = (safeStorageRead(STORAGE_KEYS_OPENROUTER.DATA_COLLECTION) || "").trim().toLowerCase();
-            if (val === "allow") {
-                return "allow";
-            }
             return DEFAULTS.OPENROUTER_DATA_COLLECTION;
         },
-        setOpenRouterDataCollection: function (value) {
-            var normalized = (value || "").trim().toLowerCase();
-            if (normalized !== "allow") {
-                normalized = "deny";
-            }
-            safeStorageWrite(STORAGE_KEYS_OPENROUTER.DATA_COLLECTION, normalized);
-        },
         getOpenRouterMaxPricePrompt: function () {
-            var value = safeStorageRead(STORAGE_KEYS_OPENROUTER.MAX_PRICE_PROMPT) || DEFAULTS.OPENROUTER_MAX_PRICE_PROMPT;
-            return normalizeOpenRouterPrice(value);
-        },
-        setOpenRouterMaxPricePrompt: function (value) {
-            safeStorageWrite(STORAGE_KEYS_OPENROUTER.MAX_PRICE_PROMPT, normalizeOpenRouterPrice(value));
+            return DEFAULTS.OPENROUTER_MAX_PRICE_PROMPT;
         },
         getOpenRouterMaxPriceCompletion: function () {
-            var value = safeStorageRead(STORAGE_KEYS_OPENROUTER.MAX_PRICE_COMPLETION) || DEFAULTS.OPENROUTER_MAX_PRICE_COMPLETION;
-            return normalizeOpenRouterPrice(value);
-        },
-        setOpenRouterMaxPriceCompletion: function (value) {
-            safeStorageWrite(STORAGE_KEYS_OPENROUTER.MAX_PRICE_COMPLETION, normalizeOpenRouterPrice(value));
+            return DEFAULTS.OPENROUTER_MAX_PRICE_COMPLETION;
         },
         getBackend: function () {
             return safeStorageRead(STORAGE_KEYS_BACKEND) || "openrouter";
