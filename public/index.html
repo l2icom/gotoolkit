@@ -1339,8 +1339,8 @@
                         <label>
                             <span class="label-title">Moteur IA</span>
                             <select id="aiBackendSelect">
-                                <option value="openai">OpenAI (recommandé)</option>
                                 <option value="openrouter">OpenRouter</option>
+                                <option value="openai">OpenAI (recommandé)</option>
                                 <option value="webllm">WebLLM </option>
                             </select>
                         </label>
@@ -1403,6 +1403,10 @@
                                         <span class="label-title">OpenRouter</span>
                                         <span class="ia-status" id="openrouterStatus" aria-hidden="true"></span>
                                     </div>
+                                    <div style="display:flex; gap:0.35rem;">
+                                        <button id="openrouterVerifyBtn" type="button"
+                                            class="btn-secondary">Vérifier</button>
+                                    </div>
                                 </div>
                                 <span class="label-subtitle">Utilise les moteurs OpenRouter (clé optionnelle).</span>
                                 <input id="openrouterApiKeyInput" type="password" placeholder="or-..." />
@@ -1411,9 +1415,8 @@
                         <div class="field-row">
                             <label>
                                 <span class="label-title">Moteur OpenRouter</span>
-                                <input list="openrouterModelList" id="openrouterModelInput"
-                                    placeholder="Ex: xiaomi/mimo-v2-flash:free" />
-                                <span class="label-subtitle">Sélectionne un moteur gratuit ou colle tout autre modèle.</span>
+                                <select id="openrouterModelSelect"></select>
+                                <span class="label-subtitle">Sélectionne un moteur recommandé (pas de saisie libre).</span>
                             </label>
                         </div>
                         <div class="field-row">
@@ -1442,13 +1445,6 @@
                                 <span class="label-subtitle">Limite les tarifs OpenRouter ; 0 signifie gratuitement.</span>
                             </label>
                         </div>
-                        <datalist id="openrouterModelList">
-                            <option value="xiaomi/mimo-v2-flash:free">xiaomi/mimo-v2-flash:free (gratuit)</option>
-                            <option value="openai/gpt-oss-20b:free">openai/gpt-oss-20b:free (gratuit)</option>
-                            <option value="meta-llama/llama-3.2-3b-instruct:free">meta-llama/llama-3.2-3b-instruct:free (gratuit)</option>
-                            <option value="mistralai/mistral-small-3.1-24b-instruct:free">mistralai/mistral-small-3.1-24b-instruct:free (gratuit)</option>
-                            <option value="google/gemma-3-12b-it:free">google/gemma-3-12b-it:free (gratuit)</option>
-                        </datalist>
                     </div>
 
                     <div id="webllmSettings" style="display:none;">
@@ -2913,6 +2909,42 @@
             updateStatusIcon(ollamaStatusEl, "ready");
             return true;
         }
+        async function testOpenRouterConnection({ showToasts = true } = {}) {
+            var config = window.GoToolkitIAConfig;
+            var apiKey = config && typeof config.getOpenRouterApiKey === "function" ? config.getOpenRouterApiKey() : "";
+            if (!apiKey) {
+                updateStatusIcon(openrouterStatusEl, "error");
+                if (showToasts) {
+                    showToast("Clé OpenRouter requise pour tester la connexion.", true);
+                }
+                return false;
+            }
+            updateStatusIcon(openrouterStatusEl, "verifying");
+            try {
+                var response = await fetch("https://openrouter.ai/api/v1/models", {
+                    method: "GET",
+                    headers: {
+                        Authorization: "Bearer " + apiKey
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
+                }
+                if (showToasts) {
+                    showToast("Connexion OpenRouter prête");
+                }
+                updateStatusIcon(openrouterStatusEl, "ready");
+                return true;
+            } catch (err) {
+                console.warn("OpenRouter test failed", err);
+                var message = (err && err.message) || String(err) || "erreur inconnue";
+                if (showToasts) {
+                    showToast("Échec de la connexion OpenRouter (" + message + ")", true);
+                }
+                updateStatusIcon(openrouterStatusEl, "error");
+                return false;
+            }
+        }
         function openModal() {
             if (!feedbackModal) return;
             feedbackModal.classList.add("open");
@@ -3008,6 +3040,7 @@
         const ollamaStatusEl = document.getElementById("ollamaStatus");
         const webllmStatusEl = document.getElementById("webllmStatus");
         const openrouterStatusEl = document.getElementById("openrouterStatus");
+        const openrouterVerifyBtn = document.getElementById("openrouterVerifyBtn");
         const assemblyAiStatusEl = document.getElementById("assemblyAiStatus");
         const openaiVerifyBtn = document.getElementById("openaiVerifyBtn");
         const ollamaVerifyBtn = document.getElementById("ollamaVerifyBtn");
@@ -3023,7 +3056,7 @@
         const webllmModelSelect = document.getElementById("webllmModelSelect");
         const assemblyAiKeyInput = document.getElementById("assemblyAiKeyInput");
         const openrouterApiKeyInput = document.getElementById("openrouterApiKeyInput");
-        const openrouterModelInput = document.getElementById("openrouterModelInput");
+        const openrouterModelSelect = document.getElementById("openrouterModelSelect");
         const openrouterDataCollectionSelect = document.getElementById("openrouterDataCollectionSelect");
         const openrouterMaxPricePromptInput = document.getElementById("openrouterMaxPricePromptInput");
         const openrouterMaxPriceCompletionInput = document.getElementById("openrouterMaxPriceCompletionInput");
@@ -3038,7 +3071,7 @@
             window.GoToolkitAssemblyAiKey = "";
         }
         function updateBackendVisibility() {
-            const val = (aiBackendSelect && aiBackendSelect.value) || "openai";
+            const val = (aiBackendSelect && aiBackendSelect.value) || "openrouter";
             if (openaiSettingsEl) openaiSettingsEl.style.display = val === "openai" ? "" : "none";
             if (openrouterSettingsEl) openrouterSettingsEl.style.display = val === "openrouter" ? "" : "none";
             if (ollamaSettingsEl) ollamaSettingsEl.style.display = val === "ollama" ? "" : "none";
@@ -3059,6 +3092,40 @@
                 openrouterPriceLabel.textContent = "Gratuit";
             } else {
                 openrouterPriceLabel.textContent = `Max ${prompt.toFixed(2)} / ${completion.toFixed(2)}`;
+            }
+        }
+
+        function populateOpenrouterModelSelect(storedValue) {
+            if (!openrouterModelSelect) return;
+            const models = Array.isArray(window.GoToolkitIAConfig?.OPENROUTER_MODELS)
+                ? [...window.GoToolkitIAConfig.OPENROUTER_MODELS]
+                : [];
+            if (!models.length && window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL) {
+                models.push(window.GoToolkitIAConfig.DEFAULTS.OPENROUTER_MODEL);
+            }
+            openrouterModelSelect.innerHTML = "";
+            const added = new Set();
+            models.forEach(model => {
+                if (!model || added.has(model)) return;
+                const option = document.createElement("option");
+                option.value = model;
+                option.textContent = model;
+                openrouterModelSelect.appendChild(option);
+                added.add(model);
+            });
+            let target = storedValue || "";
+            if (target && !added.has(target)) {
+                const option = document.createElement("option");
+                option.value = target;
+                option.textContent = target;
+                openrouterModelSelect.appendChild(option);
+                added.add(target);
+            }
+            if (!target && openrouterModelSelect.options.length) {
+                target = openrouterModelSelect.options[0].value;
+            }
+            if (target) {
+                openrouterModelSelect.value = target;
             }
         }
 
@@ -3186,7 +3253,7 @@
                 if (webllmModelSelect && storedWebllmModel) {
                     webllmModelSelect.value = storedWebllmModel;
                 }
-                var storedBackend = (config && typeof config.getBackend === "function" ? config.getBackend() : null) || localStorage.getItem("go-toolkit-ai-backend") || "openai";
+                var storedBackend = (config && typeof config.getBackend === "function" ? config.getBackend() : null) || localStorage.getItem("go-toolkit-ai-backend") || "openrouter";
                 // Ollama access is disabled on the launcher; if it was previously selected, migrate to OpenAI.
                 if (storedBackend === "ollama") {
                     storedBackend = "openai";
@@ -3203,9 +3270,7 @@
                     (config && typeof config.getOpenRouterModel === "function" ? config.getOpenRouterModel() : "") ||
                     window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL ||
                     "";
-                if (openrouterModelInput) {
-                    openrouterModelInput.value = storedOpenRouterModel;
-                }
+                populateOpenrouterModelSelect(storedOpenRouterModel);
                 var storedOpenRouterDataCollection =
                     (config && typeof config.getOpenRouterDataCollection === "function" ? config.getOpenRouterDataCollection() : "") ||
                     "deny";
@@ -3274,7 +3339,7 @@
         }
 
         async function persistSettings({ skipClose = false, showSavedToast = true } = {}) {
-            let selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openai";
+            let selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openrouter";
             try {
                 const apiKey = (settingsApiKeyInput?.value || "").trim();
                 const reasoning = settingsReasoningSelect?.value || "low";
@@ -3296,7 +3361,7 @@
                 if (iaConfig && typeof iaConfig.setOpenRouterApiKey === "function") {
                     iaConfig.setOpenRouterApiKey(openrouterKeyValue);
                 }
-                const openrouterModelValue = (openrouterModelInput?.value || "").trim();
+                const openrouterModelValue = (openrouterModelSelect?.value || "").trim();
                 if (iaConfig && typeof iaConfig.setOpenRouterModel === "function" && openrouterModelValue) {
                     iaConfig.setOpenRouterModel(openrouterModelValue);
                 }
@@ -3316,7 +3381,7 @@
                 if (iaConfig && typeof iaConfig.setOpenRouterMaxPriceCompletion === "function") {
                     iaConfig.setOpenRouterMaxPriceCompletion(normalizePrice(completionPriceValue));
                 }
-                selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openai";
+                selectedBackend = (aiBackendSelect && aiBackendSelect.value) || "openrouter";
                 if (iaConfig && typeof iaConfig.setBackend === "function") {
                     iaConfig.setBackend(selectedBackend);
                 } else {
@@ -3423,6 +3488,9 @@
                 if (assemblyKey) {
                     testAssemblyAiConnection({ showToasts: true }).catch(() => { /* noop */ });
                 }
+                if (result?.selectedBackend === "openrouter") {
+                    testOpenRouterConnection({ showToasts: true }).catch(() => { /* noop */ });
+                }
             }
             if (updateRequestsButtonVisibility()) {
                 fetchRequests().catch(() => { /* noop */ });
@@ -3449,6 +3517,12 @@
             const result = await persistSettings({ skipClose: true, showSavedToast: true });
             if (result?.success) {
                 testOllamaConnection({ showToasts: true }).catch(() => { /* noop */ });
+            }
+        });
+        if (openrouterVerifyBtn) openrouterVerifyBtn.addEventListener("click", async () => {
+            const result = await persistSettings({ skipClose: true, showSavedToast: true });
+            if (result?.success) {
+                testOpenRouterConnection({ showToasts: true }).catch(() => { /* noop */ });
             }
         });
 

@@ -266,7 +266,7 @@
             safeStorageWrite(STORAGE_KEYS_OPENROUTER.MAX_PRICE_COMPLETION, normalizeOpenRouterPrice(value));
         },
         getBackend: function () {
-            return safeStorageRead(STORAGE_KEYS_BACKEND) || "openai";
+            return safeStorageRead(STORAGE_KEYS_BACKEND) || "openrouter";
         },
         setBackend: function (value) {
             var v = (value || "").trim().toLowerCase();
