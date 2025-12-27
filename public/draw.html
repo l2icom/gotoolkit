@@ -744,7 +744,7 @@
                 <div class="prompt-input-card" id="prompt-input-card">
                     <div class="card-title-row">
                         <label>Commande</label>
-                        <button id="clearMermaidBtn" class="btn clear-btn" type="button">⊘ Vider</button>
+                        <button id="clearMermaidBtn" class="btn clear-btn" type="button">⊘</button>
                         <button id="generateBtn" class="btn-primary" type="button">⌘ Envoyer</button>
                     </div>
                     <div class="draw-type-control">
@@ -1547,6 +1547,11 @@
             const addPageBtn = document.getElementById("addPageBtn");
             const deletePageBtn = document.getElementById("deletePageBtn");
             const clearMermaidBtn = document.getElementById("clearMermaidBtn");
+            function updateDrawClearButtonState() {
+                if (!clearMermaidBtn) return;
+                const hasScenario = Boolean((promptInput?.value || "").trim());
+                clearMermaidBtn.disabled = !hasScenario;
+            }
             const refreshExcalidrawBtn = document.getElementById("refreshExcalidrawBtn");
             const infoButton = document.getElementById("infoButton");
             const infoPopup = document.getElementById("infoPopup");
@@ -3140,6 +3145,7 @@
                 syncPromptSuggestionScroll();
                 renderPageScene(page);
                 triggerCriteriaAnalysis({ force: Boolean(promptInput.value.trim()) });
+                updateDrawClearButtonState();
             }
 
             function clearGenerateCooldown() {
@@ -4280,6 +4286,7 @@
                     refreshPromptSuggestion();
                     schedulePromptAISuggestion();
                     triggerCriteriaAnalysis();
+                    updateDrawClearButtonState();
                 });
                 promptInput.addEventListener("focus", () => {
                     promptInputWrapper?.classList.add("is-focused");
@@ -4396,12 +4403,13 @@
                     mermaidOutput.value = "";
                     diagramTitleInput.value = page.title;
                     updateActivePageDrawType(DEFAULT_DRAW_TYPE);
-                    refreshPromptSuggestion();
-                    syncPromptSuggestionScroll();
-                    clearPromptAiSuggestion();
-                    clearPromptAlternatives();
-                    updateExcalidrawScene("");
-                }
+                refreshPromptSuggestion();
+                syncPromptSuggestionScroll();
+                clearPromptAiSuggestion();
+                clearPromptAlternatives();
+                updateExcalidrawScene("");
+                updateDrawClearButtonState();
+            }
                 deletePageBtn.addEventListener("click", () => {
                     const page = getActivePage();
                     if (!page || state.pages.length <= 1) return;
@@ -4424,7 +4432,9 @@
                     updateExcalidrawScene("");
                     saveState();
                     setStatus("Script vidé.");
+                    updateDrawClearButtonState();
                 });
+                updateDrawClearButtonState();
                 function determineDrawRestoreTarget(preferred, hasAi, hasManual) {
                     if (preferred === "ai") {
                         if (hasAi) return "ai";

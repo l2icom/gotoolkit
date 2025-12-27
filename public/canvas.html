@@ -1865,8 +1865,7 @@
                     <div class="scenario-section">
                         <div class="scenario-header-row">
                             <label>Commande</label>
-                            <button class="btn" id="clearSectionsBtn" type="button" aria-label="Vider les sections">⊘
-                                Vider</button>
+                            <button class="btn" id="clearSectionsBtn" type="button" aria-label="Vider les sections">⊘</button>
                             <button class="btn-primary" id="generateFullSlideBtn" type="button"
                                 aria-label="Générer toutes les sections et la synthèse">⌘
                                 Générer</button>
@@ -2248,6 +2247,11 @@
                   )
                 : null;
         const clearSectionsBtn = document.getElementById("clearSectionsBtn");
+        function updateCanvasClearButtonState() {
+            if (!clearSectionsBtn) return;
+            const hasScenario = Boolean((pageContextField?.value || "").trim());
+            clearSectionsBtn.disabled = !hasScenario;
+        }
         const exportBtn = document.getElementById("exportPngBtn");
         const exportPptxBtn = document.getElementById("exportPptxBtn");
         const exportTextBtn = document.getElementById("exportTextBtn");
@@ -3514,6 +3518,7 @@
             schedulePersist();
             triggerCriteriaAnalysis();
             hideCanvasScenarioTooltip({ keepFocusClass: true });
+            updateCanvasClearButtonState();
         });
         pageContextField?.addEventListener("keydown", () => {
             hideCanvasScenarioTooltip({ keepFocusClass: true });
@@ -5208,6 +5213,7 @@
             if (pageContextField.value !== contextValue) {
                 pageContextField.value = contextValue;
             }
+            updateCanvasClearButtonState();
         }
 
         function isSlideEmpty(slide) {
@@ -5418,6 +5424,7 @@
         clearSectionsBtn?.addEventListener("click", () => {
             clearSectionsInActiveSlide();
         });
+        updateCanvasClearButtonState();
 
         templateTriggerBtn?.addEventListener("click", () => {
             closeContextMenus();
@@ -5461,6 +5468,7 @@
                 setSlideHistory(slide, "");
                 syncHistoryFieldWithActiveSlide();
                 if (pageContextField) pageContextField.value = "";
+                updateCanvasClearButtonState();
                 slide.dataset.pageContext = "";
             }
         }

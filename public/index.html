@@ -1336,7 +1336,7 @@
                                         class="btn-secondary">Vérifier</button>
                                 </div>
                             </div>
-                            <input id="assemblyAiKeyInput" type="password" placeholder="sk-..." />
+                            <input id="assemblyAiKeyInput" type="password" placeholder="sk-..." autocomplete="current-password" />
                             <span class="label-subtitle">
                                 Accès privé pour la transcription automatique (~15ct/h. Crédit offert de 50€
                                 à l'inscription)
@@ -1375,7 +1375,7 @@
                                     </div>
                                 </div>
                                 <span class="label-subtitle">Requêtes plus rapides</span>
-                                <input id="iaApiKeyInput" type="password" placeholder="sk-..." />
+                                <input id="iaApiKeyInput" type="password" placeholder="sk-..." autocomplete="current-password" />
                             </label>
                         </div>
 
@@ -1420,7 +1420,7 @@
                                             class="btn-secondary">Vérifier</button>
                                     </div>
                                 </div>
-                                <input id="openrouterApiKeyInput" type="password" placeholder="or-..." />
+                                <input id="openrouterApiKeyInput" type="password" placeholder="or-..." autocomplete="current-password" />
                             </label>
                         </div>
                         <div id="openrouterExtras" style="display:none; margin-top:8px;">
@@ -2385,19 +2385,59 @@
         }
         const IA_STATUS_ICONS = {
             ready: "🗹",
-            verifying: "⌛",
+            verifying: "",
             error: "✕"
         };
+        const STATUS_SPINNER_FRAMES = ["◴", "◷", "◶", "◵"];
+        const statusSpinnerTimers = new WeakMap();
+
+        function startStatusSpinner(el, label = "") {
+            if (!el) return;
+            const existing = statusSpinnerTimers.get(el);
+            if (existing) {
+                existing.label = label || "";
+                existing.tick();
+                return;
+            }
+            const state = {
+                frameIndex: 0,
+                label: label || ""
+            };
+            state.tick = () => {
+                const frame = STATUS_SPINNER_FRAMES[state.frameIndex % STATUS_SPINNER_FRAMES.length];
+                el.textContent = state.label ? `${frame} ${state.label}` : frame;
+                state.frameIndex += 1;
+            };
+            state.tick();
+            state.timerId = setInterval(state.tick, 1000);
+            statusSpinnerTimers.set(el, state);
+        }
+
+        function stopStatusSpinner(el) {
+            const state = statusSpinnerTimers.get(el);
+            if (!state) return;
+            if (state.timerId) {
+                clearInterval(state.timerId);
+            }
+            statusSpinnerTimers.delete(el);
+        }
 
         function updateStatusIcon(el, state) {
             if (!el) {
                 return;
             }
             if (!state) {
+                stopStatusSpinner(el);
                 el.textContent = "";
                 el.classList.remove("ia-status--error");
                 return;
             }
+            if (state === "verifying") {
+                startStatusSpinner(el);
+                el.classList.remove("ia-status--error");
+                return;
+            }
+            stopStatusSpinner(el);
             el.textContent = IA_STATUS_ICONS[state] || "";
             if (state === "error") {
                 el.classList.add("ia-status--error");
@@ -2420,6 +2460,21 @@
             return `${label} (${formatted} ms)`;
         }
 
+        function getRateLimitRemaining(headers) {
+            if (!headers || typeof headers.get !== "function") return null;
+            const value = headers.get("X-RateLimit-Remaining");
+            if (!value) return null;
+            const trimmed = value.trim();
+            return trimmed ? trimmed : null;
+        }
+
+        function appendRateLimitAvailability(label, rateLimitRemaining) {
+            if (!label || rateLimitRemaining == null) return label;
+            const normalized = String(rateLimitRemaining).trim();
+            if (!normalized) return label;
+            return `${label} • Disponible : ${normalized}`;
+        }
+
         function getTimestampMs() {
             if (typeof performance === "object" && typeof performance.now === "function") {
                 return performance.now();
@@ -2428,15 +2483,30 @@
         }
 
         const openAiLatencies = { private: null, shared: null };
+        const openAiRateLimits = { private: null, shared: null };
 
         function setOpenAiStatusLabel(label, options = {}) {
             if (!openaiStatusEl) return;
             const trimmed = (label || "").trim();
             const iconState = options.state;
-            const hasIcon = iconState && IA_STATUS_ICONS[iconState];
             const labelWithLatency = appendLatencyForOpenAi(trimmed, options.latencyMs);
-            const text = (hasIcon ? IA_STATUS_ICONS[iconState] + (labelWithLatency ? " " : "") : "") + labelWithLatency;
-            openaiStatusEl.textContent = text.trim();
+            const labelWithAvailability = appendRateLimitAvailability(
+                labelWithLatency,
+                options.rateLimitRemaining
+            );
+            if (iconState === "verifying") {
+                startStatusSpinner(openaiStatusEl, labelWithAvailability);
+            } else {
+                stopStatusSpinner(openaiStatusEl);
+                const parts = [];
+                if (iconState && IA_STATUS_ICONS[iconState]) {
+                    parts.push(IA_STATUS_ICONS[iconState]);
+                }
+                if (labelWithAvailability) {
+                    parts.push(labelWithAvailability);
+                }
+                openaiStatusEl.textContent = parts.join(" ").trim();
+            }
             if (iconState === "error") {
                 openaiStatusEl.classList.add("ia-status--error");
             } else {
@@ -2504,7 +2574,11 @@
                 openrouterModelLabelEl.textContent = "";
                 return;
             }
-            openrouterModelLabelEl.textContent = appendLatencyToLabel(baseLabel, options.latencyMs);
+            const labelWithLatency = appendLatencyToLabel(baseLabel, options.latencyMs);
+            openrouterModelLabelEl.textContent = appendRateLimitAvailability(
+                labelWithLatency,
+                options.rateLimitRemaining
+            );
         }
 
         if (typeof window.GoToolkitForceOpenRouterProxy !== "boolean") {
@@ -2542,22 +2616,26 @@
                 const text = await response.text().catch(() => "");
                 throw new Error(text || "HTTP " + response.status);
             }
-            return resolvedModel;
+            return {
+                modelLabel: resolvedModel,
+                rateLimitRemaining: getRateLimitRemaining(response.headers)
+            };
         }
 
         async function verifyOpenRouterDirect(apiKey, { showToasts } = {}) {
-            const startTime = getTimestampMs();
-            const modelLabel = await testOpenRouterChatCompletion({ apiKey, useProxy: false });
-            const latencyMs = Math.max(0, getTimestampMs() - startTime);
-            openrouterLatencies.private = latencyMs;
-            window.GoToolkitForceOpenRouterProxy = false;
-            openrouterHasValidPrivateKey = true;
-            updateOpenRouterExtrasVisibility();
-            updateStatusIcon(openrouterStatusEl, "ready");
-            updateOpenRouterModelLabel("private", { latencyMs });
-            if (showToasts) {
-                showToast("Accès privé OpenRouter prêt (" + modelLabel + ")");
-            }
+                const startTime = getTimestampMs();
+                const { modelLabel, rateLimitRemaining } = await testOpenRouterChatCompletion({ apiKey, useProxy: false });
+                const latencyMs = Math.max(0, getTimestampMs() - startTime);
+                openrouterLatencies.private = latencyMs;
+                openrouterRateLimits.private = rateLimitRemaining;
+                window.GoToolkitForceOpenRouterProxy = false;
+                openrouterHasValidPrivateKey = true;
+                updateOpenRouterExtrasVisibility();
+                updateStatusIcon(openrouterStatusEl, "ready");
+                updateOpenRouterModelLabel("private", { latencyMs, rateLimitRemaining });
+                if (showToasts) {
+                    showToast("Accès privé OpenRouter prêt (" + modelLabel + ")");
+                }
             return true;
         }
 
@@ -2567,11 +2645,12 @@
             updateOpenRouterExtrasVisibility();
             try {
                 const startTime = getTimestampMs();
-                const modelLabel = await testOpenRouterChatCompletion({ useProxy: true });
+                const { modelLabel, rateLimitRemaining } = await testOpenRouterChatCompletion({ useProxy: true });
                 const latencyMs = Math.max(0, getTimestampMs() - startTime);
                 openrouterLatencies.shared = latencyMs;
+                openrouterRateLimits.shared = rateLimitRemaining;
                 updateStatusIcon(openrouterStatusEl, "ready");
-                updateOpenRouterModelLabel("shared", { latencyMs });
+                updateOpenRouterModelLabel("shared", { latencyMs, rateLimitRemaining });
                 if (showToasts) {
                     showToast("Accès partagé OpenRouter prêt (" + modelLabel + ")");
                 }
@@ -3012,11 +3091,17 @@
                         throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
                     }
                     const latencyMs = Math.max(0, getTimestampMs() - startTime);
+                    const rateLimitRemaining = getRateLimitRemaining(response.headers);
                     if (showToasts) {
                         showToast("Connexion OpenAI prête");
                     }
                     openAiLatencies.private = latencyMs;
-                    setOpenAiStatusLabel("Accès privé", { state: "ready", latencyMs });
+                    openAiRateLimits.private = rateLimitRemaining;
+                    setOpenAiStatusLabel("Accès privé", {
+                        state: "ready",
+                        latencyMs,
+                        rateLimitRemaining
+                    });
                     return true;
                 } catch (err) {
                     console.warn("OpenAI test failed", err);
@@ -3069,8 +3154,14 @@
                     showToast("Connexion partagée prête");
                 }
                 const latencyMs = Math.max(0, getTimestampMs() - startTime);
+                const rateLimitRemaining = getRateLimitRemaining(response.headers);
                 openAiLatencies.shared = latencyMs;
-                setOpenAiStatusLabel("Accès partagé", { state: "ready", latencyMs });
+                openAiRateLimits.shared = rateLimitRemaining;
+                setOpenAiStatusLabel("Accès partagé", {
+                    state: "ready",
+                    latencyMs,
+                    rateLimitRemaining
+                });
                 return true;
             } catch (err) {
                 console.warn("OpenAI proxy test failed", err);
@@ -3307,6 +3398,7 @@
         const openrouterMaxPriceInput = document.getElementById("openrouterMaxPriceInput");
         let openrouterHasValidPrivateKey = false;
         const openrouterLatencies = { private: null, shared: null };
+        const openrouterRateLimits = { private: null, shared: null };
         const ASSEMBLY_AI_KEY_STORAGE = "go-toolkit-assemblyai-key";
         const VOICE_AUDIO_DB = { name: "go-toolkit-voice-audio", store: "recordings" };
 
@@ -3784,9 +3876,17 @@
         function setIaStatus(backend) {
             if (openaiStatusEl && !openaiStatusEl.dataset.openaiStatusSticky) {
                 if (backend?.type === "openai") {
-                    setOpenAiStatusLabel("Accès privé", { state: "ready", latencyMs: openAiLatencies.private });
+                    setOpenAiStatusLabel("Accès privé", {
+                        state: "ready",
+                        latencyMs: openAiLatencies.private,
+                        rateLimitRemaining: openAiRateLimits.private
+                    });
                 } else if (backend?.type === "proxy") {
-                    setOpenAiStatusLabel("Accès partagé", { state: "ready", latencyMs: openAiLatencies.shared });
+                    setOpenAiStatusLabel("Accès partagé", {
+                        state: "ready",
+                        latencyMs: openAiLatencies.shared,
+                        rateLimitRemaining: openAiRateLimits.shared
+                    });
                 } else {
                     setOpenAiStatusLabel("", { state: null });
                 }
@@ -3808,7 +3908,8 @@
                                 ? "shared"
                                 : "default";
                     const latencyMs = openrouterLatencies[accessType] ?? null;
-                    updateOpenRouterModelLabel(accessType, { latencyMs });
+                    const rateLimitRemaining = openrouterRateLimits[accessType] ?? null;
+                    updateOpenRouterModelLabel(accessType, { latencyMs, rateLimitRemaining });
                 } else {
                     updateOpenRouterModelLabel(null);
                 }

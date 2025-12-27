@@ -1167,7 +1167,7 @@
                 <div class="prompt-input-card" id="prompt-input-card">
                     <div class="card-title-row">
                         <label>Commande</label>
-                        <button id="clearGridBtn" class="btn" type="button">⊘ Vider</button>
+                        <button id="clearGridBtn" class="btn" type="button">⊘</button>
                         <button id="generateBtn" class="btn-primary generate-btn" type="button">⌘ Envoyer</button>
                     </div>
                     <div id="templateMeta" class="template-meta"></div>
@@ -1451,6 +1451,7 @@
 
                 let activeRequestController = null;
                 let pendingAbortStatus = false;
+                let isGridLoading = false;
 
                 const FONT_SIZE_CHOICES = [8, 9, 10, 11, 12, 13, 14, 15, 16];
                 const FIRESTORE_COLLECTION = "grids";
@@ -3327,9 +3328,10 @@
                     if (systemPromptField) {
                         systemPromptField.value = defaults.systemPrompt;
                     }
-                    if (promptInput) {
-                        promptInput.value = page?.scenario || "";
-                    }
+                if (promptInput) {
+                    promptInput.value = page?.scenario || "";
+                }
+                updateGridClearButtonState();
                     if (gridScript) {
                         gridScript.value = page?.datasetScript || "";
                     }
@@ -5363,10 +5365,15 @@
                     updateFileRowVisibility();
                 }
 
+                function updateGridClearButtonState() {
+                    if (!clearGridBtn) return;
+                    const hasScenario = Boolean((promptInput?.value || "").trim());
+                    clearGridBtn.disabled = isGridLoading || !hasScenario;
+                }
+
                 function setLoading(isLoading) {
-                    if (clearGridBtn) {
-                        clearGridBtn.disabled = isLoading;
-                    }
+                    isGridLoading = Boolean(isLoading);
+                    updateGridClearButtonState();
                     if (isLoading) {
                         startGenerateCooldown();
                     } else {
@@ -8712,6 +8719,7 @@
                             const value = promptInput.value || "";
                             if (page) page.scenario = value;
                             persistState();
+                            updateGridClearButtonState();
                         });
                     }
                     if (gridScript) {

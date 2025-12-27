@@ -1274,7 +1274,7 @@
                         <div class="gutenberg-recette-header">
                             <label for="promptCreate">Commande</label>
                             <button class="btn" type="button" id="clearScenarioBtn"
-                                aria-label="Réinitialiser le scénario">⊘ Vider</button>
+                                aria-label="Réinitialiser le scénario">⊘</button>
                             <button class="btn btn-primary" id="respondBtn" type="button">
                                 <span>⌘ Envoyer</span>
                             </button>
@@ -2524,6 +2524,7 @@
                 if (!page.manualTranscript) {
                     page.manualTranscript = page.transcript || "";
                 }
+                updateVoiceClearButtonState();
                 if (!page.noteMode) {
                     page.noteMode = NOTE_MODE_NOTE;
                 }
@@ -2595,6 +2596,13 @@
                 if (!page) return;
                 page.scenario = promptCreate?.value || "";
                 persistState();
+                updateVoiceClearButtonState();
+            }
+
+            function updateVoiceClearButtonState() {
+                if (!clearScenarioBtn) return;
+                const hasScenario = Boolean((promptCreate?.value || "").trim());
+                clearScenarioBtn.disabled = !hasScenario;
             }
 
             function getAudioDb() {
@@ -2822,6 +2830,9 @@
                 if (audioPlayBtn) {
                     audioPlayBtn.disabled = !audioUrl;
                     audioPlayBtn.textContent = "▶";
+                }
+                if (audioClearBtn) {
+                    audioClearBtn.disabled = !audioUrl;
                 }
                 if (blob && !skipSave) {
                     const mediaKey = getMediaStorageKey();
@@ -4152,6 +4163,9 @@
                 if (audioDownloadBtn) {
                     audioDownloadBtn.disabled = !canDownload;
                 }
+                if (audioClearBtn) {
+                    audioClearBtn.disabled = !hasAudio;
+                }
                 if (audioDownloadMenu && !canDownload) {
                     audioDownloadMenu.classList.remove("open");
                     audioDownloadMenu.setAttribute("aria-hidden", "true");
@@ -5214,6 +5228,7 @@
                 persistScenario();
                 clearGuidelineData();
                 showToast("Commande vidé.");
+                updateVoiceClearButtonState();
             });
             applyScriptBtn?.addEventListener("click", restoreLastIaResponse);
             openContextModalBtn?.addEventListener("click", () => toggleContextPanel());
@@ -5462,6 +5477,7 @@
             populateAudioSpeedOptions();
             updateScreenToggleVisual();
             updateDownloadMenu();
+            updateVoiceClearButtonState();
             audioSpeedSelect?.addEventListener("change", () => {
                 const speed = getAudioSpeed();
                 audioPlayer.playbackRate = speed;

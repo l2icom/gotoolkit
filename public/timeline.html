@@ -1585,7 +1585,7 @@
                         <div class="gutenberg-recette-header">
                             <label for="promptCreate">Commande</label>
                             <button class="btn" type="button" id="clearTimelineBtn"
-                                aria-label="Réinitialiser la timeline et le script">⊘ Vider</button>
+                                aria-label="Réinitialiser la timeline et le script">⊘</button>
                             <button class="btn btn-primary" id="btn-call">
                                 <span>⌘ Envoyer</span>
                             </button>
@@ -3875,9 +3875,10 @@
                     syncFiltersForActiveView(getVisibleViewTypeIds());
                     renderColorModalContent();
                     updateTimelineFilter();
-                    updateEmptyViewMessage();
-                    persistTimelineState();
-                }
+                updateEmptyViewMessage();
+                persistTimelineState();
+                updateTimelineClearButtonState();
+            }
 
                 function openColorModal() {
                     captureColorPreferencesState();
@@ -5203,11 +5204,12 @@
                         ctx.templateId = null;
                     }
                     selectedRoadmapPromptId = null;
-                    if (txtPromptCreate) txtPromptCreate.value = "";
-                    if (txtPromptModify) txtPromptModify.value = "";
-                    updatePromptTemplateMeta();
-                    persistTimelineState();
-                }
+                if (txtPromptCreate) txtPromptCreate.value = "";
+                if (txtPromptModify) txtPromptModify.value = "";
+                updatePromptTemplateMeta();
+                persistTimelineState();
+                updateTimelineClearButtonState();
+            }
 
                 if (headerTitleElement) {
                     headerTitleElement.addEventListener("dblclick", function () {
@@ -6142,6 +6144,11 @@
                 // ============================================================
                 var txtPromptCreate = document.getElementById("promptCreate");
                 var txtPromptModify = document.getElementById("promptModify");
+                function updateTimelineClearButtonState() {
+                    if (!clearTimelineBtn || !txtPromptCreate) return;
+                    const hasScenario = Boolean((txtPromptCreate.value || "").trim());
+                    clearTimelineBtn.disabled = !hasScenario;
+                }
                 var promptTemplateMeta = document.getElementById("promptTemplateMeta");
                 var templateCriteriaStatus = {};
                 var lastAnalyzedSentenceCount = 0;
@@ -6651,6 +6658,7 @@
                         hideScenarioTooltip();
                         clearSpeechSuggestion(txtPromptCreate);
                         triggerScenarioCriteriaAnalysis();
+                        updateTimelineClearButtonState();
                     });
                     txtPromptCreate.addEventListener('keydown', function () {
                         hideScenarioTooltip();
@@ -6690,6 +6698,7 @@
                     if (!options || !options.skipPersist) {
                         persistTimelineState();
                     }
+                    updateTimelineClearButtonState();
                 }
 
                 function persistActiveContext(updateFn) {
@@ -7530,6 +7539,7 @@
                         clearActiveView({ clearRecit: false });
                     });
                 }
+                updateTimelineClearButtonState();
 
                 function determineTimelineRestoreTarget(preferred, hasAi, hasManual) {
                     if (preferred === "ai") {

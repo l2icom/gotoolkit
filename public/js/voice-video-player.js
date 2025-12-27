@@ -94,6 +94,16 @@
                 color: #1f2937;
                 border-radius: 8px;
             }
+            .voice-video-player-speed {
+                border: 1px solid #d0c3ad;
+                border-radius: 999px;
+                background: #fff;
+                color: #1f2937;
+                font-size: 13px;
+                padding: 0 8px;
+                height: 32px;
+                cursor: pointer;
+            }
             .voice-video-player-progress {
                 flex: 1;
                 appearance: none;
@@ -305,6 +315,7 @@
                                 <video playsinline></video>
                             </div>
                             <div class="voice-video-player-controls">
+                                <select class="voice-video-player-speed" aria-label="Vitesse de lecture"></select>
                                 <button type="button" class="voice-video-player-play-toggle" aria-label="Lecture">▶</button>
                                 <input type="range" min="0" max="1" step="0.001" value="0" class="voice-video-player-progress">
                                 <span class="voice-video-player-time">00:00 / 00:00</span>
@@ -323,6 +334,7 @@
             this.closeButton = this.overlay.querySelector(".voice-video-player-close");
             this.videoEl = this.overlay.querySelector("video");
             this.playToggle = this.overlay.querySelector(".voice-video-player-play-toggle");
+            this.speedSelect = this.overlay.querySelector(".voice-video-player-speed");
             this.progress = this.overlay.querySelector(".voice-video-player-progress");
             this.timeLabel = this.overlay.querySelector(".voice-video-player-time");
             this.transcriptList = this.overlay.querySelector(".voice-video-player-transcript-list");
@@ -334,6 +346,10 @@
                 this.textTrackEl.label = "Sous-titres";
                 this.textTrackEl.default = true;
                 this.videoEl.appendChild(this.textTrackEl);
+            }
+            if (this.speedSelect) {
+                this._populateSpeedOptions();
+                this._applyPlaybackRate();
             }
         }
 
@@ -351,6 +367,9 @@
                 if (!this.videoEl || !this.videoEl.duration) return;
                 const ratio = Number(this.progress.value) || 0;
                 this.videoEl.currentTime = ratio * this.videoEl.duration;
+            });
+            this.speedSelect?.addEventListener("change", () => {
+                this._applyPlaybackRate();
             });
             this.videoEl?.addEventListener("timeupdate", () => {
                 this._updateProgress();
@@ -406,6 +425,31 @@
         _updatePlayButton() {
             if (!this.videoEl || !this.playToggle) return;
             this.playToggle.textContent = this.videoEl.paused ? "▶" : "⏸";
+        }
+
+        _populateSpeedOptions() {
+            if (!this.speedSelect) return;
+            this.speedSelect.innerHTML = "";
+            for (let speed = 0.5; speed <= 2.001; speed += 0.1) {
+                const normalized = Math.round(speed * 10) / 10;
+                const option = document.createElement("option");
+                option.value = normalized.toFixed(1);
+                option.textContent = `${normalized.toFixed(1)}x`;
+                this.speedSelect.appendChild(option);
+            }
+            this.speedSelect.value = "1.2";
+        }
+
+        _getSelectedSpeed() {
+            if (!this.speedSelect) return 1.2;
+            const numeric = parseFloat(this.speedSelect.value);
+            if (!Number.isFinite(numeric)) return 1.2;
+            return Math.min(2, Math.max(0.5, Math.round(numeric * 10) / 10));
+        }
+
+        _applyPlaybackRate() {
+            if (!this.videoEl) return;
+            this.videoEl.playbackRate = this._getSelectedSpeed();
         }
 
         _refreshActiveNode() {
@@ -598,6 +642,7 @@
             }
             this.videoBlobUrl = URL.createObjectURL(blob);
             this.videoEl.src = this.videoBlobUrl;
+            this._applyPlaybackRate();
             this.videoEl.load();
             this.progress && (this.progress.value = "0");
             this.timeLabel && (this.timeLabel.textContent = "00:00 / 00:00");
