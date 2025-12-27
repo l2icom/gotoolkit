@@ -1104,7 +1104,7 @@
                 <button id="deletePageBtn" class="tab-action" title="Supprimer la page">×</button>
             </div>
             <div class="global-actions">
-                <button id="gtContextModalTrigger" class="btn drawer-toggle-btn" type="button" title="⸙ Gutenberg">⸙
+                <button id="gtContextModalTrigger" class="btn drawer-toggle-btn" type="button" title="⸙ Contexte">⸙
                     Contexte</button>
                 <button id="gtPromptModalTrigger" class="btn ai-button" type="button" title="⌘ Prompt">⌘ Prompt</button>
                 <button id="gtTemplateModalTrigger" class="btn" type="button" title="⊞ Modèle" style="display: none;">⊞
@@ -1122,7 +1122,7 @@
                     </div>
                 </div>
                 <div class="menu-trigger" id="capsuleMenuTrigger">
-                    <button id="capsuleMenuBtn" class="btn" type="button" title="Capsule">⬠ Capsule</button>
+                    <button id="capsuleMenuBtn" class="btn" type="button" title="Document">⬠ Document</button>
                     <div class="context-menu" id="capsuleMenu">
                         <div class="menu-panel">
                             <button id="capsuleNewBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
@@ -1139,7 +1139,7 @@
 
                 <div class="share-menu-wrapper">
                     <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
-                        title="Lien de la capsule">☍ Nexus</button>
+                        title="Lien de partage">☍ Partage</button>
                     <div data-share-menu-slot></div>
                 </div>
 
@@ -4616,7 +4616,7 @@
                 async function handleSaveDocumentClick() {
                     closeGridMenus();
                     if (!capsuleDrafts) {
-                        showStatus("Module Capsule indisponible.", true);
+                        showStatus("Service indisponible.", true);
                         return null;
                     }
                     if (saveDocumentBtn) {
@@ -4709,7 +4709,7 @@
                         Array.isArray(page?.data?.rowData) && page.data.rowData.length > 0;
                     if (scriptHasContent || dataHasContent || currentDraftId) {
                         const confirmSave = window.confirm(
-                            "Sauvegarder la capsule actuelle avant d'ouvrir un nouveau document ?"
+                            "Sauvegarder le document existant avant d'ouvrir un nouveau ?"
                         );
                         if (confirmSave) {
                             await handleSaveDocumentClick();

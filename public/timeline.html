@@ -14,12 +14,12 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment-with-locales.min.js"></script>
 
-	    <link rel="preconnect" href="https://fonts.googleapis.com">
-	    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-	    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.6">
-	    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.6">
-	    <style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="styles/app-shell.css?v=2025.12.26.6">
+    <link rel="stylesheet" href="styles/cgu.css?v=2025.12.26.6">
+    <style>
         :root {
             --bg: #f3f4f6;
             --surface: #ffffff;
@@ -1488,10 +1488,10 @@
                     <button id="navSwitcherBtn" class="nav-switch-btn" type="button" aria-haspopup="true"
                         aria-expanded="false">⇥ Timeline ▾</button>
                     <div id="navSwitcherMenu" class="nav-switch-menu" role="menu">
-	                        <a class="nav-switch-link" href="canvas.html?v=2025.12.26.6" role="menuitem"> ◍ Canvas</a>
-	                        <a class="nav-switch-link" href="grid.html?v=2025.12.26.6" role="menuitem">▦ Grid</a>
-	                        <a class="nav-switch-link" href="draw.html?v=2025.12.26.6" role="menuitem">◇ Draw</a>
-	                        <a class="nav-switch-link" href="voice.html?v=2025.12.26.6" role="menuitem">▷ Voice</a>
+                        <a class="nav-switch-link" href="canvas.html?v=2025.12.26.6" role="menuitem"> ◍ Canvas</a>
+                        <a class="nav-switch-link" href="grid.html?v=2025.12.26.6" role="menuitem">▦ Grid</a>
+                        <a class="nav-switch-link" href="draw.html?v=2025.12.26.6" role="menuitem">◇ Draw</a>
+                        <a class="nav-switch-link" href="voice.html?v=2025.12.26.6" role="menuitem">▷ Voice</a>
                     </div>
                 </div>
 
@@ -1523,9 +1523,9 @@
                 </div>
 
                 <div class="global-actions">
-                    <button class="btn" id="gtTemplateModalTrigger" aria-label="Ouvrir ⊞ Modèle"
-                        title="⊞ Modèle">⊞ Modèle</button>
-                    <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir Contexte" title="⸙ Gutenberg">⸙
+                    <button class="btn" id="gtTemplateModalTrigger" aria-label="Ouvrir ⊞ Modèle" title="⊞ Modèle">⊞
+                        Modèle</button>
+                    <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir Contexte" title="⸙ Contexte">⸙
                         Contexte</button>
                     <button class="btn" id="gtPromptModalTrigger" aria-label="Ouvrir Prompt" title="⌘ Prompt">⌘
                         Prompt</button>
@@ -1601,7 +1601,7 @@
                     </div>
 
                     <div class="menu-trigger">
-                        <button class="btn" id="fileMenuBtn" aria-label="Capsule">⬠ Capsule</button>
+                        <button class="btn" id="fileMenuBtn" aria-label="Document">⬠ Document</button>
                         <div class="context-menu file-menu" id="fileMenu">
                             <div class="menu-panel">
                                 <button id="newDocumentBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
@@ -1612,14 +1612,14 @@
                                 <button id="exportTextBtn" type="button" class="menu-panel-btn">¶ Texte</button>
                                 <button id="exportImageBtn" type="button" class="menu-panel-btn">◩ Image</button>
                                 <button id="exportExcelBtn" type="button" class="menu-panel-btn">▥ Excel</button>
-	                                <button id="aboutTimelineBtn" type="button" class="menu-panel-btn">⎉ À propos</button>
+                                <button id="aboutTimelineBtn" type="button" class="menu-panel-btn">⎉ À propos</button>
                             </div>
                         </div>
                     </div>
 
                     <div class="menu-trigger">
                         <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
-                            title="Lien de la capsule">☍ Nexus</button>
+                            title="Lien de partage">☍ Partage</button>
                         <div data-share-menu-slot></div>
                     </div>
                 </div>
@@ -1700,8 +1700,8 @@
                 </div>
             </div>
 
-            <div class="gutenberg-card" id="gtContextModal" role="complementary"
-                aria-label="Contexte" aria-hidden="true">
+            <div class="gutenberg-card" id="gtContextModal" role="complementary" aria-label="Contexte"
+                aria-hidden="true">
 
                 <div class="ia-actions">
                     <div class="header-row ia-header-actions gutenberg-recette">
@@ -1741,11 +1741,13 @@
             </div>
         </div>
 
-        <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true" aria-labelledby="gtPromptModalTitle">
+        <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true"
+            aria-labelledby="gtPromptModalTitle">
             <div class="modal">
                 <div class="modal-header">
                     <h3 id="gtPromptModalTitle" title="⌘ Prompt">⌘ Prompt</h3>
-                    <button class="modal-close" id="gtPromptModalClose" type="button" aria-label="Fermer l'IA">×</button>
+                    <button class="modal-close" id="gtPromptModalClose" type="button"
+                        aria-label="Fermer l'IA">×</button>
                 </div>
                 <div class="ia-actions">
                     <div class="header-row ia-header-actions">
@@ -1753,23 +1755,6 @@
                         <textarea id="iaTemplateEditor" rows="14"
                             style="font-family: Menlo, Consolas, 'Courier New', monospace; font-size:13px; line-height:1.2; height:350px; overflow:auto; resize:vertical; padding:8px;">
                         </textarea>
-                    </div>
-                    <div class="header-row ia-header-actions ia-key-row">
-                        <label>
-                            <a href="https://platform.openai.com/settings/organization/api-keys" target="_blank"
-                                rel="noreferrer">OpenAI API key</a>
-                            <input type="password" id="iaApiKeyInput" autocomplete="off" placeholder="sk-...">
-                        </label>
-                        <label>
-                            <span>Vitesse</span>
-                            <select id="reasoningEffortSelect"
-                                style="border: 1px solid #d0c3ad; font-size: 13px; font-family: inherit; color: inherit;">
-                                <option value="minimal">Éclair</option>
-                                <option value="low" selected>Rapide</option>
-                                <option value="medium">Fluide</option>
-                                <option value="high">Turbo</option>
-                            </select>
-                        </label>
                     </div>
                     <div class="ia-actions-footer ia-template-footer">
                         <div class="modal-actions" style="width:100%; justify-content:flex-end;">
@@ -1800,17 +1785,17 @@
             </div>
         </div>
 
-	        <div id="timelineInfoPopup" class="info-popup" role="dialog" aria-live="polite">
-	            <img src="logo.gif" alt="Logo Go-Toolkit">
-	            <strong>Module Timeline (Goal Digger)</strong>
-	            <span>Version 2025.12.26.6</span>
-	            <span>Usage réservé à Savane Consulting.</span>
-	            <div class="info-actions">
-	                <button id="timelineUpdateBtn" type="button" class="update-btn">Réinitialiser</button>
-	                <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
-	                <button id="timelineTourReplayBtn" type="button" class="secondary">Tour guidé</button>
-	            </div>
-	        </div>
+        <div id="timelineInfoPopup" class="info-popup" role="dialog" aria-live="polite">
+            <img src="logo.gif" alt="Logo Go-Toolkit">
+            <strong>Module Timeline (Goal Digger)</strong>
+            <span>Version 2025.12.26.6</span>
+            <span>Usage réservé à Savane Consulting.</span>
+            <div class="info-actions">
+                <button id="timelineUpdateBtn" type="button" class="update-btn">Réinitialiser</button>
+                <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
+                <button id="timelineTourReplayBtn" type="button" class="secondary">Tour guidé</button>
+            </div>
+        </div>
 
         <div id="timelineTourOverlay" class="tour-overlay" aria-hidden="true">
             <div class="tour-highlight hidden" aria-hidden="true"></div>
@@ -1827,25 +1812,27 @@
             <button id="timelineTourSkipBtn" class="tour-skip" type="button">×</button>
         </div>
 
-        <div data-toast-slot="copyToast" data-toast-class="toast" data-toast-aria-live="polite" data-toast-aria-atomic="true"></div>
-        <div data-toast-slot="speechToast" data-toast-class="toast" data-toast-aria-live="polite" data-toast-aria-atomic="true"></div>
+        <div data-toast-slot="copyToast" data-toast-class="toast" data-toast-aria-live="polite"
+            data-toast-aria-atomic="true"></div>
+        <div data-toast-slot="speechToast" data-toast-class="toast" data-toast-aria-live="polite"
+            data-toast-aria-atomic="true"></div>
 
         <input type="file" id="importJsonInput" accept="application/json" style="display:none">
         <script>
             window.GO_TOOLKIT_SHARE_API_URL =
                 window.GO_TOOLKIT_SHARE_API_URL || "https://share.gotoolkit.workers.dev/";
         </script>
-	        <script src="js/idb-doc-store.js"></script>
-	        <script src="js/storage-service.js"></script>
-	        <script src="js/shared-ui.js"></script>
-	        <script src="js/cgu.js?v=2025.12.26.6"></script>
-	        <script src="js/share-worker-client.js"></script>
-	        <script src="js/share-history.js"></script>
-	        <script src="js/capsule-drafts.js"></script>
-		        <script src="js/prompt.js?v=2025.12.26.6"></script>
-	        <script src="js/ia-client.js"></script>
-	        <script src="js/ia-config.js"></script>
-	        <script src="js/template-criteria.js"></script>
+        <script src="js/idb-doc-store.js"></script>
+        <script src="js/storage-service.js"></script>
+        <script src="js/shared-ui.js"></script>
+        <script src="js/cgu.js?v=2025.12.26.6"></script>
+        <script src="js/share-worker-client.js"></script>
+        <script src="js/share-history.js"></script>
+        <script src="js/capsule-drafts.js"></script>
+        <script src="js/prompt.js?v=2025.12.26.6"></script>
+        <script src="js/ia-client.js"></script>
+        <script src="js/ia-config.js"></script>
+        <script src="js/template-criteria.js"></script>
         <script>
             (async function () {
                 // ============================================================
@@ -3492,7 +3479,7 @@
                     var needsPrompt = hasTimelineData() || Boolean(currentDraftId);
                     if (needsPrompt) {
                         var confirmSave = window.confirm(
-                            "Sauvegarder la capsule actuelle avant d'ouvrir un nouveau document ?"
+                            "Sauvegarder le document existant avant d'ouvrir un nouveau ?"
                         );
                         if (confirmSave) {
                             await handleSaveDocumentClick();
@@ -4749,13 +4736,13 @@
                     }
 
                     if (!chosenPayload) {
-                        setShareStatus("Lien de la capsule introuvable.", "error");
+                        setShareStatus("Lien de partage introuvable.", "error");
                         return false;
                     }
 
                     var imported = applyImportedState(chosenPayload, { alertOnEmpty: false });
                     if (!imported) {
-                        setShareStatus("Lien de la capsule introuvable.", "error");
+                        setShareStatus("Lien de partage introuvable.", "error");
                         return false;
                     }
                     currentShareToken = token;
@@ -7749,7 +7736,7 @@
                     },
                     {
                         title: "Exporte ta timeline",
-                        description: "Le menu ⬠ Capsule permet de télécharger la vue courante en texte, image ou Excel et le bouton ☍ Nexus génère un lien privé pour la partager rapidement.",
+                        description: "Le menu ⬠ Document permet de télécharger la vue courante en texte, image ou Excel et le bouton ☍ Partage génère un lien privé pour la partager rapidement.",
                         selectors: ["#fileMenuBtn"]
                     }
                 ];

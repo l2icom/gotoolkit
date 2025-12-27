@@ -1078,13 +1078,13 @@
             <div class="global-actions">
                 <button class="btn" id="gtTemplateModalTrigger" aria-label="Ouvrir ⊞ Modèle" title="⊞ Modèle">⊞
                     Modèle</button>
-                <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir Contexte" title="⸙ Gutenberg">⸙
+                <button class="btn" id="gtContextModalTrigger" aria-label="Ouvrir Contexte" title="⸙ Contexte">⸙
                     Contexte</button>
                 <button class="btn" id="gtPromptModalTrigger" aria-label="Ouvrir Prompt" title="⌘ Prompt">⌘
                     Prompt</button>
 
                 <div class="menu-trigger">
-                    <button class="btn" id="fileMenuBtn" aria-label="Capsule" title="Capsule">⬠ Capsule</button>
+                    <button class="btn" id="fileMenuBtn" aria-label="Document" title="Document">⬠ Document</button>
                     <div class="context-menu file-menu" id="fileMenu">
                         <div class="menu-panel">
                             <button id="newDocumentBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
@@ -1099,7 +1099,7 @@
 
                 <div class="menu-trigger">
                     <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
-                        title="Lien de la capsule">☍ Nexus</button>
+                        title="Lien de partage">☍ Partage</button>
                     <div data-share-menu-slot></div>
                 </div>
             </div>
@@ -1305,7 +1305,6 @@
             <div class="info-actions">
                 <button id="updateAppBtn" type="button" class="update-btn">Réinitialiser</button>
                 <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
-                <button id="tourReplayBtn" type="button" class="secondary">Tour guidé</button>
             </div>
         </div>
 
@@ -1345,6 +1344,8 @@
             const NOTE_MODE_TRANSCRIPT_IA = "transcript-ia";
             const NOTE_MODE_TRANSCRIPT_VIDEO = "transcript-video";
             const templateList = (window.GoPrompts && window.GoPrompts.voicePrompts) || [];
+            const DEFAULT_TEMPLATE_ID = "default";
+            const defaultTemplate = templateList.find(tpl => tpl.id === DEFAULT_TEMPLATE_ID) || templateList[0] || null;
             const promptDefaults = {
                 system: (window.GoPrompts && window.GoPrompts.voiceCreateSystemTemplate) || "",
                 evaluate: (window.GoPrompts && window.GoPrompts.voiceEvaluatePrompt) || "",
@@ -1473,7 +1474,6 @@
             const infoPopup = document.getElementById("infoPopup");
             const infoButton = aboutVoiceBtn;
             const updateAppBtn = document.getElementById("updateAppBtn");
-            const tourReplayBtn = document.getElementById("tourReplayBtn");
             const viewTabs = document.getElementById("viewTabs");
             const addViewBtn = document.getElementById("addViewBtn");
             const deleteViewBtn = document.getElementById("deleteViewBtn");
@@ -1491,8 +1491,8 @@
             const capsuleDrafts = window.goToolkitCapsuleDrafts;
             const subjectModalOverlay = subjectModal;
 
-            let selectedTemplateId = null;
-            let selectedTemplateText = "";
+            let selectedTemplateId = defaultTemplate?.id || null;
+            let selectedTemplateText = defaultTemplate?.text || "";
             let speechRecognition = null;
             let recognitionActive = false;
             let recognitionPaused = false;
@@ -1603,8 +1603,8 @@
                     script: "",
                     transcript: "",
                     summary: "",
-                    templateId: "",
-                    templateName: "",
+                    templateId: defaultTemplate?.id || "",
+                    templateName: defaultTemplate?.title || "",
                     subjects: [],
                     duration: null,
                     participants: [
@@ -1640,6 +1640,13 @@
                     if (typeof next.summary !== "string") next.summary = "";
                     if (typeof next.templateId !== "string") next.templateId = "";
                     if (typeof next.templateName !== "string") next.templateName = "";
+                    if (!next.templateId && defaultTemplate) {
+                        next.templateId = defaultTemplate.id;
+                    }
+                    if (!next.templateName) {
+                        const tpl = templateList.find(t => t.id === next.templateId);
+                        if (tpl) next.templateName = tpl.title || "";
+                    }
                     if (typeof next.manualTranscript !== "string") next.manualTranscript = next.transcript || "";
                     if (typeof next.assemblyTranscript !== "string") next.assemblyTranscript = "";
                     if (typeof next.assemblyTranscriptId !== "string") next.assemblyTranscriptId = "";
@@ -2419,9 +2426,17 @@
             function renderPage() {
                 const page = getActivePage();
                 if (!page) return;
-                selectedTemplateId = page.templateId || selectedTemplateId;
-                const tplFromState = templateList.find(tpl => tpl.id === page.templateId);
-                selectedTemplateText = tplFromState?.text || selectedTemplateText || "";
+                const fallbackTemplateId = defaultTemplate?.id || (templateList[0] ? templateList[0].id : null);
+                selectedTemplateId = page.templateId || selectedTemplateId || fallbackTemplateId;
+                const tplFromState = templateList.find(tpl => tpl.id === selectedTemplateId);
+                selectedTemplateText = tplFromState?.text || selectedTemplateText || defaultTemplate?.text || "";
+                if (!page.templateId && tplFromState) {
+                    page.templateId = tplFromState.id;
+                    if (!page.templateName) {
+                        page.templateName = tplFromState.title || "";
+                    }
+                    persistState();
+                }
                 if (pageTitleEl) pageTitleEl.textContent = page.title || "Page";
                 if (promptCreate) promptCreate.value = page.scenario || "";
                 if (promptModify) promptModify.value = page.script || "";
@@ -2458,6 +2473,10 @@
             function renderTemplateModalList() {
                 if (!templateModalList) return;
                 templateModalList.innerHTML = "";
+                const fallbackTemplateId = selectedTemplateId || defaultTemplate?.id || (templateList[0] ? templateList[0].id : null);
+                if (!selectedTemplateId && fallbackTemplateId) {
+                    selectedTemplateId = fallbackTemplateId;
+                }
                 templateList.forEach(tpl => {
                     const card = document.createElement("div");
                     card.className = "gt-template-card";
@@ -4050,6 +4069,15 @@
             async function runVoicePrompt() {
                 const page = getActivePage();
                 if (!page) return;
+                if (!selectedTemplateId && defaultTemplate) {
+                    selectedTemplateId = defaultTemplate.id;
+                    selectedTemplateText = defaultTemplate.text || selectedTemplateText || "";
+                    if (!page.templateId) {
+                        page.templateId = selectedTemplateId;
+                        page.templateName = page.templateName || defaultTemplate.title || "";
+                        persistState();
+                    }
+                }
                 if (activeRequestId) {
                     cancelActiveRequest();
                     return;
@@ -4472,7 +4500,7 @@
                         renderTabs();
                         renderPage();
                         updateShareMenuUI();
-                        showToast("Capsule chargée depuis Nexus.");
+                        showToast("Document chargé depuis Partage.");
                         return true;
                     }
                 } catch (err) {
@@ -5196,7 +5224,7 @@
             newDocumentBtn?.addEventListener("click", () => {
                 closeMenus();
                 try {
-                    const shouldSave = confirm("Sauvegarder la capsule actuelle avant d'ouvrir un nouveau document ?");
+                    const shouldSave = confirm("Sauvegarder le document existant avant d'ouvrir un nouveau ?");
                     if (shouldSave) {
                         persistCapsuleDraft();
                         showToast("Capsule enregistrée localement.");
@@ -5228,10 +5256,6 @@
                 resetDocument();
                 closeInfoPopup();
                 showToast("Capsule réinitialisée.");
-            });
-            tourReplayBtn?.addEventListener("click", () => {
-                closeInfoPopup();
-                showToast("Tour guidé indisponible pour le moment.");
             });
             addViewBtn?.addEventListener("click", addPage);
             deleteViewBtn?.addEventListener("click", () => {

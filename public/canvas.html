@@ -1875,7 +1875,7 @@
                     <button id="gtTemplateModalTrigger" class="btn" type="button" aria-label="Choisir un modèle"
                         title="⊞ Modèle">⊞ Modèle</button>
                     <button id="gtContextModalTrigger" class="btn" type="button" aria-label="Ouvrir Contexte"
-                        title="⸙ Gutenberg">⸙ Contexte</button>
+                        title="⸙ Contexte">⸙ Contexte</button>
                     <button id="gtPromptModalTrigger" class="btn" type="button" aria-label="Prompt" title="⌘ Prompt">⌘
                         Prompt</button>
 
@@ -1915,7 +1915,7 @@
                     </div>
                 </div>
                 <div class="menu-trigger" id="fileMenuTrigger">
-                    <button id="fileMenuBtn" class="btn" type="button" aria-label="Capsule">⬠ Capsule</button>
+                    <button id="fileMenuBtn" class="btn" type="button" aria-label="Document">⬠ Document</button>
                     <div class="context-menu" id="fileMenu">
                         <div class="menu-panel">
                             <button id="newDocumentBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
@@ -1931,7 +1931,7 @@
                 </div>
                 <div class="menu-trigger" id="shareMenuTrigger">
                     <button id="shareBtn" class="btn btn-secondary" type="button" aria-label="Partager"
-                        title="Lien de partage">☍ Nexus</button>
+                        title="Lien de partage">☍ Partage</button>
                     <div data-share-menu-slot></div>
                 </div>
             </div>
@@ -3220,7 +3220,7 @@
             const hasContent = slideCount > 0 || Boolean(currentDraftId);
             if (hasContent) {
                 const confirmSave = window.confirm(
-                    "Sauvegarder la capsule actuelle avant d'ouvrir un nouveau document ?"
+                    "Sauvegarder le document existant avant d'ouvrir un nouveau ?"
                 );
                 if (confirmSave) {
                     await handleSaveDocumentClick();
@@ -3323,7 +3323,7 @@
             }
 
             if (!chosenPayload || !Array.isArray(chosenPayload.slides)) {
-                setShareStatus("Lien de la capsule introuvable.", "error");
+                setShareStatus("Lien de partage introuvable.", "error");
                 return false;
             }
 
@@ -7124,7 +7124,7 @@
             },
             {
                 title: "Exports",
-                description: "Le bouton ⬠ Capsule ouvre le menu d’export : texte, image, PowerPoint ou capsule JSON.",
+                description: "Le bouton ⬠ Document ouvre le menu d’export : texte, image, PowerPoint ou capsule JSON.",
                 selector: "#fileMenuTrigger"
             },
         ];

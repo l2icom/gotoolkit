@@ -799,11 +799,11 @@
             <div class="global-actions">
                 <button id="gtTemplateModalTrigger" class="btn drawer-toggle-btn" type="button" title="⊞ Modèle">⊞
                     Modèle</button>
-                <button id="gtContextModalTrigger" class="btn drawer-toggle-btn" type="button" title="⸙ Gutenberg">⸙
+                <button id="gtContextModalTrigger" class="btn drawer-toggle-btn" type="button" title="⸙ Contexte">⸙
                     Contexte</button>
                 <button id="gtPromptModalTrigger" class="btn ai-button" type="button" title="⌘ Prompt">⌘ Prompt</button>
                 <div class="menu-trigger" id="capsuleMenuTrigger">
-                    <button id="capsuleMenuBtn" class="btn" type="button" title="Capsule">⬠ Capsule</button>
+                    <button id="capsuleMenuBtn" class="btn" type="button" title="Document">⬠ Document</button>
                     <div class="context-menu" id="capsuleMenu">
                         <div class="menu-panel">
                             <button id="capsuleNewDocBtn" type="button" class="menu-panel-btn">🗋 Nouveau</button>
@@ -816,8 +816,8 @@
                     </div>
                 </div>
                 <div class="share-menu-wrapper">
-                    <button id="shareBtn" class="btn btn-secondary" type="button" title="Lien de la capsule">☍
-                        Nexus</button>
+                    <button id="shareBtn" class="btn btn-secondary" type="button" title="Lien de partage">☍
+                        Partage</button>
                     <div data-share-menu-slot></div>
                 </div>
 
@@ -2411,7 +2411,7 @@
                 const hasPages = state.pages.length > 0 || Boolean(currentDraftId);
                 if (hasPages) {
                     const confirmSave = window.confirm(
-                        "Sauvegarder la capsule actuelle avant d'ouvrir un nouveau document ?"
+                        "Sauvegarder le document existant avant d'ouvrir un nouveau ?"
                     );
                     if (confirmSave) {
                         await handleSaveDocumentClick();

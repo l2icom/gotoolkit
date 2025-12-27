@@ -51,11 +51,11 @@
                     <div class="${prefix}-share-row feedback-app-share-row">
                         <label class="feedback-app-share-checkbox">
                             <input id="${prefix}-shareCheckbox" type="checkbox" />
-                            Partager la capsule
+                            Partager le document
                         </label>
                     </div>
                     <div id="${prefix}-shareInfo" class="${prefix}-share-info feedback-app-share-info" hidden>
-                        <p class="feedback-app-helper">${config.shareWarning || "La capsule partagée sera accessible publiquement."}</p>
+                        <p class="feedback-app-helper">${config.shareWarning || "Lien partagé dans le feedback : "}</p>
                         <a id="${prefix}-shareLink" class="feedback-app-share-link" rel="noreferrer noopener" target="_blank"></a>
                     </div>
                     <div class="${prefix}-actions feedback-app-actions">
@@ -183,7 +183,6 @@
                 shareLink.textContent = url;
                 shareLink.href = url;
                 shareUrlInput.value = url;
-                shareStatusText.textContent = "Lien prêt et ajouté au formulaire.";
             } catch (err) {
                 shareStatusText.textContent = err.message || "Impossible de générer le lien.";
                 shareCheckbox.checked = false;

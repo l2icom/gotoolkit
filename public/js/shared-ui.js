@@ -2,7 +2,7 @@
     const SHARE_MENU_TEMPLATE = `
         <div class="context-menu share-menu" id="shareMenu" role="dialog" aria-live="polite">
             <div class="menu-panel">
-                <div class="menu-header">Lien de la capsule</div>
+                <div class="menu-header">Lien de partage</div>
                 <div class="share-link-line">
                     <input id="shareLinkField" class="share-link-field" type="text" readonly placeholder="Créer un lien">
                 </div>
