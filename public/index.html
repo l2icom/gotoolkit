@@ -1412,8 +1412,8 @@
                                         <span class="ia-status" id="openrouterStatus" aria-hidden="true"></span>
                                         <span class="ia-model-label" id="openrouterModelLabel"
                                             aria-live="polite"></span><br>
-                                        <span class="label-subtitle">Accès payant pour la protection des données
-                                            personnelles
+                                        <span class="label-subtitle">Permet des requêtes payantes sans rétention des
+                                            données
                                     </div>
                                     <div style="display:flex; gap:0.35rem;">
                                         <button id="openrouterVerifyBtn" type="button"
@@ -2406,12 +2406,36 @@
             }
         }
 
+        function formatLatencyMs(value) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return null;
+            const rounded = Math.round(Math.max(0, num));
+            return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        }
+
+        function appendLatencyToLabel(label, latencyMs) {
+            if (!label || latencyMs == null) return label;
+            const formatted = formatLatencyMs(latencyMs);
+            if (!formatted) return label;
+            return `${label} (${formatted} ms)`;
+        }
+
+        function getTimestampMs() {
+            if (typeof performance === "object" && typeof performance.now === "function") {
+                return performance.now();
+            }
+            return Date.now();
+        }
+
+        const openAiLatencies = { private: null, shared: null };
+
         function setOpenAiStatusLabel(label, options = {}) {
             if (!openaiStatusEl) return;
             const trimmed = (label || "").trim();
             const iconState = options.state;
             const hasIcon = iconState && IA_STATUS_ICONS[iconState];
-            const text = (hasIcon ? IA_STATUS_ICONS[iconState] + (trimmed ? " " : "") : "") + trimmed;
+            const labelWithLatency = appendLatencyForOpenAi(trimmed, options.latencyMs);
+            const text = (hasIcon ? IA_STATUS_ICONS[iconState] + (labelWithLatency ? " " : "") : "") + labelWithLatency;
             openaiStatusEl.textContent = text.trim();
             if (iconState === "error") {
                 openaiStatusEl.classList.add("ia-status--error");
@@ -2424,6 +2448,13 @@
             } else {
                 delete openaiStatusEl.dataset.openaiStatusSticky;
             }
+        }
+
+        function appendLatencyForOpenAi(label, latencyMs) {
+            if (!label) return label;
+            if (latencyMs == null) return label;
+            const normalized = label === "Accès privé" || label === "Accès partagé";
+            return normalized ? appendLatencyToLabel(label, latencyMs) : label;
         }
 
         function resolveOpenRouterModel(modelOverride) {
@@ -2451,74 +2482,84 @@
             );
         }
 
-        function updateOpenRouterModelLabel(modelOverride, accessType = "default") {
+        function updateOpenRouterModelLabel(accessType, options = {}) {
             if (!openrouterModelLabelEl) {
+                return;
+            }
+            if (!accessType) {
+                openrouterModelLabelEl.textContent = "";
                 return;
             }
             if (accessType === "error") {
                 openrouterModelLabelEl.textContent = "Accès partagé indisponible";
                 return;
             }
-            const model = resolveOpenRouterModel(modelOverride);
-            if (!model) {
+            let baseLabel = "";
+            if (accessType === "private") {
+                baseLabel = "Accès privé";
+            } else if (accessType === "shared") {
+                baseLabel = "Accès partagé";
+            }
+            if (!baseLabel) {
                 openrouterModelLabelEl.textContent = "";
                 return;
             }
-            if (accessType === "private") {
-                openrouterModelLabelEl.textContent = `Accès privé : ${model}`;
-            } else if (accessType === "shared") {
-                openrouterModelLabelEl.textContent = `Accès partagé : ${model}`;
-            } else {
-                openrouterModelLabelEl.textContent = model;
-            }
+            openrouterModelLabelEl.textContent = appendLatencyToLabel(baseLabel, options.latencyMs);
         }
 
         if (typeof window.GoToolkitForceOpenRouterProxy !== "boolean") {
             window.GoToolkitForceOpenRouterProxy = false;
         }
 
-        async function fetchOpenRouterModelLabel({ apiKey, useProxy = false } = {}) {
+        async function testOpenRouterChatCompletion({ apiKey, useProxy = false } = {}) {
             const endpoint = useProxy
-                ? "https://openrouter.gotoolkit.workers.dev/api/v1/models"
-                : "https://openrouter.ai/api/v1/models/user";
-            const headers = {};
+                ? "https://openrouter.gotoolkit.workers.dev/api/v1/chat/completions"
+                : "https://openrouter.ai/api/v1/chat/completions";
+            const model = resolveOpenRouterModel();
+            const resolvedModel = model || "openrouter/auto";
+            const payload = {
+                model: resolvedModel,
+                input: [
+                    {
+                        role: "user",
+                        content: [
+                            {
+                                type: "input_text",
+                                text: "Vérification"
+                            }
+                        ]
+                    }
+                ],
+                stream: false
+            };
+            const headers = { "Content-Type": "application/json" };
             if (!useProxy && apiKey) {
                 headers.Authorization = "Bearer " + apiKey;
             }
+
             const response = await fetch(endpoint, {
-                method: "GET",
+                method: "POST",
                 headers,
+                body: JSON.stringify(payload),
                 cache: "no-cache"
             });
             if (!response.ok) {
                 const text = await response.text().catch(() => "");
                 throw new Error(text || "HTTP " + response.status);
             }
-            const payload = await response.json().catch(() => null);
-            if (payload && typeof payload === "string") {
-                return payload;
-            }
-            if (payload && Array.isArray(payload.models)) {
-                const first = payload.models[0];
-                return (
-                    payload.default ||
-                    payload.default_model ||
-                    first?.model_id ||
-                    first?.id ||
-                    first?.name ||
-                    "openrouter/auto"
-                );
-            }
-            return payload?.default || payload?.default_model || "openrouter/auto";
+            return resolvedModel;
         }
 
         async function verifyOpenRouterDirect(apiKey, { showToasts } = {}) {
-            const modelLabel = await fetchOpenRouterModelLabel({ apiKey, useProxy: false });
+            const startTime = getTimestampMs();
+            const modelLabel = await testOpenRouterChatCompletion({ apiKey, useProxy: false });
+            const latencyMs = Math.max(0, getTimestampMs() - startTime);
+            openrouterLatencies.private = latencyMs;
             window.GoToolkitForceOpenRouterProxy = false;
             openrouterHasValidPrivateKey = true;
             updateOpenRouterExtrasVisibility();
             updateStatusIcon(openrouterStatusEl, "ready");
-            updateOpenRouterModelLabel(modelLabel, "private");
+            updateOpenRouterModelLabel("private", { latencyMs });
             if (showToasts) {
                 showToast("Accès privé OpenRouter prêt (" + modelLabel + ")");
             }
@@ -2530,9 +2571,12 @@
             openrouterHasValidPrivateKey = false;
             updateOpenRouterExtrasVisibility();
             try {
-                const modelLabel = await fetchOpenRouterModelLabel({ useProxy: true });
+                const startTime = getTimestampMs();
+                const modelLabel = await testOpenRouterChatCompletion({ useProxy: true });
+                const latencyMs = Math.max(0, getTimestampMs() - startTime);
+                openrouterLatencies.shared = latencyMs;
                 updateStatusIcon(openrouterStatusEl, "ready");
-                updateOpenRouterModelLabel(modelLabel, "shared");
+                updateOpenRouterModelLabel("shared", { latencyMs });
                 if (showToasts) {
                     showToast("Accès partagé OpenRouter prêt (" + modelLabel + ")");
                 }
@@ -2540,7 +2584,7 @@
             } catch (err) {
                 console.warn("OpenRouter proxy test failed", err);
                 updateStatusIcon(openrouterStatusEl, "error");
-                updateOpenRouterModelLabel(null, "error");
+                updateOpenRouterModelLabel("error");
                 if (showToasts) {
                     showToast("Accès partagé indisponible", true, "openrouterStatus");
                 }
@@ -2962,6 +3006,7 @@
             setOpenAiStatusLabel("Vérification OpenAI...", { state: "verifying" });
             if (apiKey) {
                 try {
+                    const startTime = getTimestampMs();
                     var response = await fetch("https://api.openai.com/v1/models", {
                         method: "GET",
                         headers: {
@@ -2971,10 +3016,12 @@
                     if (!response.ok) {
                         throw new Error("HTTP " + response.status + " " + (response.statusText || ""));
                     }
+                    const latencyMs = Math.max(0, getTimestampMs() - startTime);
                     if (showToasts) {
                         showToast("Connexion OpenAI prête");
                     }
-                    setOpenAiStatusLabel("Accès privé", { state: "ready" });
+                    openAiLatencies.private = latencyMs;
+                    setOpenAiStatusLabel("Accès privé", { state: "ready", latencyMs });
                     return true;
                 } catch (err) {
                     console.warn("OpenAI test failed", err);
@@ -2998,6 +3045,7 @@
                 "gpt-5-nano";
             setOpenAiStatusLabel("Vérification en cours...", { state: "verifying" });
             try {
+                const startTime = getTimestampMs();
                 var response = await fetch(endpoint, {
                     method: "POST",
                     headers: {
@@ -3025,7 +3073,9 @@
                 if (showToasts) {
                     showToast("Connexion partagée prête");
                 }
-                setOpenAiStatusLabel("Accès partagé", { state: "ready" });
+                const latencyMs = Math.max(0, getTimestampMs() - startTime);
+                openAiLatencies.shared = latencyMs;
+                setOpenAiStatusLabel("Accès partagé", { state: "ready", latencyMs });
                 return true;
             } catch (err) {
                 console.warn("OpenAI proxy test failed", err);
@@ -3232,6 +3282,7 @@
         const openrouterDataCollectionSelect = document.getElementById("openrouterDataCollectionSelect");
         const openrouterMaxPriceInput = document.getElementById("openrouterMaxPriceInput");
         let openrouterHasValidPrivateKey = false;
+        const openrouterLatencies = { private: null, shared: null };
         const ASSEMBLY_AI_KEY_STORAGE = "go-toolkit-assemblyai-key";
         const VOICE_AUDIO_DB = { name: "go-toolkit-voice-audio", store: "recordings" };
 
@@ -3409,11 +3460,7 @@
                     openrouterMaxPriceInput.value = storedOpenRouterMaxPrice;
                 }
                 updateOpenRouterExtrasVisibility();
-                var storedOpenRouterModel =
-                    (config && typeof config.getOpenRouterModel === "function" ? config.getOpenRouterModel() : "") ||
-                    window.GoToolkitIAConfig?.DEFAULTS?.OPENROUTER_MODEL ||
-                    "";
-                updateOpenRouterModelLabel(storedOpenRouterModel);
+                updateOpenRouterModelLabel(null);
                 const storedReasoning = localStorage.getItem("plan-reasoning-effort") || localStorage.getItem("nuances-reasoning-effort") || "low";
                 if (settingsReasoningSelect) settingsReasoningSelect.value = storedReasoning;
                 const storedAssemblyKey = ((localStorage.getItem(ASSEMBLY_AI_KEY_STORAGE) || "").trim() || (window.GoToolkitAssemblyAiKey || "").trim()) || "";
@@ -3710,9 +3757,9 @@
         function setIaStatus(backend) {
             if (openaiStatusEl && !openaiStatusEl.dataset.openaiStatusSticky) {
                 if (backend?.type === "openai") {
-                    setOpenAiStatusLabel("Accès privé", { state: "ready" });
+                    setOpenAiStatusLabel("Accès privé", { state: "ready", latencyMs: openAiLatencies.private });
                 } else if (backend?.type === "proxy") {
-                    setOpenAiStatusLabel("Accès partagé", { state: "ready" });
+                    setOpenAiStatusLabel("Accès partagé", { state: "ready", latencyMs: openAiLatencies.shared });
                 } else {
                     setOpenAiStatusLabel("", { state: null });
                 }
@@ -3733,7 +3780,8 @@
                             : backend.type === "openrouter-proxy"
                                 ? "shared"
                                 : "default";
-                    updateOpenRouterModelLabel(backend?.model, accessType);
+                    const latencyMs = openrouterLatencies[accessType] ?? null;
+                    updateOpenRouterModelLabel(accessType, { latencyMs });
                 } else {
                     updateOpenRouterModelLabel(null);
                 }
