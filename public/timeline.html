@@ -854,8 +854,7 @@
             padding: 12px;
         }
 
-        .context-menu label,
-        .context-menu button {
+        .context-menu label {
             font-size: 13px;
             color: var(--text);
         }
@@ -4658,12 +4657,10 @@
                         shareUpdateBtn.hidden = !hasToken;
                         shareUpdateBtn.disabled = shareRequestInProgress || !hasToken || !shareWorkerAvailable;
                         shareUpdateBtn.classList.toggle("btn-primary", hasToken);
-                        shareUpdateBtn.classList.toggle("primary", hasToken);
                     }
                     if (shareCreateBtn) {
                         shareCreateBtn.disabled = shareRequestInProgress || !shareWorkerAvailable;
                         shareCreateBtn.classList.toggle("btn-primary", !hasToken);
-                        shareCreateBtn.classList.toggle("primary", !hasToken);
                     }
                     if (shareMenuStatus) {
                         var text = shareStatusMessage || getShareDefaultStatusText();
