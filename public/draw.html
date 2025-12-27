@@ -593,117 +593,6 @@
             flex-wrap: wrap;
         }
 
-        /* Harmonized tour styles */
-        .tour-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.55);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 80;
-        }
-
-        .tour-overlay.open {
-            display: flex;
-        }
-
-        .tour-overlay.has-highlight {
-            background: transparent;
-        }
-
-        .tour-highlight {
-            position: absolute;
-            border: 2px solid #2a7a57;
-            border-radius: 12px;
-            background: transparent;
-            box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55);
-            pointer-events: none;
-            transition: all 0.2s ease;
-        }
-
-        .tour-panel {
-            position: relative;
-            z-index: 2;
-            background: #fff;
-            border-radius: 14px;
-            padding: 16px;
-            width: min(480px, 92vw);
-            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .tour-step-counter {
-            font-size: 12px;
-            color: #6b7280;
-        }
-
-        .tour-panel h4 {
-            margin: 0;
-            font-size: 16px;
-        }
-
-        .tour-panel p {
-            margin: 0;
-            font-size: 13px;
-            color: #374151;
-        }
-
-        .tour-step-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .tour-step-footer button {
-            border-radius: 10px;
-            border: 1px solid rgba(15, 23, 42, 0.15);
-            background: #fff;
-            color: #0f172a;
-            padding: 8px 12px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .tour-step-footer button:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
-        }
-
-        .tour-step-footer button.primary {
-            background: #2a7a57;
-            color: #fff;
-            border-color: #2a7a57;
-        }
-
-        .tour-step-footer button:disabled {
-            opacity: 0.55;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .tour-skip {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            border: none;
-            background: transparent;
-            color: #fff;
-            font-size: 18px;
-            cursor: pointer;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .tour-skip:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-        }
-
         /* Ajuste le menu latéral Excalidraw (selected-shape-actions) */
         .excalidraw-card .Island.App-menu__left {
             --padding: 2px;
@@ -834,7 +723,6 @@
             <div class="info-actions">
                 <button id="updateAppBtn" type="button" class="update-btn">Réinitialiser</button>
                 <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
-                <button id="tourReplayBtn" type="button" class="secondary">Tour guidé</button>
             </div>
         </div>
 
@@ -896,21 +784,6 @@
 
     <div data-toast-slot="statusToast" data-toast-class="status-toast" data-toast-role="status"></div>
 
-    <div id="tourOverlay" class="tour-overlay" aria-hidden="true">
-        <div class="tour-highlight" aria-hidden="true"></div>
-        <div class="tour-panel">
-            <span class="tour-step-counter" id="tourStepCounter"></span>
-            <h4 id="tourStepTitle"></h4>
-            <p id="tourStepDescription"></p>
-            <div class="tour-step-footer">
-                <button id="tourPrevBtn" type="button">Précédent</button>
-                <button id="tourNextBtn" type="button" class="primary">Suivant</button>
-                <button id="tourCloseBtn" type="button">Fermer</button>
-            </div>
-        </div>
-        <button id="tourSkipBtn" class="tour-skip" type="button" aria-label="Fermer">×</button>
-    </div>
-
     <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true"
         aria-labelledby="gtPromptModalTitle">
         <div class="modal">
@@ -959,30 +832,7 @@
         })();
     </script>
     <script src="js/connect.bundle.js" data-excalidraw-bundle="true"></script>
-    <script>
-        // Load runtime config synchronously so tour behavior can be controlled
-        window.GoToolkitConfig = window.GoToolkitConfig || { enableTours: false };
-        try {
-            var __cfg_xhr = new XMLHttpRequest();
-            __cfg_xhr.open('GET', '/config.json', false);
-            __cfg_xhr.send(null);
-            if (__cfg_xhr.status >= 200 && __cfg_xhr.status < 300) {
-                try { window.GoToolkitConfig = Object.assign({}, window.GoToolkitConfig, JSON.parse(__cfg_xhr.responseText)); } catch (e) { }
-            }
-        } catch (e) { }
-        document.addEventListener('DOMContentLoaded', function () {
-            if (window.GoToolkitConfig && window.GoToolkitConfig.enableTours === false) {
-                var btn = document.getElementById('tourReplayBtn');
-                if (btn) btn.style.display = 'none';
-                var overlay = document.getElementById('tourOverlay');
-                if (overlay) {
-                    overlay.setAttribute('aria-hidden', 'true');
-                    overlay.style.display = 'none';
-                }
-            }
-        });
-    </script>
-    <script>
+        <script>
         (() => {
             const DEFAULT_PROMPT_TEMPLATE =
                 (window.GoPrompts && window.GoPrompts.drawDefaultPromptTemplate) || "";
@@ -1697,16 +1547,6 @@
             const infoButton = document.getElementById("infoButton");
             const infoPopup = document.getElementById("infoPopup");
             const updateAppBtn = document.getElementById("updateAppBtn");
-            const tourReplayBtn = document.getElementById("tourReplayBtn");
-            const tourOverlay = document.getElementById("tourOverlay");
-            const tourHighlight = tourOverlay?.querySelector(".tour-highlight");
-            const tourStepCounter = document.getElementById("tourStepCounter");
-            const tourStepTitle = document.getElementById("tourStepTitle");
-            const tourStepDescription = document.getElementById("tourStepDescription");
-            const tourPrevBtn = document.getElementById("tourPrevBtn");
-            const tourNextBtn = document.getElementById("tourNextBtn");
-            const tourCloseBtn = document.getElementById("tourCloseBtn");
-            const tourSkipBtn = document.getElementById("tourSkipBtn");
             const promptModal = document.getElementById("gtPromptModal");
             const aiSettingsBtn = document.getElementById("gtPromptModalTrigger");
             const closePromptModalBtn = document.getElementById("gtPromptModalClose");
@@ -1836,7 +1676,6 @@
             let generateCooldownTimer = null;
             let generateCooldownEndTime = 0;
             let activeIaAbortController = null;
-            let currentTourIndex = 0;
             // Start open on desktop by default; auto logic can rehydrate stored state
             let isDrawerOpen = true;
             const DESKTOP_GUTENBERG_BREAKPOINT = 900;
@@ -1847,35 +1686,6 @@
             capsuleImportInput.accept = "application/json";
             capsuleImportInput.style.display = "none";
             document.body.appendChild(capsuleImportInput);
-            const tourSteps = [
-                {
-                    title: "Intention Le Cardinal",
-                    description: "Le Cardinal aide les consultants à illustrer rapidement des idées en diagrammes clairs.",
-                    selector: null
-                },
-                {
-                    title: "Choisir un cas métier",
-                    description: "Ouvre ⊞ Modèle pour sélectionner le modèle de diagramme le plus adapté à ton contexte.",
-                    selector: "#gtTemplateModalTrigger"
-                },
-                {
-                    title: "Décris et choisis",
-                    description: "Décris le contexte, choisis le type de diagramme puis clique sur Générer.",
-                    selector: "#prompt-input-card"
-                },
-                {
-                    title: "Édition visuelle",
-                    description: "Tu peux ajouter, modifier et supprimer flèches, texte, forme et stype à ta convenance",
-                    selector: ".connect-right"
-                },
-                {
-                    title: "Édition en texte",
-                    description: "Tu peux également éditer le contenud dans le bloc Script et ajuste le texte si besoin.",
-                    selector: ".mermaid-output-card"
-                },
-
-            ];
-
             function closeDrawer() {
                 if (!connectLeft) return;
                 isDrawerOpen = false;
@@ -2642,51 +2452,6 @@
                 if (!confirm(warning)) return;
                 closeInfoPopup();
                 clearAppCacheAndReload();
-            }
-
-            function focusHighlight(selector) {
-                if (!tourHighlight || !tourOverlay || !selector) {
-                    tourHighlight?.style.setProperty("display", "none");
-                    tourOverlay?.classList.remove("has-highlight");
-                    return;
-                }
-                const target = document.querySelector(selector);
-                if (!target) {
-                    tourHighlight.style.display = "none";
-                    tourOverlay.classList.remove("has-highlight");
-                    return;
-                }
-                const rect = target.getBoundingClientRect();
-                tourHighlight.style.display = "block";
-                tourHighlight.style.top = `${rect.top - 8 + window.scrollY}px`;
-                tourHighlight.style.left = `${rect.left - 8 + window.scrollX}px`;
-                tourHighlight.style.width = `${rect.width + 16}px`;
-                tourHighlight.style.height = `${rect.height + 16}px`;
-                tourOverlay.classList.add("has-highlight");
-            }
-
-            function renderTourStep(index) {
-                if (!tourOverlay) return;
-                const step = tourSteps[index];
-                if (!step) return;
-                currentTourIndex = index;
-                tourOverlay.classList.add("open");
-                tourStepCounter.textContent = `${index + 1}/${tourSteps.length}`;
-                tourStepTitle.textContent = step.title;
-                tourStepDescription.textContent = step.description;
-                focusHighlight(step.selector);
-                tourPrevBtn.disabled = index === 0;
-                tourNextBtn.textContent = index === tourSteps.length - 1 ? "Terminer" : "Suivant";
-            }
-
-            function closeTour() {
-                if (!tourOverlay) return;
-                tourOverlay.classList.remove("open");
-                focusHighlight(null);
-            }
-
-            function startTour() {
-                renderTourStep(0);
             }
 
             async function copyCurrentShareLinkToClipboard() {
@@ -4744,33 +4509,11 @@
                     event.stopPropagation();
                     promptManualUpdate();
                 });
-                tourReplayBtn?.addEventListener("click", event => {
-                    event.stopPropagation();
-                    infoPopup?.classList.remove("open");
-                    if (window.GoToolkitConfig && window.GoToolkitConfig.enableTours === false) {
-                        setStatus("Tours guidés désactivés");
-                        return;
-                    }
-                    startTour();
-                });
                 document.addEventListener("click", event => {
                     if (!infoPopup?.contains(event.target) && event.target !== infoButton) {
                         closeInfoPopup();
                     }
                 });
-                tourPrevBtn?.addEventListener("click", () => {
-                    const prev = Math.max(0, currentTourIndex - 1);
-                    renderTourStep(prev);
-                });
-                tourNextBtn?.addEventListener("click", () => {
-                    if (currentTourIndex >= tourSteps.length - 1) {
-                        closeTour();
-                        return;
-                    }
-                    renderTourStep(currentTourIndex + 1);
-                });
-                tourCloseBtn?.addEventListener("click", closeTour);
-                tourSkipBtn?.addEventListener("click", closeTour);
                 aiSettingsBtn.addEventListener("click", openModal);
                 closePromptModalBtn.addEventListener("click", closeModal);
                 const applyAiSettingsBtn = document.getElementById("applyAiSettingsBtn");

@@ -921,126 +921,6 @@
             flex-wrap: wrap;
         }
 
-        .tour-overlay {
-            position: fixed;
-            inset: 0;
-            background: transparent;
-            display: none;
-            z-index: 120;
-            pointer-events: auto;
-        }
-
-        .tour-overlay.dimmed {
-            background: rgba(15, 15, 15, 0.65);
-        }
-
-        .tour-overlay.visible {
-            display: block;
-        }
-
-        .tour-highlight {
-            position: absolute;
-            border: 2px solid #2a7a57;
-            border-radius: 12px;
-            background: transparent;
-            box-shadow: 0 0 0 9999px rgba(15, 15, 15, 0.65);
-            transition: all 0.25s ease;
-            pointer-events: none;
-        }
-
-        .tour-highlight.hidden {
-            opacity: 0;
-        }
-
-        .tour-panel {
-            position: absolute;
-            bottom: 28px;
-            left: 50%;
-            transform: translateX(-50%);
-            max-width: 460px;
-            width: calc(100% - 40px);
-            background: #fff;
-            border-radius: 14px;
-            padding: 18px;
-            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28);
-            color: #1f1f1f;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .tour-panel h4 {
-            margin: 0;
-            font-size: 18px;
-        }
-
-        .tour-panel p {
-            margin: 0;
-            line-height: 1.4;
-        }
-
-        .tour-step-counter {
-            font-size: 11px;
-            color: #918b7f;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-
-        .tour-step-footer {
-            display: flex;
-            gap: 8px;
-            justify-content: flex-end;
-            flex-wrap: wrap;
-            margin-top: 8px;
-        }
-
-        .tour-panel button {
-            border-radius: 10px;
-            border: 1px solid #ebe0d1;
-            background: #fff;
-            padding: 8px 12px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .tour-panel button.primary {
-            border: none;
-            background: #2a7a57;
-            color: #fff;
-        }
-
-        .tour-panel button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .tour-panel button:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
-        }
-
-        .tour-skip {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            border: none;
-            background: rgba(255, 255, 255, 0.12);
-            color: #fff;
-            border-radius: 999px;
-            padding: 6px 12px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .tour-skip:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-        }
-
         #tabs {
             display: flex;
             align-items: center;
@@ -1945,7 +1825,6 @@
 	            <div class="info-actions">
 	                <button id="updateAppBtn" type="button" class="update-btn">Réinitialiser</button>
 	                <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
-	                <button id="tourReplayBtn" type="button" class="secondary">Tour guidé</button>
 	            </div>
 	        </div>
 
@@ -1959,7 +1838,7 @@
                 </div>
                 <div id="slides" class="slide-wrapper"></div>
             </div>
-            <aside class="gutenberg-card gt-context-modal" id="gtContextModal" aria-label="Gutenberg" aria-hidden="true">
+            <aside class="gutenberg-card gt-context-modal" id="gtContextModal" aria-label="Contexte" aria-hidden="true">
                 <div class="gutenberg-card-header">
                     <div class="gutenberg-card-actions">
                         <!-- header left intentionally minimal; status and actions placed below -->
@@ -2011,21 +1890,6 @@
         </div>
 
         <div id="gtContextModalBackdrop" class="gutenberg-backdrop"></div>
-
-        <div id="tourOverlay" class="tour-overlay" aria-hidden="true">
-            <div class="tour-highlight hidden" aria-hidden="true"></div>
-            <div class="tour-panel">
-                <span class="tour-step-counter" id="tourStepCounter"></span>
-                <h4 id="tourStepTitle"></h4>
-                <p id="tourStepDescription"></p>
-                <div class="tour-step-footer">
-                    <button id="tourPrevBtn" type="button">Précédent</button>
-                    <button id="tourNextBtn" type="button" class="primary">Suivant</button>
-                    <button id="tourCloseBtn" type="button">Fermer</button>
-                </div>
-            </div>
-            <button id="tourSkipBtn" class="tour-skip" type="button">×</button>
-        </div>
         <div id="copyToast" class="toast" aria-live="polite" aria-atomic="true"></div>
         <div id="errorToast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
     </div>
@@ -2810,7 +2674,7 @@
             persistGutenbergOpenState(shouldOpen);
             syncGutenbergLayoutState();
             contextEditorBtn?.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
-            contextEditorBtn?.setAttribute("aria-label", shouldOpen ? "Masquer Gutenberg" : "Ouvrir Gutenberg");
+            contextEditorBtn?.setAttribute("aria-label", shouldOpen ? "Masquer Contexte" : "Ouvrir Contexte");
             if (shouldOpen && !auto) {
                 markGutenbergSeen();
             }
@@ -5887,9 +5751,6 @@
 
         function openTemplateModal() {
             if (!templateModal) return;
-            if (tourOverlay?.classList.contains("visible")) {
-                return;
-            }
             renderTemplateList(lastAppliedTemplateId || currentTemplateId || selectedTemplateId || templates[0].id);
             templateModal.classList.add("open");
         }
@@ -7017,11 +6878,6 @@
             } catch (err) {
                 console.warn("Impossible de vider sessionStorage", err);
             }
-            try {
-                sessionStorage.setItem(tourSkipFlag, "1");
-            } catch (err) {
-                console.warn("Impossible de préparer l'indicateur de mise à jour", err);
-            }
             (document.cookie || "")
                 .split(";")
                 .forEach(function (cookie) {
@@ -7074,256 +6930,6 @@
             }
         });
 
-        // Load runtime config synchronously so tour behavior can be controlled
-        window.GoToolkitConfig = window.GoToolkitConfig || { enableTours: false };
-        try {
-            var __cfg_xhr = new XMLHttpRequest();
-            __cfg_xhr.open('GET', '/config.json', false);
-            __cfg_xhr.send(null);
-            if (__cfg_xhr.status >= 200 && __cfg_xhr.status < 300) {
-                try { window.GoToolkitConfig = Object.assign({}, window.GoToolkitConfig, JSON.parse(__cfg_xhr.responseText)); } catch (e) { }
-            }
-        } catch (e) { }
-        document.addEventListener('DOMContentLoaded', function () {
-            if (window.GoToolkitConfig && window.GoToolkitConfig.enableTours === false) {
-                var btn = document.getElementById('tourReplayBtn');
-                if (btn) btn.style.display = 'none';
-                var overlay = document.getElementById('tourOverlay');
-                if (overlay) {
-                    overlay.setAttribute('aria-hidden', 'true');
-                    overlay.style.display = 'none';
-                }
-            }
-        });
-
-        const tourSteps = [
-            {
-                title: "50 Nuances, ton assistant vocabulaire",
-                description: "50 Nuances t'aide à structurer et aligner ton vocabulaire avec les intérêts de tes interlocuteurs",
-                selector: null
-            },
-            {
-                title: "Choisis un modèle",
-                description: "Ouvre ⊞ Modèle pour parcourir et appliquer différents modèles de canvas.",
-                selector: "#gtTemplateModalTrigger"
-            },
-            {
-                title: "Structure entièrement personnalisable",
-                description: "Chaque page propose un titre, des colonnes, des section et des champs éditables pour structurer ton propos.",
-                selectors: [".slide-title-input", ".column-title", ".section-label"]
-            },
-            {
-                title: "Gutenberg",
-                description: "Alimente le contexte et récupère des suggestions de saisie ou génère tout le contenu depuis la carte Gutenberg.",
-                selector: ".gutenberg-card"
-            },
-            {
-                title: "IA sur chaque champ",
-                description: "Le bouton ⌘ te renvoie une réponse claire et structurée en 15-30 secondes à partir des éléments renseignés.",
-                selector: ".field-ai-btn"
-            },
-            {
-                title: "Exports",
-                description: "Le bouton ⬠ Document ouvre le menu d’export : texte, image, PowerPoint ou capsule JSON.",
-                selector: "#fileMenuTrigger"
-            },
-        ];
-
-        const tourOverlay = document.getElementById("tourOverlay");
-        const tourHighlight = tourOverlay?.querySelector(".tour-highlight");
-        const tourPanel = tourOverlay?.querySelector(".tour-panel");
-        const tourTitle = document.getElementById("tourStepTitle");
-        const tourDescription = document.getElementById("tourStepDescription");
-        const tourCounter = document.getElementById("tourStepCounter");
-        const tourPrevBtn = document.getElementById("tourPrevBtn");
-        const tourNextBtn = document.getElementById("tourNextBtn");
-        const tourCloseBtn = document.getElementById("tourCloseBtn");
-        const tourSkipBtn = document.getElementById("tourSkipBtn");
-        const tourReplayBtn = document.getElementById("tourReplayBtn");
-        const tourStorageKey = "goToolkitTourCompleted";
-        const tourSkipFlag = "goToolkitTourSkipAfterUpdate";
-        let currentTourIndex = 0;
-
-        function getSelectorsFromStep(step) {
-            if (!step) {
-                return [];
-            }
-            if (Array.isArray(step.selectors)) {
-                return step.selectors;
-            }
-            if (step.selector) {
-                return [step.selector];
-            }
-            return [];
-        }
-
-        function getSelectorsBoundingRect(selectors) {
-            if (!selectors?.length) {
-                return null;
-            }
-            let unionRect = null;
-            selectors.forEach(selector => {
-                const target = document.querySelector(selector);
-                if (!target) {
-                    return;
-                }
-                const rect = target.getBoundingClientRect();
-                if (!unionRect) {
-                    unionRect = {
-                        top: rect.top,
-                        left: rect.left,
-                        right: rect.right,
-                        bottom: rect.bottom,
-                        width: rect.width,
-                        height: rect.height
-                    };
-                } else {
-                    unionRect.top = Math.min(unionRect.top, rect.top);
-                    unionRect.left = Math.min(unionRect.left, rect.left);
-                    unionRect.right = Math.max(unionRect.right, rect.right);
-                    unionRect.bottom = Math.max(unionRect.bottom, rect.bottom);
-                    unionRect.width = unionRect.right - unionRect.left;
-                    unionRect.height = unionRect.bottom - unionRect.top;
-                }
-            });
-            return unionRect;
-        }
-
-        function positionTourPanel(selectors) {
-            if (!tourPanel) return;
-            const spacing = 14;
-            const defaultStyles = {
-                top: "auto",
-                bottom: "28px",
-                left: "50%",
-                right: "auto",
-                transform: "translateX(-50%)"
-            };
-            Object.assign(tourPanel.style, defaultStyles);
-            const rect = getSelectorsBoundingRect(selectors);
-            if (!rect) return;
-            const panelRect = tourPanel.getBoundingClientRect();
-            let top = rect.bottom + spacing;
-            if (top + panelRect.height > window.innerHeight - spacing) {
-                top = rect.top - panelRect.height - spacing;
-            }
-            let left = rect.left + rect.width / 2 - panelRect.width / 2;
-            left = Math.max(spacing, Math.min(left, window.innerWidth - panelRect.width - spacing));
-            tourPanel.style.top = `${Math.max(spacing, top)}px`;
-            tourPanel.style.left = `${left}px`;
-            tourPanel.style.bottom = "auto";
-            tourPanel.style.right = "auto";
-            tourPanel.style.transform = "none";
-        }
-
-        function updateHighlight(selectors) {
-            if (!tourHighlight) return;
-            const rect = getSelectorsBoundingRect(selectors);
-            if (!rect) {
-                tourHighlight.classList.add("hidden");
-                tourOverlay?.classList.add("dimmed");
-                return;
-            }
-            tourOverlay?.classList.remove("dimmed");
-            tourHighlight.classList.remove("hidden");
-            const offset = 10;
-            tourHighlight.style.width = `${rect.width + offset * 2}px`;
-            tourHighlight.style.height = `${rect.height + offset * 2}px`;
-            tourHighlight.style.transform = "translate(0, 0)";
-            tourHighlight.style.left = `${rect.left - offset}px`;
-            tourHighlight.style.top = `${rect.top - offset}px`;
-        }
-
-        function handleTourModal(step) {
-            if (!promptModal) return;
-            if (step?.openContextModal) {
-                openModal(promptModal);
-            } else {
-                closeModal(promptModal);
-            }
-        }
-
-        function renderTourStep() {
-            if (!tourOverlay || !tourSteps.length) return;
-            const step = tourSteps[currentTourIndex];
-            tourTitle.textContent = step.title;
-            tourDescription.textContent = step.description;
-            tourCounter.textContent = `Étape ${currentTourIndex + 1} / ${tourSteps.length}`;
-            tourPrevBtn.disabled = currentTourIndex === 0;
-            tourNextBtn.textContent = currentTourIndex === tourSteps.length - 1 ? "Terminé" : "Suivant";
-            const selectors = getSelectorsFromStep(step);
-            updateHighlight(selectors);
-            positionTourPanel(selectors);
-            handleTourModal(step);
-        }
-
-        function openTour(startIndex = 0) {
-            if (!tourOverlay) return;
-            closeTemplateModal();
-            closeInfoPopup();
-            currentTourIndex = startIndex;
-            tourOverlay.classList.add("visible");
-            tourOverlay.setAttribute("aria-hidden", "false");
-            renderTourStep();
-        }
-
-        function closeTour(markSeen = false) {
-            if (markSeen && window.localStorage) {
-                window.localStorage.setItem(tourStorageKey, "1");
-            }
-            if (!tourOverlay) return;
-            tourOverlay.classList.remove("visible");
-            tourOverlay.setAttribute("aria-hidden", "true");
-            tourOverlay.classList.remove("dimmed");
-            if (tourHighlight) {
-                tourHighlight.classList.add("hidden");
-            }
-        }
-
-        if (tourPrevBtn) {
-            tourPrevBtn.addEventListener("click", () => {
-                if (currentTourIndex === 0) return;
-                currentTourIndex = Math.max(0, currentTourIndex - 1);
-                renderTourStep();
-            });
-        }
-
-        tourNextBtn?.addEventListener("click", () => {
-            if (currentTourIndex >= tourSteps.length - 1) {
-                closeTour(true);
-                return;
-            }
-            currentTourIndex = Math.min(tourSteps.length - 1, currentTourIndex + 1);
-            renderTourStep();
-        });
-
-        tourCloseBtn?.addEventListener("click", () => closeTour(true));
-        tourSkipBtn?.addEventListener("click", () => closeTour(true));
-        tourReplayBtn?.addEventListener("click", () => {
-            if (window.GoToolkitConfig && window.GoToolkitConfig.enableTours === false) {
-                setStatus("Tours guidés désactivés");
-                return;
-            }
-            if (window.localStorage) {
-                window.localStorage.removeItem(tourStorageKey);
-            }
-            openTour(0);
-        });
-
-        window.addEventListener("resize", () => {
-            if (!tourOverlay?.classList.contains("visible")) return;
-            renderTourStep();
-        });
-
-        const tourSkipOnReload = window.sessionStorage?.getItem(tourSkipFlag);
-        if (tourSkipOnReload) {
-            window.localStorage?.setItem(tourStorageKey, "1");
-            window.sessionStorage?.removeItem(tourSkipFlag);
-        }
-        const tourSeen = window.localStorage?.getItem(tourStorageKey);
-        if (!tourSeen && (window.GoToolkitConfig?.enableTours !== false)) {
-            setTimeout(() => openTour(0), 200);
-        }
     </script>
     <script>
         (function removeVersionQueryParam() {

@@ -123,7 +123,7 @@
         @media (min-width: 1400px) {
             .app-main:not(.context-open) .panel-columns {
                 display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-template-columns: minmax(600px, 1fr) minmax(0, 1fr);
                 gap: 12px;
                 flex: 1 1 0;
                 min-height: 0;
@@ -226,7 +226,7 @@
             font-size: 13px;
             border-radius: 8px;
             border: 1px solid var(--border-strong);
-            padding: 4px 10px;
+            padding: 4px 4px;
             background: var(--surface);
             color: var(--text);
             cursor: pointer;
@@ -825,7 +825,7 @@
             background: var(--primary-soft);
             color: var(--primary);
             border-radius: 999px;
-            font-size: 13px;
+            font-size: 12px;
         }
 
 
@@ -859,6 +859,21 @@
 
         .gutenberg-card.open {
             display: flex;
+        }
+
+        .gutenberg-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.28);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            z-index: 108;
+        }
+
+        .gutenberg-backdrop.visible {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .prompt-template-meta {
@@ -1050,6 +1065,22 @@
                 opacity: 1;
                 pointer-events: auto;
             }
+
+            .gutenberg-card {
+                right: 12px;
+                top: 12px;
+                bottom: 12px;
+            }
+        }
+
+        @media (max-width: 1000px) {
+            .gutenberg-card {
+                width: min(340px, 90vw);
+                right: 8px;
+                top: 12px;
+                bottom: 12px;
+            }
+        }
     </style>
 </head>
 
@@ -1267,6 +1298,8 @@
             </div>
         </div>
 
+        <div id="gtContextModalBackdrop" class="gutenberg-backdrop" aria-hidden="true"></div>
+
         <div class="modal-overlay gt-prompt-modal" id="gtPromptModal" role="dialog" aria-modal="true"
             aria-labelledby="gtPromptModalTitle">
             <div class="modal">
@@ -1411,8 +1444,10 @@
             const promptTemplateMeta = document.getElementById("promptTemplateMeta");
             const openContextModalBtn = document.getElementById("gtContextModalTrigger");
             const contextPanel = document.getElementById("gtContextModal");
+            const contextBackdrop = document.getElementById("gtContextModalBackdrop");
             const appMain = document.querySelector(".app-main");
             const openIaModalBtn = document.getElementById("gtPromptModalTrigger");
+            const CONTEXT_RESPONSIVE_BREAKPOINT = 1000;
             const iaModalOverlay = document.getElementById("gtPromptModal");
             const iaModalClose = document.getElementById("gtPromptModalClose");
             const iaApplyBtn = document.getElementById("iaApplyBtn");
@@ -4840,16 +4875,42 @@
                 startRecording();
             }
 
+            const isResponsiveContextMode = () => (window.innerWidth || 0) < CONTEXT_RESPONSIVE_BREAKPOINT;
+
+            function syncContextBackdrop(show) {
+                if (!contextBackdrop) return;
+                contextBackdrop.classList.toggle("visible", show);
+                contextBackdrop.setAttribute("aria-hidden", show ? "false" : "true");
+            }
+
+            function setContextPanelOpen(isOpen) {
+                if (!contextPanel) return;
+                contextPanel.classList.toggle("open", isOpen);
+                contextPanel.setAttribute("aria-hidden", isOpen ? "false" : "true");
+                if (appMain) {
+                    const showContextColumn = isOpen && !isResponsiveContextMode();
+                    appMain.classList.toggle("context-open", showContextColumn);
+                    appMain.classList.toggle("context-closed", !isOpen);
+                }
+                syncContextBackdrop(isOpen && isResponsiveContextMode());
+            }
+
             function toggleContextPanel(forceOpen) {
                 if (!contextPanel) return;
-                const willOpen = typeof forceOpen === "boolean" ? forceOpen : !contextPanel.classList.contains("open");
-                contextPanel.classList.toggle("open", willOpen);
-                contextPanel.setAttribute("aria-hidden", willOpen ? "false" : "true");
-                if (appMain) {
-                    appMain.classList.toggle("context-open", willOpen);
-                    appMain.classList.toggle("context-closed", !willOpen);
+                const isOpen = contextPanel.classList.contains("open");
+                const willOpen = typeof forceOpen === "boolean" ? forceOpen : !isOpen;
+                setContextPanelOpen(willOpen);
+            }
+
+            function ensureContextPanelForBreakpoint() {
+                if (!contextPanel) return;
+                if (isResponsiveContextMode() && contextPanel.classList.contains("open")) {
+                    setContextPanelOpen(false);
                 }
             }
+
+            contextBackdrop?.addEventListener("click", () => setContextPanelOpen(false));
+            window.addEventListener("resize", ensureContextPanelForBreakpoint);
 
             function closeInfoPopup() {
                 infoPopup?.classList.remove("open");
@@ -5294,7 +5355,7 @@
             updateShareMenuUI();
             tryLoadSharedStateFromUrl();
             void hydrateMediaFromDb();
-            toggleContextPanel(true);
+            toggleContextPanel(!isResponsiveContextMode());
             populateAudioSpeedOptions();
             audioPlayer.playbackRate = getAudioSpeed();
             try {
@@ -5303,6 +5364,17 @@
                     openTemplateModal();
                 }
             } catch (err) { /* ignore */ }
+            document.addEventListener("click", ev => {
+                if (!contextPanel?.classList.contains("open")) return;
+                if (!isResponsiveContextMode()) return;
+                const target = ev.target;
+                if (target instanceof Node) {
+                    if (contextPanel.contains(target) || openContextModalBtn?.contains(target)) {
+                        return;
+                    }
+                }
+                setContextPanelOpen(false);
+            });
             document.addEventListener("click", ev => {
                 if (infoPopup && !infoPopup.contains(ev.target) && ev.target !== infoButton) {
                     closeInfoPopup();

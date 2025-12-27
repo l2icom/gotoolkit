@@ -724,128 +724,6 @@
             flex-wrap: wrap;
         }
 
-        /* Harmonized tour styles */
-        .tour-overlay {
-            position: fixed;
-            inset: 0;
-            background: transparent;
-            display: none;
-            z-index: 120;
-            pointer-events: auto;
-        }
-
-        .tour-overlay.visible {
-            display: block;
-        }
-
-        .tour-overlay.dimmed {
-            background: rgba(15, 15, 15, 0.65);
-        }
-
-        .tour-highlight {
-            position: absolute;
-            border: 2px solid #2a7a57;
-            border-radius: 12px;
-            background: transparent;
-            box-shadow: 0 0 0 9999px rgba(15, 15, 15, 0.65);
-            transition: all 0.25s ease;
-            pointer-events: none;
-        }
-
-        .tour-highlight.hidden {
-            opacity: 0;
-        }
-
-        .tour-panel {
-            position: absolute;
-            bottom: 28px;
-            left: 50%;
-            transform: translateX(-50%);
-            max-width: 460px;
-            width: calc(100% - 40px);
-            background: #fff;
-            border-radius: 14px;
-            padding: 18px;
-            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28);
-            color: #1f1f1f;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            font-family: var(--app-font, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
-        }
-
-        .tour-panel h4 {
-            margin: 0;
-            font-size: 18px;
-        }
-
-        .tour-panel p {
-            margin: 0;
-            line-height: 1.4;
-        }
-
-        .tour-step-counter {
-            font-size: 11px;
-            color: #918b7f;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-
-        .tour-step-footer {
-            display: flex;
-            gap: 8px;
-            justify-content: flex-end;
-            flex-wrap: wrap;
-            margin-top: 8px;
-        }
-
-        .tour-panel button {
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            background: #fff;
-            padding: 8px 12px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .tour-panel button:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
-        }
-
-        .tour-panel button.primary {
-            border: none;
-            background: #2a7a57;
-            color: #fff;
-        }
-
-        .tour-panel button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .tour-skip {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            border: none;
-            background: rgba(255, 255, 255, 0.12);
-            color: #fff;
-            border-radius: 999px;
-            padding: 6px 12px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .tour-skip:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-        }
-
         .menu-panel-btn {
             border-radius: 0;
             background: transparent !important;
@@ -1679,7 +1557,7 @@
                     </div>
                     <div class="btn-group">
                         <button class="btn-small" id="openColorPaletteBtn" aria-label="Gérer les types">⚙
-                            Réglages</button>
+                            Types</button>
                     </div>
                 </div>
                 <div class="timeline-header">
@@ -1793,23 +1671,7 @@
             <div class="info-actions">
                 <button id="timelineUpdateBtn" type="button" class="update-btn">Réinitialiser</button>
                 <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
-                <button id="timelineTourReplayBtn" type="button" class="secondary">Tour guidé</button>
             </div>
-        </div>
-
-        <div id="timelineTourOverlay" class="tour-overlay" aria-hidden="true">
-            <div class="tour-highlight hidden" aria-hidden="true"></div>
-            <div class="tour-panel">
-                <span class="tour-step-counter" id="timelineTourStepCounter"></span>
-                <h4 id="timelineTourStepTitle"></h4>
-                <p id="timelineTourStepDescription"></p>
-                <div class="tour-step-footer">
-                    <button id="timelineTourPrevBtn" type="button">Précédent</button>
-                    <button id="timelineTourNextBtn" type="button" class="primary">Suivant</button>
-                    <button id="timelineTourCloseBtn" type="button">Fermer</button>
-                </div>
-            </div>
-            <button id="timelineTourSkipBtn" class="tour-skip" type="button">×</button>
         </div>
 
         <div data-toast-slot="copyToast" data-toast-class="toast" data-toast-aria-live="polite"
@@ -3217,7 +3079,6 @@
 
                 function openRoadmapPromptModal() {
                     if (!roadmapPromptOverlay) return;
-                    if (timelineTourOverlay && timelineTourOverlay.classList.contains("visible")) return;
                     if (!selectedRoadmapPromptId) {
                         var ctx = getActiveViewContext();
                         if (ctx && ctx.templateId) {
@@ -4986,13 +4847,6 @@
                         sessionStorage.clear();
                     } catch (err) {
                         console.warn("Impossible de vider sessionStorage", err);
-                    }
-                    try {
-                        if (window.sessionStorage) {
-                            window.sessionStorage.setItem(timelineTourSkipFlag, "1");
-                        }
-                    } catch (err) {
-                        console.warn("Impossible de préparer l'indicateur de mise à jour", err);
                     }
                     var cookies = (document.cookie || "").split(";");
                     cookies.forEach(function (cookie) {
@@ -7708,247 +7562,6 @@
                 }
 
 
-
-                var timelineTourSteps = [
-                    {
-                        title: "Ton copilote planning",
-                        description: "Goal Digger aide à identifier les prochaines étapes et l'organisation de leurs projets pour atteindre leurs objectifs.",
-                        selectors: []
-                    },
-                    {
-                        title: "Décris ton contexte librement",
-                        description: "Utiliser le bouton ⌘ pour générer le planning, le script permet de le modifier rapidement également.",
-                        selectors: [".gutenberg-recette"]
-                    },
-                    {
-                        title: "Affiche, zoome, navigue",
-                        description: "Le planning apparaît, tu peux zoomer, te déplacer dans le temps et jongler avec les boutons de la barre d’outils.",
-                        selectors: [
-                            ".toolbar .btn-group:nth-of-type(1)",
-                            ".toolbar .btn-group:nth-of-type(2)",
-                            ".toolbar .btn-group:nth-of-type(3)"
-                        ]
-                    },
-                    {
-                        title: "Modifie librement le contenu",
-                        description: "Ajoute, renomme, déplace, ajuste les durées ou supprime n’importe quel élément directement dans la timeline.",
-                        selectors: [".toolbar .item-actions", "#btn-add-milestone", "#btn-add-item", "#btn-add-type", "#openColorPaletteBtn"]
-                    },
-                    {
-                        title: "Exporte ta timeline",
-                        description: "Le menu ⬠ Document permet de télécharger la vue courante en texte, image ou Excel et le bouton ☍ Partage génère un lien privé pour la partager rapidement.",
-                        selectors: ["#fileMenuBtn"]
-                    }
-                ];
-                var timelineTourOverlay = document.getElementById("timelineTourOverlay");
-                // Load runtime config synchronously so tour behavior can be controlled
-                window.GoToolkitConfig = window.GoToolkitConfig || { enableTours: false };
-                try {
-                    var __cfg_xhr = new XMLHttpRequest();
-                    __cfg_xhr.open('GET', '/config.json', false);
-                    __cfg_xhr.send(null);
-                    if (__cfg_xhr.status >= 200 && __cfg_xhr.status < 300) {
-                        try { window.GoToolkitConfig = Object.assign({}, window.GoToolkitConfig, JSON.parse(__cfg_xhr.responseText)); } catch (e) { }
-                    }
-                } catch (e) { }
-                document.addEventListener('DOMContentLoaded', function () {
-                    if (window.GoToolkitConfig && window.GoToolkitConfig.enableTours === false) {
-                        var btn = document.getElementById('timelineTourReplayBtn');
-                        if (btn) btn.style.display = 'none';
-                        var overlay = document.getElementById('timelineTourOverlay');
-                        if (overlay) {
-                            overlay.setAttribute('aria-hidden', 'true');
-                            overlay.style.display = 'none';
-                        }
-                    }
-                });
-                var timelineTourHighlight = timelineTourOverlay && timelineTourOverlay.querySelector(".tour-highlight");
-                var timelineTourPanel = timelineTourOverlay && timelineTourOverlay.querySelector(".tour-panel");
-                var timelineTourTitle = document.getElementById("timelineTourStepTitle");
-                var timelineTourDescription = document.getElementById("timelineTourStepDescription");
-                var timelineTourCounter = document.getElementById("timelineTourStepCounter");
-                var timelineTourPrevBtn = document.getElementById("timelineTourPrevBtn");
-                var timelineTourNextBtn = document.getElementById("timelineTourNextBtn");
-                var timelineTourCloseBtn = document.getElementById("timelineTourCloseBtn");
-                var timelineTourSkipBtn = document.getElementById("timelineTourSkipBtn");
-                var timelineTourReplayBtn = document.getElementById("timelineTourReplayBtn");
-                var timelineTourStorageKey = "goTimelineTourSeen";
-                var timelineTourSkipFlag = "goTimelineTourSkipAfterUpdate";
-                var timelineCurrentTourIndex = 0;
-
-                function getSelectorsFromStep(step) {
-                    if (!step) return [];
-                    if (Array.isArray(step.selectors)) return step.selectors;
-                    if (step.selector) return [step.selector];
-                    return [];
-                }
-
-                function getSelectorsBoundingRect(selectors) {
-                    if (!selectors || !selectors.length) {
-                        return null;
-                    }
-                    let unionRect = null;
-                    selectors.forEach(function (selector) {
-                        var target = document.querySelector(selector);
-                        if (!target) return;
-                        var rect = target.getBoundingClientRect();
-                        if (!unionRect) {
-                            unionRect = {
-                                top: rect.top,
-                                left: rect.left,
-                                right: rect.right,
-                                bottom: rect.bottom
-                            };
-                        } else {
-                            unionRect.top = Math.min(unionRect.top, rect.top);
-                            unionRect.left = Math.min(unionRect.left, rect.left);
-                            unionRect.right = Math.max(unionRect.right, rect.right);
-                            unionRect.bottom = Math.max(unionRect.bottom, rect.bottom);
-                        }
-                    });
-                    if (!unionRect) return null;
-                    unionRect.width = unionRect.right - unionRect.left;
-                    unionRect.height = unionRect.bottom - unionRect.top;
-                    return unionRect;
-                }
-
-                function positionTourPanel(selectors) {
-                    if (!timelineTourPanel) return;
-                    var spacing = 14;
-                    var defaults = {
-                        top: "auto",
-                        bottom: "28px",
-                        left: "50%",
-                        right: "auto",
-                        transform: "translateX(-50%)"
-                    };
-                    Object.assign(timelineTourPanel.style, defaults);
-                    var rect = getSelectorsBoundingRect(selectors);
-                    if (!rect) return;
-                    var panelRect = timelineTourPanel.getBoundingClientRect();
-                    var top = rect.bottom + spacing;
-                    if (top + panelRect.height > window.innerHeight - spacing) {
-                        top = rect.top - panelRect.height - spacing;
-                    }
-                    var left = rect.left + rect.width / 2 - panelRect.width / 2;
-                    left = Math.max(spacing, Math.min(left, window.innerWidth - panelRect.width - spacing));
-                    timelineTourPanel.style.top = Math.max(spacing, top) + "px";
-                    timelineTourPanel.style.left = left + "px";
-                    timelineTourPanel.style.bottom = "auto";
-                    timelineTourPanel.style.right = "auto";
-                    timelineTourPanel.style.transform = "none";
-                }
-
-                function updateHighlight(selectors) {
-                    if (!timelineTourHighlight || !timelineTourOverlay) return;
-                    var rect = getSelectorsBoundingRect(selectors);
-                    if (!rect) {
-                        timelineTourHighlight.classList.add("hidden");
-                        timelineTourOverlay.classList.add("dimmed");
-                        return;
-                    }
-                    timelineTourOverlay.classList.remove("dimmed");
-                    timelineTourHighlight.classList.remove("hidden");
-                    var offset = 10;
-                    timelineTourHighlight.style.width = rect.width + offset * 2 + "px";
-                    timelineTourHighlight.style.height = rect.height + offset * 2 + "px";
-                    timelineTourHighlight.style.left = rect.left - offset + "px";
-                    timelineTourHighlight.style.top = rect.top - offset + "px";
-                }
-
-                function renderTimelineTourStep() {
-                    if (!timelineTourOverlay || !timelineTourSteps.length) return;
-                    var step = timelineTourSteps[timelineCurrentTourIndex];
-                    if (!step) return;
-                    timelineTourTitle.textContent = step.title;
-                    timelineTourDescription.textContent = step.description;
-                    timelineTourCounter.textContent = "Étape " + (timelineCurrentTourIndex + 1) + " / " + timelineTourSteps.length;
-                    timelineTourPrevBtn.disabled = timelineCurrentTourIndex === 0;
-                    timelineTourNextBtn.textContent = timelineCurrentTourIndex === timelineTourSteps.length - 1 ? "Terminé" : "Suivant";
-                    var selectors = getSelectorsFromStep(step);
-                    updateHighlight(selectors);
-                    positionTourPanel(selectors);
-                }
-
-                function openTimelineTour(startIndex) {
-                    hideTimelineAbout();
-                    if (!timelineTourOverlay) return;
-                    closeRoadmapPromptModal();
-                    timelineCurrentTourIndex = typeof startIndex === "number" ? startIndex : 0;
-                    timelineTourOverlay.classList.add("visible");
-                    timelineTourOverlay.setAttribute("aria-hidden", "false");
-                    renderTimelineTourStep();
-                }
-
-                function closeTimelineTour(markSeen) {
-                    if (markSeen && window.localStorage) {
-                        window.localStorage.setItem(timelineTourStorageKey, "1");
-                    }
-                    if (!timelineTourOverlay) return;
-                    timelineTourOverlay.classList.remove("visible");
-                    timelineTourOverlay.setAttribute("aria-hidden", "true");
-                    timelineTourOverlay.classList.remove("dimmed");
-                    if (timelineTourHighlight) {
-                        timelineTourHighlight.classList.add("hidden");
-                    }
-                }
-
-                if (timelineTourPrevBtn) {
-                    timelineTourPrevBtn.addEventListener("click", function () {
-                        if (timelineCurrentTourIndex === 0) return;
-                        timelineCurrentTourIndex--;
-                        renderTimelineTourStep();
-                    });
-                }
-                if (timelineTourNextBtn) {
-                    timelineTourNextBtn.addEventListener("click", function () {
-                        if (timelineCurrentTourIndex >= timelineTourSteps.length - 1) {
-                            closeTimelineTour(true);
-                            return;
-                        }
-                        timelineCurrentTourIndex++;
-                        renderTimelineTourStep();
-                    });
-                }
-                if (timelineTourCloseBtn) {
-                    timelineTourCloseBtn.addEventListener("click", function () {
-                        closeTimelineTour(true);
-                    });
-                }
-                if (timelineTourSkipBtn) {
-                    timelineTourSkipBtn.addEventListener("click", function () {
-                        closeTimelineTour(true);
-                    });
-                }
-                if (timelineTourReplayBtn) {
-                    timelineTourReplayBtn.addEventListener("click", function () {
-                        if (window.GoToolkitConfig && window.GoToolkitConfig.enableTours === false) {
-                            setStatus && setStatus("Tours guidés désactivés");
-                            return;
-                        }
-                        if (window.localStorage) {
-                            window.localStorage.removeItem(timelineTourStorageKey);
-                        }
-                        openTimelineTour(0);
-                    });
-                }
-
-                window.addEventListener("resize", function () {
-                    if (!timelineTourOverlay || !timelineTourOverlay.classList.contains("visible")) return;
-                    renderTimelineTourStep();
-                });
-
-                var timelineTourSeen = window.localStorage && window.localStorage.getItem(timelineTourStorageKey);
-                var timelineTourSkipAfterUpdateValue =
-                    window.sessionStorage && window.sessionStorage.getItem(timelineTourSkipFlag);
-                if (timelineTourSkipAfterUpdateValue && window.sessionStorage) {
-                    window.sessionStorage.removeItem(timelineTourSkipFlag);
-                }
-                if (!timelineTourSeen && !timelineTourSkipAfterUpdateValue && (window.GoToolkitConfig?.enableTours !== false)) {
-                    setTimeout(function () {
-                        openTimelineTour(0);
-                    }, 200);
-                }
 
                 initShareWorkerService();
                 updateShareMenuUI();
