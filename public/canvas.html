@@ -1823,7 +1823,7 @@
 	            <span>Version 2025.12.26.6</span>
 	            <span>Usage réservé à Savane Consulting.</span>
 	            <div class="info-actions">
-	                <button id="updateAppBtn" type="button" class="update-btn">Réinitialiser</button>
+	                <button id="updateAppBtn" type="button" class="update-btn">Mettre à jour</button>
 	                <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
 	            </div>
 	        </div>
@@ -6851,68 +6851,21 @@
         const infoButton = document.getElementById("infoButton");
         const infoPopup = document.getElementById("infoPopup");
         const updateAppBtn = document.getElementById("updateAppBtn");
+        const APP_VERSION = "2025.12.26.6";
+        const VERSION_QUERY_PARAM = "v";
 
         function closeInfoPopup() {
             infoPopup?.classList.remove("open");
         }
 
-        function clearAppCacheAndReload() {
-            // Preserve the shared OpenAI key and admin token across a reset
-            var __preservedOpenAiKey = null;
-            var __preservedAdminToken = null;
-            try { __preservedOpenAiKey = localStorage.getItem('go-toolkit-api-key'); } catch (e) { }
-            try { __preservedAdminToken = localStorage.getItem('feedback-admin-token'); } catch (e) { }
+        function reloadAppWithVersion() {
             try {
-                localStorage.clear();
-                if (__preservedOpenAiKey) {
-                    try { localStorage.setItem('go-toolkit-api-key', __preservedOpenAiKey); } catch (e) { }
-                }
-                if (__preservedAdminToken) {
-                    try { localStorage.setItem('feedback-admin-token', __preservedAdminToken); } catch (e) { }
-                }
+                const url = new URL(window.location.href);
+                url.searchParams.set(VERSION_QUERY_PARAM, APP_VERSION);
+                window.location.href = url.toString();
             } catch (err) {
-                console.warn("Impossible de vider localStorage", err);
-            }
-            try {
-                sessionStorage.clear();
-            } catch (err) {
-                console.warn("Impossible de vider sessionStorage", err);
-            }
-            (document.cookie || "")
-                .split(";")
-                .forEach(function (cookie) {
-                    var eqPos = cookie.indexOf("=");
-                    var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-                    name = name.trim();
-                    if (!name) return;
-                    document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-                });
-            var reload = function () {
                 window.location.reload();
-            };
-            if (window.caches && typeof window.caches.keys === "function") {
-                window.caches
-                    .keys()
-                    .then(function (keys) {
-                        return Promise.all(
-                            keys.map(function (key) {
-                                return window.caches.delete(key);
-                            })
-                        );
-                    })
-                    .catch(function () { })
-                    .finally(reload);
-            } else {
-                reload();
             }
-        }
-
-        function promptManualUpdate() {
-            var warning =
-                "La mise à jour effacera les données locales (cache, cookies, préférences). Continuer ?";
-            if (!confirm(warning)) return;
-            closeInfoPopup();
-            clearAppCacheAndReload();
         }
 
         infoButton?.addEventListener("click", event => {
@@ -6922,7 +6875,8 @@
         });
         updateAppBtn?.addEventListener("click", event => {
             event.stopPropagation();
-            promptManualUpdate();
+            closeInfoPopup();
+            reloadAppWithVersion();
         });
         document.addEventListener("click", event => {
             if (!infoPopup?.contains(event.target) && event.target !== infoButton) {

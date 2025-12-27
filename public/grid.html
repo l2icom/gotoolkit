@@ -1216,7 +1216,7 @@
         <p>Les tableaux générés ici peuvent être partagés et exportés pour enrichir vos capsules métier.</p>
         <span>Version 2025.12.26.6</span>
         <div class="info-actions">
-            <button id="closeInfoPopup" type="button" class="btn-primary">Réinitialiser</button>
+            <button id="updateAppBtn" type="button" class="btn-primary">Mettre à jour</button>
             <button type="button" data-open-nexus-modal>Mentions légales</button>
         </div>
     </div>
@@ -1419,7 +1419,9 @@
                 const capsuleDownloadBtn = document.getElementById("capsuleDownloadBtn");
                 const infoButton = document.getElementById("infoButton");
                 const infoPopup = document.getElementById("infoPopup");
-                const closeInfoPopup = document.getElementById("closeInfoPopup");
+                const updateAppBtn = document.getElementById("updateAppBtn");
+                const APP_VERSION = "2025.12.26.6";
+                const VERSION_QUERY_PARAM = "v";
                 const templateMeta = document.getElementById("templateMeta");
                 const shareHistory = window.goToolkitShareHistory;
                 const shareService = window.goToolkitShareWorker;
@@ -4295,37 +4297,6 @@
                         .join("");
                 }
 
-                function clearAppCookies() {
-                    if (typeof document === "undefined" || !document.cookie) return;
-                    document.cookie.split(";").forEach(cookie => {
-                        const [namePart] = cookie.split("=");
-                        const name = namePart?.trim();
-                        if (!name) return;
-                        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-                        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${location.hostname}`;
-                    });
-                }
-
-                function resetGridState() {
-                    const confirmed = window.confirm(
-                        "Réinitialiser supprimera le cache, les préférences et les cookies. Continuer ?"
-                    );
-                    if (!confirmed) return;
-                    try {
-                        if (window.localStorage) {
-                            localStorage.removeItem(STORAGE_KEY);
-                            if (shareHistory?.STORAGE_KEY) localStorage.removeItem(shareHistory.STORAGE_KEY);
-                            if (capsuleDrafts?.STORAGE_KEY) localStorage.removeItem(capsuleDrafts.STORAGE_KEY);
-                            Object.keys(localStorage)
-                                .filter(key => key.startsWith(SHARE_DRAFT_PREFIX))
-                                .forEach(key => localStorage.removeItem(key));
-                        }
-                    } catch (err) {
-                        console.warn("Réinitialisation locale impossible", err);
-                    }
-                    clearAppCookies();
-                    window.location.reload();
-                }
 
                 function buildShareUrl(token) {
                     if (!token) return "";
@@ -8504,10 +8475,20 @@
                         infoPopup.classList.toggle("open");
                     });
                 }
-                if (closeInfoPopup) {
-                    closeInfoPopup.addEventListener("click", event => {
+                function reloadAppWithVersion() {
+                    try {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set(VERSION_QUERY_PARAM, APP_VERSION);
+                        window.location.href = url.toString();
+                    } catch (err) {
+                        window.location.reload();
+                    }
+                }
+                if (updateAppBtn) {
+                    updateAppBtn.addEventListener("click", event => {
                         event.stopPropagation();
-                        resetGridState();
+                        infoPopup?.classList.remove("open");
+                        reloadAppWithVersion();
                     });
                 }
                 document.addEventListener("click", event => {

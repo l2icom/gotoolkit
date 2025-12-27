@@ -1669,7 +1669,7 @@
             <span>Version 2025.12.26.6</span>
             <span>Usage réservé à Savane Consulting.</span>
             <div class="info-actions">
-                <button id="timelineUpdateBtn" type="button" class="update-btn">Réinitialiser</button>
+                <button id="timelineUpdateBtn" type="button" class="update-btn">Mettre à jour</button>
                 <button type="button" class="secondary" data-open-nexus-modal>Mentions légales</button>
             </div>
         </div>
@@ -3162,6 +3162,8 @@
                 var headerTitleElement = document.querySelector(".header-text h1");
                 var infoPopup = document.getElementById("timelineInfoPopup");
                 var timelineUpdateBtn = document.getElementById("timelineUpdateBtn");
+                var APP_VERSION = "2025.12.26.6";
+                var VERSION_QUERY_PARAM = "v";
                 var copyToast = document.getElementById("copyToast");
                 var copyToastTimer = null;
                 var speechToast = document.getElementById("speechToast");
@@ -4826,62 +4828,14 @@
                     infoPopup.classList.toggle("open");
                 }
 
-                function clearTimelineStorageAndReload() {
+                function reloadAppWithVersion() {
                     try {
-                        // Preserve admin token and OpenAI key across reset
-                        var __preservedOpenAiKey = null;
-                        var __preservedAdminToken = null;
-                        try { __preservedOpenAiKey = localStorage.getItem('go-toolkit-api-key'); } catch (e) { }
-                        try { __preservedAdminToken = localStorage.getItem('feedback-admin-token'); } catch (e) { }
-                        localStorage.clear();
-                        if (__preservedOpenAiKey) {
-                            try { localStorage.setItem('go-toolkit-api-key', __preservedOpenAiKey); } catch (e) { }
-                        }
-                        if (__preservedAdminToken) {
-                            try { localStorage.setItem('feedback-admin-token', __preservedAdminToken); } catch (e) { }
-                        }
+                        var url = new URL(window.location.href);
+                        url.searchParams.set(VERSION_QUERY_PARAM, APP_VERSION);
+                        window.location.href = url.toString();
                     } catch (err) {
-                        console.warn("Impossible de vider localStorage", err);
-                    }
-                    try {
-                        sessionStorage.clear();
-                    } catch (err) {
-                        console.warn("Impossible de vider sessionStorage", err);
-                    }
-                    var cookies = (document.cookie || "").split(";");
-                    cookies.forEach(function (cookie) {
-                        var eqPos = cookie.indexOf("=");
-                        var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-                        name = name.trim();
-                        if (!name) return;
-                        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-                    });
-                    var reload = function () {
                         window.location.reload();
-                    };
-                    if (window.caches && typeof window.caches.keys === "function") {
-                        window.caches
-                            .keys()
-                            .then(function (keys) {
-                                return Promise.all(
-                                    keys.map(function (key) {
-                                        return window.caches.delete(key);
-                                    })
-                                );
-                            })
-                            .catch(function () { })
-                            .finally(reload);
-                    } else {
-                        reload();
                     }
-                }
-
-                function promptTimelineUpdate() {
-                    var warning =
-                        "La mise à jour effacera les données locales (cache, cookies, préférences). Continuer ?";
-                    if (!confirm(warning)) return;
-                    closeTimelineInfoPopup();
-                    clearTimelineStorageAndReload();
                 }
 
                 function hideTimelineAbout() {
@@ -4895,7 +4849,8 @@
                 if (timelineUpdateBtn) {
                     timelineUpdateBtn.addEventListener("click", function (event) {
                         event.stopPropagation();
-                        promptTimelineUpdate();
+                        closeTimelineInfoPopup();
+                        reloadAppWithVersion();
                     });
                 }
 
